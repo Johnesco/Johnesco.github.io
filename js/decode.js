@@ -1,15 +1,19 @@
 // Functions
+
+// Decodes a URL
 function decode() {
 	var uri = textBox.value;
 	textBox.value = decodeURIComponent(uri);
 }
 
+// Beautifies JSON
 function beautify () {
 	var json_object = JSON.parse(textBox.value);
 	var pretty = JSON.stringify(json_object, 1, '  ');
 	textBox.value = pretty;
 }
 
+// Parses the name-value pairs in a URL and formats them into JIRA markdown
 function tablefy () {
 	var string = "";
 	var uri = URI.parseQuery(textBox.value);
