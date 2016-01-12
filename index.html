@@ -6,7 +6,7 @@
 <body>
 <h1 id="header">Decoder</h1>
 <form id="decodeForm">
-  <p>Enter POST payload or Beacon URI</p>
+  <p>Enter POST payload, Beacon URI, or Kibana Source</p>
 
     
   <textarea id="textBox" rows="30" cols="40">
@@ -15,18 +15,22 @@
   <div>
     POST payload:
   	<button type="button" id='decode'>Decode OWEN payload</button>
-    <button type="button" id='unescape'>Unescape</button>
     <button type="button" id='extractJ'>Extract J</button>
   </div>
   <div>
     Kibana Source:
     <button type="button" id='extractPayload'>Extract Payload</button>
+    <button type="button" id='extractRequestBody'>Extract RequestBody</button>
   <div>
   	Beacon URI: <button type="button" id='tablefy'>Tablefy GET Beacon URL</button>
   </div>
   <div>
     JSON:
     <button type="button" id='beautify'>Beautify JSON</button>
+  </div>
+    <div>
+    Text:
+    <button type="button" id='unescape'>Unescape</button>
   </div>
   </div>
 

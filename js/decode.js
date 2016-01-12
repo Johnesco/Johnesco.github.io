@@ -41,10 +41,15 @@ function extractJ () {
 	textBox.value = obj.j;
 }
 
+function extractRequestBody (target) {
+	var obj = jQuery.parseJSON(textBox.value);
+	textBox.value = obj.metadata.requestBody;
+}
+
 
 // listeners
 var textBox = document.getElementById("textBox");
-var textBox2 = document.getElementById("textBox2");
+textBox.addEventListener("mouseout", beautify);
 
 var el = document.getElementById("decode");
 el.addEventListener("click", decode);
@@ -63,4 +68,7 @@ el.addEventListener("click", extractPayload)
 
 var el = document.getElementById("extractJ");
 el.addEventListener("click", extractJ)
+
+var el = document.getElementById("extractRequestBody");
+el.addEventListener("click", extractRequestBody)
 
