@@ -1,7 +1,7 @@
 // Functions
 
 // Decodes a URL
-function decode() {
+function decode () {
 	var uri = textBox.value;
 	textBox.value = decodeURIComponent(uri);
 }
@@ -25,6 +25,11 @@ function tablefy () {
 	textBox.value = string;
 }
 
+function unescape_text () {
+	var text = textBox.value.replace(/\\"/g, '"');
+	textBox.value = text;
+}
+
 
 // listeners
 var textBox = document.getElementById("textBox");
@@ -37,4 +42,7 @@ el.addEventListener("click", tablefy);
 
 var el = document.getElementById("beautify");
 el.addEventListener("click", beautify);
+
+var el = document.getElementById("unescape");
+el.addEventListener("click", unescape_text);
 

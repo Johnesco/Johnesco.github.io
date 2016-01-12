@@ -6,15 +6,18 @@
 <body>
 <h1 id="header">Decoder</h1>
 <form id="decodeForm">
-  <p>Enter OWEN payload</p>
+  <p>Enter POST payload or Beacon URI</p>
   <textarea id="textBox" rows="30" cols="60">
   </textarea>
   <div>
+    POST payload:
   	<button type="button" id='decode'>Decode OWEN payload</button>
   	<button type="button" id='beautify'>Beautify JSON</button>
+    <button type="button" id='unescape'>Unescape</button>
   </div>
   <div>
-  	<button type="button" id='tablefy'>Tablefy Beacon URL</button>
+  	Beacon URI: <button type="button" id='tablefy'>Tablefy GET Beacon URL</button>
+
   </div>
   </div>
 </form>
