@@ -7,22 +7,33 @@
 <h1 id="header">Decoder</h1>
 <form id="decodeForm">
   <p>Enter POST payload or Beacon URI</p>
-  <textarea id="textBox" rows="30" cols="60">
+
+    
+  <textarea id="textBox" rows="30" cols="40">
   </textarea>
+</form>
   <div>
     POST payload:
   	<button type="button" id='decode'>Decode OWEN payload</button>
-  	<button type="button" id='beautify'>Beautify JSON</button>
     <button type="button" id='unescape'>Unescape</button>
+    <button type="button" id='extractJ'>Extract J</button>
   </div>
   <div>
+    Kibana Source:
+    <button type="button" id='extractPayload'>Extract Payload</button>
+  <div>
   	Beacon URI: <button type="button" id='tablefy'>Tablefy GET Beacon URL</button>
+  </div>
+  <div>
+    JSON:
+    <button type="button" id='beautify'>Beautify JSON</button>
+  </div>
+  </div>
 
-  </div>
-  </div>
-</form>
-<script language="JavaScript" SRC="js/decode.js"></SCRIPT>
 <script language="JavaScript" SRC="js/URI.min.js"></SCRIPT>
+<script language="JavaScript" SRC="js/jquery-2.2.0.min.js"></SCRIPT>
+<script language="JavaScript" SRC="js/decode.js"></SCRIPT>
+
 </body>
 </html> 
 
