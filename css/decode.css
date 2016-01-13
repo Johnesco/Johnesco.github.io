@@ -1,10 +1,15 @@
 textarea {
 	font-size: 12pt;
-	width:48%;
+	width:90%;
+	display: inline;
+	margin: 0;
 }
 
-#decodeForm > div{
+#output {
 	display: inline;
+	width:48%;
+	margin: 0;
+	vertical-align: top;
 }
 
 

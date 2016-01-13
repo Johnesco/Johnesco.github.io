@@ -47,9 +47,13 @@ function extractRequestBody (target) {
 }
 
 
+
+
 // listeners
 var textBox = document.getElementById("textBox");
 textBox.addEventListener("mouseout", beautify);
+
+var output = document.getElementById("output");
 
 var el = document.getElementById("decode");
 el.addEventListener("click", decode);
