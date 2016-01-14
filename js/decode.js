@@ -4,8 +4,7 @@
 
 // Decodes a URL
 function decode() {
-  var uri = textBox.value;
-  textBox.value = decodeURIComponent(uri);
+  textBox.value = decodeURIComponent(textBox.value);
 }
 
 // Beautifies JSON
@@ -27,23 +26,19 @@ function tablefy() {
 };
 
 function unescapeText() {
-	var text = textBox.value.replace(/\\"/g, '"');
-	textBox.value = text;
+	textBox.value = textBox.value.replace(/\\"/g, '"');
 }
 
 function extractPayload() {
-	var obj = jQuery.parseJSON(textBox.value);
-	textBox.value = obj.query.payload;
+	textBox.value = jQuery.parseJSON(textBox.value).query.payload;
 }
 
 function extractJ() {
-	var obj = jQuery.parseJSON(textBox.value);
-	textBox.value = obj.j;
+	textBox.value = jQuery.parseJSON(textBox.value).j;
 }
 
 function extractRequestBody() {
-	var obj = jQuery.parseJSON(textBox.value);
-	textBox.value = obj.metadata.requestBody;
+	textBox.value = jQuery.parseJSON(textBox.value).metadata.requestBody;
 }
 
 
