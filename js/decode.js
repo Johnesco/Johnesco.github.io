@@ -50,7 +50,6 @@ function decodeJbeautify() {
 
 // listeners
 var textBox = document.getElementById("textBox");
-textBox.addEventListener("mouseout", beautify);
 
 var output = document.getElementById("output");
 
