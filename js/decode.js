@@ -42,10 +42,9 @@ function extractRequestBody() {
 }
 
 function decodeJbeautify() {
-	textBox.value = decodeURIComponent(textBox.value);
-	textBox.value = jQuery.parseJSON(textBox.value).j;
-	var json_object = JSON.parse(textBox.value) || "{}";
-	textBox.value = JSON.stringify(json_object, 1, '  ');
+	decode();
+	extractJ();
+	beautify();
 }
 
 // listeners
