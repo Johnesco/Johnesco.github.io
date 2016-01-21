@@ -5,6 +5,7 @@
 // Decodes a URL
 function decode() {
   textBox.value = decodeURIComponent(textBox.value);
+  beautify();
 }
 
 // Beautifies JSON
@@ -31,14 +32,17 @@ function unescapeText() {
 
 function extractPayload() {
 	textBox.value = jQuery.parseJSON(textBox.value).query.payload;
+	beautify();
 }
 
 function extractJ() {
 	textBox.value = jQuery.parseJSON(textBox.value).j;
+	beautify();
 }
 
 function extractRequestBody() {
 	textBox.value = jQuery.parseJSON(textBox.value).metadata.requestBody;
+	beautify();
 }
 
 function decodeJbeautify() {

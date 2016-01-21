@@ -1,15 +1,41 @@
+body {
+	margin:0;
+	padding:5px;
+	}
+
 textarea {
 	font-size: 12pt;
 	width:90%;
 	display: inline;
 	margin: 0;
+	padding: 0;
 }
 
-#output {
+div p {
 	display: inline;
-	width:48%;
+	margin: 5px;
+	text-align: center;
+	vertical-align: text-top;
+	padding: 5px;
+	background-color: #EFEFEF;
+
+}
+
+div {
+	width:90%;
 	margin: 0;
-	vertical-align: top;
+	padding: 0 0 0 5px;
+	color:blue;
+	font-family: sans-serif;
+
+}
+
+button {
+     
+     height: 30px;
+     margin: 3px;
+     padding: 10px 3px 10px 3px;
+     vertical-align: middle
 }
 
 
