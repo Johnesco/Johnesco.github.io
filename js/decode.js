@@ -41,6 +41,12 @@ function extractRequestBody() {
 	textBox.value = jQuery.parseJSON(textBox.value).metadata.requestBody;
 }
 
+function decodeJbeautify() {
+	textBox.value = decodeURIComponent(textBox.value);
+	textBox.value = jQuery.parseJSON(textBox.value).j;
+	var json_object = JSON.parse(textBox.value) || "{}";
+	textBox.value = JSON.stringify(json_object, 1, '  ');
+}
 
 // listeners
 var textBox = document.getElementById("textBox");
@@ -68,6 +74,11 @@ el.addEventListener("click", extractJ);
 
 var el = document.getElementById("extractRequestBody");
 el.addEventListener("click", extractRequestBody);
+
+var el = document.getElementById("decodeJbeautify");
+el.addEventListener("click", decodeJbeautify);
+
+
 
 
 
