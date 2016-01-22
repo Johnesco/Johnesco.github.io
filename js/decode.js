@@ -10,25 +10,22 @@ function decode() {
 
 // Beautifies JSON
 function beautify() {
-	var json_object = JSON.parse(textBox.value) || "{}";
+	var json_object = JSON.parse(textBox.value) || '{"none":"none"}';
 	textBox.value = JSON.stringify(json_object, 1, '  ');
 }
 
+
 // Parses the name-value pairs in a URL and formats them into JIRA markdown
 function tablefy() {
-  var string = "";
   var uri = URI.parseQuery(textBox.value);
+  var string = "";
     for (var key in uri) {
       if (uri.hasOwnProperty(key)) {
         string+=("|*" + key + ":* | " + uri[key] + " | \n");
       }
     }
-  textBox.value = string;
+  textBox.value = string.replace("http://b.rmntest.com/", '');
 };
-
-function unescapeText() {
-	textBox.value = textBox.value.replace(/\\"/g, '"');
-}
 
 function extractPayload() {
 	textBox.value = jQuery.parseJSON(textBox.value).query.payload;
@@ -42,6 +39,7 @@ function extractJ() {
 
 function extractRequestBody() {
 	textBox.value = jQuery.parseJSON(textBox.value).metadata.requestBody;
+	decode();
 	beautify();
 }
 
@@ -50,6 +48,13 @@ function decodeJbeautify() {
 	extractJ();
 	beautify();
 }
+
+function viewJsonTree() {
+	var jjson = textBox.value || '{"none":"none"}';
+	$("#jjson").jJsonViewer(jjson);
+}
+
+
 
 // listeners
 var textBox = document.getElementById("textBox");
@@ -65,9 +70,6 @@ el.addEventListener("click", tablefy);
 var el = document.getElementById("beautify");
 el.addEventListener("click", beautify);
 
-var el = document.getElementById("unescape");
-el.addEventListener("click", unescapeText);
-
 var el = document.getElementById("extractPayload");
 el.addEventListener("click", extractPayload)
 
@@ -79,6 +81,9 @@ el.addEventListener("click", extractRequestBody);
 
 var el = document.getElementById("decodeJbeautify");
 el.addEventListener("click", decodeJbeautify);
+
+var el = document.getElementById("viewJsonTree");
+el.addEventListener("click", viewJsonTree);
 
 
 

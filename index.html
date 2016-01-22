@@ -2,13 +2,13 @@
 <html>
 <head>
 	<link rel="stylesheet" href="css/decode.css">
+  <link rel="stylesheet" type="text/css" href="css/jjsonviewer.css">
 </head>
 <body>
 <h1>Decoder</h1>
 <form id="decodeForm">
   <p>Enter POST payload, Beacon URI, or Kibana Source</p>
-  <textarea id="textBox" rows="20" cols="40">
-  </textarea>
+  <textarea id="textBox" rows="20" cols="40"></textarea>
 </form>
   <div>
     <p>POST payload:</p>
@@ -28,16 +28,16 @@
   <div>
     <p>JSON:</p>
     <button type="button" id='beautify'>Beautify JSON</button>
-  </div>
-    <div>
-    <p>Text:</p>
-    <button type="button" id='unescape'>Unescape</button>
-  </div>
+    <button type="button" id='viewJsonTree'>View JSON Tree</button>
   </div>
 
-<script language="JavaScript" SRC="js/URI.min.js"></SCRIPT>
-<script language="JavaScript" SRC="js/jquery-2.2.0.min.js"></SCRIPT>
-<script language="JavaScript" SRC="js/decode.js"></SCRIPT>
+<div id="jjson" class="jjson"></div>
+
+<script language="JavaScript" SRC="js/URI.min.js"></script>
+<script language="JavaScript" SRC="js/jquery-2.2.0.min.js"></script>
+<script language="JavaScript" SRC="js/decode.js"></script>
+<script type='text/javascript' SRC="lib/jquery.js"></script>
+<script type='text/javascript' SRC='js/jjsonviewer.js'></script>
 
 </body>
 </html> 
