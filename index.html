@@ -1,44 +1,47 @@
 <!DOCTYPE html>
 <html>
-<head>
-	<link rel="stylesheet" href="css/decode.css">
-  <link rel="stylesheet" type="text/css" href="css/jjsonviewer.css">
-</head>
-<body>
-<h1>Decoder</h1>
-<form id="decodeForm">
-  <p>Enter POST payload, Beacon URI, or Kibana Source</p>
-  <textarea id="textBox" rows="20" cols="40"></textarea>
-</form>
-  <div>
-    <p>POST payload:</p>
-    <button type="button" id='decodeJbeautify'>Decode - Extract J - Beautify</button>
-    <button type="button" id='decode'>Decode OWEN payload</button>
-    <button type="button" id='extractJ'>Extract J</button>
-  </div>
-  <div>
-    <p>Kibana Source:</p>
-    <button type="button" id='extractPayload'>Extract Payload</button>
-    <button type="button" id='extractRequestBody'>Extract RequestBody</button>
-  </div>
-  <div>
-  	<p>Beacon URI:</p>
-     <button type="button" id='tablefy'>Tablefy GET Beacon URL</button>
-  </div>
-  <div>
-    <p>JSON:</p>
-    <button type="button" id='beautify'>Beautify JSON</button>
-    <button type="button" id='viewJsonTree'>View JSON Tree</button>
-  </div>
+  <head>
+    <meta charset="utf-8">
+    <title>Decode</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Content-Language" content="en">
+    <link rel="stylesheet" href="css/decode.css">
+    <link rel="stylesheet" href="css/jjsonviewer.css">
+  </head>
+  <body>
+    <h1>Decoder</h1>
+    <form id="decodeForm">
+      <p>Enter POST payload, Beacon URI, or Kibana Source</p>
+      <textarea id="textBox" rows="20" cols="40"></textarea>
+    </form>
+    <div>
+      <p>POST payload:</p>
+      <button class="button" type="button" id='decodeJbeautify'>Decode - Extract J - Beautify</button>
+      <button class="button" type="button" id='decode'>Decode OWEN payload</button>
+      <button class="button" type="button" id='extractJ'>Extract J</button>
+    </div>
+    <div>
+      <p>Kibana Source:</p>
+      <button class="button" type="button" id='extractPayload'>Extract Payload</button>
+      <button class="button" type="button" id='extractRequestBody'>Extract RequestBody</button>
+    </div>
+    <div>
+      <p>Beacon URI:</p>
+      <button class="button" type="button" id='tablefy'>Tablefy GET Beacon URL</button>
+    </div>
+    <div>
+      <p>JSON:</p>
+      <button class="button" type="button" id='beautify'>Beautify JSON</button>
+      <button class="button" type="button" id='viewJsonTree'>View JSON Tree</button>
+    </div>
 
-<div id="jjson" class="jjson"></div>
+    <div id="jjson" class="jjson"></div>
 
-<script language="JavaScript" SRC="js/URI.min.js"></script>
-<script language="JavaScript" SRC="js/jquery-2.2.0.min.js"></script>
-<script language="JavaScript" SRC="js/decode.js"></script>
-<script type='text/javascript' SRC="lib/jquery.js"></script>
-<script type='text/javascript' SRC='js/jjsonviewer.js'></script>
+    <script type='text/javascript' src="js/URI.min.js"></script>
+    <script type='text/javascript' src="js/jquery-2.2.0.min.js"></script>
+    <script type='text/javascript' src="js/decode.js"></script>
+    <script type='text/javascript' src='js/jjsonviewer.js'></script>
 
-</body>
-</html> 
+  </body>
+</html>
 
