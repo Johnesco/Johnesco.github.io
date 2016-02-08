@@ -54,7 +54,7 @@ function extractJ() {
 function extractRequestBody() {
 	$textBox.val( $.parseJSON( $textBox.val() ).metadata.requestBody );
 	decode();
-	beautifyTree();
+	// beautifyTree();
 }
 
 function decodeJbeautify() {

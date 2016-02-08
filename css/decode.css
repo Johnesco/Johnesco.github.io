@@ -1,19 +1,22 @@
 body {
 	margin: 0;
 	padding: 5px;
+	background-color: #eeeff2;
 }
+
+.header {font-family: sans-serif;}
 
 #decodeForm{
 	width: 550px;
 	margin: 0;
 	padding: 0 0 0 0px;
-	color: blue;
 	font-family: sans-serif;
 	float: left;
 }
 
 textarea {
-	font-size: 16px;
+	font-size: 14px;
+	font-family: monospace;
 	width: 545px;
 	margin: 0;
 	padding: 0;
@@ -23,14 +26,15 @@ div#dashboard p {
 	display: inline;
 	margin: 5px;
 	text-align: center;
-	vertical-align: text-top;
+	vertical-align: middle;
 	padding: 5px;
-	background-color: #EFEFEF;
+	background-color: #FFFFFF;
+	color: blue;
 }
 
 
 .button {
-	height: 27px;
+	height: 30px;
 	margin: 3px;
 	padding: 10px 3px;
 	vertical-align: middle;
