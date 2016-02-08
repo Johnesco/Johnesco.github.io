@@ -3,15 +3,23 @@ body {
 	padding: 5px;
 }
 
+#decodeForm{
+	width: 550px;
+	margin: 0;
+	padding: 0 0 0 0px;
+	color: blue;
+	font-family: sans-serif;
+	float: left;
+}
+
 textarea {
 	font-size: 16px;
-	width: 90%;
-	display: inline;
+	width: 545px;
 	margin: 0;
 	padding: 0;
 }
 
-div p {
+div#dashboard p {
 	display: inline;
 	margin: 5px;
 	text-align: center;
@@ -20,16 +28,9 @@ div p {
 	background-color: #EFEFEF;
 }
 
-div {
-	width: 90%;
-	margin: 0;
-	padding: 0 0 0 5px;
-	color: blue;
-	font-family: sans-serif;
-}
 
 .button {
-	height: 30px;
+	height: 27px;
 	margin: 3px;
 	padding: 10px 3px;
 	vertical-align: middle;

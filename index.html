@@ -10,29 +10,33 @@
   </head>
   <body>
     <h1>Decoder</h1>
-    <form id="decodeForm">
-      <p>Enter POST payload, Beacon URI, or Kibana Source</p>
-      <textarea id="textBox" rows="20" cols="40"></textarea>
-    </form>
-    <div>
-      <p>POST payload:</p>
-      <button class="button" type="button" id='decodeJbeautify'>Decode - Extract J - Beautify</button>
-      <button class="button" type="button" id='decode'>Decode OWEN payload</button>
-      <button class="button" type="button" id='extractJ'>Extract J</button>
-    </div>
-    <div>
-      <p>Kibana Source:</p>
-      <button class="button" type="button" id='extractPayload'>Extract Payload</button>
-      <button class="button" type="button" id='extractRequestBody'>Extract RequestBody</button>
-    </div>
-    <div>
-      <p>Beacon URI:</p>
-      <button class="button" type="button" id='tablefy'>Tablefy GET Beacon URL</button>
-    </div>
-    <div>
-      <p>JSON:</p>
-      <button class="button" type="button" id='beautify'>Beautify JSON</button>
-      <button class="button" type="button" id='viewJsonTree'>View JSON Tree</button>
+    <p>Enter POST payload, Beacon URI, or Kibana Source</p>
+    <div id="decodeForm">
+      <textarea id="textBox" rows="20" cols="50"></textarea>
+
+      <div id="dashboard">
+        <div>
+          <p>POST payload:</p>
+            <button class="button" type="button" id='decodeJbeautify'>Decode - Extract J - Beautify</button>
+            <button class="button" type="button" id='decode'>Decode OWEN payload</button>
+            <button class="button" type="button" id='extractJ'>Extract J</button>
+        </div>
+        <div>
+          <p>Kibana Source:</p>
+            <button class="button" type="button" id='extractPayload'>Extract Payload</button>
+            <button class="button" type="button" id='extractRequestBody'>Extract RequestBody</button>
+        </div>
+        <div>
+          <p>Beacon URI:</p>
+            <button class="button" type="button" id='tablefy'>Tablefy GET Beacon URL</button>
+        </div>
+        <div>
+          <p>JSON:</p>
+            <button class="button" type="button" id='beautify'>Beautify JSON</button>
+            <button class="button" type="button" id='viewJsonTree'>View JSON Tree</button>
+        </div>
+      </div>
+
     </div>
 
     <div id="jjson" class="jjson"></div>
