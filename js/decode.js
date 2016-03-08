@@ -2,6 +2,7 @@
 
 // Variables
 var textBox = $('#textBox');
+var kibanaLink = $('#kibanaLink');
 
 // Beautify JSON in TextBox
 function beautify() {
@@ -22,6 +23,20 @@ function modifyTextbox(fun) {
     }
     beautify();
     viewJsonTree();
+    showKibanaLink();
+}
+
+function showKibanaLink() {
+    if (textBox.val().includes('"i":')){
+        var KibanaUUID = ($.parseJSON(textBox.val()).j.e.i);
+        console.log(KibanaUUID);
+        var string = "<a target=\"_blank\" href=\"http://analytics-test.wsmeco.com/_plugin/kibana/#/discover?_g=(refreshInterval:(display:Off,section:0,value:0),time:(from:now%2Fd,mode:quick,to:now%2Fd))&_a=(columns:!(_source),index:analytics,interval:auto,query:(query_string:(analyze_wildcard:!t,query:'"
+                    + KibanaUUID
+                    + "')),sort:!(owen.event.eventTimestamp,desc))\">"
+                    + KibanaUUID
+                    + "</a>"
+        $(kibanaLink).append(string);
+    } else { kibanaLink.text(""); }   
 }
 
 // Functions Used By modifyTextbox
