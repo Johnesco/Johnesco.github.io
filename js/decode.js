@@ -12,27 +12,25 @@ function beautify() {
 
 // Display JSON Tree
 function viewJsonTree() {
-	var jjson = textBox.val() || '{"none":"none"}';
-	$('#jjson').jJsonViewer(jjson);
+  var jjson = textBox.val() || '{"none":"none"}';
+  $('#jjson').jJsonViewer(jjson);
 }
 
 function showKibanaLink() {
     if (textBox.val().includes('"i": ')){
         var KibanaUUID = ($.parseJSON(textBox.val()).j.e.i);
         var env = $('input[name="env"]:checked').val(); // radio button value
-        
-
         var string = "Kibana Link: "
                     + "<a target=\"_blank\" href=\""
                     + "http://analytics-" + env + ".wsmeco.com/_plugin/kibana/#/discover?_g="
                     + "(refreshInterval:(display:Off,section:0,value:0),time:(from:now%2Fd,mode:quick,to:now%2Fd))&_a=(columns:!(_source),index:analytics,interval:auto,query:(query_string:(analyze_wildcard:!t,query:'"
                     + KibanaUUID
                     + "')),sort:!(owen.event.eventTimestamp,desc))\">"
-                    + KibanaUUID 
-                    + "</a> " + env
+                    + KibanaUUID
+                    + "</a> " + env;
 
         $(kibanaLink).html(string);
-    } else { kibanaLink.text("Kibana Link: (none)"); }   
+    } else { kibanaLink.text("Kibana Link: (none)"); }
 }
 
 // This function is run from each button press, uses the functions below to process text.
@@ -71,25 +69,26 @@ var extractJFun = function (text) {
 
 // Extract query.payload portion of JSON
 var extractPayloadFun = function (text) {
-	return ($.parseJSON(text).query.payload);
+  return ($.parseJSON(text).query.payload);
 };
 
 // Extract metadata.requestBody portion of JSON then decode it
 var extractRequestBodyFun = function (text) {
-	var coded = ($.parseJSON(text).metadata.requestBody);
+  var coded = ($.parseJSON(text).metadata.requestBody);
     return decodeFun(coded);
 };
 
 // Parses the name-value pairs in a URL and formats them into JIRA markdown
 var tablefyFun = function (text) {
     if (text.includes('http://b.rmntest.com/')) {
-        var uri = URI.parseQuery(text), string = "";
+        var uri = URI.parseQuery(text);
+        var string = "";
         for (var key in uri) {
                    if ( uri.hasOwnProperty( key )) {
-			     string+=( "|*" + key + ":* | " + uri[key] + " | \n" );
-		      }
-	       }
-	       return (string.replace( 'http://b.rmntest.com/', '' )); 
+           string+=( "|*" + key + ":* | " + uri[key] + " | \n" );
+          }
+         }
+         return (string.replace( 'http://b.rmntest.com/', '' ));
         }
     else return text;
 } ;
@@ -105,17 +104,3 @@ $('#extractRequestBody').on('click', function() {modifyTextbox(extractRequestBod
 $('#tablefy').on('click', function() {modifyTextbox(tablefyFun);});
 $('#beautifyTree').on('click', function() {modifyTextbox();});
 $('#textBox').on('mouseout', function() {modifyTextbox();});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
