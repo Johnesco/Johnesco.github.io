@@ -19,11 +19,18 @@ function viewJsonTree() {
 function showKibanaLink() {
     if (textBox.val().includes('"i": ')){
         var KibanaUUID = ($.parseJSON(textBox.val()).j.e.i);
-        var string = "Kibana Link: <a target=\"_blank\" href=\"http://analytics-test.wsmeco.com/_plugin/kibana/#/discover?_g=(refreshInterval:(display:Off,section:0,value:0),time:(from:now%2Fd,mode:quick,to:now%2Fd))&_a=(columns:!(_source),index:analytics,interval:auto,query:(query_string:(analyze_wildcard:!t,query:'"
+        var env = $('input[name="env"]:checked').val(); // radio button value
+        
+
+        var string = "Kibana Link: "
+                    + "<a target=\"_blank\" href=\""
+                    + "http://analytics-" + env + ".wsmeco.com/_plugin/kibana/#/discover?_g="
+                    + "(refreshInterval:(display:Off,section:0,value:0),time:(from:now%2Fd,mode:quick,to:now%2Fd))&_a=(columns:!(_source),index:analytics,interval:auto,query:(query_string:(analyze_wildcard:!t,query:'"
                     + KibanaUUID
                     + "')),sort:!(owen.event.eventTimestamp,desc))\">"
-                    + KibanaUUID
-                    + "</a>"
+                    + KibanaUUID 
+                    + "</a> " + env
+
         $(kibanaLink).html(string);
     } else { kibanaLink.text("Kibana Link: (none)"); }   
 }
@@ -36,7 +43,6 @@ function modifyTextbox(fun) {
     beautify();
     viewJsonTree();
     showKibanaLink();
-    
 }
 
 // Functions Used By modifyTextbox
@@ -53,10 +59,9 @@ var extractAllFun = function (text) {
     var jString = $.parseJSON(text).j; // string from j: (unescaped)
     JSON_object.j = $.parseJSON(jString); // covert then insert j
     return JSON.stringify(JSON_object); // return string
-
 };
 
-// Extract j: and show alone
+// Extract j: and show alone (Deprecated, will be removed)
 var extractJFun = function (text) {
     var JSON_object = $.parseJSON(text); // object
     var jString = $.parseJSON(text).j; // string from j: (unescaped)
@@ -93,7 +98,7 @@ var tablefyFun = function (text) {
 // jQuery Event Listener
 // http://api.jquery.com/on/
 $('#extractAll').on('click', function() {modifyTextbox(extractAllFun);});
-$('#extractJ').on('click', function() {modifyTextbox(extractJFun);});
+// Deprecated: $('#extractJ').on('click', function() {modifyTextbox(extractJFun);});
 $('#decode').on('click', function() {modifyTextbox(decodeFun);});
 $('#extractPayload').on('click', function() {modifyTextbox(extractPayloadFun);});
 $('#extractRequestBody').on('click', function() {modifyTextbox(extractRequestBodyFun);});
