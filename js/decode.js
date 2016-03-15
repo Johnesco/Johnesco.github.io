@@ -16,17 +16,6 @@ function viewJsonTree() {
 	$('#jjson').jJsonViewer(jjson);
 }
 
-// Button press event
-function modifyTextbox(fun) {
-    if (fun) {
-        textBox.val(fun(textBox.val())); // modifies text box via function
-    }
-    beautify();
-    viewJsonTree();
-    showKibanaLink();
-    
-}
-
 function showKibanaLink() {
     if (textBox.val().includes('"i": ')){
         var KibanaUUID = ($.parseJSON(textBox.val()).j.e.i);
@@ -39,14 +28,23 @@ function showKibanaLink() {
     } else { kibanaLink.text("Kibana Link: (none)"); }   
 }
 
+// This function is run from each button press, uses the functions below to process text.
+function modifyTextbox(fun) {
+    if (fun) {
+        textBox.val(fun(textBox.val())); // modifies text box via function
+    }
+    beautify();
+    viewJsonTree();
+    showKibanaLink();
+    
+}
+
 // Functions Used By modifyTextbox
 
 // Decode URL encoded text
 var decodeFun = function (text) {
     return decodeURIComponent(text);
 };
-
-
 
 // Extract all and piece together
 var extractAllFun = function (text) {
@@ -101,7 +99,6 @@ $('#extractPayload').on('click', function() {modifyTextbox(extractPayloadFun);})
 $('#extractRequestBody').on('click', function() {modifyTextbox(extractRequestBodyFun);});
 $('#tablefy').on('click', function() {modifyTextbox(tablefyFun);});
 $('#beautifyTree').on('click', function() {modifyTextbox();});
-
 $('#textBox').on('mouseout', function() {modifyTextbox();});
 
 
