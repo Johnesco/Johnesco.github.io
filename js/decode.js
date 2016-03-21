@@ -91,7 +91,7 @@ var tablefyFun = function (text) {
          return (string.replace( 'http://b.rmntest.com/', '' ));
         }
     else return text;
-} ;
+};
 
 
 // jQuery Event Listener
