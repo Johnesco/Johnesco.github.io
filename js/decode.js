@@ -47,6 +47,7 @@ function modifyTextbox(fun) {
 
 // Decode URL encoded text
 var decodeFun = function (text) {
+    text = text.replace(/\+/g, ' ');
     return decodeURIComponent(text);
 };
 
