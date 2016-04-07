@@ -40,6 +40,10 @@
             <button class="button" type="button" id='extractRequestBody'>Extract RequestBody</button>
         </div>
         <div>
+          <p>GET request (Charles):</p>
+          <button class="button" type="button" id='magicFormat'>Magic Format</button>
+        </div>
+        <div>
           <p>Beacon URL:</p>
             <button class="button" type="button" id='tablefy'>Tablefy GET Beacon URL</button>
         </div>
@@ -52,12 +56,36 @@
 
     </div>
 
+    <table id="urlParamsTable" jput="urlParams" jput-jsondata=''>
+      <tr>
+        <td><b>Event: </b></td>
+        <td>{{json.k}}</td>
+      </tr>
+      <tr>
+        <td><b>SDK Version: </b></td>
+        <td>{{json.s}}</td>
+      </tr>
+      <tr>
+        <td><b>Schema Version: </b></td>
+        <td>{{json.v}}</td>
+      </tr>
+      <tr>
+        <td><b>What is this?: </b></td>
+        <td>{{json.u}}</td>
+      </tr>
+      <tr>
+        <td><b>URL: </b></td>
+        <td>{{json.url}}</td>
+      </tr>
+    </table>
     <div id="jjson" class="jjson"></div>
 
     <script type='text/javascript' src="js/URI.min.js"></script>
     <script type='text/javascript' src="js/jquery-2.2.0.min.js"></script>
+    <script type='text/javascript' src="js/jquery.ba-bbq.min.js"></script>
     <script type='text/javascript' src="js/decode.js"></script>
     <script type='text/javascript' src='js/jjsonviewer.js'></script>
+    <script type='text/javascript' src="js/jput-2.js"></script>
 
   </body>
 </html>

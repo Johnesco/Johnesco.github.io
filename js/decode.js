@@ -94,6 +94,28 @@ var tablefyFun = function (text) {
     else return text;
 };
 
+var stripKeysAndInsertIntoTable = function (text) {
+    var url = text.match(/http(s){0,1}:\/\/a\.(rmn|retailmenot)(test|stage){0,1}\.com\/__wsm.gif\?/)[0];
+    text = text.replace(url, '');
+
+    var urlFields = $.deparam(text);
+    urlFields.url = url;
+
+    text = urlFields.j;
+    delete urlFields.j;
+    viewJsonTree();
+
+    jPut.urlParams.data = [urlFields];
+
+    return text;
+}
+
+var magicFormat = function (text) {
+    text = decodeFun(text);
+    text = stripKeysAndInsertIntoTable(text);
+
+    return text;
+}
 
 // jQuery Event Listener
 // http://api.jquery.com/on/
@@ -105,3 +127,4 @@ $('#extractRequestBody').on('click', function() {modifyTextbox(extractRequestBod
 $('#tablefy').on('click', function() {modifyTextbox(tablefyFun);});
 $('#beautifyTree').on('click', function() {modifyTextbox();});
 $('#textBox').on('mouseout', function() {modifyTextbox();});
+$('#magicFormat').on('click', function() {modifyTextbox(magicFormat);});
