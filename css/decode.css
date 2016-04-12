@@ -4,40 +4,66 @@ body {
 	background-color: #eeeff2;
 }
 
-.header {font-family: sans-serif;}
+.header {
+	font-family: sans-serif;
+	}
 
 #decodeForm{
 	width: 550px;
 	margin: 0;
-	padding: 0 0 0 0px;
+	padding: 0;
 	font-family: sans-serif;
-	float: left;
+	float: left;}
 }
 
-textarea {
-	font-size: 14px;
+#dashboard textarea {
 	font-family: monospace;
-	width: 545px;
 	margin: 0;
 	padding: 0;
+	width: 100%;
 }
 
-div#dashboard p {
-	display: inline;
-	margin: 5px;
-	text-align: center;
-	vertical-align: middle;
-	padding: 5px;
-	background-color: #FFFFFF;
+/* #dashboard is buttons */
+
+ul#dashboard {
+		width: 150px;
+		float: left;
+		list-style: none;
+		padding: 0;
+		margin-top: 0;
+		margin-right: 15px;
+		cursor: crosshair;
+}
+
+#dashboard .label {
+	font-weight: bold;
+	font-size:17px;
+	margin: 5px 0 0 0;
+	padding: 3px;
+	background-color: #11ddcc;
 	color: blue;
+	border-radius: 0;
 }
 
-.button {
-	height: 30px;
-	margin: 3px;
-	padding: 10px 3px;
-	vertical-align: middle;
+#dashboard li{
+	padding: 3px;
+	margin: 1px 0 0 3px;
+	border-radius: 5px;
+	box-shadow: 1px 2px 4px grey;
 }
+
+
+
+#dashboard .button {
+	font-size:15px;
+	background: white;
+}
+
+#dashboard li.button:hover {
+	background-color: lime;
+	}
+
+
 
 #jjson{
 	font-size: 13px;

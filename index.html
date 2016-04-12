@@ -15,7 +15,8 @@
     <div class="header">
       <h1>Decoder</h1>
       <p>Enter POST payload, Beacon URI, or Kibana Source</p>
-      <p style="display: inline">ENV: <form id="env" style="display: inline">
+      <p style="display: inline">ENV:
+        <form id="env" style="display: inline">
                 <input type="radio" name="env" value="test" checked> TEST
                 <input type="radio" name="env" value="stage"> Stage
                 <input type="radio" name="env" value="prod"> Prod
@@ -24,37 +25,31 @@
       <p id="kibanaLink">Kibana Link: </p>
     </div>
     <div id="decodeForm">
-      <textarea id="textBox" rows="20" cols="50" onclick="this.focus();this.select()"></textarea>
+      <ul id="dashboard">
+          <li class="label">POST payload:</li>
+          <li class="button" id='extractAll'>Decode - Extract All</li>
+          <li class="button" id='decode'>URL Decode only</li>
+          <!--<li class="button" id='decodeJbeautify'>Decode - Extract J</li>
+          <li class="button" id='extractJ'>Extract J</li>-->
 
-      <div id="dashboard">
-        <div>
-          <p>POST payload:</p>
-          <button class="button" type="button" id='extractAll'>Decode - Extract All</button>
-          <button class="button" type="button" id='decode'>URL Decode only</button>
-          <!--<button class="button" type="button" id='decodeJbeautify'>Decode - Extract J</button>
-          <button class="button" type="button" id='extractJ'>Extract J</button>-->
-        </div>
-        <div>
-          <p>Kibana Source:</p>
-            <button class="button" type="button" id='extractPayload'>Extract Payload</button>
-            <button class="button" type="button" id='extractRequestBody'>Extract RequestBody</button>
-        </div>
-        <div>
-          <p>GET request (Charles):</p>
-          <button class="button" type="button" id='magicFormat'>Magic Format</button>
-        </div>
-        <div>
-          <p>Beacon URL:</p>
-            <button class="button" type="button" id='tablefy'>Tablefy GET Beacon URL</button>
-        </div>
-        <div>
-          <p>JSON:</p>
-            <button class="button" type="button" id='beautifyTree'>Beautify JSON + Tree</button>
-        </div>
-        
-      </div>
+          <li class="label">Kibana Source:</li>
+            <li class="button" id='extractPayload'>Extract Payload</li>
+            <li class="button" id='extractRequestBody'>Extract RequestBody</li>
 
-    </div>
+          <li class="label">GET request (Charles):</li>
+          <li class="button" id='magicFormat'>Magic Format</li>
+
+          <li class="label">Beacon URL:</li>
+            <li class="button" id='tablefy'>Tablefy GET Beacon URL</li>
+
+          <li class="label">JSON:</li>
+            <li class="button" id='beautifyTree'>Beautify JSON + Tree</li>
+
+    </ul>
+      <textarea id="textBox" rows="20" cols="45" onclick="this.focus();this.select()"></textarea>
+
+      
+  </div>
 
     <table id="urlParamsTable" jput="urlParams" jput-jsondata=''>
       <tr>
