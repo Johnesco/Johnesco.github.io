@@ -6,8 +6,15 @@ var kibanaLink = $('#kibanaLink');
 
 // Beautify JSON in TextBox
 function beautify() {
-    var json_object = JSON.parse(textBox.val()) || '{"none":"none"}';
-    textBox.val(JSON.stringify(json_object, 1, '  '));
+    try{
+          var json_object = JSON.parse(textBox.val());
+        textBox.val(JSON.stringify(json_object, 1, '  '));  
+    }
+    catch(err)
+    {
+
+    }
+    
 }
 
 // Display JSON Tree

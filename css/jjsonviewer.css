@@ -2,11 +2,13 @@
     font-size: 13px;
     line-height: 1.2;
     font-family: monospace;
-    padding-left: 5;
+    padding: 20px;
     margin-left: 20px;
+    margin-top: 0;
     overflow: auto;
     width: 600px;
-
+    background-color: #fefefe;
+    border-radius: 5px;
 }
 .jjson-container,
 .jjson-container ul{

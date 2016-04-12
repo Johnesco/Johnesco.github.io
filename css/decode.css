@@ -32,10 +32,16 @@ div#dashboard p {
 	color: blue;
 }
 
-
 .button {
 	height: 30px;
 	margin: 3px;
 	padding: 10px 3px;
 	vertical-align: middle;
+}
+
+#jjson{
+	font-size: 13px;
+    line-height: 1.2;
+    font-family: monospace;
+    background-color: #gray;
 }
