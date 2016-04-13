@@ -9,18 +9,19 @@ body {
 	}
 
 #decodeForm{
-	width: 550px;
+	width: 600px;
 	margin: 0;
-	padding: 0;
+	padding: 0 10px 0 0;
 	font-family: sans-serif;
-	float: left;}
+	float:left;
 }
 
-#dashboard textarea {
+textarea {
 	font-family: monospace;
 	margin: 0;
 	padding: 0;
-	width: 100%;
+	width: 420px;
+	height: 500px;
 }
 
 /* #dashboard is buttons */
