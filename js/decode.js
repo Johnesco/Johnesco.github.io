@@ -95,7 +95,7 @@ var tablefyFun = function (text) {
 };
 
 var stripKeysAndInsertIntoTable = function (text) {
-    var url = text.match(/http(s){0,1}:\/\/a\.(rmn|retailmenot)(test|stage){0,1}\.com\/__wsm.gif\?/)[0];
+    var url = text.match(/http(s){0,1}:\/\/.*\/__wsm.gif\?/)[0];
     text = text.replace(url, '');
 
     var urlFields = $.deparam(text);
