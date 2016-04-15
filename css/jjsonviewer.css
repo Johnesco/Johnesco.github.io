@@ -7,6 +7,7 @@
     overflow: auto;
     background-color: #fefefe;
     border-radius: 15px;
+    min-width: 200px;
 }
 .jjson-container,
 .jjson-container ul{

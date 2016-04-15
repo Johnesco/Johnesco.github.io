@@ -119,12 +119,17 @@ var magicFormat = function (text) {
 
 // jQuery Event Listener
 // http://api.jquery.com/on/
-$('#extractAll').on('click', function() {modifyTextbox(extractAllFun);});
+
+$('#extractAll').on('click', modifyTextbox.bind(null, extractAllFun));
+
+// $('#extractAll').on('click', function () {
+//     modifyTextbox(extractAllFun);
+// });
 // Deprecated: $('#extractJ').on('click', function() {modifyTextbox(extractJFun);});
-$('#decode').on('click', function() {modifyTextbox(decodeFun);});
-$('#extractPayload').on('click', function() {modifyTextbox(extractPayloadFun);});
-$('#extractRequestBody').on('click', function() {modifyTextbox(extractRequestBodyFun);});
-$('#tablefy').on('click', function() {modifyTextbox(tablefyFun);});
-$('#beautifyTree').on('click', function() {modifyTextbox();});
-$('#textBox').on('mouseout', function() {modifyTextbox();});
-$('#magicFormat').on('click', function() {modifyTextbox(magicFormat);});
+$('#decode').on('click', modifyTextbox.bind(null, decodeFun));
+$('#extractPayload').on('click', modifyTextbox.bind(null, extractPayloadFun));
+$('#extractRequestBody').on('click', modifyTextbox.bind(null, extractRequestBodyFun));
+$('#tablefy').on('click', modifyTextbox.bind(null, tablefyFun));
+$('#beautifyTree').on('click', modifyTextbox.bind(null, null));
+$('#textBox').on('mouseout', modifyTextbox.bind(null, null));
+$('#magicFormat').on('click', modifyTextbox.bind(null, magicFormat));
