@@ -81,7 +81,7 @@ var extractRequestBodyFun = function (text) {
 
 // Parses the name-value pairs in a URL and formats them into JIRA markdown
 var tablefyFun = function (text) {
-    if (text.includes('http://b.rmntest.com/')) {
+    if (text.includes('/b.rmntest.com/')) {
         var uri = URI.parseQuery(text);
         var string = "";
         for (var key in uri) {
