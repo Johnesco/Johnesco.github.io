@@ -90,7 +90,7 @@ function update(){
 			env = $('input[name="env"]:checked').val();
 			var link = env + pages[pageType][i];
 			$links.append(
-			"<a href=\"" + link + "?refresh=1" +
+			"<a target=\"_blank\" href=\"" + link + "?refresh=1" +
 			"&slice=" + slice + "\">" + link +
 			"</a><br>");
 		}
