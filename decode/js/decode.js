@@ -108,14 +108,14 @@ var stripKeysAndInsertIntoTable = function (text) {
     jPut.urlParams.data = [urlFields];
 
     return text;
-}
+};
 
 var magicFormat = function (text) {
     text = decodeFun(text);
     text = stripKeysAndInsertIntoTable(text);
 
     return text;
-}
+};
 
 // jQuery Event Listener
 // http://api.jquery.com/on/
