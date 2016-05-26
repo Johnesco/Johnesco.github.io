@@ -14,6 +14,7 @@ var unsubscribe = "&unsubscribe=U2PEHPOV6BB5NHU4SLPTCYNS7Q&ei=U2PEHPOV6BB5NHU4SL
 var store = ["target.com","macys.com","poopingpuppies.com","sears.com","kmart.com","bestbuy.com","kohls.com","lowes.com","victoriassecret.com","bathandbodyworks.com","walgreens.com","sizzler.com","travelocity.com","amazon.com","biglots.com","walmart.com"]
 var ccpage = ["citibank.com"];
 var designStandard = [
+	"clearance",
 	"s/" + search,
 	"submit",
 	"dealfinder",
@@ -23,16 +24,22 @@ var designStandard = [
 	"quickSignUp",
 	"profile",
 	"weeklyads"];
-	
+
 var community = ["","add-favorite-stores","badges","confirm_oauth","forgotpassword","inactive","login","member/"+username,"signup","submitted-coupons","unsubscribe.php","welcome"];
-var category = ["", "clothing","travel", "restaurants", "entertainment","beauty"];
+var category = [
+	"",
+	"clothing",
+	"travel",
+	"restaurants",
+	"entertainment",
+	"beauty",
+	"adult",
+	"pizza/" + pizzaroute,
+	"pizza/" + pizzalocation];
+
 var misc = [
 	"alerts",
-	"clearance",
 	"contests",
-	"coupons/adult",
-	"coupons/pizza/" + pizzaroute,
-	"coupons/pizza/" + pizzalocation,
 	"exclusives",
 	"favorites",
 	"freeshipping",
