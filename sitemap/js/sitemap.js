@@ -13,37 +13,42 @@ var unsubscribe = "&unsubscribe=U2PEHPOV6BB5NHU4SLPTCYNS7Q&ei=U2PEHPOV6BB5NHU4SL
 
 var store = ["target.com","macys.com","poopingpuppies.com","sears.com","kmart.com","bestbuy.com","kohls.com","lowes.com","victoriassecret.com","bathandbodyworks.com","walgreens.com","sizzler.com","travelocity.com","amazon.com","biglots.com","walmart.com"]
 var ccpage = ["citibank.com"];
+var designStandard = [
+	"s/" + search,
+	"submit",
+	"dealfinder",
+	"ideas/" + ideas,
+	"showcoupon/" + cid,
+	"/blah404",
+	"quickSignUp",
+	"profile",
+	"weeklyads"];
+	
 var community = ["","add-favorite-stores","badges","confirm_oauth","forgotpassword","inactive","login","member/"+username,"signup","submitted-coupons","unsubscribe.php","welcome"];
 var category = ["", "clothing","travel", "restaurants", "entertainment","beauty"];
 var misc = [
-	"submit",
 	"alerts",
 	"clearance",
 	"contests",
 	"coupons/adult",
 	"coupons/pizza/" + pizzaroute,
 	"coupons/pizza/" + pizzalocation,
-	"dealfinder",
 	"exclusives",
 	"favorites",
 	"freeshipping",
-	"ideas/" + ideas,
 	"join",
 	"justforyou",
 	"login",
 	"mobile",
 	"printable",
 	"profile",
-	"s/" + search,
 	"saved",
 	"settings",
-	"showcoupon/" + cid,
 	"sitemap",
 	"static/newsletter",
 	"static/privacy",
 	"static/terms",
-	"submit",
-	"subscribe"]
+	"subscribe"];
 
 var pages = {};
 
@@ -60,6 +65,7 @@ function addSection(list,section,prefix){
 
 addSection(store,"Store Pages","view/");
 addSection(ccpage,"CC Pages","view/");
+addSection(designStandard,"Design Standard Pages","")
 addSection(category,"Category Pages","coupons/");
 addSection(community,"Community Pages","community/");
 addSection(misc,"Misc Pages","");
@@ -72,9 +78,9 @@ pages["Category Pages"].push('categories/');
 
 
 function update(){
-	slice = $('#slice').val();
-	$links.empty();
-	// env = $('input[name="env"]:checked').val();
+	$links.empty(); // Clear Existing Links
+	slice = $('#slice').val() || "control"; // Assign slice via input (default to control)
+	env = $('input[name="env"]:checked').val(); // Assign evn via radio button
 	
 
 	// Taverse Pages object, putting url arrays into pageType
@@ -87,7 +93,6 @@ function update(){
 
 		// Traverse pageType Array, turning urls into links + slice
 		for (var i = 0; i < pages[pageType].length; i++){
-			env = $('input[name="env"]:checked').val();
 			var link = env + pages[pageType][i];
 			$links.append(
 			"<a target=\"_blank\" href=\"" + link + "?refresh=1" +

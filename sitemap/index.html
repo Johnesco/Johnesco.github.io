@@ -5,10 +5,10 @@
 </head>
 <body>
 	<form id="env" style="display: inline">
-	Slice: <textarea id="slice" rows="" cols="" onclick="this.focus();this.select()">control</textarea><br>
-                <input type="radio" name="env" value="http://www.rmntest.com/" checked> TEST
-                <input type="radio" name="env" value="http://www.rmnstage.com/"> Stage
-                <input type="radio" name="env" value="http://www.retailmenot.com/"> Prod
+	Slice: <input type="text" id="slice" rows="" cols="" onclick="this.focus();this.select()"> (defaults to control) </input><br>Env:<br> 
+                <input type="radio" name="env" value="http://www.rmntest.com/" checked> TEST<br>
+                <input type="radio" name="env" value="http://www.rmnstage.com/"> Stage<br>
+                <input type="radio" name="env" value="http://www.retailmenot.com/"> Prod<br>
                 <button type="button" id="update">Update Links</button>
               </form> 
 	<div id="links"></div><br><br>

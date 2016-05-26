@@ -1,1 +1,17 @@
-* { }
+* { font-family: Arial, sans-serif; }
+
+h1 {
+	font-size:18px;
+	padding: 5px;
+	color:white;
+	background-color: grey;
+
+}
+
+div#links {
+	width: 500px;
+}
+
+input{
+	margin-left:20px;
+}
