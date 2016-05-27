@@ -1,4 +1,6 @@
 
+
+
 var $links = $('#links'); 
 
 var slice = "control";
@@ -113,6 +115,16 @@ update();
 
 // buttons
 $('#update').on('click', update);
+
+// Prevent enter
+$('#env').on('keyup keypress', function(e) {
+  var keyCode = e.keyCode || e.which;
+  if (keyCode === 13) { 
+    e.preventDefault();
+    update();
+    return false;
+  }
+});
 
 
 	
