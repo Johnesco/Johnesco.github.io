@@ -2,7 +2,6 @@
 
 
 var $links = $('#links'); 
-
 var slice = "control";
 var username = "test";
 var pizzaroute = "a/78745";
@@ -11,23 +10,54 @@ var ideas = "hot-products";
 var cid = "7450931";
 var search = "bacon";
 var unsubscribe = "&unsubscribe=U2PEHPOV6BB5NHU4SLPTCYNS7Q&ei=U2PEHPOV6BB5NHU4SLPTCYNS7Q&mailingid=18561&ESP=2&utm_medium=email&utm_campaign=2015_10_28&ch=newsl&utm_source=newsletter&utm_term=maleproductdeals&cus.ptp=flagship"
+var store = [
+	"target.com",
+	"macys.com",
+	"poopingpuppies.com",
+	"sears.com",
+	"kmart.com",
+	"bestbuy.com",
+	"kohls.com",
+	"lowes.com",
+	"victoriassecret.com",
+	"bathandbodyworks.com",
+	"walgreens.com",
+	"sizzler.com",
+	"travelocity.com",
+	"amazon.com",
+	"biglots.com",
+	"walmart.com"]
 
-
-var store = ["target.com","macys.com","poopingpuppies.com","sears.com","kmart.com","bestbuy.com","kohls.com","lowes.com","victoriassecret.com","bathandbodyworks.com","walgreens.com","sizzler.com","travelocity.com","amazon.com","biglots.com","walmart.com"]
 var ccpage = ["citibank.com"];
+
 var designStandard = [
 	"clearance",
 	"s/" + search,
 	"submit",
 	"dealfinder",
+	"shoppinglist",
 	"ideas/" + ideas,
 	"showcoupon/" + cid,
 	"/blah404",
 	"quickSignUp",
 	"profile",
-	"weeklyads"];
+	"weeklyads",
+	"deals/blackfriday"];
 
-var community = ["","add-favorite-stores","badges","confirm_oauth","forgotpassword","inactive","login","member/"+username,"signup","submitted-coupons","unsubscribe.php","welcome"];
+var community = [
+	"",
+	"add-favorite-stores",
+	"badges",
+	"confirm_oauth",
+	"forgotpassword",
+	"inactive",
+	"login",
+	"member/"+username,
+	"signup",
+	"submitted-coupons",
+	"unsubscribe.php",
+	"welcome"];
+
 var category = [
 	"",
 	"clothing",
@@ -40,6 +70,7 @@ var category = [
 	"pizza/" + pizzalocation];
 
 var misc = [
+	"student-discounts/university-of-texas-austin",
 	"alerts",
 	"contests",
 	"exclusives",
@@ -72,6 +103,7 @@ function addSection(list,section,prefix){
 	// }
 }
 
+// Go though 
 addSection(store,"Store Pages","view/");
 addSection(ccpage,"CC Pages","view/");
 addSection(designStandard,"Design Standard Pages","")
@@ -116,7 +148,7 @@ update();
 // buttons
 $('#update').on('click', update);
 
-// Prevent enter
+// Prevent enter from submitting form, run update() instead
 $('#env').on('keyup keypress', function(e) {
   var keyCode = e.keyCode || e.which;
   if (keyCode === 13) { 
