@@ -7,9 +7,12 @@
 <body>
 	<form id="env" style="display: inline">
 	Slice: <input type="text" id="slice" rows="" cols="" onclick="this.focus();this.select()"> (defaults to control) </input><br>Env:<br> 
-                <input type="radio" name="env" value="http://www.rmntest.com/" checked> TEST<br>
-                <input type="radio" name="env" value="http://www.rmnstage.com/"> Stage<br>
-                <input type="radio" name="env" value="http://www.retailmenot.com/"> Prod<br>
+                <input type="radio" name="env" value="www.rmntest.com/" checked> TEST<br>
+                <input type="radio" name="env" value="www.rmnstage.com/"> Stage<br>
+                <input type="radio" name="env" value="www.retailmenot.com/"> Prod<br>
+                <hr>
+                <input type="radio" name="http" value="https://" checked> HTTPs<br>
+                <input type="radio" name="http" value="http://"> HTTP<br>
                 <button type="button" id="update">Update Links</button>
               </form> 
 	<div id="links"></div><br><br>

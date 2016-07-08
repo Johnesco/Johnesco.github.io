@@ -121,7 +121,8 @@ pages["Category Pages"].push('categories/');
 function update(){
 	$links.empty(); // Clear Existing Links
 	slice = $('#slice').val() || "control"; // Assign slice via input (default to control)
-	env = $('input[name="env"]:checked').val(); // Assign evn via radio button
+	var env = $('input[name="env"]:checked').val(); // Assign evn via radio button
+	var security = $('input[name="http"]:checked').val(); // Assign security via radio button
 	
 
 	// Taverse Pages object, putting url arrays into pageType
@@ -134,7 +135,7 @@ function update(){
 
 		// Traverse pageType Array, turning urls into links + slice
 		for (var i = 0; i < pages[pageType].length; i++){
-			var link = env + pages[pageType][i];
+			var link = security + env + pages[pageType][i];
 			$links.append(
 			"<a target=\"_blank\" href=\"" + link + "?refresh=1" +
 			"&slice=" + slice + "\">" + link +
