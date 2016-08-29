@@ -30,12 +30,15 @@ var store = [
 
 var ccpage = ["citibank.com"];
 
-var designStandard = [
-	"clearance",
+var searchPages = [
 	"s/" + search,
+	"printable",
+	"freeshipping",
+	"clearance",
+	"exclusives"]
+
+var designStandard = [
 	"submit",
-	"dealfinder",
-	"shoppinglist",
 	"ideas/" + ideas,
 	"showcoupon/" + cid,
 	"/blah404",
@@ -73,14 +76,11 @@ var misc = [
 	"student-discounts/university-of-texas-austin",
 	"alerts",
 	"contests",
-	"exclusives",
 	"favorites",
-	"freeshipping",
 	"join",
 	"justforyou",
 	"login",
 	"mobile",
-	"printable",
 	"profile",
 	"saved",
 	"settings",
@@ -89,6 +89,11 @@ var misc = [
 	"static/privacy",
 	"static/terms",
 	"subscribe"];
+
+var deprecated = [
+	"dealfinder",
+	"shoppinglist",
+]
 
 var pages = {};
 
@@ -106,10 +111,12 @@ function addSection(list,section,prefix){
 // Go though 
 addSection(store,"Store Pages","view/");
 addSection(ccpage,"CC Pages","view/");
+addSection(searchPages, "Search Pages", "")
 addSection(designStandard,"Design Standard Pages","")
 addSection(category,"Category Pages","coupons/");
 addSection(community,"Community Pages","community/");
 addSection(misc,"Misc Pages","");
+addSection(deprecated,"Deprecated","");
 
 
 
@@ -129,7 +136,7 @@ function update(){
 	for (pageType in pages){
 		$links.append(
 		"<h1>" +
-		pageType + " (" +slice + ")" + 
+		pageType + " (slice: " +slice + ")" + 
 		"</h1>"
 		);
 
