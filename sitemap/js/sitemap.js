@@ -3,7 +3,7 @@
 
 var $links = $('#links'); 
 var slice = "control";
-var username = "test";
+var username = "letmeshowyou";
 var pizzaroute = "a/78745";
 var pizzalocation = "ma/papajohns.com/78745";
 var ideas = "hot-products";
@@ -28,6 +28,12 @@ var store = [
 	"biglots.com",
 	"walmart.com"]
 
+var testEnv = [
+	"discounttypes.com",
+	"everykindofcoupon.com",
+	"omnioffers.com"
+]
+
 var ccpage = ["citibank.com"];
 
 var searchPages = [
@@ -49,7 +55,6 @@ var designStandard = [
 
 var community = [
 	"",
-	"add-favorite-stores",
 	"badges",
 	"confirm_oauth",
 	"forgotpassword",
@@ -58,7 +63,8 @@ var community = [
 	"member/"+username,
 	"signup",
 	"submitted-coupons",
-	"unsubscribe.php",
+	"community/add-favorite-stores",
+	"unsubscribe",
 	"welcome"];
 
 var category = [
@@ -92,7 +98,7 @@ var misc = [
 
 var deprecated = [
 	"dealfinder",
-	"shoppinglist",
+	"shoppinglist"
 ]
 
 var pages = {};
@@ -110,6 +116,7 @@ function addSection(list,section,prefix){
 
 // Go though 
 addSection(store,"Store Pages","view/");
+addSection(testEnv, "TEST env ONLY","");
 addSection(ccpage,"CC Pages","view/");
 addSection(searchPages, "Search Pages", "")
 addSection(designStandard,"Design Standard Pages","")
