@@ -26,46 +26,14 @@ var store = [
 	"travelocity.com",
 	"amazon.com",
 	"biglots.com",
-	"walmart.com"]
+	"walmart.com",
+	"citibank.com"]
 
 var testEnv = [
 	"discounttypes.com",
 	"everykindofcoupon.com",
 	"omnioffers.com"
 ]
-
-var ccpage = ["citibank.com"];
-
-var searchPages = [
-	"s/" + search,
-	"printable",
-	"freeshipping",
-	"clearance",
-	"exclusives"]
-
-var designStandard = [
-	"submit",
-	"ideas/" + ideas,
-	"showcoupon/" + cid,
-	"/blah404",
-	"quickSignUp",
-	"profile",
-	"weeklyads",
-	"deals/blackfriday"];
-
-var community = [
-	"",
-	"badges",
-	"confirm_oauth",
-	"forgotpassword",
-	"inactive",
-	"login",
-	"member/"+username,
-	"signup",
-	"submitted-coupons",
-	"community/add-favorite-stores",
-	"unsubscribe",
-	"welcome"];
 
 var category = [
 	"",
@@ -78,10 +46,45 @@ var category = [
 	"pizza/" + pizzaroute,
 	"pizza/" + pizzalocation];
 
+var searchPages = [
+	"" + search,
+	"printable",
+	"freeshipping",
+	"clearance",
+	"exclusives",
+	"weekly+ads"]
+
+var ideaPages = [
+	"hot-products",
+	"halloween"
+];
+
+
+
+var community = [
+	"",
+	"badges",
+	"confirm_oauth",
+	"forgotpassword",
+	"inactive",
+	"login",
+	"member/"+username,
+	"signup",
+	"submitted-coupons",
+	"add-favorite-stores",
+	"unsubscribe",
+	"welcome"];
+
 var misc = [
+	"blog",
+	"quickSignUp",
+	"submit",
+	"showcoupon/" + cid,
+	"blah404",
 	"student-discounts/university-of-texas-austin",
 	"alerts",
 	"contests",
+	"deals/blackfriday",
 	"favorites",
 	"join",
 	"justforyou",
@@ -94,7 +97,9 @@ var misc = [
 	"static/newsletter",
 	"static/privacy",
 	"static/terms",
-	"subscribe"];
+	"subscribe",
+	"weeklyads",
+	"profile",];
 
 var deprecated = [
 	"dealfinder",
@@ -117,12 +122,11 @@ function addSection(list,section,prefix){
 // Go though 
 addSection(store,"Store Pages","view/");
 addSection(testEnv, "TEST env ONLY","");
-addSection(ccpage,"CC Pages","view/");
-addSection(searchPages, "Search Pages", "")
-addSection(designStandard,"Design Standard Pages","")
 addSection(category,"Category Pages","coupons/");
+addSection(searchPages, "Search Pages", "s/")
+addSection(ideaPages, "Idea Pages", "ideas/")
 addSection(community,"Community Pages","community/");
-addSection(misc,"Misc Pages","");
+addSection(misc,"Redirects and Misc Pages","");
 addSection(deprecated,"Deprecated","");
 
 
