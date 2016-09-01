@@ -9,8 +9,19 @@ var pizzalocation = "ma/papajohns.com/78745";
 var ideas = "hot-products";
 var cid = "7450931";
 var search = "bacon";
+var affinityGroup = "student";
 var unsubscribe = "&unsubscribe=U2PEHPOV6BB5NHU4SLPTCYNS7Q&ei=U2PEHPOV6BB5NHU4SLPTCYNS7Q&mailingid=18561&ESP=2&utm_medium=email&utm_campaign=2015_10_28&ch=newsl&utm_source=newsletter&utm_term=maleproductdeals&cus.ptp=flagship"
 var store = [
+	"target.com",
+	"macys.com",
+	"poopingpuppies.com",
+	"sears.com",
+	"bestbuy.com",
+	"kohls.com",
+	"lowes.com",
+	"victoriassecret.com"]
+
+var store_long = [
 	"target.com",
 	"macys.com",
 	"poopingpuppies.com",
@@ -28,6 +39,8 @@ var store = [
 	"biglots.com",
 	"walmart.com",
 	"citibank.com"]
+
+
 
 var testEnv = [
 	"discounttypes.com",
@@ -75,13 +88,16 @@ var community = [
 	"unsubscribe",
 	"welcome"];
 
+var affinity = [
+	"university-of-texas-austin"
+];
+
 var misc = [
 	"blog",
 	"quickSignUp",
 	"submit",
 	"showcoupon/" + cid,
 	"blah404",
-	"student-discounts/university-of-texas-austin",
 	"alerts",
 	"contests",
 	"deals/blackfriday",
@@ -94,7 +110,6 @@ var misc = [
 	"saved",
 	"settings",
 	"sitemap",
-	"static/newsletter",
 	"static/privacy",
 	"static/terms",
 	"subscribe",
@@ -103,7 +118,8 @@ var misc = [
 
 var deprecated = [
 	"dealfinder",
-	"shoppinglist"
+	"shoppinglist",
+	"static/newsletter"
 ]
 
 var pages = {};
@@ -121,13 +137,17 @@ function addSection(list,section,prefix){
 
 // Go though 
 addSection(store,"Store Pages","view/");
+addSection(store,"Landing Pages","landing/");
+addSection(store,"Landing2 Pages","landing2/");
+addSection(store,"Landing5 Pages","landing5/");
 addSection(testEnv, "TEST env ONLY","");
 addSection(category,"Category Pages","coupons/");
 addSection(searchPages, "Search Pages", "s/")
 addSection(ideaPages, "Idea Pages", "ideas/")
-addSection(community,"Community Pages","community/");
+addSection(community,"Community Pages","");
+addSection(affinity,"Affinity Pages",affinityGroup+"-discounts/")
 addSection(misc,"Redirects and Misc Pages","");
-addSection(deprecated,"Deprecated","");
+addSection(deprecated,"Deprecated or Inactive","");
 
 
 
