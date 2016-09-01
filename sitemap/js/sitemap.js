@@ -140,7 +140,7 @@ addSection(store,"Store Pages","view/");
 addSection(store,"Landing Pages","landing/");
 addSection(store,"Landing2 Pages","landing2/");
 addSection(store,"Landing5 Pages","landing5/");
-addSection(testEnv, "TEST env ONLY","");
+addSection(testEnv, "TEST env ONLY","view/");
 addSection(category,"Category Pages","coupons/");
 addSection(searchPages, "Search Pages", "s/")
 addSection(ideaPages, "Idea Pages", "ideas/")
