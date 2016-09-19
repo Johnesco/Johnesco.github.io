@@ -9,8 +9,9 @@ var pizzalocation = "ma/papajohns.com/78745";
 var ideas = "hot-products";
 var cid = "7450931";
 var search = "bacon";
-var affinityGroup = "student";
+var affinityGroup = ["student-discount/","color-discount/"];
 var unsubscribe = "&unsubscribe=U2PEHPOV6BB5NHU4SLPTCYNS7Q&ei=U2PEHPOV6BB5NHU4SLPTCYNS7Q&mailingid=18561&ESP=2&utm_medium=email&utm_campaign=2015_10_28&ch=newsl&utm_source=newsletter&utm_term=maleproductdeals&cus.ptp=flagship"
+var storePrefixes = ["view/", "landing/", "landing2/", "landing5/"]
 var store = [
 	"target.com",
 	"macys.com",
@@ -89,7 +90,13 @@ var community = [
 	"welcome"];
 
 var affinity = [
-	"university-of-texas-austin"
+	["student-discounts/",""],
+	["student-discounts/","university-of-texas-austin"],
+	["student-discounts/","mcgill-university"],
+	["student-discounts/","the-ohio-state-university"],
+	["student-discounts/","university-of-michigan"],
+	["color-discounts/",""],
+	["color-discounts/","FF0000"],
 ];
 
 var misc = [
@@ -130,22 +137,33 @@ function addSection(list,section,prefix){
 	for (var i = 0; i < list.length; i++){
 		pages[section].push(prefix + list[i])
 	}	
-	// for (var i = 0; i < list.length; i++){
-	// 	pages[section].push(prefix + list[i])
-	// }
+}
+
+function addSectionMulti(list,section,prefixes){
+	pages[section] = [];
+	for (var i = 0; i < list.length; i++){
+		for (var j = 0; j < prefixes.length; j++){
+			pages[section].push(prefixes[j] + list[i]) 
+		}
+	}	
+	pages[section].push("");
+}
+
+function addSectionArray(list,section,prefix){
+	pages[section] = [];
+	for (var i = 0; i < list.length; i++){
+		pages[section].push(prefix + list[i][0] + list[i][1])
+	}	
 }
 
 // Go though 
-addSection(store,"Store Pages","view/");
-addSection(store,"Landing Pages","landing/");
-addSection(store,"Landing2 Pages","landing2/");
-addSection(store,"Landing5 Pages","landing5/");
-addSection(testEnv, "TEST env ONLY","view/");
+addSectionMulti(store,"Store Pages",storePrefixes)
+addSectionMulti(testEnv, "TEST env ONLY",storePrefixes);
 addSection(category,"Category Pages","coupons/");
-addSection(searchPages, "Search Pages", "s/")
+addSection(searchPages, "Search Pages (some redirect to special pages)", "s/")
 addSection(ideaPages, "Idea Pages", "ideas/")
 addSection(community,"Community Pages","");
-addSection(affinity,"Affinity Pages",affinityGroup+"-discounts/")
+addSectionArray(affinity,"Affinity Pages","")
 addSection(misc,"Redirects and Misc Pages","");
 addSection(deprecated,"Deprecated or Inactive","");
 
