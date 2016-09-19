@@ -2,7 +2,7 @@
 
 
 var $links = $('#links'); 
-var slice = "control";
+var slice = "OfferBundler";
 var username = "letmeshowyou";
 var pizzaroute = "a/78745";
 var pizzalocation = "ma/papajohns.com/78745";
@@ -85,7 +85,7 @@ addSection(store,"Store Pages","view/");
 
 function update(){
 	$links.empty(); // Clear Existing Links
-	slice = $('#slice').val() || "control"; // Assign slice via input (default to control)
+	slice = $('#slice').val() || "OfferBundler"; // Assign slice via input (default to control)
 	var env = $('input[name="env"]:checked').val(); // Assign evn via radio button
 	var security = $('input[name="http"]:checked').val(); // Assign security via radio button
 	
