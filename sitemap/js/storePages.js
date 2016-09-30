@@ -2,7 +2,7 @@
 
 
 var $links = $('#links'); 
-var slice = "OfferBundler";
+var slice = "OfferBundlerV2";
 var username = "letmeshowyou";
 var pizzaroute = "a/78745";
 var pizzalocation = "ma/papajohns.com/78745";
