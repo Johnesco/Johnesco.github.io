@@ -46,7 +46,8 @@ var store_long = [
 var testEnv = [
 	"discounttypes.com",
 	"everykindofcoupon.com",
-	"omnioffers.com"
+	"omnioffers.com",
+	"outclicks.com"
 ]
 
 var category = [
@@ -146,7 +147,7 @@ function addSectionMulti(list,section,prefixes){
 			pages[section].push(prefixes[j] + list[i]) 
 		}
 	}	
-	pages[section].push("");
+	//pages[section].push("");
 }
 
 function addSectionArray(list,section,prefix){
@@ -162,7 +163,7 @@ addSectionMulti(testEnv, "TEST env ONLY",storePrefixes);
 addSection(category,"Category Pages","coupons/");
 addSection(searchPages, "Search Pages (some redirect to special pages)", "s/")
 addSection(ideaPages, "Idea Pages", "ideas/")
-addSection(community,"Community Pages","");
+addSection(community,"Community Pages","community/");
 addSectionArray(affinity,"Affinity Pages","")
 addSection(misc,"Redirects and Misc Pages","");
 addSection(deprecated,"Deprecated or Inactive","");
@@ -175,6 +176,7 @@ pages["Category Pages"].push('categories/');
 
 
 function update(){
+	console.log(pages);
 	$links.empty(); // Clear Existing Links
 	slice = $('#slice').val() || "control"; // Assign slice via input (default to control)
 	var env = $('input[name="env"]:checked').val(); // Assign evn via radio button

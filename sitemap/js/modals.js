@@ -2,64 +2,25 @@
 
 
 var $links = $('#links'); 
-var slice = "OfferBundler";
+var slice = "DTStorePage";
 var username = "letmeshowyou";
 var pizzaroute = "a/78745";
 var pizzalocation = "ma/papajohns.com/78745";
 var ideas = "hot-products";
 var cid = "7450931";
+var store = "storewithnoname.com";
 var search = "bacon";
 var affinityGroup = "student";
 var unsubscribe = "&unsubscribe=U2PEHPOV6BB5NHU4SLPTCYNS7Q&ei=U2PEHPOV6BB5NHU4SLPTCYNS7Q&mailingid=18561&ESP=2&utm_medium=email&utm_campaign=2015_10_28&ch=newsl&utm_source=newsletter&utm_term=maleproductdeals&cus.ptp=flagship"
 
-// var store = [
-// 	"target.com",
-// 	"macys.com",
-// 	"poopingpuppies.com",
-// 	"sears.com",
-// 	"kmart.com",
-// 	"bestbuy.com",
-// 	"kohls.com",
-// 	"lowes.com",
-// 	"victoriassecret.com",
-// 	"bathandbodyworks.com",
-// 	"walgreens.com",
-// 	"sizzler.com",
-// 	"travelocity.com",
-// 	"amazon.com",
-// 	"biglots.com",
-// 	"walmart.com",
-// 	"citibank.com"]
-
-var store = [
-"ae.com",
-"macys.com",
-"barnesandnoble.com",
-"babiesrus.com",
-"bathandbodyworks.com",
-"advanceautoparts.com",
-"charlotterusse.com",
-"gamestop.com",
-"jcpenney.com",
-"sears.com",
-"express.com",
-"kohls.com",
-"lanebryant.com",
-"michaels.com",
-"oldnavy.com",
-"staples.com",
-"ulta.com",
-"petsmart.com",
-"walmart.com",
-"eddiebauer.com",
-"gap.com"]
+var modals = [
+"8499999",
+"8498962",
+"8504197",
+"8499838"]
 
 
-var testEnv = [
-	"discounttypes.com",
-	"everykindofcoupon.com",
-	"omnioffers.com"
-]
+
 
 
 
@@ -77,15 +38,13 @@ function addSection(list,section,prefix){
 }
 
 // Go though 
-addSection(store,"Store Pages","view/");
-// addSection(store,"Landing Pages","landing/");
-// addSection(store,"Landing2 Pages","landing2/");
-// addSection(store,"Landing5 Pages","landing5/");
+addSection(modals,"Modals","view/storewithnoname.com?c=");
+
 
 
 function update(){
 	$links.empty(); // Clear Existing Links
-	slice = $('#slice').val() || "OfferBundlerV2"; // Assign slice via input (default to control)
+	slice = $('#slice').val() || "DTStorePageV2"; // Assign slice via input (default to control)
 	var env = $('input[name="env"]:checked').val(); // Assign evn via radio button
 	var security = $('input[name="http"]:checked').val(); // Assign security via radio button
 	
@@ -102,7 +61,7 @@ function update(){
 		for (var i = 0; i < pages[pageType].length; i++){
 			var link = security + env + pages[pageType][i];
 			$links.append(
-			"<a target=\"_blank\" href=\"" + link + "?refresh=1" +
+			"<a target=\"_blank\" href=\"" + link + "&refresh=1" +
 			"&slice=" + slice + "\">" + link +
 			"</a><br>");
 		}
