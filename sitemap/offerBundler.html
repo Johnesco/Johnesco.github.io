@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head><title>Store Pages</title>
+<h1>Store Pages</h1>
+<link rel="stylesheet" type="text/css" href="css/sitemap.css">
+</head>
+<body>
+	<form id="env" style="display: inline">
+	Slice: <input type="text" id="slice" rows="" cols="" onclick="this.focus();this.select()"> (defaults to OfferBundlerV2) </input><br>Env:<br> 
+                <input type="radio" name="env" value="www.rmntest.com/" checked> TEST<br>
+                <input type="radio" name="env" value="www.rmnstage.com/"> Stage<br>
+                <input type="radio" name="env" value="www.retailmenot.com/"> Prod<br>
+                <hr>
+                <input type="radio" name="http" value="https://" checked> HTTPs<br>
+                <input type="radio" name="http" value="http://"> HTTP<br>
+                <button type="button" id="update">Update Links</button>
+              </form> 
+	<div id="links"></div><br><br>
+	<script   src="http://code.jquery.com/jquery-2.2.3.min.js"   integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo="   crossorigin="anonymous"></script>
+	<script src="js/storePages.js"></script>
+    <p><a href="index.html">Back to Sitemap</a></p>
+</body>
+</html>

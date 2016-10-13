@@ -147,7 +147,7 @@ function addSectionMulti(list,section,prefixes){
 			pages[section].push(prefixes[j] + list[i]) 
 		}
 	}	
-	//pages[section].push("");
+	console.log(pages[section]);
 }
 
 function addSectionArray(list,section,prefix){
@@ -192,13 +192,25 @@ function update(){
 		);
 
 		// Traverse pageType Array, turning urls into links + slice
-		for (var i = 0; i < pages[pageType].length; i++){
-			var link = security + env + pages[pageType][i];
-			$links.append(
-			"<a target=\"_blank\" href=\"" + link + "?refresh=1" +
-			"&slice=" + slice + "\">" + link +
-			"</a><br>");
-		}
+		if (pageType == "Store Pages"){
+			for (var i = 0; i < pages[pageType].length; i++) {
+				var link = security + env + pages[pageType][i];
+				$links.append(
+				"<a target=\"_blank\" href=\"" + link + "?refresh=1" +
+				"&slice=" + slice + "\">" + link +
+				"</a><br>" 
+				);
+			}
+
+		} else {
+			for (var i = 0; i < pages[pageType].length; i++){
+				var link = security + env + pages[pageType][i];
+				$links.append(
+				"<a target=\"_blank\" href=\"" + link + "?refresh=1" +
+				"&slice=" + slice + "\">" + link +
+				"</a><br>");
+			}
+		};
 	}
 }
 

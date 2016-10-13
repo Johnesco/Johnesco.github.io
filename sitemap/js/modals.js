@@ -52,12 +52,14 @@ function update(){
 	// Taverse Pages object, putting url arrays into pageType
 	for (pageType in pages){
 		$links.append(
-		"<h1>" +
-		pageType + " (slice: " +slice + ")" + 
-		"</h1>"
+			"<h1>" +
+			pageType + 
+			" (slice: " +slice + ")" + 
+			"</h1>"
 		);
 
 		// Traverse pageType Array, turning urls into links + slice
+		if (pageType == "Store Pages") console.log("hi");
 		for (var i = 0; i < pages[pageType].length; i++){
 			var link = security + env + pages[pageType][i];
 			$links.append(
