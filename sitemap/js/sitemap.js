@@ -12,17 +12,8 @@ var search = "bacon";
 var affinityGroup = ["student-discount/","color-discount/"];
 var unsubscribe = "&unsubscribe=U2PEHPOV6BB5NHU4SLPTCYNS7Q&ei=U2PEHPOV6BB5NHU4SLPTCYNS7Q&mailingid=18561&ESP=2&utm_medium=email&utm_campaign=2015_10_28&ch=newsl&utm_source=newsletter&utm_term=maleproductdeals&cus.ptp=flagship"
 var storePrefixes = ["view/", "landing/", "landing2/", "landing5/"]
-var store = [
-	"target.com",
-	"macys.com",
-	"poopingpuppies.com",
-	"sears.com",
-	"bestbuy.com",
-	"kohls.com",
-	"lowes.com",
-	"victoriassecret.com"]
 
-var store_long = [
+var storePages = [
 	"target.com",
 	"macys.com",
 	"poopingpuppies.com",
@@ -39,18 +30,19 @@ var store_long = [
 	"amazon.com",
 	"biglots.com",
 	"walmart.com",
-	"citibank.com"]
+	"citibank.com"];
 
-
+var ideaPages = [
+	"hot-products",
+	"halloween"];
 
 var testEnv = [
 	"discounttypes.com",
 	"everykindofcoupon.com",
 	"omnioffers.com",
-	"outclicks.com"
-]
+	"outclicks.com"];
 
-var category = [
+var categoryPages = [
 	"",
 	"clothing",
 	"travel",
@@ -61,6 +53,13 @@ var category = [
 	"pizza/" + pizzaroute,
 	"pizza/" + pizzalocation];
 
+var giftcardPages = [
+	"rue21.com"];
+
+
+
+	//"clothing"]
+
 var searchPages = [
 	"" + search,
 	"printable",
@@ -69,14 +68,7 @@ var searchPages = [
 	"exclusives",
 	"weekly+ads"]
 
-var ideaPages = [
-	"hot-products",
-	"halloween"
-];
-
-
-
-var community = [
+var communityPages = [
 	"",
 	"badges",
 	"confirm_oauth",
@@ -90,17 +82,19 @@ var community = [
 	"unsubscribe",
 	"welcome"];
 
-var affinity = [
-	["student-discounts/",""],
-	["student-discounts/","university-of-texas-austin"],
-	["student-discounts/","mcgill-university"],
-	["student-discounts/","the-ohio-state-university"],
-	["student-discounts/","university-of-michigan"],
-	["color-discounts/",""],
-	["color-discounts/","FF0000"],
-];
+var studentAffinityPagesTest = [
+	"",
+	"university-of-texas-austin",
+	"mcgill-university",
+	"the-ohio-state-university",
+	"university-of-michigan",
+	"texas-state-university"];
 
-var misc = [
+var colorAffinityPagesTest = [	
+	"",
+	"FF0000"];
+
+var miscPages = [
 	"blog",
 	"quickSignUp",
 	"submit",
@@ -124,7 +118,7 @@ var misc = [
 	"weeklyads",
 	"profile",];
 
-var deprecated = [
+var deprecatedPages = [
 	"dealfinder",
 	"shoppinglist",
 	"static/newsletter"
@@ -132,56 +126,51 @@ var deprecated = [
 
 var pages = {};
 
+
 // Function to add arrays as sections to pages object
-function addSection(list,section,prefix){
-	pages[section] = [];
-	for (var i = 0; i < list.length; i++){
-		pages[section].push(prefix + list[i])
-	}	
+function addSection(pre,section,sub,list){
+	pages[section] = {};
+	pages[section].security = $('input[name="http"]:checked').val(); // Assign security via radio button
+	pages[section].pre = pre;
+	pages[section].env = $('input[name="env"]:checked').val(); // Assign evn via radio button
+	pages[section].sub = sub;
+	pages[section].list = list;
+	pages[section].slice = $('#slice').val();
+	
+	
 }
 
-function addSectionMulti(list,section,prefixes){
-	pages[section] = [];
-	for (var i = 0; i < list.length; i++){
-		for (var j = 0; j < prefixes.length; j++){
-			pages[section].push(prefixes[j] + list[i]) 
-		}
-	}	
-	console.log(pages[section]);
-}
 
-function addSectionArray(list,section,prefix){
-	pages[section] = [];
-	for (var i = 0; i < list.length; i++){
-		pages[section].push(prefix + list[i][0] + list[i][1])
-	}	
-}
+// function updateJSON(){
+// 	$json.empty(); // Clear Existing Links
+// 	$json.append(
+// 		"<pre>" +
+// 		JSON.stringify(pages, 1, '  ') +
+// 		"</pre>"
+// 		);
+// };
 
-// Go though 
-addSectionMulti(store,"Store Pages",storePrefixes)
-addSectionMulti(testEnv, "TEST env ONLY",storePrefixes);
-addSection(category,"Category Pages","coupons/");
-addSection(searchPages, "Search Pages (some redirect to special pages)", "s/")
-addSection(ideaPages, "Idea Pages", "ideas/")
-addSection(community,"Community Pages","community/");
-addSectionArray(affinity,"Affinity Pages","")
-addSection(misc,"Redirects and Misc Pages","");
-addSection(deprecated,"Deprecated or Inactive","");
-
-
-
-// Misc additions
-pages["Category Pages"].push('categories/');
 
 
 
 function update(){
-	console.log(pages);
 	$links.empty(); // Clear Existing Links
-	slice = $('#slice').val() || "control"; // Assign slice via input (default to control)
-	var env = $('input[name="env"]:checked').val(); // Assign evn via radio button
-	var security = $('input[name="http"]:checked').val(); // Assign security via radio button
-	
+	slice = $('#slice').val() || slice;
+	pages = {};
+
+	if ($('input[name="env"]:checked').val() == ".rmntest.com/"){
+		console.log("This is on test");
+		addSection("www", "Test Env Only", "view/", testEnv);
+	}
+	addSection("www", "Store Pages","view/",storePages);
+	addSection("www", "Ideas Pages","ideas/",ideaPages);
+	addSection("www", "Category Pages", "coupons/", categoryPages);
+	addSection("giftcards", "GiftCard Pages", "store/", giftcardPages);
+	addSection("www", "Search Pages", "s/", searchPages);
+	addSection("www", "Community Pages", "community/", communityPages);
+	addSection("www", "Student Affinity Pages", "student-discounts/", studentAffinityPagesTest);
+	addSection("www", "Misc Pages", "", miscPages);
+
 
 	// Taverse Pages object, putting url arrays into pageType
 	for (pageType in pages){
@@ -191,26 +180,24 @@ function update(){
 		"</h1>"
 		);
 
-		// Traverse pageType Array, turning urls into links + slice
-		if (pageType == "Store Pages"){
-			for (var i = 0; i < pages[pageType].length; i++) {
-				var link = security + env + pages[pageType][i];
-				$links.append(
-				"<a target=\"_blank\" href=\"" + link + "?refresh=1" +
-				"&slice=" + slice + "\">" + link +
-				"</a><br>" 
-				);
-			}
 
-		} else {
-			for (var i = 0; i < pages[pageType].length; i++){
-				var link = security + env + pages[pageType][i];
-				$links.append(
-				"<a target=\"_blank\" href=\"" + link + "?refresh=1" +
-				"&slice=" + slice + "\">" + link +
-				"</a><br>");
-			}
-		};
+
+		// Traverse pageType Array, turning urls into links + slice
+		for (var i = 0; i < pages[pageType].list.length; i++){
+			
+			var link =
+			pages[pageType].security +
+			pages[pageType].pre + 
+			pages[pageType].env +
+			pages[pageType].sub +
+			pages[pageType].list[i];
+
+			$links.append(
+			"<a target=\"_blank\" href=\"" +
+			link + "?refresh=1" +
+			"&slice=" + slice + "\">" + link +
+			"</a><br>");
+		}
 	}
 }
 
@@ -228,8 +215,3 @@ $('#env').on('keyup keypress', function(e) {
     return false;
   }
 });
-
-
-	
-
-
