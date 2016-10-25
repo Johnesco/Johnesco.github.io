@@ -14,6 +14,7 @@ var unsubscribe = "&unsubscribe=U2PEHPOV6BB5NHU4SLPTCYNS7Q&ei=U2PEHPOV6BB5NHU4SL
 var storePrefixes = ["view/", "landing/", "landing2/", "landing5/"]
 
 var storePages = [
+	"%E2%88%86%C2%A5%E2%88%91.com",
 	"target.com",
 	"macys.com",
 	"poopingpuppies.com",

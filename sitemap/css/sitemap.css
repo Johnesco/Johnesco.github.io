@@ -1,13 +1,15 @@
 * { font-family: Arial, sans-serif; }
 
 h1 {
-	font-size:18px;
-	padding: 5px;
+	font-size:1em;
+	padding: .2em;
 	color:white;
 	background-color: grey;
 
 }
 
 div#links {
-	width: 500px;
+	width: 70%;
 }
+
+a {font-size: 1em;}
