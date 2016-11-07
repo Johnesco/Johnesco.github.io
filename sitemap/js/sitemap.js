@@ -2,6 +2,7 @@
 
 
 var $links = $('#links'); 
+// var $json = $('#json'); 
 var slice = "control";
 var username = "letmeshowyou";
 var pizzaroute = "a/78745";
@@ -11,7 +12,7 @@ var cid = "7450931";
 var search = "bacon";
 var affinityGroup = ["student-discount/","color-discount/"];
 var unsubscribe = "&unsubscribe=U2PEHPOV6BB5NHU4SLPTCYNS7Q&ei=U2PEHPOV6BB5NHU4SLPTCYNS7Q&mailingid=18561&ESP=2&utm_medium=email&utm_campaign=2015_10_28&ch=newsl&utm_source=newsletter&utm_term=maleproductdeals&cus.ptp=flagship"
-var storePrefixes = ["view/", "landing/", "landing2/", "landing5/"]
+var landingPages = ["landing/", "landing2/", "landing5/"]
 
 var storePages = [
 	"%E2%88%86%C2%A5%E2%88%91.com",
@@ -37,8 +38,14 @@ var ideaPages = [
 	"hot-products",
 	"halloween"];
 
-var testEnv = [
+var testEnvPages = [
 	"discounttypes.com",
+	"everykindofcoupon.com",
+	"omnioffers.com",
+	"outclicks.com"];
+
+var CostCoPages = [
+	"",
 	"everykindofcoupon.com",
 	"omnioffers.com",
 	"outclicks.com"];
@@ -142,27 +149,31 @@ function addSection(pre,section,sub,list){
 }
 
 
-// function updateJSON(){
-// 	$json.empty(); // Clear Existing Links
-// 	$json.append(
-// 		"<pre>" +
-// 		JSON.stringify(pages, 1, '  ') +
-// 		"</pre>"
-// 		);
-// };
-
-
-
 
 function update(){
 	$links.empty(); // Clear Existing Links
 	slice = $('#slice').val() || slice;
 	pages = {};
 
-	if ($('input[name="env"]:checked').val() == ".rmntest.com/"){
-		console.log("This is on test");
-		addSection("www", "Test Env Only", "view/", testEnv);
+	function buildURL(pagesPageType, i){
+		link = 	
+			pagesPageType.security +
+			pagesPageType.pre + 
+			pagesPageType.env +
+			pagesPageType.sub +
+			pagesPageType.list[i];
+		return link;
 	}
+
+
+
+	// Add only if on TEST
+	if ($('input[name="env"]:checked').val() == ".rmntest.com/"){
+		addSection("www", "Test Env Only", "view/", testEnvPages);
+		addSection("www", "CostCo", "view/", CostCoPages);
+	}
+
+	// Always add these sections
 	addSection("www", "Store Pages","view/",storePages);
 	addSection("www", "Ideas Pages","ideas/",ideaPages);
 	addSection("www", "Category Pages", "coupons/", categoryPages);
@@ -182,27 +193,62 @@ function update(){
 		);
 
 
-
-		// Traverse pageType Array, turning urls into links + slice
+		// Traverse pageType.list Array, turning urls into links + slice
 		for (var i = 0; i < pages[pageType].list.length; i++){
-			
-			var link =
-			pages[pageType].security +
-			pages[pageType].pre + 
-			pages[pageType].env +
-			pages[pageType].sub +
-			pages[pageType].list[i];
 
-			$links.append(
-			"<a target=\"_blank\" href=\"" +
-			link + "?refresh=1" +
-			"&slice=" + slice + "\">" + link +
-			"</a><br>");
-		}
+			var link = buildURL(pages[pageType],i);
+
+
+			if (pageType == "Store Pages"){
+
+				$links.append(
+				"<b><a target=\"_blank\" href=\"" +
+				link + "?refresh=1" +
+				"&slice=" + slice + "\">" + link +
+				"</a></b>&nbsp;");
+
+
+				for (sub in landingPages){
+					pages[pageType].sub = landingPages[sub];
+					var link = buildURL(pages[pageType],i);
+					$links.append(
+					"<a target=\"_blank\" href=\"" +
+					link + "?refresh=1" +
+					"&slice=" + slice + "\">" + "(" + landingPages[sub] + ")" +
+					"</a>&nbsp;");
+				}
+
+				$links.append("<br>");
+				
+
+
+			} else {
+				$links.append(
+				"<a target=\"_blank\" href=\"" +
+				link + "?refresh=1" +
+				"&slice=" + slice + "\">" + link +
+				"</a><br>");
+			}
+
+
+		};
+			
+		
 	}
-}
+};
+
+// function updateJSON(){
+// 	$json.empty(); // Clear Existing Links
+// 	$json.append(
+// 		"<pre>" +
+// 		JSON.stringify(pages, 1, '  ') +
+// 		"</pre>"
+// 		);
+// };
 
 update();
+
+// updateJSON();
 
 // buttons
 $('#update').on('click', update);

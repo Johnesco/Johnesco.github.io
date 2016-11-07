@@ -14,14 +14,7 @@
   <body>
     <div class="header">
       <h1>Decoder</h1>
-      <p style="display: inline">ENV:
-        <form id="env" style="display: inline">
-                <input type="radio" name="env" value="test" checked> TEST
-                <input type="radio" name="env" value="stage"> Stage
-                <input type="radio" name="env" value="prod"> Prod
-              </form> 
-      </p>
-      <p id="kibanaLink">Kibana Link: </p>
+      <p id="kibanaLink">Please use <a href="http://owenett.wsmeco.com/">Owenett</a> instead of Kibana.</p>
     </div>
     <div id="decodeForm">
       <ul id="dashboard">
@@ -43,6 +36,7 @@
 
           <li class="label">JSON:</li>
             <li class="button" id='beautifyTree'>Beautify JSON + Tree</li>
+            <li class="button" id='showKibanaLink'>Kibana</li>
 
     </ul>
       <textarea id="textBox" rows="" cols="" onclick="this.focus();this.select()"></textarea>
