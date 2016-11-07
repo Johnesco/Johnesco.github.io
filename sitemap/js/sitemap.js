@@ -219,6 +219,7 @@ function update(){
 				}
 
 				$links.append("<br>");
+				pages[pageType].sub = "view/";
 				
 
 
