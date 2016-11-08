@@ -9,10 +9,25 @@ var pizzaroute = "a/78745";
 var pizzalocation = "ma/papajohns.com/78745";
 var ideas = "hot-products";
 var cid = "7450931";
-var search = "bacon";
 var affinityGroup = ["student-discount/","color-discount/"];
 var unsubscribe = "&unsubscribe=U2PEHPOV6BB5NHU4SLPTCYNS7Q&ei=U2PEHPOV6BB5NHU4SLPTCYNS7Q&mailingid=18561&ESP=2&utm_medium=email&utm_campaign=2015_10_28&ch=newsl&utm_source=newsletter&utm_term=maleproductdeals&cus.ptp=flagship"
-var landingPages = ["landing/", "landing2/", "landing5/"]
+
+var landingPages = ["landing/", "landing2/", "landing5/"];
+
+var homePageLinks = [
+	"/ideas",
+	"giftcards",
+	"printable",
+	"freeshipping",
+	"exclusives",
+	"categories",
+	"rebates",
+	"mobile",
+	"favorites",
+	"saved",
+	"blog",
+];
+
 
 var storePages = [
 	"%E2%88%86%C2%A5%E2%88%91.com",
@@ -46,9 +61,11 @@ var testEnvPages = [
 
 var CostCoPages = [
 	"",
-	"everykindofcoupon.com",
-	"omnioffers.com",
-	"outclicks.com"];
+	"justforyou",
+	"join",
+	"signup",
+	"login",
+	"profile"];
 
 var categoryPages = [
 	"",
@@ -69,12 +86,7 @@ var giftcardPages = [
 	//"clothing"]
 
 var searchPages = [
-	"" + search,
-	"printable",
-	"freeshipping",
-	"clearance",
-	"exclusives",
-	"weekly+ads"]
+	"bacon"]
 
 var communityPages = [
 	"",
@@ -111,13 +123,7 @@ var miscPages = [
 	"alerts",
 	"contests",
 	"deals/blackfriday",
-	"favorites",
-	"join",
-	"justforyou",
-	"login",
-	"mobile",
 	"profile",
-	"saved",
 	"settings",
 	"sitemap",
 	"static/privacy",
@@ -170,10 +176,11 @@ function update(){
 	// Add only if on TEST
 	if ($('input[name="env"]:checked').val() == ".rmntest.com/"){
 		addSection("www", "Test Env Only", "view/", testEnvPages);
-		addSection("www", "CostCo", "view/", CostCoPages);
+		addSection("www", "CostCo (New Community)", "", CostCoPages);
 	}
 
 	// Always add these sections
+	addSection("www", "Home Pages Links","",homePageLinks);
 	addSection("www", "Store Pages","view/",storePages);
 	addSection("www", "Ideas Pages","ideas/",ideaPages);
 	addSection("www", "Category Pages", "coupons/", categoryPages);
