@@ -25,9 +25,7 @@ var homePageLinks = [
 	"mobile",
 	"favorites",
 	"saved",
-	"blog",
-];
-
+	"blog"];
 
 var storePages = [
 	"%E2%88%86%C2%A5%E2%88%91.com",
