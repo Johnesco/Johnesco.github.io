@@ -15,39 +15,20 @@ var unsubscribe = "&unsubscribe=U2PEHPOV6BB5NHU4SLPTCYNS7Q&ei=U2PEHPOV6BB5NHU4SL
 var landingPages = ["landing/", "landing2/", "landing5/"];
 
 var homePageLinks = [
-	"/ideas",
+	"coupon-codes",
 	"giftcards",
 	"printable",
 	"freeshipping",
 	"exclusives",
-	"categories",
 	"rebates",
+	"categories",
 	"mobile",
 	"favorites",
 	"saved",
-	"blog"];
+	"blog",
+	"coupons/gifts"];
 
 var storePages = [
-	"%E2%88%86%C2%A5%E2%88%91.com",
-	"target.com",
-	"macys.com",
-	"poopingpuppies.com",
-	"sears.com",
-	"kmart.com",
-	"bestbuy.com",
-	"kohls.com",
-	"lowes.com",
-	"victoriassecret.com",
-	"bathandbodyworks.com",
-	"walgreens.com",
-	"sizzler.com",
-	"travelocity.com",
-	"amazon.com",
-	"biglots.com",
-	"walmart.com",
-	"citibank.com"];
-
-var storePages2 = [
 	"%E2%88%86%C2%A5%E2%88%91.com",
 	"target.com",
 	"macys.com",
@@ -78,7 +59,9 @@ var testEnvPages = [
 	"outclicks.com"];
 
 var CostCoPages = [
-	"",
+	"dashboard",
+	"saved",
+	"favorites",
 	"justforyou",
 	"join",
 	"signup",
@@ -200,17 +183,17 @@ function update(){
 	// Add only if on TEST
 	if ($('input[name="env"]:checked').val() == ".rmntest.com/"){
 		addSection("www", "Test Env Only", "view/", testEnvPages);
-		addSection("www", "CostCo (New Community)", "", CostCoPages);
 	}
 
 	// Always add these sections
 	addSection("www", "Home Pages Links","",homePageLinks);
+	addSection("www", "CostCo (New Community)", "", CostCoPages);
+	addSection("www", "Community Pages", "community/", communityPages);
 	addSection("www", "Store Pages","view/",storePages);
 	addSection("www", "Ideas Pages","ideas/",ideaPages);
 	addSection("www", "Category Pages", "coupons/", categoryPages);
 	addSection("giftcards", "GiftCard Pages", "store/", giftcardPages);
 	addSection("www", "Search Pages", "s/", searchPages);
-	addSection("www", "Community Pages", "community/", communityPages);
 	addSection("www", "Student Affinity Pages", "student-discounts/", studentAffinityPagesTest);
 	addSection("www", "Misc Pages", "", miscPages);
 
