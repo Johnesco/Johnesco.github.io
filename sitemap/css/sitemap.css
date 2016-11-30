@@ -16,6 +16,7 @@ a {font-size: 1em;}
 
 table {
 	border-collapse: collapse;
+	border-color: #eeeeee;
 }
 
 
@@ -23,4 +24,10 @@ table td{
 	text-align: left;
 	vertical-align: top;
 	padding: 5px;
+}
+
+button{
+	font-size: .75em;
+	height: 30px;
+	color: red;
 }

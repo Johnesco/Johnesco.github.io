@@ -178,11 +178,12 @@ function makeHeader(pageSection, slice){
 function update(){
 	$links.empty(); // Clear Existing Links
 	slice = $('#slice').val() || slice;
-	pages = {};
+	page = {};
 
 	// Add only if on TEST
 	if ($('input[name="env"]:checked').val() == ".rmntest.com/"){
 		addSection("www", "Test Env Only", "view/", testEnvPages);
+		console.log($('input[name="env"]:checked').val())
 	}
 
 	// Always add these sections
@@ -208,14 +209,13 @@ function update(){
 
 			var link = buildURL(page[pageSection],page[pageSection].list[i]);
 
-
-			if (pageSection == "Store Pages"){
+			if (pageSection == "Store Pages" || pageSection == "Test Env Only"){
 				$links.append(makeLink(link,"",true));
 
 				for (sub in landingPages){
 					page[pageSection].sub = landingPages[sub];
 					var link = buildURL(page[pageSection],page[pageSection].list[i]);
-					$links.append(makeLink(link,landingPages[sub],true));
+					$links.append(makeLink(link,"("+landingPages[sub]+")",true));
 				}
 
 				$links.append("<br>");
@@ -232,7 +232,8 @@ function update(){
 update();
 
 // buttons
-$('#update').on('click', update);
+//$('#update').on('click', update);
+$('form').on('change', update);
 
 // Prevent enter from submitting form, run update() instead
 $('#env').on('keyup keypress', function(e) {
@@ -245,8 +246,10 @@ $('#env').on('keyup keypress', function(e) {
 });
 
 //debugging
+/*
 function updateJSON(){
-		console.log(JSON.stringify(pages, 1, '  '));
+		console.log(JSON.stringify(page, 1, '  '));
 };
 
 updateJSON();
+*/
