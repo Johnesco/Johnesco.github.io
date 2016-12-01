@@ -117,7 +117,6 @@ var colorAffinityPagesTest = [
 	"FF0000"];
 
 var miscPages = [
-	"blog",
 	"quickSignUp",
 	"submit",
 	"showcoupon/" + cid,
@@ -161,7 +160,7 @@ function buildURL(pageSection, list){
 			return link;
 }
 
-// Creats HTML for a link from a URL
+// Creates HTML for a link from a URL
 function makeLink(url,label,nobr){
 	var label = label || url;
 	var url = "<a target=\"_blank\" href=\"" +
@@ -239,7 +238,7 @@ update();
 $('form').on('change', update);
 
 // Prevent enter from submitting form, run update() instead
-$('#environment').on('keyup keypress', function(e) {
+$('form').on('keyup keypress', function(e) {
   var keyCode = e.keyCode || e.which;
   if (keyCode === 13) { 
     e.preventDefault();
