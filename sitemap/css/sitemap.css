@@ -1,18 +1,26 @@
 * { font-family: Arial, sans-serif; }
 
-h1 {
-	font-size:1em;
-	padding: .2em;
-	color:white;
-	background-color: grey;
+body{font-size: 100%;}
 
+h1 {
+	font-size:2em;
+	padding: .2em;
+	color:purple;
+	border-bottom: .1em solid black;
+}
+
+h2 {
+	font-size:1.1em;
+	padding: .2em;
+	color:purple;
+	border-bottom: .1em solid black;
 }
 
 div#links {
 	width: 70%;
 }
 
-a {font-size: 1em;}
+a {font-size: 0.9em;}
 
 table {
 	border-collapse: collapse;

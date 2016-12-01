@@ -3,29 +3,30 @@
 <head><title>SiteMap</title>
 <h1>SiteMap</h1>
 <link rel="stylesheet" type="text/css" href="css/sitemap.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-    <form id="env">
+    <form>
         <table border=1><tr>
         <td>Slice: <br><input type="text" id="slice" rows="" cols="" onclick="this.focus();this.select()"><br>(defaults to Control) </input>
         <td>Env:<br>
-                <input type="radio" name="env" value=".rmntest.com/" checked> TEST<br>
-                <input type="radio" name="env" value=".rmnstage.com/"> Stage<br>
-                <input type="radio" name="env" value=".retailmenot.com/"> Prod<br>
+                <input type="radio" name="environment" value=".rmntest.com/" checked> TEST<br>
+                <input type="radio" name="environment" value=".rmnstage.com/"> Stage<br>
+                <input type="radio" name="environment" value=".retailmenot.com/"> Prod<br>
         </td>
         <td>http(s)<br>
                 <input type="radio" name="http" value="https://" checked> HTTPs<br>
                 <input type="radio" name="http" value="http://"> HTTP<br>
     </td></tr></table>
     </form> 
-    <div id="links"></div><br>
+    <div id="sections"></div><br>
     <div id="json"></div><br>
     <script   src="http://code.jquery.com/jquery-2.2.3.min.js"   integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo="   crossorigin="anonymous"></script>
     <script src="js/sitemap.js"></script>
 
-
-    <p><a href="globalFooter.html">RMN-23361 Global footer</a></p>
-    <p><a href="offerBundler.html">Offer Bundler Domains</a></p>
-    <p><a href="ampPages.html">AMP page Domains</a></p>
+    <h2>Domain Limited Tests</h2>
+    <a href="globalFooter.html">RMN-23361 Global footer</a><br>
+    <a href="offerBundler.html">Offer Bundler Domains</a><br>
+    <a href="ampPages.html">AMP page Domains</a><br>
 </body>
 </html>

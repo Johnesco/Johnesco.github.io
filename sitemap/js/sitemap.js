@@ -1,9 +1,14 @@
 
 
 
-var $links = $('#links'); 
+var $sections = $('#sections'); 
 // var $json = $('#json'); 
+
+// Environment Variables
 var slice = "control";
+var env = "rmntest.com";
+var security = "https://";
+
 var username = "letmeshowyou";
 var pizzaroute = "a/78745";
 var pizzalocation = "ma/papajohns.com/78745";
@@ -133,33 +138,30 @@ var deprecatedPages = [
 	"dealfinder",
 	"shoppinglist",
 	"static/newsletter"
-]
+];
 
 // Main object that will hold entire set of links
-var page = {};
+var page = {sections:{}};
 
 // Function to add arrays as sections to pages object
 function addSection(pre,section,sub,list){
-	page[section] = {};
-	page[section].security = $('input[name="http"]:checked').val(); // Assign security via radio button
-	page[section].pre = pre;
-	page[section].env = $('input[name="env"]:checked').val(); // Assign evn via radio button
-	page[section].sub = sub;
-	page[section].list = list;
-	page[section].slice = $('#slice').val();
+	page.sections[section] = {};
+	page.sections[section].pre = pre;
+	page.sections[section].sub = sub;
+	page.sections[section].list = list;
 }
 
-// builds URL from security, prefix, environment, subdirectory, storelist
+// Creates a URL from security, prefix, environment, subdirectory, storelist
 function buildURL(pageSection, list){
-	link = 	pageSection.security +
+	var link = 	security +
 			pageSection.pre + 
-			pageSection.env +
+			env +
 			pageSection.sub +
 			list;
 			return link;
 }
 
-// Recieved url and optional lable, convernts to <a href="url">label</a>
+// Creats HTML for a link from a URL
 function makeLink(url,label,nobr){
 	var label = label || url;
 	var url = "<a target=\"_blank\" href=\"" +
@@ -171,58 +173,59 @@ function makeLink(url,label,nobr){
 			return url;
 }
 
+// Creates HTML for a Header Section
 function makeHeader(pageSection, slice){
-	return "<h1>" + pageSection + " (slice: " + slice + ")" + "</h1>";
+	return "<h2>" + pageSection + " (slice: " + slice + ")" + "</h2>";
 }
 
+
+// Add these sections into page object
+addSection("www", "Home Pages Links","",homePageLinks);
+addSection("www", "CostCo (New Community)", "", CostCoPages);
+addSection("www", "Community Pages", "community/", communityPages);
+addSection("www", "Store Pages","view/",storePages);
+addSection("www", "Ideas Pages","ideas/",ideaPages);
+addSection("www", "Category Pages", "coupons/", categoryPages);
+addSection("giftcards", "GiftCard Pages", "store/", giftcardPages);
+addSection("www", "Search Pages", "s/", searchPages);
+addSection("www", "Student Affinity Pages", "student-discounts/", studentAffinityPagesTest);
+addSection("www", "Misc Pages", "", miscPages);
+addSection("www", "Test Env Only", "view/", testEnvPages);
+
+
 function update(){
-	$links.empty(); // Clear Existing Links
+	$sections.empty(); // Clear Existing Links
+
+	// Check form and adjust properties
 	slice = $('#slice').val() || slice;
-	page = {};
+	env = $('input[name="environment"]:checked').val(); // Assign evn via radio button
+	security = $('input[name="http"]:checked').val(); // Assign security via radio button
 
-	// Add only if on TEST
-	if ($('input[name="env"]:checked').val() == ".rmntest.com/"){
-		addSection("www", "Test Env Only", "view/", testEnvPages);
-		console.log($('input[name="env"]:checked').val())
-	}
-
-	// Always add these sections
-	addSection("www", "Home Pages Links","",homePageLinks);
-	addSection("www", "CostCo (New Community)", "", CostCoPages);
-	addSection("www", "Community Pages", "community/", communityPages);
-	addSection("www", "Store Pages","view/",storePages);
-	addSection("www", "Ideas Pages","ideas/",ideaPages);
-	addSection("www", "Category Pages", "coupons/", categoryPages);
-	addSection("giftcards", "GiftCard Pages", "store/", giftcardPages);
-	addSection("www", "Search Pages", "s/", searchPages);
-	addSection("www", "Student Affinity Pages", "student-discounts/", studentAffinityPagesTest);
-	addSection("www", "Misc Pages", "", miscPages);
-
-
-	// Taverse Pages object, putting url arrays into pageSection
-	for (pageSection in page){
-		$links.append(makeHeader(pageSection,slice));
-
+	// Taverse Pages.sections object, putting url arrays into pageSection
+	for (pageSection in page.sections){
+		$sections.append(makeHeader(pageSection,slice));
 
 		// Traverse pageSection.list Array, turning urls into links + slice
-		for (var i = 0; i < page[pageSection].list.length; i++){
+		for (var i = 0; i < page.sections[pageSection].list.length; i++){
 
-			var link = buildURL(page[pageSection],page[pageSection].list[i]);
+			var url = buildURL(page.sections[pageSection],page.sections[pageSection].list[i]);
 
-			if (pageSection == "Store Pages" || pageSection == "Test Env Only"){
-				$links.append(makeLink(link,"",true));
+			// Special Case for 'view/' pages (add landing pages)
+			if (page.sections[pageSection].sub == "view/"){
+				$sections.append(makeLink(url,"",true));
 
 				for (sub in landingPages){
-					page[pageSection].sub = landingPages[sub];
-					var link = buildURL(page[pageSection],page[pageSection].list[i]);
-					$links.append(makeLink(link,"("+landingPages[sub]+")",true));
+					//page.sections[pageSection].sub = landingPages[sub];
+					var url = buildURL(page.sections[pageSection],page.sections[pageSection].list[i]);
+					$sections.append(makeLink(url,"("+landingPages[sub]+")",true));
 				}
 
-				$links.append("<br>");
-				page[pageSection].sub = "view/";
-				
+				$sections.append("<br>");
+				//page.sections[pageSection].sub = "view/";
+			
+			// else just add link 	
 			} else {
-				$links.append(makeLink(link));
+				$sections.append(makeLink(url));
 			}
 		};
 	}
@@ -236,7 +239,7 @@ update();
 $('form').on('change', update);
 
 // Prevent enter from submitting form, run update() instead
-$('#env').on('keyup keypress', function(e) {
+$('#environment').on('keyup keypress', function(e) {
   var keyCode = e.keyCode || e.which;
   if (keyCode === 13) { 
     e.preventDefault();
@@ -246,10 +249,9 @@ $('#env').on('keyup keypress', function(e) {
 });
 
 //debugging
-/*
-function updateJSON(){
-		console.log(JSON.stringify(page, 1, '  '));
-};
 
-updateJSON();
-*/
+// function updateJSON(){
+// 		console.log(JSON.stringify(page, 1, '  '));
+// };
+
+// updateJSON();
