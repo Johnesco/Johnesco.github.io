@@ -215,13 +215,13 @@ function update(){
 				$sections.append(makeLink(url,"",true));
 
 				for (sub in landingPages){
-					//page.sections[pageSection].sub = landingPages[sub];
+					page.sections[pageSection].sub = landingPages[sub];
 					var url = buildURL(page.sections[pageSection],page.sections[pageSection].list[i]);
 					$sections.append(makeLink(url,"("+landingPages[sub]+")",true));
 				}
 
 				$sections.append("<br>");
-				//page.sections[pageSection].sub = "view/";
+				page.sections[pageSection].sub = "view/";
 			
 			// else just add link 	
 			} else {
