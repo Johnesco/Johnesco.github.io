@@ -85,7 +85,6 @@ function update(){
 			
 			// else just add link 	
 			} else {
-				// var url = buildURL(contentObject.sections[section],contentObject.sections[section].list[page]);
 				var sect = contentObject.sections[section];
 				var url = security + sect.pre + env + sect.sub + sect.list[page];
 				$content.append(makeLink(url));
