@@ -13,7 +13,7 @@ var security = "https://";
 var contentObject = {sections:{}};
 
 // Function to add arrays as sections to contentObject
-function addSection(pre,section,sub,list){
+function addSection(section, pre, sub, list){
 	contentObject.sections[section] = {};
 	contentObject.sections[section].pre = pre;
 	contentObject.sections[section].sub = sub;
@@ -38,17 +38,17 @@ function makeHeader(contentSection, slice){
 }
 
 // Add these sections into page object
-addSection("www", "Home Pages Links","",homePageLinks);
-addSection("www", "CostCo (New Community)", "", CostCoPages);
-addSection("www", "Search Pages", "s/", searchPages);
-addSection("www", "Community Pages", "community/", communityPages);
-addSection("www", "Store Pages","view/",storePages);
-addSection("www", "Ideas Pages","ideas/",ideaPages);
-addSection("www", "Category Pages", "coupons/", categoryPages);
-addSection("giftcards", "GiftCard Pages", "store/", giftcardPages);
-addSection("www", "Student Affinity Pages", "student-discounts/", studentAffinityPagesTest);
-addSection("www", "Misc Pages", "", miscPages);
-addSection("www", "Test Env Only", "view/", testEnvPages);
+addSection("Home Pages Links", "www", "",homePageLinks);
+addSection("CostCo (New Community)", "www", "", CostCoPages);
+addSection("Search Pages", "www", "s/", searchPages);
+addSection("Community Pages", "www", "community/", communityPages);
+addSection("Store Pages", "www", "view/",storePages);
+addSection("Ideas Pages", "www", "ideas/",ideaPages);
+addSection("Category Pages", "www", "coupons/", categoryPages);
+addSection("GiftCard Pages", "www", "store/", giftcardPages);
+addSection("Student Affinity Pages", "www", "student-discounts/", studentAffinityPagesTest);
+addSection("Misc Pages", "www", "", miscPages);
+addSection("Test Env Only", "www", "view/", testEnvPages);
 
 function update(){
 	$content.empty(); // Clear Existing Links
