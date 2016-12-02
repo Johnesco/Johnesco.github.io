@@ -12,6 +12,19 @@ var security = "https://";
 // Main object that will hold entire set of links
 var contentObject = {sections:{}};
 
+// Add these sections into page object
+addSection("Home Pages Links", "www", "",homePageLinks);
+addSection("CostCo (New Community)", "www", "", CostCoPages);
+addSection("Search Pages", "www", "s/", searchPages);
+addSection("Community Pages", "www", "community/", communityPages);
+addSection("Store Pages", "www", "view/",storePages);
+addSection("Ideas Pages", "www", "ideas/",ideaPages);
+addSection("Category Pages", "www", "coupons/", categoryPages);
+addSection("GiftCard Pages", "giftcards", "store/", giftcardPages);
+addSection("Student Affinity Pages", "www", "student-discounts/", studentAffinityPagesTest);
+addSection("Misc Pages", "www", "", miscPages);
+addSection("Test Env Only", "www", "view/", testEnvPages);
+
 // Function to add arrays as sections to contentObject
 function addSection(section, pre, sub, list){
 	contentObject.sections[section] = {};
@@ -36,19 +49,6 @@ function makeLink(url,label,nobr){
 function makeHeader(contentSection, slice){
 	return "<h2>" + contentSection + " (slice: " + slice + ")" + "</h2>";
 }
-
-// Add these sections into page object
-addSection("Home Pages Links", "www", "",homePageLinks);
-addSection("CostCo (New Community)", "www", "", CostCoPages);
-addSection("Search Pages", "www", "s/", searchPages);
-addSection("Community Pages", "www", "community/", communityPages);
-addSection("Store Pages", "www", "view/",storePages);
-addSection("Ideas Pages", "www", "ideas/",ideaPages);
-addSection("Category Pages", "www", "coupons/", categoryPages);
-addSection("GiftCard Pages", "www", "store/", giftcardPages);
-addSection("Student Affinity Pages", "www", "student-discounts/", studentAffinityPagesTest);
-addSection("Misc Pages", "www", "", miscPages);
-addSection("Test Env Only", "www", "view/", testEnvPages);
 
 function update(){
 	$content.empty(); // Clear Existing Links
