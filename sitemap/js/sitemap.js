@@ -1,6 +1,3 @@
-
-
-
 var $content = $('#content'); 
 // var $json = $('#json'); 
 
@@ -13,24 +10,27 @@ var security = "https://";
 var contentObject = {sections:{}};
 
 // Add these sections into page object
+// function(Section Name, prefix, subDirectory, endPoints, scope)
 addSection("Home Pages Links", "www", "",homePageLinks);
 addSection("CostCo (New Community)", "www", "", CostCoPages);
 addSection("Search Pages", "www", "s/", searchPages);
 addSection("Community Pages", "www", "community/", communityPages);
-addSection("Store Pages", "www", "view/",storePages);
-addSection("Ideas Pages", "www", "ideas/",ideaPages);
+addSection("Store Pages", "www", "view/", storePages);
+addSection("Ideas Pages", "www", "ideas/", ideaPages);
 addSection("Category Pages", "www", "coupons/", categoryPages);
 addSection("GiftCard Pages", "giftcards", "store/", giftcardPages);
 addSection("Student Affinity Pages", "www", "student-discounts/", studentAffinityPagesTest);
 addSection("Misc Pages", "www", "", miscPages);
-addSection("Test Env Only", "www", "view/", testEnvPages);
+addSection("Test Env Only", "www", "view/", testEnvPages, 'test');
 
 // Function to add arrays as sections to contentObject
-function addSection(section, pre, sub, list){
+function addSection(section, pre, sub, endPoints, scope){
 	contentObject.sections[section] = {};
 	contentObject.sections[section].pre = pre;
 	contentObject.sections[section].sub = sub;
-	contentObject.sections[section].list = list;
+	contentObject.sections[section].endPoints = endPoints;
+	contentObject.sections[section].scope = scope;
+
 }
 
 // Creates HTML link with ?refresh and &slice from a URL
@@ -53,28 +53,36 @@ function makeHeader(contentSection, slice){
 function update(){
 	$content.empty(); // Clear Existing Links
 
-	// Check form and adjust properties
+	// Check form and adjust global properties
 	slice = $('#slice').val() || slice;
 	env = $('input[name="environment"]:checked').val(); // Assign evn via radio button
 	security = $('input[name="http"]:checked').val(); // Assign security via radio button
 
 	// Taverse Pages.sections object, putting url arrays into pageSection
 	for (section in contentObject.sections){
+
+		// Continue to next section if it's not in the currenly selected env
+		var scope = contentObject.sections[section].scope;
+		if (scope) {
+			if (!env.includes(scope)) continue;
+		} 
+
+		// Add a header to the page based on section name
 		$content.append(makeHeader(section,slice));
 
-		// Page = index of content.sections[contentSection].list
-		for (page in contentObject.sections[section].list){
+		// Page = index of content.sections[contentSection].endPoints
+		for (page in contentObject.sections[section].endPoints){
 
 			// Special Case for 'view/' pages (add landing pages)
 			if (contentObject.sections[section].sub == "view/"){
 				var sect = contentObject.sections[section];
-				var url = security + sect.pre + env + sect.sub + sect.list[page];
+				var url = security + sect.pre + env + sect.sub + sect.endPoints[page];
 				$content.append(makeLink(url,"",true));
 
 				// changes contentObject.sections[section].sub from "view" to landing, landing2....
 				for (sub in landingPages){
 					sect.sub = landingPages[sub];
-					var url = security + sect.pre + env + sect.sub + sect.list[page];
+					var url = security + sect.pre + env + sect.sub + sect.endPoints[page];
 					$content.append(makeLink(url,"("+landingPages[sub]+")",true));
 				}
 
@@ -86,7 +94,7 @@ function update(){
 			// else just add link 	
 			} else {
 				var sect = contentObject.sections[section];
-				var url = security + sect.pre + env + sect.sub + sect.list[page];
+				var url = security + sect.pre + env + sect.sub + sect.endPoints[page];
 				$content.append(makeLink(url));
 			}
 		};
@@ -112,7 +120,7 @@ $('form').on('keyup keypress', function(e) {
 //debugging
 
 function updateJSON(){
-		console.log(JSON.stringify(content, 1, '  '));
+		console.log(JSON.stringify(contentObject, 1, '  '));
 };
 
 updateJSON();
