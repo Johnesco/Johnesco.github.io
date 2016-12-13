@@ -8,6 +8,10 @@ var unsubscribe = "&unsubscribe=U2PEHPOV6BB5NHU4SLPTCYNS7Q&ei=U2PEHPOV6BB5NHU4SL
 
 var landingPages = ["landing/", "landing2/", "landing5/"];
 
+var homePage = [
+"",
+"responsive/homepage.php"]
+
 var homePageLinks = [
 	"coupon-codes",
 	"giftcards",

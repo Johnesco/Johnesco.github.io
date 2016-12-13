@@ -11,6 +11,7 @@ var contentObject = {sections:{}};
 
 // Add these sections into page object
 // function(Section Name, prefix, subDirectory, endPoints, scope)
+addSection("Hope Page", "www", "", homePage);
 addSection("Home Pages Links", "www", "",homePageLinks);
 addSection("CostCo (New Community)", "www", "", CostCoPages);
 addSection("Search Pages", "www", "s/", searchPages);
