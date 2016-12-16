@@ -17,12 +17,13 @@ addSection("CostCo (New Community)", "www", "", CostCoPages);
 addSection("Search Pages", "www", "s/", searchPages);
 addSection("Community Pages", "www", "community/", communityPages);
 addSection("Store Pages", "www", "view/", storePages);
+addSection("Store Pages (Test Only)", "www", "view/", testEnvPages, 'test');
 addSection("Ideas Pages", "www", "ideas/", ideaPages);
 addSection("Category Pages", "www", "coupons/", categoryPages);
 addSection("GiftCard Pages", "giftcards", "store/", giftcardPages);
 addSection("Student Affinity Pages", "www", "student-discounts/", studentAffinityPagesTest);
 addSection("Misc Pages", "www", "", miscPages);
-addSection("Test Env Only", "www", "view/", testEnvPages, 'test');
+
 
 // Function to add arrays as sections to contentObject
 function addSection(section, pre, sub, endPoints, scope){

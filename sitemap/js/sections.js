@@ -110,6 +110,7 @@ var colorAffinityPagesTest = [
 	"FF0000"];
 
 var miscPages = [
+	"special/community",
 	"quickSignUp",
 	"submit",
 	"showcoupon/" + cid,
