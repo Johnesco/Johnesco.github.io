@@ -12,9 +12,10 @@ var contentObject = {sections:{}};
 // Add section from JSON
 addSectionJSON(homePage);
 addSectionJSON(homePageLinks);
+addSectionJSON(footerLinks);
 addSectionJSON(CostCoPages);
 addSectionJSON(communityPages);
-addSectionJSON(communityPagesDeprecated);
+addSectionJSON(communityPagesIe);
 addSectionJSON(searchPages);
 addSectionJSON(storePages);
 addSectionJSON(testEnvPages);
@@ -22,9 +23,9 @@ addSectionJSON(ideaPages);
 addSectionJSON(dealsPages);
 addSectionJSON(categoryPages);
 addSectionJSON(giftcardPages);
+addSectionJSON(miscPages);
 addSectionJSON(studentAffinityPagesTest);
 addSectionJSON(colorAffinityPagesTest);
-addSectionJSON(miscPages);
 addSectionJSON(deprecatedPages);
 
 // Function to add JSON sections to contentObject

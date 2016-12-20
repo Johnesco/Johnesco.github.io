@@ -4,8 +4,7 @@ var pizzalocation = "ma/papajohns.com/78745";
 var ideas = "hot-products";
 var cid = "7450931";
 var affinityGroup = ["student-discount/","color-discount/"];
-var unsubscribe = "&unsubscribe=U2PEHPOV6BB5NHU4SLPTCYNS7Q&ei=U2PEHPOV6BB5NHU4SLPTCYNS7Q&mailingid=18561&ESP=2&utm_medium=email&utm_campaign=2015_10_28&ch=newsl&utm_source=newsletter&utm_term=maleproductdeals&cus.ptp=flagship"
-
+var unsubscribe = "&ei=C3EPLI7HWJA23L7YFBZG3GV7JM";
 var landingPages = ["landing/", "landing2/", "landing5/"];
 
 var homePage = {
@@ -164,6 +163,7 @@ var communityPages = {
     "sub": "community/",
     "endPoints": [
         "",
+        "badges",
 		"confirm_oauth",
 		"login",
 		"member/"+username,
@@ -173,13 +173,12 @@ var communityPages = {
 		"welcome" ]
  };
 
-var communityPagesDeprecated = {
+var communityPagesIe = {
 	"sectionName": "Deprecated Community Pages",
     "pre": "www",
     "sub": "community/",
     "endPoints": [
-        "badges",
-		"unsubscribe",
+        "unsubscribe",
 		"forgotpassword",
 		"inactive"]
  };
@@ -204,7 +203,14 @@ var colorAffinityPagesTest = {
     "scope": "test",
     "endPoints": [	
 		"",
-		"FF0000"
+		"FF0000",
+		"FFFF00",
+		"FF00FF",
+		"FFFFFF",
+		"00FF00",
+		"00FFFF",
+		"0000FF",
+		"000000"
 	]
  };
 
