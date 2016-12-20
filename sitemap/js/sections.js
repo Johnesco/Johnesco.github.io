@@ -9,8 +9,8 @@ var unsubscribe = "&unsubscribe=U2PEHPOV6BB5NHU4SLPTCYNS7Q&ei=U2PEHPOV6BB5NHU4SL
 var landingPages = ["landing/", "landing2/", "landing5/"];
 
 var homePage = [
-"",
-"responsive/homepage.php"]
+	"",
+	"responsive/homepage.php"]
 
 var homePageLinks = [
 	"coupon-codes",
@@ -25,6 +25,12 @@ var homePageLinks = [
 	"saved",
 	"blog",
 	"coupons/gifts"];
+
+var footerLinks = [
+	"sitemap",
+	"static/terms",
+	"static/privacy"
+	];
 
 var storePages = [
 	"%E2%88%86%C2%A5%E2%88%91.com",
@@ -48,23 +54,22 @@ var storePages = [
 
 var ideaPages = [
 	"hot-products",
-	"halloween"];
+	"halloween"
+	];
+
+var dealsPages = [
+	"halloween",
+	"blackfriday",
+	"cybermonday",
+	"christmas"
+]
 
 var testEnvPages = [
 	"discounttypes.com",
 	"everykindofcoupon.com",
 	"omnioffers.com",
-	"outclicks.com"];
-
-var CostCoPages = [
-	"dashboard",
-	"saved",
-	"favorites",
-	"justforyou",
-	"join",
-	"signup",
-	"login",
-	"profile"];
+	"outclicks.com",
+	"utf-8.com"];
 
 var categoryPages = [
 	"",
@@ -83,6 +88,16 @@ var giftcardPages = [
 var searchPages = [
 	"bacon"];
 
+var CostCoPages = [
+	"profile",join
+	"dashboard",
+	"saved",
+	"favorites",
+	"justforyou",
+	"join",
+	"signup",
+	"login"];
+
 var communityPages = [
 	"",
 	"badges",
@@ -96,6 +111,9 @@ var communityPages = [
 	"add-favorite-stores",
 	"unsubscribe",
 	"welcome"];
+
+var communityPagesDeprecated = [
+	"unsubscribe"];
 
 var studentAffinityPagesTest = [
 	"",
@@ -117,12 +135,8 @@ var miscPages = [
 	"blah404",
 	"alerts",
 	"contests",
-	"deals/blackfriday",
 	"profile",
 	"settings",
-	"sitemap",
-	"static/privacy",
-	"static/terms",
 	"subscribe",
 	"weeklyads",
 	"profile",];
