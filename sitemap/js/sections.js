@@ -100,20 +100,19 @@ var CostCoPages = [
 
 var communityPages = [
 	"",
-	"badges",
 	"confirm_oauth",
-	"forgotpassword",
-	"inactive",
 	"login",
 	"member/"+username,
 	"signup",
 	"submitted-coupons",
 	"add-favorite-stores",
-	"unsubscribe",
 	"welcome"];
 
 var communityPagesDeprecated = [
-	"unsubscribe"];
+	"badges",
+	"unsubscribe",
+	"forgotpassword",
+	"inactive"];
 
 var studentAffinityPagesTest = [
 	"",
