@@ -10,7 +10,7 @@ var landingPages = ["landing/", "landing2/", "landing5/"];
 
 var homePage = [
 	"",
-	"responsive/homepage.php"]
+	"responsive/homepage.php"];
 
 var homePageLinks = [
 	"coupon-codes",
@@ -89,7 +89,7 @@ var searchPages = [
 	"bacon"];
 
 var CostCoPages = [
-	"profile",join
+	"profile",
 	"dashboard",
 	"saved",
 	"favorites",
