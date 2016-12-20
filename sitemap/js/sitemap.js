@@ -9,32 +9,28 @@ var security = "https://";
 // Main object that will hold entire set of links
 var contentObject = {sections:{}};
 
-// Add these sections into page object
-// function(Section Name, prefix, subDirectory, endPoints, scope)
-addSection("Hope Page", "www", "", homePage);
-addSection("Home Pages Links", "www", "",homePageLinks);
-addSection("CostCo (New Community)", "www", "", CostCoPages);
-addSection("Community Pages", "www", "community/", communityPages);
-addSection("Deprecated Community Pages", "www", "community/", communityPagesDeprecated);
-addSection("Search Pages", "www", "s/", searchPages);
-addSection("Store Pages", "www", "view/", storePages);
-addSection("Store Pages (Test Only)", "www", "view/", testEnvPages, 'test');
-addSection("Ideas Pages", "www", "ideas/", ideaPages);
-addSection("Deals Pages", "www", "deals/", dealsPages);
-addSection("Category Pages", "www", "coupons/", categoryPages);
-addSection("GiftCard Pages", "giftcards", "store/", giftcardPages);
-addSection("Student Affinity Pages", "www", "student-discounts/", studentAffinityPagesTest);
-addSection("Misc Pages", "www", "", miscPages);
+// Add section from JSON
+addSectionJSON(homePage);
+addSectionJSON(homePageLinks);
+addSectionJSON(CostCoPages);
+addSectionJSON(communityPages);
+addSectionJSON(communityPagesDeprecated);
+addSectionJSON(searchPages);
+addSectionJSON(storePages);
+addSectionJSON(testEnvPages);
+addSectionJSON(ideaPages);
+addSectionJSON(dealsPages);
+addSectionJSON(categoryPages);
+addSectionJSON(giftcardPages);
+addSectionJSON(studentAffinityPagesTest);
+addSectionJSON(colorAffinityPagesTest);
+addSectionJSON(miscPages);
+addSectionJSON(deprecatedPages);
 
-
-// Function to add arrays as sections to contentObject
-function addSection(section, pre, sub, endPoints, scope){
-	contentObject.sections[section] = {};
-	contentObject.sections[section].pre = pre;
-	contentObject.sections[section].sub = sub;
-	contentObject.sections[section].endPoints = endPoints;
-	contentObject.sections[section].scope = scope;
-
+// Function to add JSON sections to contentObject
+function addSectionJSON(section){
+	contentObject.sections[section.sectionName] = section;
+	delete contentObject.sections[section.sectionName].sectionName;
 }
 
 // Creates HTML link with ?refresh and &slice from a URL
