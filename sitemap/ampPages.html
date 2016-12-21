@@ -6,18 +6,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-	<form id="env" style="display: inline">
-	Slice: <input type="text" id="slice" rows="" cols="" onclick="this.focus();this.select()">defaults to Control</input>
-    <br>Env:<br> 
-                <input type="radio" name="env" value=".rmntest.com/" checked> TEST<br>
-                <input type="radio" name="env" value=".rmnstage.com/"> Stage<br>
-                <input type="radio" name="env" value=".retailmenot.com/"> Prod<br>
-                <hr>
+    <form>
+        <table border=1><tr>
+        <td>Slice: <br><input type="text" id="slice" rows="" cols="" onclick="this.focus();this.select()"><br>(defaults to Control) </input>
+        <td>Env:<br>
+                <input type="radio" name="environment" value=".rmntest.com/" checked> TEST<br>
+                <input type="radio" name="environment" value=".rmnstage.com/"> Stage<br>
+                <input type="radio" name="environment" value=".retailmenot.com/"> Prod<br>
+        </td>
+        <td>http(s)<br>
                 <input type="radio" name="http" value="https://" checked> HTTPs<br>
                 <input type="radio" name="http" value="http://"> HTTP<br>
-                <button type="button" id="update">Update Links</button>
-              </form> 
-	<div id="links"></div><br><br>
+    </td></tr></table>
+    </form> 
+    <div id="content"></div><br>
+    <div id="json"></div><br>
 	<script   src="http://code.jquery.com/jquery-2.2.3.min.js"   integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo="   crossorigin="anonymous"></script>
 	<script src="js/ampPages.js"></script>
     <p><a href="index.html">Back to Sitemap</a></p>

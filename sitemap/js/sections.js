@@ -100,6 +100,7 @@ var testEnvPages = {
 	"sectionName": "Test Stores (test only)",
     "pre": "www",
     "sub": "view/",
+    "scope": "test",
     "endPoints": [
         "discounttypes.com",
 		"everykindofcoupon.com",

@@ -35,14 +35,21 @@ function addSectionJSON(section){
 }
 
 // Creates HTML link with ?refresh and &slice from a URL
+// If nobr is false or absent, a <br> is added after link
+// If nobr is true, no <br> is added after link
 function makeLink(url,label,nobr){
+	// If no label is provided, use URL as label
 	var label = label || url;
+
+	// Combine abel and url into an achor tag
 	var url = "<a target=\"_blank\" href=\"" +
 			url + "?refresh=1" +
 			"&slice=" + slice + "\">" +
 			label +
 			"</a> ";
-			if (!nobr) url+= "<br>";
+
+	// if 
+	if (!nobr) url+= "<br>";
 			return url;
 }
 
@@ -54,15 +61,17 @@ function makeHeader(contentSection, slice){
 function update(){
 	$content.empty(); // Clear Existing Links
 
-	// Check form and adjust global properties
-	slice = $('#slice').val() || slice;
+	// Get latest settings on form buttons and fields
+	slice = $('#slice').val() || slice; // Get slice from text field
 	env = $('input[name="environment"]:checked').val(); // Assign evn via radio button
 	security = $('input[name="http"]:checked').val(); // Assign security via radio button
 
 	// Taverse Pages.sections object, putting url arrays into pageSection
 	for (section in contentObject.sections){
 
-		// Continue to next section if it's not in the currenly selected env
+		// Check the Scope of the section
+		// Skips if it doesn't match
+		// no scope = always render
 		var scope = contentObject.sections[section].scope;
 		if (scope) {
 			if (!env.includes(scope)) continue;
@@ -71,32 +80,34 @@ function update(){
 		// Add a header to the page based on section name
 		$content.append(makeHeader(section,slice));
 
-		// Page = index of content.sections[contentSection].endPoints
-		for (page in contentObject.sections[section].endPoints){
+		// endpoint = index of content.sections[contentSection].endPoints
+		for (endPoint in contentObject.sections[section].endPoints){
+
+			// If the section is not a storepage, it just adds the link
+			if (contentObject.sections[section].sub !== "view/"){
+				var sect = contentObject.sections[section];
+				var url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
+				$content.append(makeLink(url));
 
 			// Special Case for 'view/' pages (add landing pages)
-			if (contentObject.sections[section].sub == "view/"){
+			} else {
+
+				// Adds the first link with url
 				var sect = contentObject.sections[section];
-				var url = security + sect.pre + env + sect.sub + sect.endPoints[page];
+				var url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
 				$content.append(makeLink(url,"",true));
 
-				// changes contentObject.sections[section].sub from "view" to landing, landing2....
+				// adds remaining links of landing, landing2.... with a short label
 				for (sub in landingPages){
 					sect.sub = landingPages[sub];
-					var url = security + sect.pre + env + sect.sub + sect.endPoints[page];
-					$content.append(makeLink(url,"("+landingPages[sub]+")",true));
+					var url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
+					
+					$content.append("- "+makeLink(url,landingPages[sub],true));
 				}
 
-			// End of landing case
-			$content.append("<br>");
-			contentObject.sections[section].sub = "view/"; // change back for next loop
-
-			
-			// else just add link 	
-			} else {
-				var sect = contentObject.sections[section];
-				var url = security + sect.pre + env + sect.sub + sect.endPoints[page];
-				$content.append(makeLink(url));
+				// End of landing case
+				$content.append("<br>"); // since nobr was true
+				contentObject.sections[section].sub = "view/"; // change back for next loop
 			}
 		};
 	}
