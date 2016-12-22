@@ -60,9 +60,18 @@ ul#dashboard {
 
 #dashboard .button {
 	padding: 3px;
-	margin: 1px 0 0 3px;
+	margin: 1px 0 0 0;
 	font-size:15px;
 	background: #784c82;
+}
+
+#dashboard li.flashy{
+	font-size: 17px;
+	text-align: center;
+	padding:12px 0;
+	background-color: white;
+	border-radius: 5px;
+	color:blue;
 }
 
 #dashboard li.button:hover {
