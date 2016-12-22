@@ -34,10 +34,15 @@ function addSectionJSON(section){
 	delete contentObject.sections[section.sectionName].sectionName;
 }
 
+// Creates HTML for a Header Section
+function makeHeader(contentSection, slice){
+	return "<h2>" + contentSection + " (slice: " + slice + ")" + "</h2>";
+}
+
 // Creates HTML link with ?refresh and &slice from a URL
 // If nobr is false or absent, a <br> is added after link
 // If nobr is true, no <br> is added after link
-function makeLink(url,label,nobr){
+function makeAnchor(url,label,nobr){
 	// If no label is provided, use URL as label
 	var label = label || url;
 
@@ -53,10 +58,10 @@ function makeLink(url,label,nobr){
 			return url;
 }
 
-// Creates HTML for a Header Section
-function makeHeader(contentSection, slice){
-	return "<h2>" + contentSection + " (slice: " + slice + ")" + "</h2>";
-}
+// function makeAnchor(sect){
+// 	var url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
+// 	$content.append(makeLink(url));
+// };
 
 function update(){
 	$content.empty(); // Clear Existing Links
@@ -87,7 +92,7 @@ function update(){
 			if (contentObject.sections[section].sub !== "view/"){
 				var sect = contentObject.sections[section];
 				var url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
-				$content.append(makeLink(url));
+				$content.append(makeAnchor(url));
 
 			// Special Case for 'view/' pages (add landing pages)
 			} else {
@@ -95,14 +100,14 @@ function update(){
 				// Adds the first link with url
 				var sect = contentObject.sections[section];
 				var url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
-				$content.append(makeLink(url,"",true));
+				$content.append(makeAnchor(url,"",true));
 
 				// adds remaining links of landing, landing2.... with a short label
 				for (sub in landingPages){
 					sect.sub = landingPages[sub];
 					var url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
 					
-					$content.append("- "+makeLink(url,landingPages[sub],true));
+					$content.append("- "+makeAnchor(url,landingPages[sub],true));
 				}
 
 				// End of landing case

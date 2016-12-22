@@ -37,7 +37,11 @@
           <li class="label">JSON:</li>
             <li class="button" id='beautifyTree'>Beautify JSON + Tree</li>
             <li class="button" id='showKibanaLink'>Kibana</li>
-
+            <form id="env">
+            <input type="radio" name="env" value="test" checked> TEST<br>
+            <input type="radio" name="env" value="stage"> Stage<br>
+            <input type="radio" name="env" value="prod"> Prod<br>
+            </form> 
     </ul>
       <textarea id="textBox" rows="" cols="" onclick="this.focus();this.select()"></textarea>
 <div class='info'>

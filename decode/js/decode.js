@@ -27,7 +27,8 @@ function showKibanaLink() {
                     + KibanaUUID
                     + "')),sort:!(owen.event.eventTimestamp,desc))\">"
                     + KibanaUUID
-                    + "</a> ";
+                    + "</a> "
+                    + env;
 
         $(kibanaLink).html(string);
     } else { kibanaLink.text("Kibana Link: (none)"); }
@@ -132,4 +133,4 @@ $('#tablefy').on('click', modifyTextbox.bind(null, tablefyFun));
 $('#beautifyTree').on('click', modifyTextbox.bind(null, null));
 $('#textBox').on('mouseout', modifyTextbox.bind(null, null));
 $('#magicFormat').on('click', modifyTextbox.bind(null, magicFormat));
-$('#showKibanaLink').on('click', modifyTextbox.bind(null, showKibanaLink));
+$('#showKibanaLink').on('click', showKibanaLink);
