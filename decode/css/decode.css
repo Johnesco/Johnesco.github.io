@@ -31,14 +31,14 @@ textarea {
 	margin: 0;
 	padding: 0;
 	width: 420px;
-	height: 500px;
+	height: 550px;
 }
 
 /* #dashboard is buttons */
 
 ul#dashboard {
 		width: 150px;
-		height:500px;
+		height:550px;
 		float: left;
 		list-style: none;
 		padding: 1px 10px 0px 10px;
