@@ -6,13 +6,13 @@ var kibanaLink = $('#kibanaLink');
 
 // Beautify JSON in TextBox
 function beautify() {
-    var json_object = JSON.parse(textBox.val()) || '{"none":"none"}';
+    var json_object = JSON.parse(textBox.val());
     textBox.val(JSON.stringify(json_object, 1, '  '));  
 }
 
 // Display JSON Tree
 function viewJsonTree() {
-  var jjson = textBox.val() || '{"none":"none"}';
+  var jjson = textBox.val();
   $('#jjson').jJsonViewer(jjson);
 }
 
@@ -38,7 +38,7 @@ function showKibanaLink() {
 // This function optionally recieves a function from the event
 function modifyTextbox(event) {
     if (event.data) {
-        textBox.val(event.data.function(textBox.val())); // modifies text box via function
+        textBox.val(event.data.fun(textBox.val())); // modifies text box via function
     } 
     beautify();
     viewJsonTree();
@@ -106,10 +106,10 @@ var tablefyFun = function (text) {
 // jQuery Event Listener
 // http://api.jquery.com/on/
 
-$('#extractAll').on('click', {function : extractAllFun}, modifyTextbox);
-$('#decode').on('click', {function : decodeFun}, modifyTextbox);
-$('#tablefy').on('click', {function : tablefyFun}, modifyTextbox);
-$('#magicFormat').on('click', {function:magicFormat}, modifyTextbox);
+$('#extractAll').on('click', {fun : extractAllFun}, modifyTextbox);
+$('#decode').on('click', {fun : decodeFun}, modifyTextbox);
+$('#tablefy').on('click', {fun : tablefyFun}, modifyTextbox);
+$('#magicFormat').on('click', {fun : magicFormat}, modifyTextbox);
 $('#beautifyTree').on('click', modifyTextbox);
 $('#textBox').on('mouseout', modifyTextbox);
 $('#showKibanaLink').on('click', showKibanaLink);
