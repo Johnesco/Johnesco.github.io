@@ -36,9 +36,9 @@ function showKibanaLink() {
 }
 
 // This function optionally recieves a function from the event
-function modifyTextbox(event) {
-    if (event.data) {
-        textBox.val(event.data.fun(textBox.val())); // modifies text box via function
+function modifyTextbox(funct) {
+    if (typeof funct === 'function') {
+        textBox.val(funct(textBox.val())); // modifies text box via function
     } 
     beautify();
     viewJsonTree();
@@ -106,10 +106,10 @@ var tablefyFun = function (text) {
 // jQuery Event Listener
 // http://api.jquery.com/on/
 
-$('#extractAll').on('click', {fun : extractAllFun}, modifyTextbox);
-$('#decode').on('click', {fun : decodeFun}, modifyTextbox);
-$('#tablefy').on('click', {fun : tablefyFun}, modifyTextbox);
-$('#magicFormat').on('click', {fun : magicFormat}, modifyTextbox);
+$('#extractAll').on('click', function(){modifyTextbox(extractAllFun);});
+$('#decode').on('click', function(){modifyTextbox(decodeFun);});
+$('#tablefy').on('click', function(){modifyTextbox(tablefyFun);});
+$('#magicFormat').on('click', function(){modifyTextbox(magicFormat);});
 $('#beautifyTree').on('click', modifyTextbox);
 $('#textBox').on('mouseout', modifyTextbox);
 $('#showKibanaLink').on('click', showKibanaLink);
