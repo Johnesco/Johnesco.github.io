@@ -23,8 +23,7 @@ div#links {
 a {font-size: 0.9em;}
 
 table {
-	border-collapse: collapse;
-	border-color: #eeeeee;
+	border: 1px solid black;
 }
 
 
@@ -34,8 +33,4 @@ table td{
 	padding: 5px;
 }
 
-button{
-	font-size: .75em;
-	height: 30px;
-	color: red;
-}
+.textField {border: 1px solid black;}

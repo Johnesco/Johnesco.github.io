@@ -7,8 +7,9 @@
 </head>
 <body>
     <form>
-        <table border=1><tr>
-        <td>Slice: <br><input type="text" id="slice" rows="" cols="" onclick="this.focus();this.select()"><br>(defaults to Control) </input>
+        <table><tr>
+        <td>Slice: <br><input class="textField" type="text" id="slice" onclick="this.focus();this.select()" />
+        <p>(defaults to Control)</p>
         <td>Env:<br>
                 <input type="radio" name="environment" value=".rmntest.com/" checked> TEST<br>
                 <input type="radio" name="environment" value=".rmnstage.com/"> Stage<br>
