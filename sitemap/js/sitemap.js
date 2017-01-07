@@ -87,19 +87,18 @@ function update(){
 
 		// endpoint = index of content.sections[contentSection].endPoints
 		for (endPoint in contentObject.sections[section].endPoints){
+			var sect = contentObject.sections[section];
+			var url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
 
 			// If the section is not a storepage, it just adds the link
 			if (contentObject.sections[section].sub !== "view/"){
-				var sect = contentObject.sections[section];
-				var url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
+				
 				$content.append(makeAnchor(url));
 
 			// Special Case for 'view/' pages (add landing pages)
 			} else {
 
 				// Adds the first link with url
-				var sect = contentObject.sections[section];
-				var url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
 				$content.append(makeAnchor(url,"",true));
 
 				// adds remaining links of landing, landing2.... with a short label
