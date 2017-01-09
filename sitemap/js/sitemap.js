@@ -53,8 +53,6 @@ function makeAnchor(url,label,nobr){
 			label +
 			"</a> ";
 
-	// if 
-	if (!nobr) url+= "<br>";
 			return url;
 }
 
@@ -86,26 +84,27 @@ function update(){
 		$content.append(makeHeader(section,slice));
 
 		// endpoint = index of content.sections[contentSection].endPoints
-		for (endPoint in contentObject.sections[section].endPoints){
+		var ends = contentObject.sections[section].endPoints;
+		for (var endPoint in ends){
+
+			// Cache these values for use in inner loops
 			var sect = contentObject.sections[section];
 			var url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
 
 			// If the section is not a storepage, it just adds the link
 			if (contentObject.sections[section].sub !== "view/"){
-				
 				$content.append(makeAnchor(url));
+				$content.append("<br>");
 
 			// Special Case for 'view/' pages (add landing pages)
 			} else {
 
 				// Adds the first link with url
-				$content.append(makeAnchor(url,"",true));
+				$content.append(makeAnchor(url));
 
 				// adds remaining links of landing, landing2.... with a short label
 				for (sub in landingPages){
 					sect.sub = landingPages[sub];
-					var url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
-					
 					$content.append("- "+makeAnchor(url,landingPages[sub],true));
 				}
 
