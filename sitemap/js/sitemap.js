@@ -9,26 +9,34 @@ var security = "https://";
 // Main object that will hold entire set of links
 var contentObject = {sections:{}};
 
-// Add section from JSON
-addSectionJSON(homePage);
-addSectionJSON(homePageLinks);
-addSectionJSON(footerLinks);
-addSectionJSON(CostCoPages);
-addSectionJSON(communityPages);
-addSectionJSON(communityPagesIe);
-addSectionJSON(searchPages);
-addSectionJSON(storePages);
-addSectionJSON(testEnvPages);
-addSectionJSON(ideaPages);
-addSectionJSON(dealsPages);
-addSectionJSON(categoryPages);
-addSectionJSON(giftcardPages);
-addSectionJSON(miscPages);
-addSectionJSON(studentAffinityPagesTest);
-addSectionJSON(colorAffinityPagesTest);
-addSectionJSON(deprecatedPages);
+// Add sections from JSON
+addSectionsJSON([
+	homePage,
+	homePageLinks,
+	footerLinks,
+	CostCoPages,
+	communityPages,
+	communityPagesIe,
+	searchPages,
+	storePages,
+	testEnvPages,
+	ideaPages,
+	dealsPages,
+	categoryPages,
+	giftcardPages,
+	miscPages,
+	studentAffinityPagesTest,
+	colorAffinityPagesTest,
+	deprecatedPages]);
 
 // Function to add JSON sections to contentObject
+function addSectionsJSON(sections){
+	for (section of sections){
+		addSectionJSON(section);
+	}
+}
+
+// Function to add JSON section to contentObject
 function addSectionJSON(section){
 	contentObject.sections[section.sectionName] = section;
 	delete contentObject.sections[section.sectionName].sectionName;
@@ -42,7 +50,7 @@ function makeHeader(contentSection, slice){
 // Creates HTML link with ?refresh and &slice from a URL
 // If nobr is false or absent, a <br> is added after link
 // If nobr is true, no <br> is added after link
-function makeAnchor(url,label,nobr){
+function makeAnchor(url,label){
 	// If no label is provided, use URL as label
 	var label = label || url;
 
@@ -103,14 +111,17 @@ function update(){
 				$content.append(makeAnchor(url));
 
 				// adds remaining links of landing, landing2.... with a short label
-				for (sub in landingPages){
-					sect.sub = landingPages[sub];
-					$content.append("- "+makeAnchor(url,landingPages[sub],true));
+				for (sub of landingPages){
+					sect.sub = sub;
+					url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
+					console.log("url",url);
+					console.log("sect",sect);
+					$content.append("- "+makeAnchor(url,sub,true));
 				}
 
 				// End of landing case
 				$content.append("<br>"); // since nobr was true
-				contentObject.sections[section].sub = "view/"; // change back for next loop
+				sect.sub = "view/"; // change back for next loop
 			}
 		};
 	}
