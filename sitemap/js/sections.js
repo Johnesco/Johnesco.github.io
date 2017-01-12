@@ -3,7 +3,6 @@ var pizzaroute = "a/78745";
 var pizzalocation = "ma/papajohns.com/78745";
 var ideas = "hot-products";
 var cid = "7450931";
-var affinityGroup = ["student-discount/","color-discount/"];
 var unsubscribe = "&ei=C3EPLI7HWJA23L7YFBZG3GV7JM";
 var landingPages = ["landing/", "landing2/", "landing5/"];
 
@@ -244,3 +243,22 @@ var deprecatedPages = {
 		"static/newsletter"
 ]
  };
+
+ var pageList = [
+	homePage,
+	homePageLinks,
+	footerLinks,
+	CostCoPages,
+	communityPages,
+	communityPagesIe,
+	searchPages,
+	storePages,
+	testEnvPages,
+	ideaPages,
+	dealsPages,
+	categoryPages,
+	giftcardPages,
+	miscPages,
+	studentAffinityPagesTest,
+	colorAffinityPagesTest,
+	deprecatedPages];

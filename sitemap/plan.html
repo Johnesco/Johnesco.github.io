@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head><title>Plan</title></head>
+<body>
+<h1>Process 1:</h1>
+<p>Store each page type in the following format</p>
+<pre>var ideaPages = {
+	"sectionName": "Ideas Pages",
+	"pre": "www",
+	"sub": "ideas/",
+	"endPoints": [
+		"hot-products",
+		"halloween"
+	]
+ };
+
+ var searchPages = {
+	"sectionName": "Search Pages",
+	"pre": "www",
+	"sub": "s/",
+	"endPoints":[
+		"bacon"
+    ]
+ };</pre>
+ <p>These are kept separate and not in one object to facilitate editing</p>
+
+<h1>Process 2:</h1>
+<p>Stitch these together into one large object at load time</p>
+<p>sectionName becomes the property name</p>
+<pre>{
+  "Search Pages": {
+    "pre": "www",
+    "sub": "s/",
+    "endPoints": [
+      "bacon"
+    ]
+  },
+  "Ideas Pages": {
+    "pre": "www",
+    "sub": "ideas/",
+    "endPoints": [
+      "hot-products",
+      "halloween"
+    ]
+  }
+}</pre>
+
+<h1>Process 3:</h1>
+<p>Properties from the HTML page form are combined with those from the object</p>
+<h2>From Form</h2>
+<ul>
+<li>security (http:// vs https://)</li>
+<li>environment (rmntest.com, rmnstage.com, retail)</li>
+<li>slice (control, other, etc..)</li>
+</ul>
+<h2>From Object</h2>
+<ul>
+<li>prefix (www, m, giftcard)
+<li>optional subdirectory (ideas, coupon, s)</li>
+<li>array of endpoints</li>
+</ul>
+<p>The will be combined as..</p>
+<p><strong>security + environment + subdirectory + endpoint</strong> for each endpoint in array</p>
+
+<h1>Process 4:</h1>
+<p>Result produced in Process 3 is rendered to page</p>
+
+<h1>Process 5:</h1>
+<p>Any change to properties on form starts again at process 2</p>
+</body>
+</html>
