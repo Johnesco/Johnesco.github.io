@@ -37,6 +37,27 @@ var homePageLinks = {
       ]
  };
 
+ var homePageLinksStage = {
+	"sectionName": "Home Pages Links",
+    "pre": "www",
+    "sub": "",
+    "scope": 'stage',
+    "endPoints": [
+        "coupon-codes",
+        "giftcards",
+        "printable",
+        "freeshipping",
+        "exclusives",
+        "rebates",
+        "categories",
+        "mobile",
+        "favorites",
+        "saved",
+        "blog",
+        "coupons/gifts"
+      ]
+ };
+
 var footerLinks = {
 	"sectionName": "Footer Links",
     "pre": "www",
@@ -247,6 +268,7 @@ var deprecatedPages = {
  var pageList = [
 	homePage,
 	homePageLinks,
+	homePageLinksStage,
 	footerLinks,
 	CostCoPages,
 	communityPages,

@@ -1,16 +1,15 @@
 var $content = $('#content'); 
 // var $json = $('#json'); 
 
-// Environment Variables
+// Default Environment Variables
 var slice = "control";
-var env = "rmntest.com";
+var env = "rmntest.com/";
 var security = "https://";
 
 // Main object that will hold a compressed set of links
 var contentObject = {};
 
-// Add sections from JSON to contentObject
-// One time IIEF
+// Add sections from JSON to contentObject, one time IIEF
 (function addSectionsJSON(sections){
 	for (section of sections){
 		contentObject[section.sectionName] = section;
@@ -18,9 +17,13 @@ var contentObject = {};
 	}
 }(pageList));
 
+function getSlice(){ return $('#slice').val() || slice;}
+function getEnv(){ return $('input[name="environment"]:checked').val();}
+function getSecurity(){ return $('input[name="http"]:checked').val();}
+
 // Creates HTML for a Header Section
-function makeHeader(contentSection, slice){
-	return "<h2>" + contentSection + " (slice: " + slice + ")" + "</h2>";
+function makeHeader(str){
+	return "<h2>" + str + " (slice: " + getSlice() + ")" + "</h2>";
 }
 
 // Creates HTML link with ?refresh and &slice from a URL
@@ -33,22 +36,11 @@ function makeAnchor(url,label){
 	// Combine abel and url into an achor tag
 	var url = "<a target=\"_blank\" href=\"" +
 			url + "?refresh=1" +
-			"&slice=" + slice + "\">" +
+			"&slice=" + getSlice() + "\">" +
 			label +
 			"</a> ";
 
 			return url;
-}
-
-function expandLinks(){
-	for (section in contentObject){
-		var sect = contentObject[section];
-		var endPoints = sect.endPoints;
-		sect.links = [];
-		for(endpoint of endPoints){
-			sect.links.push(security + sect.pre + env + sect.sub + endpoint);
-		}
-	}
 }
 
 function update(){
@@ -79,6 +71,7 @@ function update(){
 
 			// Cache these values for use in inner loops
 			var sect = contentObject[section];
+
 			var url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
 
 			// If the section is not a storepage, it just adds the link
@@ -107,19 +100,72 @@ function update(){
 	}
 };
 
+function buildURL(url){
+	//security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
+	return "https://www.rmntest.com/";
+}
+
+function renderSection(section, sectionName){
+	// recieves single section object and returns it as HTML
+	var links = '';
+	var linkList = [];
+
+	// if scope !== env on page, exit function and return nothing
+
+	// endpoints in a section dictate the number of links to be made
+	var endPoints = section['endPoints'];
+
+	for (endPoint of section['endPoints']){
+		var url = security + section['pre'] + getEnv() + section['sub'] + endPoint;
+		linkList.push(makeAnchor(url)+"<br>");
+	}
+
+	var header = makeHeader(sectionName);
+	for (link of linkList){
+		links += link;
+	}
+	section = header + links;
+	section = '<div class="section">' + section + '</div>';
+
+	return section //string
+}
+
+function renderContent(obj){
+	//processes content Object into a string of html and writes it to the page
+	finalStr = '';
+	var sectionList = [];
+
+	// for each section in object, pass it and section name to be rendered.
+	for(section in obj){
+		sectionList.push(renderSection(obj[section],section));
+	}
+
+	// render array into final HTML
+	for (content of sectionList){
+		finalStr += content;
+	}
+	$content.html(finalStr);
+}
+
+// Fires off renderContent from form clicks and updates
+function displayPageTypes(){
+		renderContent(contentObject);
+}
+
 // Run update() for the first time to initialize page
-update();
-expandLinks();
+displayPageTypes();
+//expandLinks();
 
 // Run update() after any change in form
-$('form').on('change', update);
+$('form').on('change', displayPageTypes);
 
 // Prevent enter from submitting form, run update() instead
 $('form').on('keyup keypress', function(e) {
   var keyCode = e.keyCode || e.which;
   if (keyCode === 13) { 
     e.preventDefault();
-    update();
+    displayPageTypes();
+    //update();
     return false;
   }
 });
