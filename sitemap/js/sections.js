@@ -38,7 +38,7 @@ var homePageLinks = {
  };
 
  var homePageLinksStage = {
-	"sectionName": "Home Pages Links",
+	"sectionName": "Home Pages Links (Stage only)",
     "pre": "www",
     "sub": "",
     "scope": 'stage',

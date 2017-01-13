@@ -43,66 +43,8 @@ function makeAnchor(url,label){
 			return url;
 }
 
-function update(){
-	$content.empty(); // Clear Existing Links
-
-	// Get latest settings on form buttons and fields
-	slice = $('#slice').val() || slice; // Get slice from text field
-	env = $('input[name="environment"]:checked').val(); // Assign evn via radio button
-	security = $('input[name="http"]:checked').val(); // Assign security via radio button
-
-	// Taverse Pages.sections object, putting url arrays into pageSection
-	for (section in contentObject){
-
-		// Check the Scope of the section
-		// Skips if it doesn't match
-		// no scope = always render
-		var scope = contentObject[section].scope;
-		if (scope) {
-			if (!env.includes(scope)) continue;
-		} 
-
-		// Add a header to the page based on section name
-		$content.append(makeHeader(section,slice));
-
-		// endpoint = index of content.sections[contentSection].endPoints
-		var ends = contentObject[section].endPoints;
-		for (var endPoint in ends){
-
-			// Cache these values for use in inner loops
-			var sect = contentObject[section];
-
-			var url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
-
-			// If the section is not a storepage, it just adds the link
-			if (contentObject[section].sub !== "view/"){
-				$content.append(makeAnchor(url));
-				$content.append("<br>");
-
-			// Special Case for 'view/' pages (add landing pages)
-			} else {
-
-				// Adds the first link with url
-				$content.append(makeAnchor(url));
-
-				// adds remaining links of landing, landing2.... with a short label
-				for (sub of landingPages){
-					sect.sub = sub;
-					url = security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
-					$content.append("- "+makeAnchor(url,sub,true));
-				}
-
-				// End of landing case
-				$content.append("<br>"); // since nobr was true
-				sect.sub = "view/"; // change back for next loop
-			}
-		};
-	}
-};
-
-function buildURL(url){
-	//security + sect.pre + env + sect.sub + sect.endPoints[endPoint];
-	return "https://www.rmntest.com/";
+function buildURL(pre, sub, endpoint){
+	return getSecurity() + pre + getEnv() + sub + endpoint;
 }
 
 function renderSection(section, sectionName){
@@ -110,14 +52,27 @@ function renderSection(section, sectionName){
 	var links = '';
 	var linkList = [];
 
-	// if scope !== env on page, exit function and return nothing
-
 	// endpoints in a section dictate the number of links to be made
 	var endPoints = section['endPoints'];
 
-	for (endPoint of section['endPoints']){
-		var url = security + section['pre'] + getEnv() + section['sub'] + endPoint;
-		linkList.push(makeAnchor(url)+"<br>");
+	if (section['sub'] == "view/"){
+		// Special Case for Store Pages
+		for (endPoint of section['endPoints']){
+			var url = buildURL(section['pre'],section['sub'],endPoint);
+			linkList.push(makeAnchor(url)+" - ");
+			url = buildURL(section['pre'],"landing/",endPoint);
+			linkList.push(makeAnchor(url,"landing/")+" - ");
+			url = buildURL(section['pre'],"landing2/",endPoint);
+			linkList.push(makeAnchor(url,"landing2/")+" - ");
+			url = buildURL(section['pre'],"landing5/",endPoint);
+			linkList.push(makeAnchor(url,"landing5/")+"<br>");
+		}
+	} else {
+		// for other links
+		for (endPoint of section['endPoints']){
+			var url = buildURL(section['pre'],section['sub'],endPoint);
+			linkList.push(makeAnchor(url)+"<br>");
+		}
 	}
 
 	var header = makeHeader(sectionName);
@@ -131,19 +86,23 @@ function renderSection(section, sectionName){
 }
 
 function renderContent(obj){
-	//processes content Object into a string of html and writes it to the page
+	// Content will be rendered to a string to be displayed as HTML
 	finalStr = '';
-	var sectionList = [];
+	var environment = getEnv(); // cache value
 
-	// for each section in object, pass it and section name to be rendered.
+	//processes content Object into a string of html and writes it to the page
 	for(section in obj){
-		sectionList.push(renderSection(obj[section],section));
+
+		// filter out sections that are not scoped to the current Env
+		var scope = obj[section]['scope'];
+		// if scope doesn't exist or doesn't match current Env, exit function
+		// those that pass, put into an array
+		if (scope) {
+			if (!environment.includes(scope)) {continue;}
+		} 
+			finalStr +=(renderSection(obj[section],section));
 	}
 
-	// render array into final HTML
-	for (content of sectionList){
-		finalStr += content;
-	}
 	$content.html(finalStr);
 }
 
