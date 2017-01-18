@@ -34,105 +34,130 @@ function makeAnchor(url,label){
 	var label = label || url;
 
 	// Combine abel and url into an achor tag
-	var url = "<a target=\"_blank\" href=\"" +
-			url + "?refresh=1" +
-			"&slice=" + getSlice() + "\">" +
-			label +
-			"</a> ";
+	var url = 
+		'<a target="_blank" href="' + url + '?refresh=1' + '&slice=' + getSlice() + '">' +
+		label + '</a>';
 
-			return url;
+	return url;
 }
 
 function buildURL(pre, sub, endpoint){
 	return getSecurity() + pre + getEnv() + sub + endpoint;
 }
 
+// Recieves array of endPoints
+// Returns link to store + landing pages
+function renderStoreLink(endpoint,section){
+	var StoreLink = '';
+	var pre = section['pre'];
+	var sub = section['sub'];
+
+	var url = buildURL(pre,sub,endpoint);
+	StoreLink += (makeAnchor(url)+" - ");
+
+	url = buildURL(pre,"landing/",endpoint);
+	StoreLink += (makeAnchor(url,"landing/")+" - ");
+
+	url = buildURL(pre,"landing2/",endpoint);
+	StoreLink += (makeAnchor(url,"landing2/")+" - ");
+
+	url = buildURL(pre,"landing5/",endpoint);
+	StoreLink += (makeAnchor(url,"landing5/")+"<br>");
+
+	return StoreLink;
+}
+
+function renderLink(endpoint,section){
+	var Link = '';
+	var url = buildURL(section['pre'],section['sub'],endpoint);
+	Link += (makeAnchor(url)+"<br>");
+	return Link;
+}
+
 function renderSection(section, sectionName){
 	// recieves single section object and returns it as HTML
-	var links = '';
 	var linkList = [];
 
 	// endpoints in a section dictate the number of links to be made
 	var endPoints = section['endPoints'];
+	var sub = section['sub'];
 
-	if (section['sub'] == "view/"){
+	if (sub == "view/"){
 		// Special Case for Store Pages
-		for (endPoint of section['endPoints']){
-			var url = buildURL(section['pre'],section['sub'],endPoint);
-			linkList.push(makeAnchor(url)+" - ");
-			url = buildURL(section['pre'],"landing/",endPoint);
-			linkList.push(makeAnchor(url,"landing/")+" - ");
-			url = buildURL(section['pre'],"landing2/",endPoint);
-			linkList.push(makeAnchor(url,"landing2/")+" - ");
-			url = buildURL(section['pre'],"landing5/",endPoint);
-			linkList.push(makeAnchor(url,"landing5/")+"<br>");
+		for (endPoint of endPoints){
+			linkList.push(renderStoreLink(endPoint,section));
 		}
 	} else {
 		// for other links
-		for (endPoint of section['endPoints']){
-			var url = buildURL(section['pre'],section['sub'],endPoint);
-			linkList.push(makeAnchor(url)+"<br>");
+		for (endPoint of endPoints){
+			linkList.push(renderLink(endPoint,section));
 		}
 	}
 
-	var header = makeHeader(sectionName);
+	// Convert array of links to HTML
+	var links = '';
 	for (link of linkList){
 		links += link;
 	}
-	section = header + links;
+
+	//I have a header, I have a list, UHH, section
+	section = makeHeader(sectionName) + links;
 	section = '<div class="section">' + section + '</div>';
 
 	return section //string
 }
 
+function inScope(scope){
+	var environment = getEnv();
+
+	if (!scope) { return true }
+
+	if (environment.includes(scope)) { return true } 
+
+	return false;
+}
+
+// Renders sections of object into HTML
 function renderContent(obj){
-	// Content will be rendered to a string to be displayed as HTML
-	finalStr = '';
-	var environment = getEnv(); // cache value
+	var finalStr ='';
 
-	//processes content Object into a string of html and writes it to the page
-	for(section in obj){
-
-		// filter out sections that are not scoped to the current Env
+	for (section in obj){
 		var scope = obj[section]['scope'];
-		// if scope doesn't exist or doesn't match current Env, exit function
-		// those that pass, put into an array
-		if (scope) {
-			if (!environment.includes(scope)) {continue;}
-		} 
-			finalStr +=(renderSection(obj[section],section));
+		// only render those in scope
+		if (inScope(scope)){
+			finalStr += renderSection(obj[section],section);
+		}
 	}
 
-	$content.html(finalStr);
+	return finalStr;
 }
 
-// Fires off renderContent from form clicks and updates
-function displayPageTypes(){
-		renderContent(contentObject);
+// Fires off update from form clicks and updates
+function update(){
+		$content.html(renderContent(contentObject));
 }
 
-// Run update() for the first time to initialize page
-displayPageTypes();
-//expandLinks();
+// Run for the first time to initialize page
+update();
 
 // Run update() after any change in form
-$('form').on('change', displayPageTypes);
+$('form').on('change', update);
 
 // Prevent enter from submitting form, run update() instead
 $('form').on('keyup keypress', function(e) {
   var keyCode = e.keyCode || e.which;
   if (keyCode === 13) { 
     e.preventDefault();
-    displayPageTypes();
+    update();
     //update();
     return false;
   }
 });
 
-//debugging
 
-function updateJSON(){
-		console.log(JSON.stringify(contentObject, 1, '  '));
-};
 
-updateJSON();
+// function updateJSON(){
+// 		console.log(JSON.stringify(contentObject, 1, '  '));
+// };
+// updateJSON();
+
