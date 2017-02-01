@@ -240,6 +240,7 @@ var miscPages = {
     "pre": "www",
     "sub": "",
     "endPoints": [
+    	"forgotpasword",
         "special/community",
 		"quickSignUp",
 		"submit",
