@@ -6,21 +6,13 @@ var cid = "7450931";
 var unsubscribe = "&ei=C3EPLI7HWJA23L7YFBZG3GV7JM";
 var landingPages = ["landing/", "landing2/", "landing5/"];
 
-var homePage = {
-	"sectionName": "Home Page",
-    "pre": "www",
-    "sub": "",
-    "endPoints": [
-        ""
-	]
- };
-
 var homePageLinks = {
-	"sectionName": "Home Pages Links",
+	"sectionName": "Home Page and Header Links",
     "pre": "www",
     "sub": "",
     "scope": 'test',
     "endPoints": [
+    	"",
         "coupon-codes",
         "giftcards",
         "printable",
@@ -276,7 +268,6 @@ var demoPages = {
  };
 
  var pageList = [
-	homePage,
 	homePageLinks,
 	homePageLinksStage,
 	footerLinks,
