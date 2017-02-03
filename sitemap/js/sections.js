@@ -54,9 +54,20 @@ var footerLinks = {
     "pre": "www",
     "sub": "",
     "endPoints": [
-        "sitemap",
+    	"mobile",
+    	"coupons",
+    	"exclusvies",
+    	"labs/dealsquad",
+    	"profile",
+        "community",
+        "submit",
+        "corp/",
+        "blog/",
+        "corp/carrers",
 		"static/terms",
-		"static/privacy"
+		"static/privacy",
+		"sitemap",
+		"static/privacy/#ad-choices",
 	]
  };
 
@@ -231,7 +242,7 @@ var miscPages = {
     "pre": "www",
     "sub": "",
     "endPoints": [
-    	"forgotpasword",
+    	"forgotpassword",
         "special/community",
 		"quickSignUp",
 		"submit",
@@ -284,5 +295,5 @@ var demoPages = {
 	miscPages,
 	studentAffinityPagesTest,
 	colorAffinityPagesTest,
-	deprecatedPages,
-	demoPages];
+	demoPages,
+	deprecatedPages,];
