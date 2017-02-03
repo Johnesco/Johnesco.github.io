@@ -11,8 +11,7 @@ var homePage = {
     "pre": "www",
     "sub": "",
     "endPoints": [
-        "",
-		"responsive/homepage.php"
+        ""
 	]
  };
 
@@ -266,6 +265,16 @@ var deprecatedPages = {
 ]
  };
 
+var demoPages = {
+	"sectionName": "Demo Pages",
+    "pre": "www",
+    "sub": "",
+    "endPoints": [
+        "/coupons/traveldemo",
+		"responsive/homepage.php"
+	]
+ };
+
  var pageList = [
 	homePage,
 	homePageLinks,
@@ -284,4 +293,5 @@ var deprecatedPages = {
 	miscPages,
 	studentAffinityPagesTest,
 	colorAffinityPagesTest,
-	deprecatedPages];
+	deprecatedPages,
+	demoPages];
