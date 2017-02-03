@@ -270,7 +270,7 @@ var demoPages = {
     "pre": "www",
     "sub": "",
     "endPoints": [
-        "/coupons/traveldemo",
+        "coupons/traveldemo",
 		"responsive/homepage.php"
 	]
  };
