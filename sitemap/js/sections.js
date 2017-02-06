@@ -56,7 +56,7 @@ var footerLinks = {
     "endPoints": [
     	"mobile",
     	"coupons",
-    	"exclusvies",
+    	"exclusives",
     	"labs/dealsquad",
     	"profile",
         "community",
