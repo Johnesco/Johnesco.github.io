@@ -252,7 +252,6 @@ var miscPages = {
 		"contests",
 		"profile",
 		"settings",
-		"weeklyads",
 		"profile"]
  };
 
@@ -261,6 +260,7 @@ var deprecatedPages = {
     "pre": "www",
     "sub": "",
     "endPoints": [
+    	"weeklyads",
     	"subscribe",
         "dealfinder",
 		"shoppinglist",
