@@ -6,6 +6,113 @@ var cid = "7450931";
 var unsubscribe = "&ei=C3EPLI7HWJA23L7YFBZG3GV7JM";
 var landingPages = ["landing/", "landing2/", "landing5/"];
 
+var storeDomains = [
+    "%E2%88%86%C2%A5%E2%88%91.com",
+	"target.com",
+	"macys.com",
+	"poopingpuppies.com",
+	"sears.com",
+	"kmart.com",
+	"bestbuy.com",
+	"kohls.com",
+	"lowes.com",
+	"amcentertainment.com",
+	"victoriassecret.com",
+	"bathandbodyworks.com",
+	"walgreens.com",
+	"sizzler.com",
+	"travelocity.com",
+	"amazon.com",
+	"biglots.com",
+	"walmart.com",
+	"citibank.com",
+"sees.com",
+"swisscolony.com",
+"myimprov.com",
+"grubhub.com",
+"hotels.com",
+"urbanoutfitters.com",
+"footlocker.com",
+"hotwire.com",
+"dsw.com",
+"taxact.com",
+"llbean.com",
+"olivegarden.com",
+"hollisterco.com",
+"6pm.com",
+"avis.com",
+"us.asos.com",
+"babiesrus.com",
+"advanceautoparts.com",
+"nordstrom.com",
+"freetaxusa.com",
+"enterprise.com",
+"barnesandnoble.com",
+"finishline.com",
+"orientaltrading.com",
+"hm.com",
+"sixflags.com",
+"jet.com",
+"godaddy.com",
+"overstock.com",
+"budget.com",
+"cdkeysdiscount.com",
+"ulta.com",
+"childrensplace.com",
+"airbnb.com",
+"dickssportinggoods.com",
+"wayfair.com",
+"officedepot.com",
+"nike.com",
+"ae.com",
+"dominos.com",
+"vistaprint.com",
+"staples.com",
+"sephora.com",
+"shutterfly.com",
+"bestbuy.com",
+"forever21.com",
+"dominos.com.au",
+"bathandbodyworks.com",
+"bedbathandbeyond.com",
+"homedepot.com",
+"oldnavy.com",
+"jcpenney.com",
+"pizzahut.com",
+"amazon.com",
+"turbotax.com",
+"papajohns.com"
+];
+
+// Shuffle storeDomains, return 10
+storeDomains = (function shuffle(array) {
+  var m = array.length, t, i;
+
+  // While there remain elements to shuffle…
+  while (m) {
+
+    // Pick a remaining element…
+    i = Math.floor(Math.random() * m--);
+
+    // And swap it with the current element.
+    t = array[m];
+    array[m] = array[i];
+    array[i] = t;
+  }
+
+  return array.slice(0,9);
+}(storeDomains))
+
+var giftcardStoreDomains = [
+	"",
+	"target.com",
+	"macys.com",
+	"bestbuy.com",
+	"kohls.com",
+	"walmart.com",
+		"amcentertainment.com",
+];
+
 var homePageLinks = {
 	"sectionName": "Home Page and Header Links",
     "pre": "www",
@@ -75,25 +182,7 @@ var storePages = {
 	"sectionName": "Store Pages",
     "pre": "www",
     "sub": "view/",
-    "endPoints": [
-        "%E2%88%86%C2%A5%E2%88%91.com",
-		"target.com",
-		"macys.com",
-		"poopingpuppies.com",
-		"sears.com",
-		"kmart.com",
-		"bestbuy.com",
-		"kohls.com",
-		"lowes.com",
-		"victoriassecret.com",
-		"bathandbodyworks.com",
-		"walgreens.com",
-		"sizzler.com",
-		"travelocity.com",
-		"amazon.com",
-		"biglots.com",
-		"walmart.com",
-		"citibank.com"]
+    "endPoints": storeDomains
  };
 
 var ideaPages = {
@@ -149,11 +238,9 @@ var categoryPages = {
 
 var giftcardPages = {
 	"sectionName": "Gift Cards",
-    "pre": "giftcards",
-    "sub": "",
-    "endPoints": [
-        "rue21.com"]
- };
+    "pre": "www",
+    "sub": "giftcards/",
+    "endPoints": giftcardStoreDomains };
 
 var searchPages = {
 	"sectionName": "Search Pages",
