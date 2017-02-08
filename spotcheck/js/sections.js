@@ -179,6 +179,107 @@ var categories = [
 	"entertainment"
 	];
 
+searches = 	[
+	"Kohls",
+	"target",
+	"amazon",
+	"macys",
+	"groupon",
+	"Wish",
+	"staples",
+	"sephora",
+	"Groupon",
+	"Target",
+	"dominos",
+	"nike",
+	"Amazon",
+	"ulta",
+	"walmart",
+	"sears",
+	"shutterfly",
+	"Macy's",
+	"old+navy",
+	"walgreens",
+	"Dominos",
+	"office+depot",
+	"gap",
+	"wayfair",
+	"Nike",
+	"lowes",
+	"Bath+and+body+works",
+	"flowers",
+	"vistaprint",
+	"pizza+hut",
+	"Kohl's",
+	"carters",
+	"home+depot",
+	"Gap",
+	"London,+UK",
+	"Pizza+express",
+	"proflowers",
+	"zappos",
+	"Michaels",
+	"Prezzo",
+	"dsw",
+	"asos",
+	"godaddy",
+	"ebay",
+	"6pm",
+	"Sears",
+	"best+buy",
+	"kate+spade",
+	"walgreens+photo",
+	"Walmart",
+	"etsy",
+	"Payless",
+	"papa+johns",
+	"footlocker",
+	"torrid",
+	"expedia",
+	"Carters",
+	"hotels.com",
+	"Old+navy",
+	"express",
+	"hotels",
+	"venus",
+	"Argos",
+	"bath+and+body+works",
+	"kmart",
+	"Macys",
+	"colourpop",
+	"Fashion+nova",
+	"orbitz",
+	"New+look",
+	"vitacost",
+	"Harvester",
+	"Cardiff,+UK",
+	"american+eagle",
+	"Express",
+	"Sephora",
+	"eastbay",
+	"Bed+bath+and+beyond",
+	"Dicks",
+	"avis",
+	"Hotels",
+	"Walgreens",
+	"Lowes",
+	"fashion+nova",
+	"pizza",
+	"Pizza",
+	"maurices",
+	"turbo+tax",
+	"wish",
+	"Asos",
+	"Beefeater",
+	"Birmingham,+UK",
+	"Debenhams",
+	"jet",
+	"car+rental",
+	"Staples",
+	"nordstrom",
+	"Manchester,+UK",
+	"enterprise"];
+
 // Shuffle storeDomains, return 10 + top
 function shuffle(domains, topDomains) {
   var m = domains.length, t, i;
@@ -204,6 +305,7 @@ function shuffle(domains, topDomains) {
 
 storeDomains = shuffle(storeDomains, topStoreDomains);
 categories = shuffle(categories, topCategories);
+searches = shuffle (searches);
 
 var giftcardStoreDomains = [
 	"",
@@ -317,9 +419,7 @@ var searchPages = {
 	"sectionName": "Search Pages",
     "pre": "www",
     "sub": "s/",
-    "endPoints":[
-        "bacon"
-    ]
+    "endPoints":searches
  };
 
 var CostCoPages = {
