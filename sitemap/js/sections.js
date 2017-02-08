@@ -6,18 +6,23 @@ var cid = "7450931";
 var unsubscribe = "&ei=C3EPLI7HWJA23L7YFBZG3GV7JM";
 var landingPages = ["landing/", "landing2/", "landing5/"];
 
-var storeDomains = [
+
+var topStoreDomains = [
     "%E2%88%86%C2%A5%E2%88%91.com",
-	"target.com",
-	"macys.com",
+    "target.com",
+    "macys.com",
+    "kohls.com",
+    "victoriassecret.com",
+    "marykay.com"
+];
+
+var storeDomains = [
 	"poopingpuppies.com",
 	"sears.com",
 	"kmart.com",
 	"bestbuy.com",
-	"kohls.com",
 	"lowes.com",
 	"amcentertainment.com",
-	"victoriassecret.com",
 	"bathandbodyworks.com",
 	"walgreens.com",
 	"sizzler.com",
@@ -26,67 +31,157 @@ var storeDomains = [
 	"biglots.com",
 	"walmart.com",
 	"citibank.com",
-"sees.com",
-"swisscolony.com",
-"myimprov.com",
-"grubhub.com",
-"hotels.com",
-"urbanoutfitters.com",
-"footlocker.com",
-"hotwire.com",
-"dsw.com",
-"taxact.com",
-"llbean.com",
-"olivegarden.com",
-"hollisterco.com",
-"6pm.com",
-"avis.com",
-"us.asos.com",
-"babiesrus.com",
-"advanceautoparts.com",
-"nordstrom.com",
-"freetaxusa.com",
-"enterprise.com",
-"barnesandnoble.com",
-"finishline.com",
-"orientaltrading.com",
-"hm.com",
-"sixflags.com",
-"jet.com",
-"godaddy.com",
-"overstock.com",
-"budget.com",
-"cdkeysdiscount.com",
-"ulta.com",
-"childrensplace.com",
-"airbnb.com",
-"dickssportinggoods.com",
-"wayfair.com",
-"officedepot.com",
-"nike.com",
-"ae.com",
-"dominos.com",
-"vistaprint.com",
-"staples.com",
-"sephora.com",
-"shutterfly.com",
-"bestbuy.com",
-"forever21.com",
-"dominos.com.au",
-"bathandbodyworks.com",
-"bedbathandbeyond.com",
-"homedepot.com",
-"oldnavy.com",
-"jcpenney.com",
-"pizzahut.com",
-"amazon.com",
-"turbotax.com",
-"papajohns.com"
+	"sees.com",
+	"swisscolony.com",
+	"myimprov.com",
+	"grubhub.com",
+	"hotels.com",
+	"urbanoutfitters.com",
+	"footlocker.com",
+	"hotwire.com",
+	"dsw.com",
+	"taxact.com",
+	"llbean.com",
+	"olivegarden.com",
+	"hollisterco.com",
+	"6pm.com",
+	"avis.com",
+	"us.asos.com",
+	"babiesrus.com",
+	"advanceautoparts.com",
+	"nordstrom.com",
+	"freetaxusa.com",
+	"enterprise.com",
+	"barnesandnoble.com",
+	"finishline.com",
+	"orientaltrading.com",
+	"hm.com",
+	"sixflags.com",
+	"jet.com",
+	"godaddy.com",
+	"overstock.com",
+	"budget.com",
+	"cdkeysdiscount.com",
+	"ulta.com",
+	"childrensplace.com",
+	"airbnb.com",
+	"dickssportinggoods.com",
+	"wayfair.com",
+	"officedepot.com",
+	"nike.com",
+	"ae.com",
+	"dominos.com",
+	"vistaprint.com",
+	"staples.com",
+	"sephora.com",
+	"shutterfly.com",
+	"bestbuy.com",
+	"forever21.com",
+	"dominos.com.au",
+	"bathandbodyworks.com",
+	"bedbathandbeyond.com",
+	"homedepot.com",
+	"oldnavy.com",
+	"jcpenney.com",
+	"pizzahut.com",
+	"amazon.com",
+	"turbotax.com",
+	"papajohns.com",
+	"comfortfirst.com",
+	"ezbuyfurniture.com",
+	"nokout.com",
+	"heartypet.com",
+	"nycwebstore.com",
+	"advantagebridal.com",
+	"bestradardetectors.net",
+	"clearwateroutdoor.com",
+	"bandedbottom.com",
+	"coinsupplyexpress.com",
+	"jiffylubeca.com",
+	"drsinatra.com",
+	"polarnopyretusa.com",
+	"roommatesdecor.com",
+	"tribalhollywood.com",
+	"danceshopper.com",
+	"detroitathletic.com",
+	"coffeesofhawaii.com",
+	"customsportssleeves.com",
+	"dimplesshop.com",
+	"totalhomesupply.com",
+	"mayoarts.org",
+	"blueheronbeachresort.com",
+	"counterculturecoffee.com",
+	"sneakers4u.com",
+	"poshmommyjewelry.com",
+	"ufseeds.com",
+	"harristheaterchicago.org",
+	"standoutstickers.com",
+	"shop.kooba.com",
+	"santasvillagegonewild.com",
+	"drhauschka.com",
+	"monarch.co.uk",
+	"hammondscandies.com",
+	"nyephilly.com",
+	"worldofdance.com",
+	"boomersintheknow.com",
+	"stopsignsandmore.com",
+	"bluebeeprinting.com",
+	"poputees.com",
+	"frontgatetickets.com",
+	"flashrouters.com",
+	"gap.eu",
+	"cybershed.com",
+	"hustlepaintball.com",
+	"homefurnituremart.com",
+	"blumberg.com",
+	"customcameracollection.com",
+	"gongshowgear.com",
+	"killermotorsports.com",
+	"photofile.com",
+	"shopmambaby.com",
+	"hellofresh.com.au",
+	"cellcasesusa.com",
+	"engineersupply.com",
+	"swebster.origamiowl.com",
+	"rawthreads.com",
 ];
 
-// Shuffle storeDomains, return 10
-storeDomains = (function shuffle(array) {
-  var m = array.length, t, i;
+var topCategories = [
+"",
+]
+
+var categories = [
+	"Accessories",
+	"Automotive",
+	"baby",
+	"beauty",
+	"books",
+	"clothing",
+	"electronics",
+	"flowers",
+	"food",
+	"furniture",
+	"gifts",
+	"health",
+	"homeandgarden",
+	"jewelry",
+	"musicalinstruments",
+	"officesupplies",
+	"partysupplies",
+	"pet",
+	"photo",
+	"sevices",
+	"shoes",
+	"sportinggoods",
+	"toys",
+	"travel",
+	"restaurants",
+	"entertainment"
+	];
+
+// Shuffle storeDomains, return 10 + top
+function shuffle(domains, topDomains) {
+  var m = domains.length, t, i;
 
   // While there remain elements to shuffle…
   while (m) {
@@ -95,13 +190,20 @@ storeDomains = (function shuffle(array) {
     i = Math.floor(Math.random() * m--);
 
     // And swap it with the current element.
-    t = array[m];
-    array[m] = array[i];
-    array[i] = t;
+    t = domains[m];
+    domains[m] = domains[i];
+    domains[i] = t;
   }
 
-  return array.slice(0,9);
-}(storeDomains))
+    var temp = domains.slice(0,10);
+    if (topDomains){
+            temp = topDomains.concat(temp);
+    }
+    return temp;
+}
+
+storeDomains = shuffle(storeDomains, topStoreDomains);
+categories = shuffle(categories, topCategories);
 
 var giftcardStoreDomains = [
 	"",
@@ -224,16 +326,7 @@ var categoryPages = {
 	"sectionName": "Category Pages",
     "pre": "www",
     "sub": "coupons/",
-    "endPoints": [
-        "",
-		"clothing",
-		"travel",
-		"restaurants",
-		"entertainment",
-		"beauty",
-		"adult",
-		"pizza/" + pizzaroute,
-		"pizza/" + pizzalocation]
+    "endPoints": categories
  };
 
 var giftcardPages = {
@@ -347,6 +440,9 @@ var deprecatedPages = {
     "pre": "www",
     "sub": "",
     "endPoints": [
+		"coupons/pizza/" + pizzaroute,
+		"coupons/pizza/" + pizzalocation,
+    	"coupons/adult",
     	"weeklyads",
     	"subscribe",
         "dealfinder",
@@ -368,16 +464,16 @@ var demoPages = {
  var pageList = [
 	homePageLinks,
 	homePageLinksStage,
+    storePages,
+    categoryPages,
 	footerLinks,
 	CostCoPages,
 	communityPages,
 	communityPagesIe,
 	searchPages,
-	storePages,
 	testEnvPages,
 	ideaPages,
 	dealsPages,
-	categoryPages,
 	giftcardPages,
 	miscPages,
 	studentAffinityPagesTest,
