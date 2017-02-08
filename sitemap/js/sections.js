@@ -219,7 +219,6 @@ var homePageLinks = {
 	"sectionName": "Home Page and Header Links",
     "pre": "www",
     "sub": "",
-    "scope": 'test',
     "endPoints": [
     	"",
         "coupon-codes",
