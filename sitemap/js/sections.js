@@ -236,27 +236,6 @@ var homePageLinks = {
       ]
  };
 
- var homePageLinksStage = {
-	"sectionName": "Home Pages Links (Stage only)",
-    "pre": "www",
-    "sub": "",
-    "scope": 'stage',
-    "endPoints": [
-        "coupon-codes",
-        "giftcards",
-        "printable",
-        "freeshipping",
-        "exclusives",
-        "rebates",
-        "categories",
-        "mobile",
-        "favorites",
-        "saved",
-        "blog",
-        "coupons/gifts"
-      ]
- };
-
 var footerLinks = {
 	"sectionName": "Footer Links",
     "pre": "www",
@@ -462,7 +441,6 @@ var demoPages = {
 
  var pageList = [
 	homePageLinks,
-	homePageLinksStage,
     storePages,
     categoryPages,
 	footerLinks,
