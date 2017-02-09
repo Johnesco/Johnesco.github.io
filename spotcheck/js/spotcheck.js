@@ -8,7 +8,7 @@ var security = "";
 // Main object that will hold a compressed set of links
 var contentObject = {};
 
-// Add sections from JSON to contentObject, one time IIEF
+// Add sections from sections.js to contentObject, one time IIEF
 (function addSectionsJSON(sections){
   for (section of sections){
     contentObject[section.sectionName] = section;

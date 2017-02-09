@@ -1,3 +1,4 @@
+// Misc Variable for settings
 var username = "letmeshowyou";
 var pizzaroute = "a/78745";
 var pizzalocation = "ma/papajohns.com/78745";
@@ -6,7 +7,7 @@ var cid = "7450931";
 var unsubscribe = "&ei=C3EPLI7HWJA23L7YFBZG3GV7JM";
 var landingPages = ["landing/", "landing2/", "landing5/"];
 
-
+// Arrays for Dynamic lists
 var topStoreDomains = [
     "%E2%88%86%C2%A5%E2%88%91.com",
     "target.com",
@@ -147,7 +148,7 @@ var storeDomains = [
 ];
 
 var topCategories = [
-"",
+	"",
 ]
 
 var categories = [
@@ -280,7 +281,7 @@ searches = 	[
 	"Manchester,+UK",
 	"enterprise"];
 
-// Shuffle storeDomains, return 10 + top
+// Shuffle lists, select top 10 + top
 function shuffle(domains, topDomains) {
   var m = domains.length, t, i;
 
@@ -307,6 +308,8 @@ storeDomains = shuffle(storeDomains, topStoreDomains);
 categories = shuffle(categories, topCategories);
 searches = shuffle (searches);
 
+
+// Objects to pass to pagelist
 var giftcardStoreDomains = [
 	"",
 	"target.com",
@@ -314,7 +317,7 @@ var giftcardStoreDomains = [
 	"bestbuy.com",
 	"kohls.com",
 	"walmart.com",
-		"amcentertainment.com",
+	"amcentertainment.com",
 ];
 
 var homePageLinks = {
@@ -529,17 +532,24 @@ var deprecatedPages = {
 ]
  };
 
-var demoPages = {
-	"sectionName": "Demo Pages",
+var travelPages = {
+	"sectionName": "Travel Pages",
     "pre": "www",
-    "sub": "",
+    "sub": "coupons/",
     "endPoints": [
-        "coupons/traveldemo",
-		"responsive/homepage.php"
+        "travel",
+        "flight",
+        "hotel",
+        "carrental",
+        "cruise",
+        "attractions"
+
 	]
  };
 
- var pageList = [
+// Passed to spotcheck.js to render into HTML
+var pageList = [
+	travelPages,
 	homePageLinks,
     storePages,
     categoryPages,
@@ -547,7 +557,6 @@ var demoPages = {
 	footerLinks,
 	CostCoPages,
 	communityPages,
-	communityPagesIe,
 	testEnvPages,
 	ideaPages,
 	dealsPages,
@@ -555,5 +564,5 @@ var demoPages = {
 	miscPages,
 	studentAffinityPagesTest,
 	colorAffinityPagesTest,
-	demoPages,
+	communityPagesIe,
 	deprecatedPages,];
