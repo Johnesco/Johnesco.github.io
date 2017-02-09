@@ -536,6 +536,7 @@ var travelPages = {
 	"sectionName": "Travel Pages",
     "pre": "www",
     "sub": "coupons/",
+    "scope": "test",
     "endPoints": [
         "travel",
         "flight",
