@@ -1,29 +1,40 @@
 * { font-family: Arial, sans-serif; }
 
-body{font-size: 100%;}
+body{
+	font-size: 100%;
+	background-color: #f2f2f2;
+	;
+}
+
+.section{
+	border: .4em solid purple;
+	padding: 0 1em 1em 1em;
+	margin: 0 1em 1em 1em;
+	border-radius: .9em;
+	background-color:white;
+
+}
 
 h1 {
-	font-size:2em;
+	font-size: 2.1em;
 	padding: .2em;
+	padding-top:0em;
 	color:purple;
 	border-bottom: .1em solid black;
 }
 
 h2 {
-	font-size:1.1em;
+	font-size:1.5em;
 	padding: .2em;
 	color:purple;
 	border-bottom: .1em solid black;
-}
-
-div#links {
-	width: 70%;
 }
 
 a {font-size: 0.9em;}
 
 table {
 	border: 1px solid black;
+	margin-bottom: 1em;
 }
 
 
