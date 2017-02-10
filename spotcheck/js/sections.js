@@ -177,7 +177,8 @@ var categories = [
 	"toys",
 	"travel",
 	"restaurants",
-	"entertainment"
+	"entertainment",
+
 	];
 
 searches = 	[
@@ -281,8 +282,8 @@ searches = 	[
 	"Manchester,+UK",
 	"enterprise"];
 
-// Shuffle lists, select top 10 + top
-function shuffle(domains, topDomains) {
+// Shuffle lists, select top X + top
+function shuffle(domains, num, topDomains) {
   var m = domains.length, t, i;
 
   // While there remain elements to shuffle…
@@ -297,16 +298,16 @@ function shuffle(domains, topDomains) {
     domains[i] = t;
   }
 
-    var temp = domains.slice(0,10);
+    var temp = domains.slice(0,num);
     if (topDomains){
             temp = topDomains.concat(temp);
     }
     return temp;
 }
 
-storeDomains = shuffle(storeDomains, topStoreDomains);
-categories = shuffle(categories, topCategories);
-searches = shuffle (searches);
+storeDomains = shuffle(storeDomains, 10, topStoreDomains);
+categories = shuffle(categories, 10, topCategories);
+searches = shuffle (searches, 10);
 
 
 // Objects to pass to pagelist
@@ -512,8 +513,8 @@ var miscPages = {
 		"alerts",
 		"contests",
 		"profile",
-		"settings",
-		"profile"]
+		"profile",
+		"contact/blocked_user_report.php"]
  };
 
 var deprecatedPages = {
@@ -521,6 +522,7 @@ var deprecatedPages = {
     "pre": "www",
     "sub": "",
     "endPoints": [
+    	"settings",
 		"coupons/pizza/" + pizzaroute,
 		"coupons/pizza/" + pizzalocation,
     	"coupons/adult",
