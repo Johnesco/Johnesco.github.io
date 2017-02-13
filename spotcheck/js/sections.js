@@ -436,6 +436,7 @@ var CostCoPages = {
 		"saved",
 		"favorites",
 		"justforyou",
+		"my-cashback",
 		"join",
 		"signup",
 		"login"
