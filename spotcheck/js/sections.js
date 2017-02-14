@@ -553,7 +553,7 @@ var travelPages = {
 
 // Passed to spotcheck.js to render into HTML
 var pageList = [
-	travelPages,
+	//travelPages,
 	homePageLinks,
     storePages,
     categoryPages,
