@@ -557,7 +557,6 @@ var miscPages = {
     "sub": "",
     "endPoints": [
     	"forgotpassword",
-        "special/community",
 		"quickSignUp",
 		"submit",
 		"showcoupon/" + cid,
@@ -574,6 +573,7 @@ var deprecatedPages = {
     "pre": "www",
     "sub": "",
     "endPoints": [
+        "special/community",
     	"settings",
 		"coupons/pizza/" + pizzaroute,
 		"coupons/pizza/" + pizzalocation,
