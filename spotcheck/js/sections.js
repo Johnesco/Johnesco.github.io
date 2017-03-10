@@ -379,6 +379,25 @@ var ideaPages = {
         "valentinesday",
 		"halloween",
 		"12-days-of-deals",
+		"backtoschool",
+		"big-game",
+		"blackfriday",
+		"christmas",
+		"cybermonday",
+		"fathersday",
+		"gift-cards",
+		"gifts-for-him",
+		"graduation",
+		"hot-toys",
+		"jesco2",
+		"laborday",
+		"memorialday",
+		"mothersday",
+		"newyears",
+		"presidentsday",
+		"ryanpage",
+		"springdeals"
+		/*
 		"aardvark",
 		"aaron",
 		"asdf",
@@ -419,6 +438,7 @@ var ideaPages = {
 		"rachel-test",
 		"ryanpage",
 		"springdeals"
+		*/
 	]
  };
 
