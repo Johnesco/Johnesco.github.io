@@ -590,8 +590,6 @@ var travelPages = {
 	"sectionName": "Travel Pages",
     "pre": "www",
     "sub": "coupons/",
-    "scope": "test",
-    "param": "widget=1",
     "endPoints": [
         "travel",
         "flight",
@@ -605,7 +603,6 @@ var travelPages = {
 
 // Passed to spotcheck.js to render into HTML
 var pageList = [
-	travelPages,
 	homePageLinks,
     storePages,
     categoryPages,
@@ -618,6 +615,7 @@ var pageList = [
 	dealsPages,
 	giftcardPages,
 	miscPages,
+	travelPages,
 	studentAffinityPagesTest,
 	colorAffinityPagesTest,
 	parameterDependant,
