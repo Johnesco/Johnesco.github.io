@@ -2,7 +2,6 @@
 var username = "letmeshowyou";
 var pizzaroute = "a/78745";
 var pizzalocation = "ma/papajohns.com/78745";
-var ideas = "hot-products";
 var cid = "7450931";
 var unsubscribe = "&ei=C3EPLI7HWJA23L7YFBZG3GV7JM";
 var landingPages = ["landing/", "landing2/", "landing5/"];
@@ -377,7 +376,49 @@ var ideaPages = {
     "sub": "ideas/",
     "endPoints": [
         "hot-products",
-		"halloween"
+        "valentinesday",
+		"halloween",
+		"12-days-of-deals",
+		"aardvark",
+		"aaron",
+		"asdf",
+		"backtoschool",
+		"banner-test",
+		"big-game",
+		"blackfriday",
+		"bpk",
+		"bpkray",
+		"christmas",
+		"christmas-trees",
+		"CircusofDeals",
+		"concert-tickets",
+		"cybermonday",
+		"DateTest",
+		"DB step behind testing",
+		"DeepLinkTesting",
+		"fathersday",
+		"fawkes222",
+		"fawkestest",
+		"fawkestest2",
+		"freebies",
+		"gift-cards",
+		"gifts-for-him",
+		"graduation",
+		"hot-toys",
+		"jesco2",
+		"jjjf",
+		"Kevin-test",
+		"laborday",
+		"memorialday",
+		"mothersday",
+		"newyears",
+		"no-header-image",
+		"patio",
+		"patio",
+		"presidentsday",
+		"rachel-test",
+		"ryanpage",
+		"springdeals"
 	]
  };
 
@@ -389,7 +430,7 @@ var dealsPages = {
         "halloween",
 		"blackfriday",
 		"cybermonday",
-		"christmas"
+		"christmas",
 	]
  };
 
@@ -459,7 +500,17 @@ var communityPages = {
 		"welcome" ]
  };
 
-var communityPagesIe = {
+var parameterDependant = {
+	"sectionName": "Parameter Dependant Pages",
+    "pre": "www",
+    "sub": "",
+    "param":"ei=C3EPLI7HWJA23L7YFBZG3GV7JM",
+    "endPoints": [
+        "unsubscribe"]
+	
+};
+
+var deprecatedCommunityPages = {
 	"sectionName": "Deprecated Community Pages",
     "pre": "www",
     "sub": "community/",
@@ -540,6 +591,7 @@ var travelPages = {
     "pre": "www",
     "sub": "coupons/",
     "scope": "test",
+    "param": "widget=1",
     "endPoints": [
         "travel",
         "flight",
@@ -553,7 +605,7 @@ var travelPages = {
 
 // Passed to spotcheck.js to render into HTML
 var pageList = [
-	//travelPages,
+	travelPages,
 	homePageLinks,
     storePages,
     categoryPages,
@@ -568,5 +620,6 @@ var pageList = [
 	miscPages,
 	studentAffinityPagesTest,
 	colorAffinityPagesTest,
-	communityPagesIe,
-	deprecatedPages,];
+	parameterDependant,
+	deprecatedCommunityPages,
+	deprecatedPages];

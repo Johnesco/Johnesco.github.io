@@ -103,7 +103,8 @@ function renderStoreLink(endpoint,section){
   var StoreLink = '';
 
   var url = buildURL(pre,sub,endpoint);
-  StoreLink += (makeAnchor(url)+" - ");
+  var label = (sub + endpoint) || "test";
+  StoreLink += (makeAnchor(url,label)+" - ");
 
   url = buildURL(pre,"landing/",endpoint);
   StoreLink += (makeAnchor(url,"landing/")+" - ");
@@ -118,19 +119,30 @@ function renderStoreLink(endpoint,section){
 }
 
 function renderLink(endpoint,section){
+
+  var pre = section['pre'];
+  var sub = section['sub'];
+  var param = section['param']
   var Link = '';
-  var url = buildURL(section['pre'],section['sub'],endpoint);
-  Link += (makeAnchor(url)+"<br>");
+
+  var url = buildURL(pre,sub,endpoint,param);
+  var label = (sub + endpoint) || "/(homepage)";
+  Link += (makeAnchor(url,label)+"<br>");
   return Link;
 }
 
 // Creates HTML for a Header Section
 function makeHeader(str){
-  return "<h2>" + str + " (slice: " + slice + ")" + "</h2>";
+  return "<h2>" + str + "</h2>" + "<h3>" + environment + " - slice: " + slice + "</h3>";
 }
 
-function buildURL(pre, sub, endpoint){
-  return security + pre + environment + sub + endpoint;
+function buildURL(pre, sub, endpoint, param){
+  if (param){
+    param = "?" + param + '&refresh=1&slice=' + slice;
+  } else {
+    param = '?refresh=1&slice=' + slice;
+  }
+  return security + pre + environment + sub + endpoint + param;
 }
 
 // Creates HTML link with ?refresh and &slice from a URL
@@ -142,7 +154,7 @@ function makeAnchor(url,label){
 
   // Combine abel and url into an achor tag
   var url = 
-    '<a target="_blank" href="' + url + '?refresh=1' + '&slice=' + slice + '">' +
+    '<a target="_blank" href="' + url + '">' +
     label + '</a>';
 
   return url;
