@@ -38,7 +38,7 @@ function jobList(work){
     };
   
 workString +=
-`<div class='job'>
+`<div class='job col-md-12'>
   <div class='row job-heading'>
     <div class='col-md-6'>
       <h3 class='job-company'>${job.company}:</h3>
