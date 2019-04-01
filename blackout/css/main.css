@@ -1,0 +1,72 @@
+body {
+  padding: 1em;
+}
+
+.poem {
+  font-size: 30px;
+}
+
+.blocked {
+  background-color: #222222;
+  transition: background-color 0.5s ease-in-out;
+  transition: opacity 0.5s ease-in-out;
+  border-radius: 8px;
+}
+
+
+.faded {
+  opacity: .0;
+  transition: opacity 0.5s   ease-in-out;
+  border-radius: 8px;
+}
+
+span {
+  opacity: 1;
+  transition: opacity 0.5s   ease-in-out;
+  transition: background 0.5s   ease-in-out;
+  border-radius: 8px;
+}
+
+div {  max-width: 1000px;}
+
+.story {
+  font-size:20px;
+  margin-top:40px;
+
+}
+
+
+
+h3{
+  padding-top:5em;
+}
+
+div.menu{
+  position: fixed;
+  top: 10px;
+  background: #CCCCCC;
+  padding: 3px;
+  border: 1px solid black;
+  z-index: 5;
+
+}
+
+.marked {
+  background-color: yellow;
+}
+.btn {
+  border-radius: 8px;
+  background: #FFFFFF;
+  display: inline-block;
+  vertical-align: middle;
+  
+  
+  margin: 4px 4px 4px 4px;
+  padding: 5px 5px 5px 5px;
+}
+
+.reset { background: red; }
+
+.active{
+  background: yellow;
+}
