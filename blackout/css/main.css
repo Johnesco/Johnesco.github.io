@@ -1,10 +1,9 @@
-
-body {
-  padding: 1em;
+.poem {
+  font-size: 28px;
 }
 
-.poem {
-  font-size: 30px;
+.story-section{
+  background-color: bisque
 }
 
 .blocked {
@@ -28,18 +27,17 @@ span {
   border-radius: 8px;
 }
 
-div {  max-width: 1000px;}
 
 .story {
-  font-size:20px;
-  margin-top:40px;
+  font-size:18px;
+  margin-top:5px;
 
 }
 
 
 
 h3{
-  padding-top:5em;
+  padding-top:1em;
 }
 
 div.menu{
@@ -51,16 +49,19 @@ div.menu{
 .marked {
   background-color: yellow;
 }
-.btn {
+
+div.btn.reset { background: red; }
+
+div.btn {
   border-radius: 8px;
   background: #FFFFFF;
-  display: inline-block;
+  /*display: inline-block;*/
   vertical-align: middle;
   margin: 4px 4px 4px 4px;
   padding: 5px 5px 5px 5px;
 }
 
-.reset { background: red; }
+
 
 .active{
   background: yellow;
