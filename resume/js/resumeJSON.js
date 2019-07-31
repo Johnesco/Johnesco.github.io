@@ -32,7 +32,7 @@ var resumeJSON = {
             "website": "",
             "startDate": "March 2019",
             "endDate": "Present",
-            "summary": "Test Engineer contractor. Ensured Requirement Tracablity Matrix was intact and ran regression on existing features. Developed and updated test cases in IBM Rational"
+            "summary": "Test Engineer contractor. Ensured Requirement Tracablity Matrix was intact and ran regression on existing features. Developed and updated test cases in IBM Rational.",
             "highlights": [
               "Enforced protocol and patterns for reproducable testing.",
               "Created and updated test cases and test scripts.", 
