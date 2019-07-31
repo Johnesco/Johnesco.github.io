@@ -29,7 +29,7 @@ var resumeJSON = {
     "work": [{
             "company": "GeekSI",
             "position": "QA Engineer - Austin Tx",
-            "website": "",
+            "website": "geeksi.com",
             "startDate": "March 2019",
             "endDate": "Present",
             "summary": "Test Engineer contractor. Ensured Requirement Tracablity Matrix was intact and ran regression on existing features. Developed and updated test cases in IBM Rational.",
