@@ -27,16 +27,41 @@ var resumeJSON = {
         ]
     },
     "work": [{
+            "company": "GeekSI",
+            "position": "QA Engineer - Austin Tx",
+            "website": "",
+            "startDate": "March 2019",
+            "endDate": "Present",
+            "summary": "Test Engineer contractor. Ensured Requirement Tracablity Matrix was intact and ran regression on existing features. Developed and updated test cases in IBM Rational": [
+              "Enforced protocol and patterns for reproducable testing.",
+              "Created and updated test cases and test scripts.", 
+              "Recorded and tested defects found in development phases.",
+              "Reviewed stories links to requirements and test cases.",
+              "Documented onboarding protocols."
+            ]
+        },{
+            "company": "EverlyWell",
+            "position": "QA Engineer - Austin Tx",
+            "website": "https://youscience.com",
+            "startDate": "June 2018",
+            "endDate": "October 2018",
+            "summary": "Integrated QA process into their software development cycle while working towards a CI/CD pipeline. Tested buids before shipping. Managed risk in releasing new features": [
+              "Developed and maintained QA pipeline for CI/CD.",
+              "Tested incoming features for website.", 
+              "Mentored staff in effective bug writing.",
+              "JIRA Administration."
+            ]
+        },{
             "company": "YouScience",
             "position": "QA Engineer - Austin Tx",
             "website": "https://youscience.com",
             "startDate": "July 2017",
-            "endDate": "Present",
+            "endDate": "June 2018",
             "summary": "Designed and initiated a QA process in their software development cycle by setting up protocols and ensuring their compliance in order to deliver quality weekly builds for their flagship product, an online career and education path assessment.",
             "highlights": [
               "Defined and enforced QA structure and procedure",
               "Created and maintained Test Case Scenarios.", 
-              "Performed Verification, Integration, and Regression Testing",
+              "Performed Verification, Integration, and Regression Testing.",
               "Created templates for ticket writing of effective bugs and stories.",
               "Created documentation for new product features."
             ]
