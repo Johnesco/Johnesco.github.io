@@ -33,6 +33,7 @@ var resumeJSON = {
             "startDate": "March 2019",
             "endDate": "Present",
             "summary": "Test Engineer contractor. Ensured Requirement Tracablity Matrix was intact and ran regression on existing features. Developed and updated test cases in IBM Rational": [
+            "highlights": [
               "Enforced protocol and patterns for reproducable testing.",
               "Created and updated test cases and test scripts.", 
               "Recorded and tested defects found in development phases.",
@@ -46,7 +47,8 @@ var resumeJSON = {
             "startDate": "June 2018",
             "endDate": "October 2018",
             "summary": "Integrated QA process into their software development cycle while working towards a CI/CD pipeline. Tested buids before shipping. Managed risk in releasing new features": [
-              "Developed and maintained QA pipeline for CI/CD.",
+            "highlights": [
+            "Developed and maintained QA pipeline for CI/CD.",
               "Tested incoming features for website.", 
               "Mentored staff in effective bug writing.",
               "JIRA Administration."
