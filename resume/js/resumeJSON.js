@@ -45,7 +45,7 @@ var resumeJSON = {
             "website": "https://youscience.com",
             "startDate": "June 2018",
             "endDate": "October 2018",
-            "summary": "Integrated QA process into their software development cycle while working towards a CI/CD pipeline. Tested buids before shipping. Managed risk in releasing new features.",
+            "summary": "Integrated QA process into their software development cycle while working towards a CI/CD pipeline. Tested builds before shipping. Managed risk in releasing new features.",
             "highlights": [
             "Developed and maintained QA pipeline for CI/CD.",
               "Tested incoming features for website.", 
