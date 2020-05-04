@@ -35,9 +35,9 @@ var resumeJSON = {
             "summary": "Test Engineer contractor. Ensured Requirement Traceability Matrix was intact and ran regression on existing features. Developed and updated test cases in IBM Rational.",
             "highlights": [
               "Enforced protocol and patterns for reproducible testing.",
-              "Created and updated test cases and scripts.",
-              "Recorded and tested defects found in development phases.",
-              "Reviewed stories and requirements for testability."
+              "Created and updated test cases and scripts in IBM Rational Team Concert.",
+              "Recorded and tested defects found in development phases",
+              "Edited Gherkin data statements in Cucumber test suites."
             ]
         },{
             "company": "EverlyWell",
@@ -240,7 +240,7 @@ var resumeJSON = {
             "name": "Testing and Reporting",
             "level": "Master",
             "keywords": [
-                "Agile", "Scrum", "Ad-hoc", "regression", "bug reporting", "JIRA", "Testrail"
+                "Agile", "Scrum", "Ad-hoc", "regression", "bug reporting", "JIRA", "Testrail", "IBM Rational Team Concert"
             ]
         },
         {
