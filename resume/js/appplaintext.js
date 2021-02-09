@@ -34,7 +34,7 @@ workString +=
 `${job.company}:<br>
 ${job.position}<br>
 ${job.startDate} to ${job.endDate}<br>
-${job.summary}
+${job.summary}<br>
 ${jobHighlights}<br>`;
 
 
