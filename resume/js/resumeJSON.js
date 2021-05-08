@@ -247,7 +247,7 @@ var resumeJSON = {
             "name": "Technology",
             "level": "",
             "keywords": [
-                "HTML", "CSS", "JavaScript", "jQuery", "JSON", "Chrome Debugger", "REST", "Ruby", "Macintosh", "Windows PC", "Android", "iOS"
+                "HTML", "CSS", "JavaScript", "jQuery", "JSON", "SQL", "Chrome Debugger", "REST", "Ruby", "Macintosh", "Windows PC", "Android", "iOS"
             ]
         }
     ],
