@@ -206,9 +206,9 @@ var resumeJSON = {
             "institution": "Vista College - Berkeley, CA",
             "area": "Video Editing and Life Drawing",
             "studyType": "CE",
-            "startDate": "2000",
-            "endDate": "2001",
-            "gpa": "n/a",
+            "startDate": "2001",
+            "endDate": "2002",
+            "gpa": "3.143",
             "courses": []
         },
 
@@ -228,7 +228,7 @@ var resumeJSON = {
             "studyType": "CE",
             "startDate": "1993",
             "endDate": "1995",
-            "gpa": "n/a",
+            "gpa": "2.75",
             "courses": []
         }
     ],
