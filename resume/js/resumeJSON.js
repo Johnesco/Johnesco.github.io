@@ -15,15 +15,10 @@ var resumeJSON = {
             "region": "Texas"
         },
         "profiles": [{
-                "network": "Twitter",
-                "username": "neutralthoughts",
-                "url": ""
+                "network": "Linked In",
+                "username": "johnesco",
+                "url": "https://www.linkedin.com/in/johnesco/"
             },
-            {
-                "network": "SoundCloud",
-                "username": "dandymusicnl",
-                "url": "https://soundcloud.com/dandymusicnl"
-            }
         ]
     },
     "work": [{
