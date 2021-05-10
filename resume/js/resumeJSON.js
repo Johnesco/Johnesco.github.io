@@ -1,12 +1,12 @@
 var resumeJSON = {
     "basics": {
         "name": "John Escobedo",
-        "label": "QA Engineer, Lead and Tester",
+        "label": "QA Analyst, Lead, Engineer, and Tester",
         "picture": "",
         "email": "letmeshowyou@gmail.com",
         "phone": "(512) 299-3269",
         "website": "",
-        "summary": "QA Engineer with 10+ years of experience manually testing software -- including single-page web apps, desktop software, and mobile apps -- for retail, medical, accessibility, and entertainment industries. Seeking transition into automated frameworks and tools. Trilingual: English, Spanish, and American Sign Language.",
+        "summary": "QA Specialist with 10+ years of experience manually testing software -- including single-page web apps, desktop software, and mobile apps -- for retail, medical, accessibility, and entertainment industries. Strong skills in Agile and Scrum methodologies. Trilingual: English, Spanish, and American Sign Language.",
         "location": {
             "address": "409 E. William Cannon #225",
             "postalCode": "TX 78745",
@@ -174,11 +174,12 @@ var resumeJSON = {
             "website": "https://aspyr.com",
             "startDate": "February 2006",
             "endDate": "November 2006",
-            "summary": "Tested games and documented bugs on Mac, PC, and various consoles. Used JIRA and DevTrack to provide product feedback and assistance with isolating product bugs. Shipped titles include Call of Duty 2, Civilization 4, The Sims 2: Nightlife, The Sims 2: Pets, Roller Coaster Tycoon and Spellforce 2.",
+            "summary": "Tested games and documented bugs on Mac, PC, and various consoles. Used JIRA and DevTrack to provide product feedback and assistance with isolating product bugs.",
             "highlights": [
                 "Tested play mechanics and documented bugs for games on Mac, PC, and various consoles.",
                 "Used JIRA and DevTrack to provide product feedback and assistance with isolating and testing bugs.",
-                "Proofread extensive game text. Provided test suites and test plans for team of game testers."
+                "Proofread extensive game text. Provided test suites and test plans for team of game testers.",
+              "Shipped titles included Call of Duty 2, Civilization 4, The Sims 2: Nightlife, The Sims 2: Pets, Roller Coaster Tycoon and Spellforce 2."
             ]
         }
     ],
