@@ -1,0 +1,89 @@
+<html>
+<body>
+    <script>
+// Typewriter object
+// holds string and it's length and an counter to the string
+var Typewriter = function (string) {
+        "use strict";
+        var abc_string = "abcdefghijklmnopqrstuvwxyz"
+        this.string = string;
+        this.story = string.split("");
+        this.length = this.story.length;
+        this.alphabet = abc_string.split("");
+        this.counter = 0;
+        this.best_count = 0;
+        this.guesses = 0;
+        this.incomplete = true;
+    };
+
+// Returns a random letter of the alphabet
+Typewriter.prototype.randomcounter = function () {
+    "use strict";
+    return Math.floor(Math.random() * this.alphabet.length);
+};
+
+// Called when a match is found, advances counter
+Typewriter.prototype.correct = function () {
+  // check to see if final letter matched.
+    "use strict";
+    if (this.counter === this.length - 1) {
+        this.incomplete = false;
+    } else {
+    // increase counter
+    this.counter += 1;
+    }
+};
+
+
+Typewriter.prototype.incorrect = function () {
+    "use strict";
+    this.counter = 0;
+};
+
+
+Typewriter.prototype.guess = function () {
+    "use strict";
+    var discovered = "", i;
+
+    this.letter = this.alphabet[this.randomcounter()];
+    this.guesses += 1;
+
+    if (this.letter === this.story[this.counter]) {
+        this.correct();
+    } else {
+        this.incorrect();
+    }
+
+   // check to see if new best counter reached,
+   // print latest streak and guesses taken
+    if (this.counter > this.best_count) {
+        //loop out how much has been found
+        for (i  = 0; i <= this.best_count; i += 1) {
+            discovered += this.story[i];
+        }
+
+        console.log('"' + discovered + '"' + " string discovered after " + this.guesses + " guesses.");
+        this.best_count = this.counter;
+    }
+};
+
+
+Typewriter.prototype.finalAnswer = function () {
+    "use strict";
+    return ("Monkey1 printed " + this.string + " after " + this.guesses + " guesses.");
+};
+
+
+
+
+// Create new typewriter object, send it a "story"
+var Monkey1 = new Typewriter("test");
+
+while (Monkey1.incomplete) {
+    Monkey1.guess();
+}
+
+console.log(Monkey1.finalAnswer());
+</script>
+</body>
+</html>
