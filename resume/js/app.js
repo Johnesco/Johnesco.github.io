@@ -43,7 +43,7 @@ workString +=
     <div class='col-md-6'>
       <h3 class='job-company'>${job.company}:</h3>
     </div>
-    <div class='col-md-6 text-md-right'>
+    <div class='col-md-6 text-md-end'>
     <p><span class='job-position'>${job.position}</span><br>
     <span class='job-date'>${job.startDate} to ${job.endDate}</span></p>
     </div>
