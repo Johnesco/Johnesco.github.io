@@ -3,7 +3,7 @@ function oxfordComma(array){
   var keywords = "";
   array.forEach(function(word, index) {
           if (index == array.length - 1) {
-              keywords += " and " + word + ".";
+              keywords += "and " + word + ".";
           } else {
               keywords += word + ", ";
           }
