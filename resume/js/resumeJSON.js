@@ -30,7 +30,7 @@ var resumeJSON = {
             "summary": "Test Engineer contractor. Ensured Requirement Traceability Matrix was intact and ran regression on existing features. Developed and updated test cases in IBM Rational.",
             "highlights": [
               "<b>Customer: VA</br>Project: LGY (Home Loan Guarantee)</br>Role: Test Engineer</br>Mar 2019 - Feb 2021</b></br>",
-              "Testing incoming updates, bugfixes and enhancements for government home loan guarantee.",
+              "Testing incoming updates, bug fixes, and enhancements for government home loan guarantee.",
               "Enforced protocol and patterns for reproducible testing.",
               "Created and updated test cases and scripts in IBM Rational Team Concert.",
               "Audited automated tests in Cucumber/Selenium.</br></br>",
@@ -84,10 +84,10 @@ var resumeJSON = {
                 
                 "QA Tester for the MMORPG \"Gods and Heroes: Rome Rising\".",
                 "Test Lead for online Facebook game \"Platinum Life: Country\".",
-                "Tested daily builds for basic functionality of game.",
+                "Tested daily builds for basic functionality of the game.",
                 "Ensured functionality of core mechanics.",
                 "Wrote test plans for smoke and regression testing.</br></br>",
-                "<b>Customer: Retail Me Not</br>Role: QA Engineer</br>May 2015 - Jun 2018</b>",
+                "<b>Customer: Retail Me Not</br>Project: RMN.com</br>Role: QA Engineer</br>May 2015 - Jun 2018</b>",
                
                 
                 "Analyzed results and updated code of RetailMeNot&rsquo;s automated test system.",
