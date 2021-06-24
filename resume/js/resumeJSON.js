@@ -29,13 +29,13 @@ var resumeJSON = {
             "endDate": "Present",
             "summary": "Test Engineer contractor. Ensured Requirement Traceability Matrix was intact and ran regression on existing features. Developed and updated test cases in IBM Rational.",
             "highlights": [
-              "<b>Customer: VA</br>Project: LGY (Home Loan Guarantee)</br>Role: Test Engineer</br>Mar 2019 - Feb 2021</b></br>",
+              "<b>Customer: VA</br>Project: LGY (Home Loan Guarantee)</br>Role: Test Engineer</br>March 2019 - February 2021</b>",
               "Testing incoming updates, bug fixes, and enhancements for government home loan guarantee.",
               "Enforced protocol and patterns for reproducible testing.",
               "Created and updated test cases and scripts in IBM Rational Team Concert.",
               "Audited automated tests in Cucumber/Selenium.</br></br>",
               
-              "<b>Customer: VA</br>Project: HI&M VIRP (Veterans Integrated Registries Platform)</br>Role: Test Engineer</br>Feb 2021 - Present</b>",
+              "<b>Customer: VA</br>Project: HI&M VIRP (Veterans Integrated Registries Platform)</br>Role: Test Engineer</br>February 2021 - Present</b>",
               
               "Became SME of the Traumatic Brain Injury portion of VIRP.",
               "Created, expanded and maintained a library of regression tests.",
@@ -75,19 +75,19 @@ var resumeJSON = {
             "company": "Luna Data Solutions",
             "position": "QA Engineer - Austin Tx",
             "website": "https://www.lunadatasolutions.com/",
-            "startDate": "Aug 2011",
+            "startDate": "August 2011",
             "endDate": "May 2017",
             "summary": "Worked as QA Tester for the companies two main products. The first was the MMORPG \"Gods and Heroes: Rome Rising\". I was promoted to Test Lead for online Facebook game \"Platinum Life: Country\". Tested daily builds for basic functionality and participated in improvements to game-play and UI design. Worked as a contract QA tester for RetailMeNot.com, a website for finding coupon, sales, and purchasing gift cards. I tested the roll-out of their new gift card purchasing ability and worked with development teams to effectively document and execute regression tests.",
             "highlights": [
             
-                "<b>Customer: Heatwave Interactive</br></be>Projects: MMORPG \"Gods and Heroes: Rome Rising\" and online Facebook game \"Platinum Life: Country\"</br>Role: QA Tester/Lead</br>Aug 2011 - Apr 2012</b>",
+                "<b>Customer: Heatwave Interactive</br></be>Projects: MMORPG \"Gods and Heroes: Rome Rising\" and online Facebook game \"Platinum Life: Country\"</br>Role: QA Tester/Lead</br>August 2011 - April 2012</b>",
                 
                 "QA Tester for the MMORPG \"Gods and Heroes: Rome Rising\".",
                 "Test Lead for online Facebook game \"Platinum Life: Country\".",
                 "Tested daily builds for basic functionality of the game.",
                 "Ensured functionality of core mechanics.",
                 "Wrote test plans for smoke and regression testing.</br></br>",
-                "<b>Customer: Retail Me Not</br>Project: RMN.com</br>Role: QA Engineer</br>May 2015 - Jun 2018</b>",
+                "<b>Customer: Retail Me Not</br>Project: RMN.com</br>Role: QA Engineer</br>May 2015 - June 2018</b>",
                
                 
                 "Analyzed results and updated code of RetailMeNot&rsquo;s automated test system.",
@@ -102,7 +102,7 @@ var resumeJSON = {
             "position": "QA Engineer - Austin Tx",
             "website": "https://retailmenot.com",
             "startDate": "May 2013",
-            "endDate": "Jan 2015",
+            "endDate": "January 2015",
             "summary": "CSD created its first software division where I introduced and expanded the QA process into their online interpreting app Vinya. Tested used qTest, JIRA, Cucumber, Ruby, and Watir. Also tested mobile app version of Vineya on iOS and mobile browser on Android. Familiar with Deaf culture and American Sign Language.",
             "highlights": [
                 "Created initial QA procedures for GoVineya.com, a Ruby on Rails web app.",
@@ -151,16 +151,16 @@ var resumeJSON = {
             "summary": "Linden Lab created the online world of Second Life. Started as a First Responder to all inworld emergencies and diagnosing inworld issues. In my time there I created inworld tools in LSL (Linden Scripting Language) for issue diagnosis. Promoted from part time to full time after 3 months. Received second promotion 1 year later (July 1, 2008 ) after taking on additional responsibilities via an online ticket system as well as live text support via Parature.  Promoted in Nov 2009 to QA department.",
             "highlights": [
             
-                "<b>Role: First Responder</br>03/2007 - 7/2008</b></br>",
+                "<b>Role: First Responder</br>March 2007 - July 2008</b>",
                 "Liaison for the on-line world of Second Life.",
                 "Forward facing First Responder to all inworld emergencies.",
                 "Helped resolve conflicts between Residents of Second Life.",
                 "Created inworld tools in LSL (Linden Scripting Language) including issue diagnosis and tracking tools.",
                 "Enforced Linden Lab terms of service, policies and procedure in accordance with company policy and legal stipulations.",
                 "Promoted from part time to full time after first 3 months.</br></br>",
-                "<b>Role: Customer Service</br>7/2008 - 11/2009</b>",
+                "<b>Role: Customer Service</br>June 2008 - November 2009</b>",
                 "Assisted with implementation and establishing initiatives for providing customer support via an online ticket system as well as live text support via Parature.</br></br>",
-                "<b>Role: QA</br>11/2009 to 6/2010</b>",
+                "<b>Role: QA</br>November 2009 - June 2010</b>",
                 "Promoted to QA to testing daily builds and track bugs.",
                 "Diagnosed inworld issues and escalated technical emergencies to proper departments."
                 
