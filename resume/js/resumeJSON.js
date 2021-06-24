@@ -1,8 +1,8 @@
 var resumeJSON = {
     "basics": {
-        "name": "John Escobedo",
-        "label": "QA Analyst, Lead, Engineer, and Tester",
-        "picture": "",
+      "name": "John Escobedo",
+      "label": "QA Analyst, Lead, Engineer, and Tester",
+      "picture": "",
         "email": "letmeshowyou@gmail.com",
         "phone": "(512) 299-3269",
         "website": "",
@@ -29,10 +29,19 @@ var resumeJSON = {
             "endDate": "Present",
             "summary": "Test Engineer contractor. Ensured Requirement Traceability Matrix was intact and ran regression on existing features. Developed and updated test cases in IBM Rational.",
             "highlights": [
+              "<b>Customer: VA</br>Project: LGY (Home Loan Guarantee)</br>Role: Test Engineer</br>Mar 2019 - Feb 2021</b></br>",
+              "Testing incoming updates, bugfixes and enhancements for government home loan guarantee.",
               "Enforced protocol and patterns for reproducible testing.",
               "Created and updated test cases and scripts in IBM Rational Team Concert.",
-              "Recorded and tested defects found in development phases",
-              "Edited Gherkin data statements in Cucumber test suites."
+              "Audited automated tests in Cucumber/Selenium.</br></br>",
+              
+              "<b>Customer: VA</br>Project: HI&M VIRP (Veterans Integrated Registries Platform)</br>Role: Tester</br>Feb 2021 - Present</b>",
+              
+              "Became SME of the Traumatic Brain Injury portion of VIRP.",
+              "Created, expanded and maintained a library of regression tests.",
+              "Documented and developed standard operating procedures for testing."
+              
+              
             ]
         },{
             "company": "EverlyWell",
@@ -63,13 +72,24 @@ var resumeJSON = {
             ]
         },
         {
-            "company": "Retail Me Not",
+            "company": "Luna Data Solutions",
             "position": "QA Engineer - Austin Tx",
-            "website": "https://retailmenot.com",
-            "startDate": "May 2015",
+            "website": "https://www.lunadatasolutions.com/",
+            "startDate": "Aug 2011",
             "endDate": "May 2017",
-            "summary": "Worked as a contract QA tester for RetailMeNot.com, a website for finding coupon, sales, and purchasing gift cards. I tested the roll-out of their new gift card purchasing ability and worked with development teams to effectively document and execute regression tests.",
+            "summary": "Worked as QA Tester for the companies two main products. The first was the MMORPG \"Gods and Heroes: Rome Rising\". I was promoted to Test Lead for online Facebook game \"Platinum Life: Country\". Tested daily builds for basic functionality and participated in improvements to game-play and UI design. Worked as a contract QA tester for RetailMeNot.com, a website for finding coupon, sales, and purchasing gift cards. I tested the roll-out of their new gift card purchasing ability and worked with development teams to effectively document and execute regression tests.",
             "highlights": [
+            
+                "<b>Customer: Heatwave Interactive</br></be>Projects: MMORPG \"Gods and Heroes: Rome Rising\" and online Facebook game \"Platinum Life: Country\"</br>Role: QA Tester/Lead</br>Aug 2011 - Apr 2012</b>",
+                
+                "QA Tester for the MMORPG \"Gods and Heroes: Rome Rising\".",
+                "Test Lead for online Facebook game \"Platinum Life: Country\".",
+                "Tested daily builds for basic functionality of game.",
+                "Ensured functionality of core mechanics.",
+                "Wrote test plans for smoke and regression testing.</br></br>",
+                "<b>Customer: Retail Me Not</br>Role: QA Engineer</br>May 2015 - Jun 2018</b>",
+               
+                
                 "Analyzed results and updated code of RetailMeNot&rsquo;s automated test system.",
                 "Developed Javascript tooling to easily validate RetailMeNot.com analytics.",
                 "Standardized smoke testing data suite to ensure uniformity across environments.",
@@ -106,21 +126,7 @@ var resumeJSON = {
                 "Managed remote testers and development of local testing team."
             ]
         },
-        {
-            "company": "Heatwave Interactive",
-            "position": "QA Test Lead - Austin, TX",
-            "website": "---",
-            "startDate": "August 2011",
-            "endDate": "April 2012",
-            "summary": "Hired as QA Tester for the companies two main products, the MMORPG \"Gods and Heroes: Rome Rising\" and was promoted to Test Lead for online Facebook game \"Platinum Life: Country\". Tested daily builds for basic functionality and participated in improvements to game-play and UI design.",
-            "highlights": [
-                "QA Tester for the MMORPG \"Gods and Heroes: Rome Rising\".",
-                "Test Lead for online Facebook game \"Platinum Life: Country\".",
-                "Tested daily builds for basic functionality of game.",
-                "Ensured functionality of core mechanics.",
-                "Wrote test plans for smoke and regression testing."
-            ]
-        },
+       
         {
             "company": "Blizzard Entertainment",
             "position": "Game Master (Customer Support) - Austin, TX",
@@ -144,10 +150,20 @@ var resumeJSON = {
             "endDate": "June 2010",
             "summary": "Linden Lab created the online world of Second Life. Started as a First Responder to all inworld emergencies and diagnosing inworld issues. In my time there I created inworld tools in LSL (Linden Scripting Language) for issue diagnosis. Promoted from part time to full time after 3 months. Received second promotion 1 year later (July 1, 2008 ) after taking on additional responsibilities via an online ticket system as well as live text support via Parature.  Promoted in Nov 2009 to QA department.",
             "highlights": [
-                "Diagnosed in-world issues and escalated technical emergencies.",
-                "Developed in-world tools in LSL (Linden Scripting Language).",
+            
+                "<b>Role: First Responder</br>03/2007 - 7/2008</b></br>",
+                "Liaison for the on-line world of Second Life.",
+                "Forward facing First Responder to all inworld emergencies.",
+                "Helped resolve conflicts between Residents of Second Life.",
+                "Created inworld tools in LSL (Linden Scripting Language) including issue diagnosis and tracking tools.",
+                "Enforced Linden Lab terms of service, policies and procedure in accordance with company policy and legal stipulations.",
+                "Promoted from part time to full time after first 3 months.</br></br>",
+                "<b>Role: Customer Service</br>7/2008 - 11/2009</b></br>",
+                "Assisted with implementation and establishing initiatives for providing customer support via an online ticket system as well as live text support via Parature.</br></br>",
+                "<b>Role: QA</br>11/2009 to 6/2010</b>",
                 "Promoted to QA to testing daily builds and track bugs.",
-                "Enforced Linden Lab terms of service, policies, and procedure."
+                "Diagnosed inworld issues and escalated technical emergencies to proper departments."
+                
             ]
         },
         {
