@@ -35,7 +35,7 @@ var resumeJSON = {
               "Created and updated test cases and scripts in IBM Rational Team Concert.",
               "Audited automated tests in Cucumber/Selenium.</br></br>",
               
-              "<b>Customer: VA</br>Project: HI&M VIRP (Veterans Integrated Registries Platform)</br>Role: Tester</br>Feb 2021 - Present</b>",
+              "<b>Customer: VA</br>Project: HI&M VIRP (Veterans Integrated Registries Platform)</br>Role: Test Engineer</br>Feb 2021 - Present</b>",
               
               "Became SME of the Traumatic Brain Injury portion of VIRP.",
               "Created, expanded and maintained a library of regression tests.",
@@ -158,7 +158,7 @@ var resumeJSON = {
                 "Created inworld tools in LSL (Linden Scripting Language) including issue diagnosis and tracking tools.",
                 "Enforced Linden Lab terms of service, policies and procedure in accordance with company policy and legal stipulations.",
                 "Promoted from part time to full time after first 3 months.</br></br>",
-                "<b>Role: Customer Service</br>7/2008 - 11/2009</b></br>",
+                "<b>Role: Customer Service</br>7/2008 - 11/2009</b>",
                 "Assisted with implementation and establishing initiatives for providing customer support via an online ticket system as well as live text support via Parature.</br></br>",
                 "<b>Role: QA</br>11/2009 to 6/2010</b>",
                 "Promoted to QA to testing daily builds and track bugs.",
