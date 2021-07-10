@@ -49,10 +49,10 @@ workString +=
     </div>
 </div>
 <div class = 'row'>
-  <div class='col-lg-4 col-md-6 col-sm-12'><p>${job.summary}</p></div>
-  <div class='col-lg-8 col-md-6 col-sm-12'><ul>${jobHighlights}</ul></div>
+  <div class='col-lg-8 col-md-12 col-sm-12'><ul>${jobHighlights}</ul></div>
 </div></div>`;
 
+// <div class='col-lg-4 col-md-6 col-sm-12'><p>${job.summary}</p></div>
 
 })
   return workString;
