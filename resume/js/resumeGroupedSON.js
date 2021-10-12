@@ -80,10 +80,18 @@ var resumeJSON = {
 "company": "Luna Data Solutions",
 "position": "QA Engineer - Austin Tx",
 "website": "https://www.lunadatasolutions.com/",
-"startDate": "AMay 2015",
-"endDate": "May 2017",
-"summary": "Worked as a contract QA tester for RetailMeNot.com, a website for finding coupon, sales, and purchasing gift cards. I tested the roll-out of their new gift card purchasing ability and worked with development teams to effectively document and execute regression tests.",
+"startDate": "August 2011 - April 2012",
+"endDate": "May 2015 - May 2017",
+"summary": "Tested daily builds for basic functionality and participated in improvements to game-play and UI design. Worked as a contract QA tester for RetailMeNot.com, a website for finding coupon, sales, and purchasing gift cards. I tested the roll-out of their new gift card purchasing ability and worked with development teams to effectively document and execute regression tests.",
 "highlights": [
+
+"<b>Customer: Heatwave Interactive</br></be>Projects: MMORPG \"Gods and Heroes: Rome Rising\" and online Facebook game \"Platinum Life: Country\"</br>Role: QA Tester/Lead</br>August 2011 - April 2012</b>",
+
+"QA Tester for the MMORPG \"Gods and Heroes: Rome Rising\".",
+"Promoted to Test Lead for online Facebook game \"Platinum Life: Country\".",
+"Tested daily builds for basic functionality of the game.",
+"Ensured functionality of core mechanics.",
+"Wrote test plans for smoke and regression testing.</br></br>",
 
 "<b>Customer: Retail Me Not</br>Project: RMN.com</br>Role: QA Engineer</br>May 2015 - May 2017</b>",
 "Analyzed results and updated code of RetailMeNot's automated test system.",
@@ -124,24 +132,7 @@ var resumeJSON = {
 "Managed remote testers and development of local testing team."
 ]
 },
-{
-"company": "Luna Data Solutions",
-"position": "QA Engineer - Austin Tx",
-"website": "https://www.lunadatasolutions.com/",
-"startDate": "August 2011",
-"endDate": "April 2012",
-"summary": "Tested daily builds for basic functionality and participated in improvements to game-play and UI design. ",
-"highlights": [
 
-"<b>Customer: Heatwave Interactive</br></be>Projects: MMORPG \"Gods and Heroes: Rome Rising\" and online Facebook game \"Platinum Life: Country\"</br>Role: QA Tester/Lead</br>August 2011 - April 2012</b>",
-
-"QA Tester for the MMORPG \"Gods and Heroes: Rome Rising\".",
-"Promoted to Test Lead for online Facebook game \"Platinum Life: Country\".",
-"Tested daily builds for basic functionality of the game.",
-"Ensured functionality of core mechanics.",
-"Wrote test plans for smoke and regression testing.</br></br>"
-]
-},
 {
 "company": "Blizzard Entertainment",
 "position": "Game Master (Customer Support) - Austin, TX",
