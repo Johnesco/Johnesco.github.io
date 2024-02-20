@@ -199,7 +199,7 @@ var resumeJSON = {
             "Helped resolve conflicts between Residents of Second Life.",
             "Created inworld tools in LSL (Linden Scripting Language) including issue diagnosis and tracking tools.",
             "Enforced Linden Lab terms of service, policies and procedures in accordance with company policy and legal stipulations.",
-            "Promoted from part-time to full-time after first 3 months.",
+            "Promoted from part-time to full-time after first 3 months."
          ]
       },
       {
