@@ -31,25 +31,27 @@ var resumeJSON = {
          "endDate":"Present",
          "summary":"",
          "highlights":[
+            "July 2023 - Present",
             "Customer: VA",
             "Project: Advanced Medical Platform (AMPL)",
             "Role: Test Engineer",
-            "July 2023 - Present",
-            "Tested",
+            "Tested flagship software (AMPL) builds.",
+            "Created data in MUMPS command line interface tool."
+            "Extensive 508 testing using JAWS."
             " ",
+            "February 2021 - June 2023",
             "Customer: VA",
             "Project: HI&M VIRP (Veterans Integrated Registries Platform)",
             "Role: Test Engineer",
-            "February 2021 - June 2023",
             "Ensured Requirement Traceability Matrix was intact and ran regression on existing features.",
             "Became SME of the Traumatic Brain Injury portion of VIRP.",
             "Created, expanded, and maintained a library of regression tests.",
             "Documented and developed standard operating procedures for testing.",
             " ",
+            "March 2019 - February 2021",
             "Customer: VA",
             "Project: Home Loan Guarantee (LGY)",
             "Role: Test Engineer",
-            "March 2019 - February 2021",
             "Tested incoming updates, bug fixes, and enhancements for government home loan guarantee.",
             "Enforced protocol and patterns for reproducible testing.",
             "Created and updated test cases and scripts in IBM Rational Team Concert.",
@@ -98,10 +100,10 @@ var resumeJSON = {
          "endDate":"2017-05-01",
          "summary":"Worked as a contract QA tester for RetailMeNot.com, a website for finding coupon, sales, and purchasing gift cards. I tested the roll-out of their new gift card purchasing ability and worked with development teams to effectively document and execute regression tests.",
          "highlights":[
+            "May 2015 - May 2017",
             "Customer: Retail Me Not",
             "Project: RMN.com",
             "Role: QA Engineer",
-            "May 2015 - May 2017",
             "Analyzed results and updated code of RetailMeNot's automated test system.",
             "Developed Javascript tooling to easily validate RetailMeNot.com analytics.",
             "Standardized smoke testing data suite to ensure uniformity across environments.",
@@ -148,15 +150,15 @@ var resumeJSON = {
          "endDate":"2012-04-01",
          "summary":"Tested daily builds for basic functionality and participated in improvements to game-play and UI design. ",
          "highlights":[
+            "August 2011 - April 2012",
             "Customer: Heatwave Interactive",
             "Projects: MMORPG \"Gods and Heroes: Rome Rising\" and online Facebook game \"Platinum Life: Country\"",
             "Role: QA Tester/Lead",
-            "August 2011 - April 2012",
             "QA Tester for the MMORPG \"Gods and Heroes: Rome Rising\".",
             "Promoted to Test Lead for online Facebook game \"Platinum Life: Country\".",
             "Tested daily builds for basic functionality of the game.",
             "Ensured functionality of core mechanics.",
-            "Wrote test plans for smoke and regression testing.</br></br>"
+            "Wrote test plans for smoke and regression testing."
          ]
       },
       {
@@ -192,12 +194,12 @@ var resumeJSON = {
             "Enforced Linden Lab terms of service, policies and procedures in accordance with company policy and legal stipulations.",
             "Promoted from part-time to full-time after first 3 months.",
             " ",
-            "Role: Customer Service",
             "June 2008 - November 2009",
+            "Role: Customer Service",
             "Assisted with implementation and establishing initiatives for providing customer support via an online ticket system as well as live text support via Parature.</br></br>",
             " ",
-            "Role: QA",
             "November 2009 - June 2010",
+            "Role: QA",
             "Promoted to QA to testing daily builds and track bugs.",
             "Diagnosed inworld issues and escalated technical emergencies to proper departments."
          ]
