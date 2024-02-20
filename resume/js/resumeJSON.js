@@ -190,7 +190,7 @@ var resumeJSON = {
             " ",
             "June 2008 - November 2009",
             "Role: Customer Service",
-            "Assisted with implementation and establishing initiatives for providing customer support via an online ticket system as well as live text support via Parature.</br></br>",
+            "Assisted with implementation and establishing initiatives for providing customer support via an online ticket system as well as live text support via Parature.",
             " ",
             "March 2007 - July 2008",
             "Role: First Responder",
