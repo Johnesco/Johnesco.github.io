@@ -28,6 +28,7 @@ var resumeJSON = {
          "position":"QA Engineer - Austin Tx",
          "website":"geeksi.com",
          "startDate":"2019-03-01",
+         "endDate":"Present",
          "summary":"",
          "highlights":[
             "Customer: VA",
