@@ -36,8 +36,8 @@ var resumeJSON = {
             "Project: Advanced Medical Platform (AMPL)",
             "Role: Test Engineer",
             "Tested flagship software (AMPL) builds.",
-            "Created data in MUMPS command line interface tool."
-            "Extensive 508 testing using JAWS."
+            "Created data in MUMPS command line interface tool.",
+            "Extensive 508 testing using JAWS.",
             " ",
             "February 2021 - June 2023",
             "Customer: VA",
