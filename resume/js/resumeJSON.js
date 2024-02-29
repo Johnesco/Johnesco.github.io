@@ -26,7 +26,7 @@ var resumeJSON = {
       {
          "name":"GeekSI",
          "position":"QA Engineer - Austin Tx",
-         "website":"geeksi.com",
+         "website":"https://www.geeksi.com/",
          "startDate":"2019-03-01",
          "endDate":"Present",
          "summary":"",
@@ -61,7 +61,7 @@ var resumeJSON = {
       {
          "name":"EverlyWell",
          "position":"QA Engineer - Austin Tx",
-         "website":"https://youscience.com",
+         "website":"https://www.everlywell.com/",
          "startDate":"2018-06-01",
          "endDate":"2018-10-01",
          "summary":"",
@@ -77,7 +77,7 @@ var resumeJSON = {
       {
          "name":"YouScience",
          "position":"QA Engineer - Austin Tx",
-         "website":"https://youscience.com",
+         "website":"https://www.youscience.com",
          "startDate":"2017-07-01",
          "endDate":"2018-06-01",
          "summary":"",
@@ -113,7 +113,7 @@ var resumeJSON = {
       {
          "name":"Communication Services for the Deaf",
          "position":"QA Engineer - Austin Tx",
-         "website":"https://retailmenot.com",
+         "website":"https://www.retailmenot.com",
          "startDate":"2013-05-01",
          "endDate":"2015-01-01",
          "summary":"",
@@ -129,7 +129,7 @@ var resumeJSON = {
       {
          "name":"DocbookMD",
          "position":"Lead QA Tester - Austin, TX",
-         "website":"https://docbookmd.com",
+         "website":"https://www.docbookmd.com",
          "startDate":"2012-07-01",
          "endDate":"2013-03-01",
          "summary":"Introduced a QA process to the companies HIPPA-compliant messaging app for doctors. Majority of work was tested on IOS phones with some Android and web components. Maintained and enforced testing protocols.",
@@ -162,7 +162,7 @@ var resumeJSON = {
       {
          "name":"Blizzard Entertainment",
          "position":"Game Master (Customer Support) - Austin, TX",
-         "website":"https://.com",
+         "website":"https://www.blizzard.com",
          "startDate":"2010-07-01",
          "endDate":"2011-07-01",
          "summary":"",
@@ -178,7 +178,7 @@ var resumeJSON = {
       {
          "name":"Linden Lab",
          "position":"QA Engineer and Tester, Support Specialist - San Francisco, CA (Remote)",
-         "website":"https://lindenlab.com",
+         "website":"https://www.lindenlab.com",
          "startDate":"2007-03-01",
          "endDate":"2010-06-01",
          "summary":"Linden Lab created the online world of Second Life. Started as a First Responder to all inworld emergencies and diagnosing inworld issues. In my time there I created inworld tools in LSL (Linden Scripting Language) for issue diagnosis. Promoted from part-time to full-time after 3 months. Received second promotion 1 year later (July 1, 2008 ) after taking on additional responsibilities via an online ticket system as well as live text support via Parature. Promoted in Nov 2009 to QA department.",
@@ -205,7 +205,7 @@ var resumeJSON = {
       {
          "name":"Super Happy Fun Fun",
          "position":"QA Tester - Austin, TX",
-         "website":"https://.com",
+         "website":"",
          "startDate":"2006-11-01",
          "endDate":"2007-03-01",
          "summary":"Freelance tester for games and applications in a cell phone focused digital media company. Tested software across many brands of cell phone including Nokia, Samsung, Sony Ericsson, Motorola and LG Electronics. Used Mantas bug tracker and participated in the production, testing, support, and troubleshooting of phone applications such as: 3D Tilt-a-world, 50-cent Stuntin', Mirinda and Access Search.",
@@ -218,7 +218,7 @@ var resumeJSON = {
       {
          "name":"Aspyr Media",
          "position":"QA Test Lead, QA Game Tester - Austin, TX",
-         "website":"https://aspyr.com",
+         "website":"https://www.aspyr.com",
          "startDate":"2006-02-01",
          "endDate":"2006-11-01",
          "summary":"Tested games and documented bugs on Mac, PC, and various consoles. Used JIRA and DevTrack to provide product feedback and assistance with isolating product bugs.",
