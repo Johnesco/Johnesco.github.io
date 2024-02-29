@@ -98,7 +98,7 @@ var resumeJSON = {
          "website":"https://www.lunadatasolutions.com/",
          "startDate":"2015-05-01",
          "endDate":"2017-05-01",
-         "summary":"Worked as a contract QA tester for RetailMeNot.com, a website for finding coupon, sales, and purchasing gift cards. I tested the roll-out of their new gift card purchasing ability and worked with development teams to effectively document and execute regression tests.",
+         "summary":"Worked as a contract QA tester for RetailMeNot.com, a website for finding coupons, sales, and purchasing gift cards. I tested the roll-out of their new gift card purchasing ability and worked with development teams to effectively document and execute regression tests.",
          "highlights":[
             "Customer: Retail Me Not",
             "Project: RMN.com",
@@ -113,7 +113,7 @@ var resumeJSON = {
       {
          "name":"Communication Services for the Deaf",
          "position":"QA Engineer - Austin Tx",
-         "website":"https://www.retailmenot.com",
+         "website":"https://csd.org/",
          "startDate":"2013-05-01",
          "endDate":"2015-01-01",
          "summary":"",
@@ -132,7 +132,7 @@ var resumeJSON = {
          "website":"https://www.docbookmd.com",
          "startDate":"2012-07-01",
          "endDate":"2013-03-01",
-         "summary":"Introduced a QA process to the companies HIPPA-compliant messaging app for doctors. Majority of work was tested on IOS phones with some Android and web components. Maintained and enforced testing protocols.",
+         "summary":"Introduced a QA process to the company's HIPPA-compliant messaging app for doctors. Majority of work was tested on IOS phones with some Android and web components. Maintained and enforced testing protocols.",
          "highlights":[
             "Introduced QA process for company's HIPPA-compliant messaging app for doctors.",
             "Test lead for mobile app for Android and iOS tablets and phones.",
