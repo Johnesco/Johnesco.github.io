@@ -24,7 +24,7 @@ var resumeJSON = {
    },
    "work":[
       {
-         "company":"GeekSI",
+         "name":"GeekSI",
          "position":"QA Engineer - Austin Tx",
          "website":"geeksi.com",
          "startDate":"2019-03-01",
@@ -59,7 +59,7 @@ var resumeJSON = {
          ]
       },
       {
-         "company":"EverlyWell",
+         "name":"EverlyWell",
          "position":"QA Engineer - Austin Tx",
          "website":"https://youscience.com",
          "startDate":"2018-06-01",
@@ -75,7 +75,7 @@ var resumeJSON = {
          ]
       },
       {
-         "company":"YouScience",
+         "name":"YouScience",
          "position":"QA Engineer - Austin Tx",
          "website":"https://youscience.com",
          "startDate":"2017-07-01",
@@ -93,7 +93,7 @@ var resumeJSON = {
          ]
       },
       {
-         "company":"Luna Data Solutions",
+         "name":"Luna Data Solutions",
          "position":"QA Engineer - Austin Tx",
          "website":"https://www.lunadatasolutions.com/",
          "startDate":"2015-05-01",
@@ -111,7 +111,7 @@ var resumeJSON = {
          ]
       },
       {
-         "company":"Communication Services for the Deaf",
+         "name":"Communication Services for the Deaf",
          "position":"QA Engineer - Austin Tx",
          "website":"https://retailmenot.com",
          "startDate":"2013-05-01",
@@ -127,7 +127,7 @@ var resumeJSON = {
          ]
       },
       {
-         "company":"DocbookMD",
+         "name":"DocbookMD",
          "position":"Lead QA Tester - Austin, TX",
          "website":"https://docbookmd.com",
          "startDate":"2012-07-01",
@@ -142,7 +142,7 @@ var resumeJSON = {
          ]
       },
       {
-         "company":"Luna Data Solutions",
+         "name":"Luna Data Solutions",
          "position":"QA Engineer - Austin Tx",
          "website":"https://www.lunadatasolutions.com/",
          "startDate":"2011-08-01",
@@ -160,7 +160,7 @@ var resumeJSON = {
          ]
       },
       {
-         "company":"Blizzard Entertainment",
+         "name":"Blizzard Entertainment",
          "position":"Game Master (Customer Support) - Austin, TX",
          "website":"https://.com",
          "startDate":"2010-07-01",
@@ -176,7 +176,7 @@ var resumeJSON = {
          ]
       },
       {
-         "company":"Linden Lab",
+         "name":"Linden Lab",
          "position":"QA Engineer and Tester, Support Specialist - San Francisco, CA (Remote)",
          "website":"https://lindenlab.com",
          "startDate":"2007-03-01",
@@ -203,7 +203,7 @@ var resumeJSON = {
          ]
       },
       {
-         "company":"Super Happy Fun Fun",
+         "name":"Super Happy Fun Fun",
          "position":"QA Tester - Austin, TX",
          "website":"https://.com",
          "startDate":"2006-11-01",
@@ -216,7 +216,7 @@ var resumeJSON = {
          ]
       },
       {
-         "company":"Aspyr Media",
+         "name":"Aspyr Media",
          "position":"QA Test Lead, QA Game Tester - Austin, TX",
          "website":"https://aspyr.com",
          "startDate":"2006-02-01",
