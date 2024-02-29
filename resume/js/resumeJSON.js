@@ -298,7 +298,7 @@ var resumeJSON = {
          "keywords":[
             "Agile Methodology",
             "Scrum Master Ceremonies",
-            "Ad-hoc and Smoke Testing",
+            "Ad-hoc / Smoke Testing",
             "Functional Testing",
             "Non-functional Testing",
             "Regression Testing",
@@ -306,7 +306,7 @@ var resumeJSON = {
             "Accessibility Testing (Section 508 Testing)",
             "Integration Testing",
             "Acceptance Testing",
-            "Defect Reporting and Root Cause Analysis",
+            "Defect Reporting","Root Cause Analysis",
             "JIRA",
             "Xray (JIRA Plugin)",
             "Testrail",
