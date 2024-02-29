@@ -44,7 +44,7 @@ workString +=
 `<div class='job col-md-12'>
   <div class='row job-heading'>
     <div class='col-md-6'>
-      <h3 class='job-company'>${job.name}:</h3>
+      <h3 class='job-company'><a href="${job.website}">${job.name}</a>:</h3>
     </div>
     <div class='col-md-6 text-md-end'>
     <p><span class='job-position'>${job.position}</span><br>
