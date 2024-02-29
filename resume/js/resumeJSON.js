@@ -303,7 +303,7 @@ var resumeJSON = {
             "Non-functional Testing",
             "Regression Testing",
             "Usability Testing",
-            "Accessibility Testing",
+            "Accessibility Testing (Section 508 Testing)",
             "Integration Testing",
             "Acceptance Testing",
             "Defect Reporting and Root Cause Analysis",
