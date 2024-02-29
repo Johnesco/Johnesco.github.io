@@ -294,18 +294,27 @@ var resumeJSON = {
    "skills":[
       {
          "name":"Testing and Reporting",
-         "level":"Master",
+         "level":"",
          "keywords":[
-            "Agile",
-            "Scrum",
-            "Ad-hoc",
-            "regression",
-            "bug reporting",
+            "Agile Methodology",
+            "Scrum Master Ceremonies",
+            "Ad-hoc and Smoke Testing",
+            "Functional Testing",
+            "Non-functional Testing",
+            "Regression Testing",
+            "Usability Testing",
+            "Accessibility Testing",
+            "Integration Testing",
+            "Acceptance Testing",
+            "Defect Reporting and Root Cause Analysis",
             "JIRA",
+            "Xray (JIRA Plugin)",
             "Testrail",
             "IBM Rational Team Concert"
          ]
       },
+ 
+      
       {
          "name":"Technology",
          "level":"",
