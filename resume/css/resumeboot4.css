@@ -11,6 +11,10 @@ p {
   margin-bottom: .5rem;
 }
 
+ul {
+border-top: 1px solid grey;
+}
+
 .resume {
   background-color:#FFFFFF;
   margin-top:2em;
