@@ -34,8 +34,8 @@ function jobList(work){
 
     var jobHighlights = '';
     for(let highlight of job.highlights){
-    	if (highlight.charAt(0) == "<"){
-    	jobHighlights += `${highlight}`;
+    	if (highlight.charAt(0) == " "){
+    	jobHighlights += `</ul><ul>`;
     	}else
         jobHighlights += `<li>${highlight}</li>`;
     };
