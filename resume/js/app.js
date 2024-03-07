@@ -53,7 +53,7 @@ workString +=
 </div>
 <div class = 'row'>
   <div class='col-xl-2 col-lg-4 col-md-6 col-sm-12'><p>${job.summary}</p></div>
-  <div class='col-sm-12'><h4>Responsibilites and Accomplishments</h4><ul>${jobHighlights}</ul></div>
+  <div class='col-xl-10 col-lg-8 col-md-6 col-sm-12'><h4 class="h6">Responsibilites and Accomplishments</h4><ul>${jobHighlights}</ul></div>
 </div></div>`;
 
 // <div class='col-lg-4 col-md-6 col-sm-12'><p>${job.summary}</p></div>
