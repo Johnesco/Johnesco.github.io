@@ -31,7 +31,7 @@ function jobList(work){
     };
   
 workString +=
-`${job.company}:<br>
+`${job.name}:<br>
 ${job.position}<br>
 ${job.startDate} to ${job.endDate}<br>
 ${job.summary}<br>
