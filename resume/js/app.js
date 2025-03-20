@@ -22,7 +22,7 @@ function skillSets(skills) {
       
       skillSetsString += `<div class='col-lg-6 skillset'>
     <p><strong>${skill.name}: </strong>${keywords}</div>`;
-  })
+  });
   return skillSetsString;
 }
 
@@ -38,7 +38,7 @@ function jobList(work){
     	jobHighlights += `</ul><ul>`;
     	}else
         jobHighlights += `<li>${highlight}</li>`;
-    };
+    }
   
 workString +=
 `<div class='job col-md-12'>
@@ -61,7 +61,7 @@ workString +=
 
 // <div class='col-lg-4 col-md-6 col-sm-12'><p>${job.summary}</p></div>
 
-})
+});
   return workString;
 }
 
@@ -77,7 +77,7 @@ function eduList(education){
       <dt class='school-title'> ${school.institution}: ${school.startDate} - ${school.endDate} </dt>
       <dd>${school.area}</dd>
       </dl></div>`;
-})
+});
 
   return educationString;
 }

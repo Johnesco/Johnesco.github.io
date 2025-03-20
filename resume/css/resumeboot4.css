@@ -12,7 +12,10 @@ p {
 }
 
 ul {
-border-top: 1px solid grey;
+border-top: 1px solid #e0e0e0;
+padding-top: 0.6em;
+padding-bottom: 0em;
+  
 }
 
 .resume {
@@ -35,7 +38,8 @@ border-top: 1px solid grey;
 
 h2 {
   font-weight: bold;
-  margin-top: .66em;
+  margin-top: 0.81rem;
+  margin-bottom: 0;
   font-family: "Helvetica", sans-serif;
 }
 
@@ -45,6 +49,8 @@ h2 {
 }
 
 h3.job-company {
+  margin-top: 0;
+  margin-bottom: 0.5rem; 
   font-weight: bold;
   font-family: "Helvetica", sans-serif;
 }
@@ -63,6 +69,11 @@ h3.job-company {
 
 #schools {
   padding-top: 1em;
+}
+
+hr {
+  margin-top: 3em;
+  margin-bottom: 3em;
 }
 
 strong{ color: #1133cc};
