@@ -20,7 +20,7 @@ function skillSets(skills) {
       // Convert array of keywords into comma separated string
       var keywords = oxfordComma(skill.keywords);
       
-      skillSetsString += `<div class='col-lg-6 skillset'>
+      skillSetsString += `<div class='col-md-6 skillset'>
     <p><strong>${skill.name}: </strong>${keywords}</div>`;
   });
   return skillSetsString;
