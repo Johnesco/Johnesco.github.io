@@ -11,6 +11,7 @@ function oxfordComma(array){
   return keywords;
 }
 
+
 // Take resumeJSON sub-object and returns a String
 function skillSets(skills) {
   // Empty string to build into return value
@@ -21,7 +22,7 @@ function skillSets(skills) {
       var keywords = oxfordComma(skill.keywords);
       
       skillSetsString += `<div class='col-md-6 skillset'>
-    <p><strong>${skill.name}: </strong>${keywords}</div>`;
+    <p><strong>${skill.name}:</strong><br>${keywords}</div>`;
   });
   return skillSetsString;
 }

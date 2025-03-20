@@ -1,10 +1,13 @@
-body{ background-color:#EEECEE;}
+body{
+  background-color:#EEECEE;
+  max-width: 1000px;
+  margin:auto;
+}
 
 #name {
-  font-size: 2.2rem;
   font-weight: bold;
   color: #1144cc;
-  font-family: "Helvetica", sans-serif;
+  
 }
 
 p {
@@ -23,7 +26,7 @@ padding-bottom: 0em;
   margin-top:2em;
   margin-bottom: 2em;
   padding: 3em 3em 3em 3em;
-  font-family: "Palatino",serif;
+  
 }
 
 #title {
@@ -52,7 +55,7 @@ h3.job-company {
   margin-top: 0;
   margin-bottom: 0.5rem; 
   font-weight: bold;
-  font-family: "Helvetica", sans-serif;
+  
 }
 
 .job-position {
