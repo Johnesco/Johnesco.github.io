@@ -6,7 +6,7 @@ var resumeJSON = {
       "email":"letmeshowyou@gmail.com",
       "phone":"(512) 299-3269",
       "website":"",
-      "summary":"QA Specialist with 10+ years of experience testing software -- including single-page web apps, desktop software, and mobile apps -- for retail, medical, accessibility, and entertainment industries. Strong skills in Agile and Scrum methodologies. Trilingual: English, Spanish, and American Sign Language.",
+      "summary":"QA Specialist with 10+ years of experience testing software -- including single-page web apps, desktop software, and mobile apps -- for retail, medical, accessibility, government, and entertainment industries. Strong skills in Agile and Scrum methodologies. Trilingual: English, Spanish, and American Sign Language.",
       "location":{
          "address":"16506 Fetching",
          "postalCode":"TX 78653",
