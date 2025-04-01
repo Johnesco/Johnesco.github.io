@@ -34,6 +34,7 @@ function jobList(work){
   work.forEach(function(job) {
 
     var jobHighlights = '';
+    // Loop through each highlight, creating new UL if blank found
     for(let highlight of job.highlights){
     	if (highlight.charAt(0) == " "){
     	jobHighlights += `</ul><ul>`;
@@ -53,7 +54,7 @@ workString +=
     </div>
 </div>
 <div class = 'row'>
-  <div class='col-md-8 col-sm-12'><p>${job.summary}</p>
+  <div class='col-md-8 col-sm-12'><p class='job-summary'>${job.summary}</p>
 </div>
 </div>
 <div class='row'>

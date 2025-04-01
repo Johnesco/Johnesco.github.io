@@ -15,30 +15,31 @@ function skillSets(skills) {
   skills.forEach(function(skill) { 
       var keywords = oxfordComma(skill.keywords);
       skillSetsString += `${skill.name}: ${keywords}<br>`;
-  })
+  });
   return skillSetsString + "<br>";
 }
 
 // Takes resumeJSON sub-object and returns a String
 function jobList(work){
   
-  var workString = '-------- WORK HISTORY --------<br>';
+  var workString = '-------- WORK HISTORY --------<br><br>';
   work.forEach(function(job) {
 
     var jobHighlights = '';
     for(let highlight of job.highlights){
         jobHighlights += ` - ${highlight}<br>`;
-    };
+    }
   
 workString +=
 `${job.name}:<br>
 ${job.position}<br>
-${job.startDate} to ${job.endDate}<br>
-${job.summary}<br>
-${jobHighlights}<br>`;
+${job.startDate} to ${job.endDate}<br><br>
+${job.summary}<br><br>
+${jobHighlights}<br>
+-----------------------------------------<br>`;
 
 
-})
+});
   return workString;
 }
 
@@ -50,7 +51,7 @@ function eduList(education){
     educationString +=
       `${school.institution}: ${school.startDate} - ${school.endDate} <br>
       ${school.area}<br><br>`;
-})
+});
 
   return educationString;
 }
@@ -75,7 +76,7 @@ textResume += jobList(resumeJSON.work);
 
 textResume += eduList(resumeJSON.education);
 
-textResume += "</p>"
+textResume += "</p>";
 /*
 
 

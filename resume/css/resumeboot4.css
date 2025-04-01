@@ -62,6 +62,12 @@ h3.job-company {
   font-style:italic; 
 }
 
+.job-summary {
+  padding: 0.5em;
+  background-color: rgb(232, 234, 246);
+  font-size: 1em
+}
+
 .job-date {
   color: #AAAACC;
   font-weight: bold;
