@@ -36,7 +36,7 @@ var resumeJSON = {
         "Role: Lead Test Engineer",
         "Built intial test plan for MVP.",
         "Standardized and communcated testing SOP",
-        "Chapioned Agile methods to replace Waterfall tendencies.",
+        "Championed Agile methods to replace Waterfall tendencies.",
         " ",
         "July 2023 - July 2024",
         "Customer: VA",
@@ -87,7 +87,7 @@ var resumeJSON = {
       "website": "https://www.youscience.com",
       "startDate": "2017-07-01",
       "endDate": "2018-06-01",
-      "summary": "Sole tester for YouScience’s first website and on-line evaluation tool that provided career and education path assessments to its customers. Provided a strong quality guidance to ensure releases where working solidly before release.",
+      "summary": "Sole tester for YouScience’s first website and on-line evaluation tool that provided career and education path assessments to its customers. Provided a strong quality guidance to ensure releases worked solidly before release.",
       "highlights": [
         "Lead testing for flagship product, an online career and education path assessment tool.",
         "Designed and initiated a QA process into existing software development cycle.",
