@@ -1,41 +1,43 @@
 var resumeJSON = {
-  "basics": {
-    "name": "John Escobedo",
-    "label": "QA Analyst, Lead, Engineer, and Tester",
-    "picture": "",
-    "email": "letmeshowyou@gmail.com",
-    "phone": "(512) 299-3269",
-    "website": "",
-    "summary": "QA Specialist with nearly 20 years of experience testing software -- including single-page web apps, desktop software, and mobile apps -- for retail, medical, accessibility, government, and entertainment industries. Strong skills in Agile and Scrum methodologies. Trilingual: English, Spanish, and American Sign Language.",
-    "location": {
-      "address": "16506 Fetching",
-      "postalCode": "TX 78653",
-      "city": "Manor",
-      "countryCode": "US",
-      "region": "Texas"
+  basics: {
+    name: "John Escobedo",
+    label: "QA Analyst, Lead, Engineer, and Tester",
+    picture: "",
+    email: "letmeshowyou@gmail.com",
+    phone: "(512) 299-3269",
+    website: "",
+    summary:
+      "QA Specialist with nearly 20 years of experience testing software -- including single-page web apps, desktop software, and mobile apps -- for retail, medical, accessibility, government, and entertainment industries. Strong skills in Agile and Scrum methodologies. Trilingual: English, Spanish, and American Sign Language.",
+    location: {
+      address: "16506 Fetching",
+      postalCode: "TX 78653",
+      city: "Manor",
+      countryCode: "US",
+      region: "Texas"
     },
-    "profiles": [
+    profiles: [
       {
-        "network": "Linked In",
-        "username": "johnesco",
-        "url": "https://www.linkedin.com/in/johnesco/"
+        network: "Linked In",
+        username: "johnesco",
+        url: "https://www.linkedin.com/in/johnesco/"
       }
     ]
   },
-  "work": [
+  work: [
     {
-      "name": "GeekSI",
-      "position": "QA Engineer - Austin Tx",
-      "website": "https://www.geeksi.tech/",
-      "startDate": "2019-03-01",
-      "summary": "Contracted for GeekSI at various customers Veterans Affairs in the US Government as a software tester. Roles have included testing various programs assisting Veterans with benefits including housing and healthcare.",
-      "highlights": [
-         "July 2024 - Present",
+      name: "GeekSI",
+      position: "QA Engineer - Austin Tx",
+      website: "https://www.geeksi.tech/",
+      startDate: "2019-03-01",
+      summary:
+        "Contracted for GeekSI at various customers Veterans Affairs in the US Government as a software tester. Roles have included testing various programs assisting Veterans with benefits including housing and healthcare.",
+      highlights: [
+        "July 2024 - Present",
         "Customer: VA",
         "Project: Telehealth Hub (TH)",
         "Role: Lead Test Engineer",
-        "Built intial test plan for MVP.",
-        "Standardized and communcated testing SOP",
+        "Built initial test plan for MVP.",
+        "Standardized and communicated testing SOP",
         "Championed Agile methods to replace Waterfall tendencies.",
         " ",
         "July 2023 - July 2024",
@@ -66,13 +68,14 @@ var resumeJSON = {
       ]
     },
     {
-      "name": "EverlyWell",
-      "position": "QA Engineer - Austin Tx",
-      "website": "https://www.everlywell.com/",
-      "startDate": "2018-06-01",
-      "endDate": "2018-10-01",
-      "summary": "Lead QA processes for EverlyWell’s health test services where customers sent in biological specimens and ultimately viewed and stored the results on a secure online portal. Created a cross-team agile setup in JIRA to facilitate CI/CD workflow.",
-      "highlights": [
+      name: "EverlyWell",
+      position: "QA Engineer - Austin Tx",
+      website: "https://www.everlywell.com/",
+      startDate: "2018-06-01",
+      endDate: "2018-10-01",
+      summary:
+        "Lead QA processes for EverlyWell’s health test services where customers sent in biological specimens and ultimately viewed and stored the results on a secure online portal. Created a cross-team agile setup in JIRA to facilitate CI/CD workflow.",
+      highlights: [
         "Integrated initial QA process into software development cycle.",
         "Developed and maintained QA pipeline for CI/CD.",
         "Tested incoming features for website.",
@@ -82,13 +85,14 @@ var resumeJSON = {
       ]
     },
     {
-      "name": "YouScience",
-      "position": "QA Engineer - Austin Tx",
-      "website": "https://www.youscience.com",
-      "startDate": "2017-07-01",
-      "endDate": "2018-06-01",
-      "summary": "Sole tester for YouScience’s first website and on-line evaluation tool that provided career and education path assessments to its customers. Provided a strong quality guidance to ensure releases worked solidly before release.",
-      "highlights": [
+      name: "YouScience",
+      position: "QA Engineer - Austin Tx",
+      website: "https://www.youscience.com",
+      startDate: "2017-07-01",
+      endDate: "2018-06-01",
+      summary:
+        "Sole tester for YouScience’s first website and on-line evaluation tool that provided career and education path assessments to its customers. Provided a strong quality guidance to ensure releases worked solidly before release.",
+      highlights: [
         "Lead testing for flagship product, an online career and education path assessment tool.",
         "Designed and initiated a QA process into existing software development cycle.",
         "Defined and enforced QA structure and procedure",
@@ -100,13 +104,14 @@ var resumeJSON = {
       ]
     },
     {
-      "name": "Luna Data Solutions",
-      "position": "QA Engineer - Austin Tx",
-      "website": "https://www.lunadatasolutions.com/",
-      "startDate": "2015-05-01",
-      "endDate": "2017-05-01",
-      "summary": "Worked as a contract QA tester for RetailMeNot.com, a website for finding coupons, sales, and purchasing gift cards. I tested the roll-out of their new gift card purchasing ability and worked with development teams to effectively document and execute regression tests.",
-      "highlights": [
+      name: "Luna Data Solutions",
+      position: "QA Engineer - Austin Tx",
+      website: "https://www.lunadatasolutions.com/",
+      startDate: "2015-05-01",
+      endDate: "2017-05-01",
+      summary:
+        "Worked as a contract QA tester for RetailMeNot.com, a website for finding coupons, sales, and purchasing gift cards. I tested the roll-out of their new gift card purchasing ability and worked with development teams to effectively document and execute regression tests.",
+      highlights: [
         "Customer: Retail Me Not",
         "Project: RMN.com",
         "Role: QA Engineer",
@@ -118,13 +123,14 @@ var resumeJSON = {
       ]
     },
     {
-      "name": "Communication Services for the Deaf",
-      "position": "QA Engineer - Austin Tx",
-      "website": "https://csd.org/",
-      "startDate": "2013-05-01",
-      "endDate": "2015-01-01",
-      "summary": "Learned American Sign Language and Deaf cultural norms while testing and developing a QA system for CSD’s “Vineya” project which brought web-video solutions to the interpreting and accessibility solutions for deaf individuals around the nation. ",
-      "highlights": [
+      name: "Communication Services for the Deaf",
+      position: "QA Engineer - Austin Tx",
+      website: "https://csd.org/",
+      startDate: "2013-05-01",
+      endDate: "2015-01-01",
+      summary:
+        "Learned American Sign Language and Deaf cultural norms while testing and developing a QA system for CSD’s “Vineya” project which brought web-video solutions to the interpreting and accessibility solutions for deaf individuals around the nation. ",
+      highlights: [
         "Created initial QA procedures for GoVineya.com, a Ruby on Rails web app.",
         "Wrote automated, and semi-automated tests in Ruby with Watir-Webdriver.",
         "Created, planned, and executed test runs for each release cycle.",
@@ -134,13 +140,14 @@ var resumeJSON = {
       ]
     },
     {
-      "name": "DocbookMD",
-      "position": "Lead QA Tester - Austin, TX",
-      "website": "https://www.docbookmd.com",
-      "startDate": "2012-07-01",
-      "endDate": "2013-03-01",
-      "summary": "Introduced a QA process to the company's HIPPA-compliant messaging app for doctors. Majority of work was tested on IOS phones with some Android and web components. Maintained and enforced testing protocols.",
-      "highlights": [
+      name: "DocbookMD",
+      position: "Lead QA Tester - Austin, TX",
+      website: "https://www.docbookmd.com",
+      startDate: "2012-07-01",
+      endDate: "2013-03-01",
+      summary:
+        "Introduced a QA process to the company's HIPPA-compliant messaging app for doctors. Majority of work was tested on IOS phones with some Android and web components. Maintained and enforced testing protocols.",
+      highlights: [
         "Introduced QA process for company's HIPPA-compliant messaging app for doctors.",
         "Test lead for mobile app for Android and iOS tablets and phones.",
         "Established new testing procedures and wrote test suites.",
@@ -149,31 +156,33 @@ var resumeJSON = {
       ]
     },
     {
-      "name": "Luna Data Solutions",
-      "position": "QA Engineer - Austin Tx",
-      "website": "https://www.lunadatasolutions.com/",
-      "startDate": "2011-08-01",
-      "endDate": "2012-04-01",
-      "summary": "Tested daily builds for basic functionality and participated in improvements to game-play and UI design. ",
-      "highlights": [
+      name: "Luna Data Solutions",
+      position: "QA Engineer - Austin Tx",
+      website: "https://www.lunadatasolutions.com/",
+      startDate: "2011-08-01",
+      endDate: "2012-04-01",
+      summary:
+        "Tested daily builds for basic functionality and participated in improvements to game-play and UI design. ",
+      highlights: [
         "Customer: Heatwave Interactive",
-        "Projects: MMORPG \"Gods and Heroes: Rome Rising\" and online Facebook game \"Platinum Life: Country\"",
+        'Projects: MMORPG "Gods and Heroes: Rome Rising" and online Facebook game "Platinum Life: Country"',
         "Role: QA Tester/Lead",
-        "QA Tester for the MMORPG \"Gods and Heroes: Rome Rising\".",
-        "Promoted to Test Lead for online Facebook game \"Platinum Life: Country\".",
+        'QA Tester for the MMORPG "Gods and Heroes: Rome Rising".',
+        'Promoted to Test Lead for online Facebook game "Platinum Life: Country".',
         "Tested daily builds for basic functionality of the game.",
         "Ensured functionality of core mechanics.",
         "Wrote test plans for smoke and regression testing."
       ]
     },
     {
-      "name": "Blizzard Entertainment",
-      "position": "Game Master (Customer Support) - Austin, TX",
-      "website": "https://www.blizzard.com",
-      "startDate": "2010-07-01",
-      "endDate": "2011-07-01",
-      "summary": "As a “Game Master”, provided customer support for players of the number one MMO “World of Warcraft” as well as governance of game rules and restoring hacked accounts in a timely manner.",
-      "highlights": [
+      name: "Blizzard Entertainment",
+      position: "Game Master (Customer Support) - Austin, TX",
+      website: "https://www.blizzard.com",
+      startDate: "2010-07-01",
+      endDate: "2011-07-01",
+      summary:
+        "As a “Game Master”, provided customer support for players of the number one MMO “World of Warcraft” as well as governance of game rules and restoring hacked accounts in a timely manner.",
+      highlights: [
         "Customer Support for the online World of Warcraft MMO.",
         "Assisted World of Warcraft customers with in-game play and technical issues.",
         "Used via live chat and a ticket-based system to assist customers.",
@@ -183,13 +192,14 @@ var resumeJSON = {
       ]
     },
     {
-      "name": "Linden Lab",
-      "position": "QA Engineer and Tester, Support Specialist - San Francisco, CA (Remote)",
-      "website": "https://www.lindenlab.com",
-      "startDate": "2007-03-01",
-      "endDate": "2010-06-01",
-      "summary": "Linden Lab created the online world of Second Life. Started as a First Responder to all inworld emergencies and diagnosing inworld issues. In my time there I created inworld tools in LSL (Linden Scripting Language) for issue diagnosis. Promoted from part-time to full-time after 3 months. Received second promotion 1 year later (July 1, 2008 ) after taking on additional responsibilities via an online ticket system as well as live text support via Parature. Promoted in Nov 2009 to QA department.",
-      "highlights": [
+      name: "Linden Lab",
+      position: "QA Engineer and Tester, Support Specialist - San Francisco, CA (Remote)",
+      website: "https://www.lindenlab.com",
+      startDate: "2007-03-01",
+      endDate: "2010-06-01",
+      summary:
+        "Linden Lab created the online world of Second Life. Started as a First Responder to all inworld emergencies and diagnosing inworld issues. In my time there I created inworld tools in LSL (Linden Scripting Language) for issue diagnosis. Promoted from part-time to full-time after 3 months. Received second promotion 1 year later (July 1, 2008 ) after taking on additional responsibilities via an online ticket system as well as live text support via Parature. Promoted in Nov 2009 to QA department.",
+      highlights: [
         "November 2009 - June 2010",
         "Role: QA",
         "Promoted to QA to testing daily builds and track bugs.",
@@ -210,26 +220,28 @@ var resumeJSON = {
       ]
     },
     {
-      "name": "Super Happy Fun Fun",
-      "position": "QA Tester - Austin, TX",
-      "website": "https://www.facebook.com/SuperHappyFunFun/",
-      "startDate": "2006-11-01",
-      "endDate": "2007-03-01",
-      "summary": "Freelance tester for games and applications in a cell phone focused digital media company. Tested software across many brands of cell phone including Nokia, Samsung, Sony Ericsson, Motorola and LG Electronics. Used Mantas bug tracker and participated in the production, testing, support, and troubleshooting of phone applications such as: 3D Tilt-a-world, 50-cent Stuntin', Mirinda and Access Search.",
-      "highlights": [
+      name: "Super Happy Fun Fun",
+      position: "QA Tester - Austin, TX",
+      website: "https://www.facebook.com/SuperHappyFunFun/",
+      startDate: "2006-11-01",
+      endDate: "2007-03-01",
+      summary:
+        "Freelance tester for games and applications in a cell phone focused digital media company. Tested software across many brands of cell phone including Nokia, Samsung, Sony Ericsson, Motorola and LG Electronics. Used Mantas bug tracker and participated in the production, testing, support, and troubleshooting of phone applications such as: 3D Tilt-a-world, 50-cent Stuntin', Mirinda and Access Search.",
+      highlights: [
         "Freelance tester for games and applications in a cell phone focused digital media company.",
         "Tested software on Nokia, Samsung, Sony, Motorola, and LG Electronics cell phones.",
         "Used Mantis bug tracker to assist in testing, support, and troubleshooting of phone applications."
       ]
     },
     {
-      "name": "Aspyr Media",
-      "position": "QA Test Lead, QA Game Tester - Austin, TX",
-      "website": "https://www.aspyr.com",
-      "startDate": "2006-02-01",
-      "endDate": "2006-11-01",
-      "summary": "Tested games and documented bugs on Mac, PC, and various consoles. Used JIRA and DevTrack to provide product feedback and assistance with isolating product bugs.",
-      "highlights": [
+      name: "Aspyr Media",
+      position: "QA Test Lead, QA Game Tester - Austin, TX",
+      website: "https://www.aspyr.com",
+      startDate: "2006-02-01",
+      endDate: "2006-11-01",
+      summary:
+        "Tested games and documented bugs on Mac, PC, and various consoles. Used JIRA and DevTrack to provide product feedback and assistance with isolating product bugs.",
+      highlights: [
         "Tested play mechanics and documented bugs for games on Mac, PC, and various consoles.",
         "Used JIRA and DevTrack to provide product feedback and assistance with isolating and testing bugs.",
         "Proofread extensive game text. Provided test suites and test plans for team of game testers.",
@@ -237,64 +249,58 @@ var resumeJSON = {
       ]
     }
   ],
-  "education": [
+  education: [
     {
-      "institution": "Austin Community College",
-      "area": "American Sign Language",
-      "studyType": "Certificate",
-      "startDate": "2015",
-      "endDate": "2017",
-      "gpa": "4.0",
-      "courses": [
-        "DB1101 - ASL I",
-        "DB1101 - ASL II",
-        "DB1101 - ASL III",
-        "DB1101 - ASL IV",
-        "CS2011 - VGC"
-      ]
+      institution: "Austin Community College",
+      area: "American Sign Language",
+      studyType: "Certificate",
+      startDate: "2015",
+      endDate: "2017",
+      gpa: "4.0",
+      courses: ["DB1101 - ASL I", "DB1101 - ASL II", "DB1101 - ASL III", "DB1101 - ASL IV", "CS2011 - VGC"]
     },
     {
-      "institution": "ASL School",
-      "area": "American Sign Language",
-      "studyType": "Certificate",
-      "startDate": "2008",
-      "endDate": "2012",
-      "gpa": "n/a",
-      "courses": []
+      institution: "ASL School",
+      area: "American Sign Language",
+      studyType: "Certificate",
+      startDate: "2008",
+      endDate: "2012",
+      gpa: "n/a",
+      courses: []
     },
     {
-      "institution": "Vista College - Berkeley, CA",
-      "area": "Video Editing and Life Drawing",
-      "studyType": "CE",
-      "startDate": "2001",
-      "endDate": "2002",
-      "gpa": "3.143",
-      "courses": []
+      institution: "Vista College - Berkeley, CA",
+      area: "Video Editing and Life Drawing",
+      studyType: "CE",
+      startDate: "2001",
+      endDate: "2002",
+      gpa: "3.143",
+      courses: []
     },
     {
-      "institution": "A.I. of Houston - Houston, TX",
-      "area": "Fine Art, Typography, Layout, 3D Max",
-      "studyType": "CE",
-      "startDate": "1995",
-      "endDate": "1996",
-      "gpa": "n/a",
-      "courses": []
+      institution: "A.I. of Houston - Houston, TX",
+      area: "Fine Art, Typography, Layout, 3D Max",
+      studyType: "CE",
+      startDate: "1995",
+      endDate: "1996",
+      gpa: "n/a",
+      courses: []
     },
     {
-      "institution": "San Jacinto College - Pasadena, TX",
-      "area": "Computer Science, Fine Art",
-      "studyType": "CE",
-      "startDate": "1993",
-      "endDate": "1995",
-      "gpa": "2.75",
-      "courses": []
+      institution: "San Jacinto College - Pasadena, TX",
+      area: "Computer Science, Fine Art",
+      studyType: "CE",
+      startDate: "1993",
+      endDate: "1995",
+      gpa: "2.75",
+      courses: []
     }
   ],
-  "skills": [
+  skills: [
     {
-      "name": "Testing and Reporting",
-      "level": "Master",
-      "keywords": [
+      name: "Testing and Reporting",
+      level: "Master",
+      keywords: [
         "Agile",
         "Scrum",
         "Ad-hoc",
@@ -306,9 +312,9 @@ var resumeJSON = {
       ]
     },
     {
-      "name": "Technology",
-      "level": "",
-      "keywords": [
+      name: "Technology",
+      level: "",
+      keywords: [
         "HTML",
         "CSS",
         "JavaScript",
@@ -326,18 +332,18 @@ var resumeJSON = {
       ]
     }
   ],
-  "languages": [
+  languages: [
     {
-      "language": "English",
-      "fluency": "Native speaker"
+      language: "English",
+      fluency: "Native speaker"
     },
     {
-      "language": "Spanish",
-      "fluency": "Conversational"
+      language: "Spanish",
+      fluency: "Conversational"
     },
     {
-      "language": "ASL",
-      "fluency": "Conversational"
+      language: "ASL",
+      fluency: "Conversational"
     }
   ]
 };
