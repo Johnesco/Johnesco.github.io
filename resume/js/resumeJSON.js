@@ -26,7 +26,7 @@ var resumeJSON = {
     {
       "name": "GeekSI",
       "position": "QA Engineer - Austin Tx",
-      "website": "https://www.geeksi.com/",
+      "website": "https://www.geeksi.tech/",
       "startDate": "2019-03-01",
       "summary": "Contracted for GeekSI at various customers Veterans Affairs in the US Government as a software tester. Roles have included testing various programs assisting Veterans with benefits including housing and healthcare.",
       "highlights": [
