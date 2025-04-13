@@ -4,117 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Karaoke Schedule</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        h1 {
-            color: #d32f2f;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .controls {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            background-color: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .week-nav {
-            display: flex;
-            gap: 10px;
-        }
-        button {
-            background-color: #d32f2f;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        button:hover {
-            background-color: #b71c1c;
-        }
-        .week-display {
-            font-weight: bold;
-            font-size: 1.1em;
-            align-self: center;
-        }
-        .day-card {
-            background-color: white;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        .day-header {
-            background-color: #d32f2f;
-            color: white;
-            padding: 10px 15px;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-        }
-        .date-number {
-            font-size: 1.2em;
-        }
-        .venue-list {
-            padding: 15px;
-        }
-        .venue-item {
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #eee;
-        }
-        .venue-item:last-child {
-            margin-bottom: 0;
-            padding-bottom: 0;
-            border-bottom: none;
-        }
-        .venue-name {
-            font-weight: bold;
-            color: #d32f2f;
-            margin-bottom: 5px;
-        }
-        .venue-address, .venue-kj {
-            font-size: 0.9em;
-            color: #666;
-            margin-bottom: 3px;
-        }
-        .no-events {
-            color: #999;
-            font-style: italic;}
-            
-        .day-header.today {
-            background-color: #ff5722; /* Orange highlight */
-            box-shadow: inset 0 0 0 2px white;
-        }
-
-        .date-number.today::after {
-            content: " (Today)";
-            font-weight: normal;
-}
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+   <link rel="stylesheet" href="css/karaoke.css">
 </head>
 <body>
     <h1>Karaoke Schedule</h1>
-            <div class="week-display" id="week-display">Week of ...</div>
-
+    
+    <div class="week-display" id="week-display">Week of ...</div>
+    
     <div class="controls">
-        <div class="week-nav">
-            <button id="prev-week">Previous Week</button>
-            <button id="this-week">This Week</button>
-            <button id="next-week">Next Week</button>
-        </div>
-        
+        <button id="prev-week">Previous Week</button>
+        <button id="this-week">This Week</button>
+        <button id="next-week">Next Week</button>
     </div>
     
     <div id="schedule-container">
@@ -122,180 +23,239 @@
     </div>
 
     <script>
-        // Sample data matching original structure
+        // Sample data with social media links
         const karaokeData = {
-          "listings": [
-            {
-              "Venue Name": "Common Interest",
-              "Address": {
-                "Street": "123 Lamar",
-                "State": "Texas",
-                "Zip": "78745"
-              },
-              "KJ": {
-                "Host": "Various",
-                "Company": ""
-              },
-              "schedule": {
-                "weekly": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-                "ordinal": [["first", "Thursday"], ["third", "Tuesday"]]
-              }
-            },
-            {
-              "Venue Name": "Cheerz",
-              "Address": {
-                "Street": "123 Lamar",
-                "State": "Texas",
-                "Zip": "78745"
-              },
-              "KJ": {
-                "Host": "Various",
-                "Company": ""
-              },
-              "schedule": {
-                "weekly": ["Friday", "Saturday"],
-                "ordinal": [["first", "Thursday"], ["third", "Tuesday"]]
-              }
-            }
-          ]
-        };
-// Current week tracking
-let currentWeekStart = getStartOfWeek(new Date());
-
-// Initialize the page
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('prev-week').addEventListener('click', () => {
-        currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-        renderWeek();
-    });
-    
-    document.getElementById('next-week').addEventListener('click', () => {
-        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-        renderWeek();
-    });
-
-    document.getElementById('this-week').addEventListener('click', () => {
-        currentWeekStart = getStartOfWeek(new Date());
-        renderWeek();
-    });
-    
-    renderWeek();
-});
-
-// Get start of week (Sunday)
-function getStartOfWeek(date) {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day;
-    return new Date(d.setDate(diff));
-}
-
-// Check if date is today
-function isToday(date) {
-    const today = new Date();
-    return date.getDate() === today.getDate() && 
-           date.getMonth() === today.getMonth() && 
-           date.getFullYear() === today.getFullYear();
-}
-
-// Format week range for display
-function formatWeekRange(startDate) {
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 6);
-    
-    const startStr = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const endStr = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    
-    return `Week of ${startStr} - ${endStr}`;
-}
-
-// Improved ordinal day check
-function isOrdinalDate(date, ordinal, dayName) {
-    const day = date.getDate();
-    const month = date.getMonth();
-    const year = date.getFullYear();
-    const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
-
-    // Get all occurrences of this weekday in the month
-    const occurrences = [];
-    for (let d = 1; d <= lastDayOfMonth; d++) {
-        const testDate = new Date(year, month, d);
-        if (testDate.toLocaleDateString('en-US', { weekday: 'long' }) === dayName) {
-            occurrences.push(d);
-        }
-    }
-
-    // Check ordinal position
-    const ordinalIndex = { first: 0, second: 1, third: 2, fourth: 3, last: occurrences.length - 1 }[ordinal];
-    return occurrences[ordinalIndex] === day;
-}
-
-// Check if venue has karaoke on a specific date
-function hasKaraokeOnDate(venue, date) {
-    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-    
-    // Weekly schedule check
-    if (venue.schedule.weekly.includes(dayName)) return true;
-    
-    // Ordinal schedule check
-    for (const [ordinal, ordinalDay] of venue.schedule.ordinal) {
-        if (ordinalDay === dayName && isOrdinalDate(date, ordinal, ordinalDay)) {
-            return true;
-        }
-    }
-    
-    return false;
-}
-
-// Render the entire week (now with today highlighting)
-function renderWeek() {
-    document.getElementById('week-display').textContent = formatWeekRange(currentWeekStart);
-    
-    const container = document.getElementById('schedule-container');
-    container.innerHTML = '';
-    
-    // Create a day card for each day of the week
-    for (let i = 0; i < 7; i++) {
-        const currentDate = new Date(currentWeekStart);
-        currentDate.setDate(currentDate.getDate() + i);
-        
-        const venuesToday = karaokeData.listings.filter(venue => 
-            hasKaraokeOnDate(venue, currentDate))
-            .sort((a, b) => a['Venue Name'].localeCompare(b['Venue Name']));
-        
-        const dayElement = document.createElement('div');
-        dayElement.className = 'day-card';
-        
-        dayElement.innerHTML = `
-            <div class="day-header">
-                <span>${currentDate.toLocaleDateString('en-US', { weekday: 'long' })}</span>
-                <span class="date-number">${currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-            </div>
-            <div class="venue-list">
-                ${venuesToday.length > 0 ? 
-                    venuesToday.map(venue => `
-                        <div class="venue-item">
-                            <div class="venue-name">${venue['Venue Name']}</div>
-                            <div class="venue-address">${venue.Address.Street}, ${venue.Address.State} ${venue.Address.Zip}</div>
-                            <div class="venue-kj">Host: ${venue.KJ.Host}${venue.KJ.Company ? ' (' + venue.KJ.Company + ')' : ''}</div>
-                        </div>
-                    `).join('') : 
-                    '<div class="no-events">No karaoke venues scheduled</div>'
+            "listings": [
+                {
+                    "VenueName": "The Common Interest",
+                    "Address": {
+                        "Street": "8440 Burnet Rd",
+                        "City":"Austin",
+                        "State": "Texas",
+                        "Zip": "78757"
+                    },
+                    "KJ": {
+                        "Host":"Various",
+                        "Company": ""
+                    },
+                    "Facebook": "https://www.facebook.com/TheCommonInterest",
+                    "Instagram": "https://www.instagram.com/ciaustin/",
+                    "Website": "https://www.ciaustin.com/",
+                    "Bluesky": null,
+                    "schedule": {
+                        "weekly": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                        "ordinal": [["first", "Thursday"], ["third", "Tuesday"]]
+                    }
+                },
+                {
+                    "VenueName": "Cheerz",
+                    "Address": {
+                        "Street": "14001 Shadow Glen Blv",
+                        "City": "Manor",
+                        "State": "Texas",
+                        "Zip": "78653"
+                    },
+                    "KJ": {
+                        "Host": "Various",
+                        "Company": ""
+                    },
+                    "Facebook": null,
+                    "Instagram": null,
+                    "Website": null,
+                    "Bluesky": "https://bsky.app/profile/cheerz.bsky.social",
+                    "schedule": {
+                        "weekly": ["Friday", "Saturday"],
+                        "ordinal": [["first", "Thursday"], ["third", "Tuesday"]]
+                    }
                 }
-            </div>
-        `;
-        
-        // Add today's highlighting
-        if (isToday(currentDate)) {
-            const header = dayElement.querySelector('.day-header');
-            header.classList.add('today');
-            const dateNum = dayElement.querySelector('.date-number');
-            dateNum.classList.add('today');
+            ]
+        };
+
+        // Current week tracking
+        let currentWeekStart = getStartOfWeek(new Date());
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('prev-week').addEventListener('click', () => {
+                currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+                renderWeek();
+            });
+            
+            document.getElementById('next-week').addEventListener('click', () => {
+                currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+                renderWeek();
+            });
+
+            document.getElementById('this-week').addEventListener('click', () => {
+                currentWeekStart = getStartOfWeek(new Date());
+                renderWeek();
+            });
+            
+            renderWeek();
+        });
+
+        // Get start of week (Sunday)
+        function getStartOfWeek(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day;
+            return new Date(d.setDate(diff));
         }
-        
-        container.appendChild(dayElement);
-    }
-}
+
+        // Check if date is today
+        function isToday(date) {
+            const today = new Date();
+            return date.getDate() === today.getDate() && 
+                   date.getMonth() === today.getMonth() && 
+                   date.getFullYear() === today.getFullYear();
+        }
+
+        // Format week range for display
+        function formatWeekRange(startDate) {
+            const endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + 6);
+            
+            const startStr = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const endStr = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            
+            return `Week of ${startStr} - ${endStr}`;
+        }
+
+        // Improved ordinal day check
+        function isOrdinalDate(date, ordinal, dayName) {
+            const day = date.getDate();
+            const month = date.getMonth();
+            const year = date.getFullYear();
+            const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+
+            // Get all occurrences of this weekday in the month
+            const occurrences = [];
+            for (let d = 1; d <= lastDayOfMonth; d++) {
+                const testDate = new Date(year, month, d);
+                if (testDate.toLocaleDateString('en-US', { weekday: 'long' }) === dayName) {
+                    occurrences.push(d);
+                }
+            }
+
+            // Check ordinal position
+            const ordinalIndex = { first: 0, second: 1, third: 2, fourth: 3, last: occurrences.length - 1 }[ordinal];
+            return occurrences[ordinalIndex] === day;
+        }
+
+        // Check if venue has karaoke on a specific date
+        function hasKaraokeOnDate(venue, date) {
+            const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+            
+            // Weekly schedule check
+            if (venue.schedule.weekly.includes(dayName)) return true;
+            
+            // Ordinal schedule check
+            for (const [ordinal, ordinalDay] of venue.schedule.ordinal) {
+                if (ordinalDay === dayName && isOrdinalDate(date, ordinal, ordinalDay)) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        // Create Google Maps link from address
+        function createMapLink(venue) {
+            const address = `${venue.VenueName} ${venue.Address.Street}, ${venue.Address.City} ${venue.Address.State} ${venue.Address.Zip}`;
+            const encodedAddress = encodeURIComponent(address);
+            return `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+        }
+
+        // Create social media links if they exist
+        function createSocialLinks(venue) {
+            const socials = document.createElement('div');
+            socials.className = 'social-links';
+            
+            // Add map link first
+            socials.innerHTML += `<a href="${createMapLink(venue)}" target="_blank" title="View on Google Maps"><i class="fas fa-map-marker-alt"></i></a>`;
+            
+            // Add other social links
+            if (venue.Facebook) {
+                socials.innerHTML += `<a href="${venue.Facebook}" target="_blank" title="Facebook"><i class="fab fa-facebook"></i></a>`;
+            }
+            if (venue.Instagram) {
+                socials.innerHTML += `<a href="${venue.Instagram}" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>`;
+            }
+            if (venue.Website) {
+                socials.innerHTML += `<a href="${venue.Website}" target="_blank" title="Website"><i class="fas fa-globe"></i></a>`;
+            }
+            if (venue.Bluesky) {
+                socials.innerHTML += `<a href="${venue.Bluesky}" target="_blank" title="Bluesky"><i class="fas fa-cloud"></i></a>`;
+            }
+            
+            return socials.outerHTML;
+        }
+
+        // Render the entire week
+        function renderWeek() {
+            document.getElementById('week-display').textContent = formatWeekRange(currentWeekStart);
+            
+            const container = document.getElementById('schedule-container');
+            container.innerHTML = '';
+            
+            // Create a day card for each day of the week
+            for (let i = 0; i < 7; i++) {
+                const currentDate = new Date(currentWeekStart);
+                currentDate.setDate(currentDate.getDate() + i);
+                
+                const venuesToday = karaokeData.listings.filter(venue => 
+                    hasKaraokeOnDate(venue, currentDate))
+                    .sort((a, b) => a['VenueName'].localeCompare(b['VenueName']));
+                
+                const dayElement = document.createElement('div');
+                dayElement.className = 'day-card';
+                
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'day-header';
+                if (isToday(currentDate)) {
+                    dayHeader.classList.add('today');
+                }
+                
+                const dateNumber = document.createElement('span');
+                dateNumber.className = 'date-number';
+                dateNumber.textContent = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                
+                if (isToday(currentDate)) {
+                    dateNumber.classList.add('today');
+                }
+                
+                dayHeader.innerHTML = `
+                    <span>${currentDate.toLocaleDateString('en-US', { weekday: 'long' })}</span>
+                `;
+                dayHeader.appendChild(dateNumber);
+                
+                const venueList = document.createElement('div');
+                venueList.className = 'venue-list';
+                
+                if (venuesToday.length > 0) {
+                    venuesToday.forEach(venue => {
+                        const venueElement = document.createElement('div');
+                        venueElement.className = 'venue-item';
+                        venueElement.innerHTML = `
+                            <div class="venue-name">${venue['VenueName']}</div>
+                            <div class="venue-address">${venue.Address.Street}, ${venue.Address.City} ${venue.Address.State} ${venue.Address.Zip}</div>
+                            <div class="venue-kj">Host: ${venue.KJ.Host}${venue.KJ.Company ? ' (' + venue.KJ.Company + ')' : ''}</div>
+                            ${createSocialLinks(venue)}
+                        `;
+                        venueList.appendChild(venueElement);
+                    });
+                } else {
+                    const noEvents = document.createElement('div');
+                    noEvents.className = 'no-events';
+                    noEvents.textContent = 'No karaoke venues scheduled';
+                    venueList.appendChild(noEvents);
+                }
+                
+                dayElement.appendChild(dayHeader);
+                dayElement.appendChild(venueList);
+                container.appendChild(dayElement);
+            }
+        }
     </script>
 </body>
 </html>
