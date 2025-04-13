@@ -1,0 +1,110 @@
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #0c7306;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .week-display {
+            font-weight: bold;
+            font-size: 1.2em;
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #2f40d3;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #f72a2a;
+        }
+        .day-card {
+            background-color: white;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .day-header {
+            background-color: #4c4be7;
+            color: white;
+            padding: 10px 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+        .day-header.today {
+            background-color: #ff0000;
+            
+        }
+        .day-header.today::after {
+            content: "TODAY";
+            font-size: 1.2rem;
+
+        }
+        .date-number {
+            font-size: 1.2em;
+        }
+        .venue-list {
+            padding: 15px;
+        }
+        .venue-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .venue-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        .venue-name {
+            font-weight: bold;
+            color: #d81d1d;
+            margin-bottom: 5px;
+        }
+        .venue-address, .venue-kj {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 3px;
+        }
+        .social-links {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .social-links a {
+            color: #555;
+            font-size: 1.2em;
+            transition: color 0.2s;
+        }
+        .social-links a:hover {
+            color: #d32f2f;
+        }
+        .no-events {
+            color: #999;
+            font-style: italic;
+        }
