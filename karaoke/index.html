@@ -8,7 +8,7 @@
    <link rel="stylesheet" href="css/karaoke.css">
 </head>
 <body>
-    <h1>Karaoke Schedule</h1>
+    <h1>Greater Austin Karaoke Schedule</h1>
     
     <div class="week-display" id="week-display">Week of ...</div>
     
@@ -24,52 +24,152 @@
 
     <script>
         // Sample data with social media links
-        const karaokeData = {
-            "listings": [
-                {
-                    "VenueName": "The Common Interest",
-                    "Address": {
-                        "Street": "8440 Burnet Rd",
-                        "City":"Austin",
-                        "State": "Texas",
-                        "Zip": "78757"
-                    },
-                    "KJ": {
-                        "Host":"Various",
-                        "Company": ""
-                    },
-                    "Facebook": "https://www.facebook.com/TheCommonInterest",
-                    "Instagram": "https://www.instagram.com/ciaustin/",
-                    "Website": "https://www.ciaustin.com/",
-                    "Bluesky": null,
-                    "schedule": {
-                        "weekly": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-                        "ordinal": [["first", "Thursday"], ["third", "Tuesday"]]
-                    }
+const karaokeData = {
+    "listings": [
+        {
+            "VenueName": "The Common Interest",
+            "Address": {
+                "Street": "8440 Burnet RdVenueName",
+                "City": "Austin",
+                "State": "TX",
+                "Zip": "78757"
+            },
+            "KJ": {
+                "Host": "Various",
+                "Company": ""
+            },
+            "Facebook": "https://www.facebook.com/TheCommonInterest",
+            "Instagram": "https://www.instagram.com/ciaustin/",
+            "Website": "https://ciaustin.com",
+            "Bluesky": null,
+            "schedule": {
+                "weekly": {
+                    "Sunday": "4:00 PM - 2:00 AM",
+                    "Monday": "2:00 PM - 1:00 AM",
+                    "Tuesday": "2:00 PM - 1:00 AM",
+                    "Wednesday": "2:00 PM - 1:00 AM",
+                    "Thursday": "2:00 PM - 1:00 AM",
+                    "Friday": "2:00 PM - 1:00 AM",
+                    "Saturday": "4:00 PM - 2:00 AM"
                 },
+                "ordinal": [
+
+                ]
+            }
+        },
+        {
+            "VenueName": "Cheerz",
+            "Address": {
+                "Street": "14001 Shadow Glen Blvd",
+                "City": "Manor",
+                "State": "TX",
+                "Zip": "78653"
+            },
+            "KJ": {
+                "Host": "Various",
+                "Company": ""
+            },
+            "Facebook": null,
+            "Instagram": null,
+            "Website": null,
+            "Bluesky": null,
+            "schedule": {
+                "weekly": {
+                    "Friday": "9:00 PM - 1:00 AM",
+                    "Saturday": "9:00 PM - 1:00 AM"
+                },
+                "ordinal": [
+                ]
+            }
+        },
+        {
+            "VenueName": "The Water Tank Bar & Grill",
+            "Address": {
+                "Street": "7309 Mcneil Dr",
+                "City": "Austin",
+                "State": "TX",
+                "Zip": "78629"
+            },
+            "KJ": {
+                "Host": "Various",
+                "Company": ""
+            },
+            "Facebook": "https://www.facebook.com/Thewatertankaustin",
+            "Instagram": "https://www.instagram.com/the_water_tank/",
+            "Website": "https://www.austinwatertank.com/",
+            "Bluesky": null,
+            "schedule": {
+                "weekly": {
+                    "Sunday": "5:30 PM - 9:00 PM",
+                    "Wednesday": "8:30 PM - MIDNIGHT",
+                    "Thursday": "8:00pm - MIDNIGHT",
+                    "Friday": "8:00pm - 1:30 AM",
+                    "Saturday": "9:00 PM - 2:00 AM"
+                },
+                "ordinal": [
+                ]
+            }
+        },
                 {
-                    "VenueName": "Cheerz",
-                    "Address": {
-                        "Street": "14001 Shadow Glen Blv",
-                        "City": "Manor",
-                        "State": "Texas",
-                        "Zip": "78653"
+            "VenueName": "Lucky Rabbit",
+            "Address": {
+                "Street": "18626 RM 1431",
+                "City": "Jonestown",
+                "State": "TX",
+                "Zip": "78645"
+            },
+            "KJ": {
+                "Host": "Various",
+                "Company": ""
+            },
+            "Facebook": "https://www.facebook.com/LuckyRabbitJonestown/",
+            "Instagram": "https://www.instagram.com/luckyrabbitjonestown/",
+            "Website": "https://www.luckyrabbitbar.com/",
+            "Bluesky": null,
+            "schedule": {
+                "weekly": {
+                    "Wednesday": "7:00 PM - 11:00 PM"
+                },
+                "ordinal": [
+                ]
+            }
+        },
+        {
+            "VenueName": "CJ's Sports Bar",
+            "Address": {
+                "Street": "1010 N Austin Ave",
+                "City": "Georgetown",
+                "State": "TX",
+                "Zip": "78626"
+            },
+            "KJ": {
+                "Host": "Various",
+                "Company": ""
+            },
+            "Facebook": null,
+            "Instagram": null,
+            "Website": null,
+            "Bluesky": null,
+            "schedule": {
+                "weekly": {
+                    "Wednesday": "6:00 PM - 10:30 PM"
+                },
+                "ordinal": [
+                    {
+                        "day": ["second", "Friday"],
+                        "time": "6:00 PM - 10:00 PM",
+                        "description": "Second Fridays"
                     },
-                    "KJ": {
-                        "Host": "Various",
-                        "Company": ""
-                    },
-                    "Facebook": null,
-                    "Instagram": null,
-                    "Website": null,
-                    "Bluesky": "https://bsky.app/profile/cheerz.bsky.social",
-                    "schedule": {
-                        "weekly": ["Friday", "Saturday"],
-                        "ordinal": [["first", "Thursday"], ["third", "Tuesday"]]
+                    {
+                        "day": ["fourth", "Friday"],
+                        "time": "6:00 PM - 10:00 PM",
+                        "description": "Fouth Fridays"
                     }
-                }
-            ]
-        };
+                ]
+            }
+        }
+    ]
+};
 
         // Current week tracking
         let currentWeekStart = getStartOfWeek(new Date());
@@ -143,21 +243,35 @@
         }
 
         // Check if venue has karaoke on a specific date
-        function hasKaraokeOnDate(venue, date) {
-            const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-            
-            // Weekly schedule check
-            if (venue.schedule.weekly.includes(dayName)) return true;
-            
-            // Ordinal schedule check
-            for (const [ordinal, ordinalDay] of venue.schedule.ordinal) {
-                if (ordinalDay === dayName && isOrdinalDate(date, ordinal, ordinalDay)) {
-                    return true;
+function hasKaraokeOnDate(venue, date) {
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    let timeInfo = null;
+    
+    // Check weekly schedule first
+    if (venue.schedule.weekly[dayName]) {
+        timeInfo = {
+            time: venue.schedule.weekly[dayName],
+            description: "Regular weekly karaoke"
+        };
+        return { hasEvent: true, timeInfo };
+    }
+    
+    // Check ordinal schedule
+    for (const ordinalEvent of venue.schedule.ordinal) {
+        const [ordinal, ordinalDay] = ordinalEvent.day;
+        if (ordinalDay === dayName && isOrdinalDate(date, ordinal, ordinalDay)) {
+            return { 
+                hasEvent: true, 
+                timeInfo: {
+                    time: ordinalEvent.time,
+                    description: ordinalEvent.description
                 }
-            }
-            
-            return false;
+            };
         }
+    }
+    
+    return { hasEvent: false };
+}
 
         // Create Google Maps link from address
         function createMapLink(venue) {
@@ -191,71 +305,78 @@
             return socials.outerHTML;
         }
 
+        function formatAddress(venue) {
+    return `${venue.Address.Street}, ${venue.Address.City}, ${venue.Address.State} ${venue.Address.Zip}`;
+}
         // Render the entire week
         function renderWeek() {
-            document.getElementById('week-display').textContent = formatWeekRange(currentWeekStart);
-            
-            const container = document.getElementById('schedule-container');
-            container.innerHTML = '';
-            
-            // Create a day card for each day of the week
-            for (let i = 0; i < 7; i++) {
-                const currentDate = new Date(currentWeekStart);
-                currentDate.setDate(currentDate.getDate() + i);
-                
-                const venuesToday = karaokeData.listings.filter(venue => 
-                    hasKaraokeOnDate(venue, currentDate))
-                    .sort((a, b) => a['VenueName'].localeCompare(b['VenueName']));
-                
-                const dayElement = document.createElement('div');
-                dayElement.className = 'day-card';
-                
-                const dayHeader = document.createElement('div');
-                dayHeader.className = 'day-header';
-                if (isToday(currentDate)) {
-                    dayHeader.classList.add('today');
-                }
-                
-                const dateNumber = document.createElement('span');
-                dateNumber.className = 'date-number';
-                dateNumber.textContent = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                
-                if (isToday(currentDate)) {
-                    dateNumber.classList.add('today');
-                }
-                
-                dayHeader.innerHTML = `
-                    <span>${currentDate.toLocaleDateString('en-US', { weekday: 'long' })}</span>
-                `;
-                dayHeader.appendChild(dateNumber);
-                
-                const venueList = document.createElement('div');
-                venueList.className = 'venue-list';
-                
-                if (venuesToday.length > 0) {
-                    venuesToday.forEach(venue => {
-                        const venueElement = document.createElement('div');
-                        venueElement.className = 'venue-item';
-                        venueElement.innerHTML = `
-                            <div class="venue-name">${venue['VenueName']}</div>
-                            <div class="venue-address">${venue.Address.Street}, ${venue.Address.City} ${venue.Address.State} ${venue.Address.Zip}</div>
-                            <div class="venue-kj">Host: ${venue.KJ.Host}${venue.KJ.Company ? ' (' + venue.KJ.Company + ')' : ''}</div>
-                            ${createSocialLinks(venue)}
-                        `;
-                        venueList.appendChild(venueElement);
-                    });
-                } else {
-                    const noEvents = document.createElement('div');
-                    noEvents.className = 'no-events';
-                    noEvents.textContent = 'No karaoke venues scheduled';
-                    venueList.appendChild(noEvents);
-                }
-                
-                dayElement.appendChild(dayHeader);
-                dayElement.appendChild(venueList);
-                container.appendChild(dayElement);
-            }
+    document.getElementById('week-display').textContent = formatWeekRange(currentWeekStart);
+    
+    const container = document.getElementById('schedule-container');
+    container.innerHTML = '';
+    
+    for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(currentWeekStart);
+        currentDate.setDate(currentDate.getDate() + i);
+        
+        const dayElement = document.createElement('div');
+        dayElement.className = 'day-card';
+        
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'day-header';
+        if (isToday(currentDate)) {
+            dayHeader.classList.add('today');
         }
+        
+        const dateNumber = document.createElement('span');
+        dateNumber.className = 'date-number';
+        dateNumber.textContent = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        
+        if (isToday(currentDate)) {
+            dateNumber.classList.add('today');
+        }
+        
+        dayHeader.innerHTML = `
+            <span>${currentDate.toLocaleDateString('en-US', { weekday: 'long' })}</span>
+        `;
+        dayHeader.appendChild(dateNumber);
+        
+        const venueList = document.createElement('div');
+        venueList.className = 'venue-list';
+        
+        // Filter and sort venues for this day
+        const venuesToday = karaokeData.listings
+            .map(venue => {
+                const { hasEvent, timeInfo } = hasKaraokeOnDate(venue, currentDate);
+                return hasEvent ? { ...venue, timeInfo } : null;
+            })
+            .filter(venue => venue !== null)
+            .sort((a, b) => a['VenueName'].localeCompare(b['VenueName']));
+        
+        if (venuesToday.length > 0) {
+            venuesToday.forEach(venue => {
+                const venueElement = document.createElement('div');
+                venueElement.className = 'venue-item';
+                venueElement.innerHTML = `
+                    <div class="venue-name">${venue['VenueName']}</div>
+                    <div class="venue-time">${venue.timeInfo.time}${venue.timeInfo.description ? ` <span class="time-description">(${venue.timeInfo.description})</span>` : ''}</div>
+                    <div class="venue-address">${formatAddress(venue)}</div>
+                    ${createSocialLinks(venue)}
+                `;
+                venueList.appendChild(venueElement);
+            });
+        } else {
+            const noEvents = document.createElement('div');
+            noEvents.className = 'no-events';
+            noEvents.textContent = 'No karaoke venues scheduled';
+            venueList.appendChild(noEvents);
+        }
+        
+        dayElement.appendChild(dayHeader);
+        dayElement.appendChild(venueList);
+        container.appendChild(dayElement);
+    }
+}
     </script>
 </body>
 </html>
