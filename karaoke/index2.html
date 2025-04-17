@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karaoke Schedule</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+}
+
+h1 {
+    color: #4b0673;
+    text-align: center;
+    padding: 20px 0;
+    margin: 0;
+    background-color: white;
+
+}
+
+.week-display {
+    font-weight: bold;
+    font-size: 1em;
+    text-align: center;
+    padding: 10px;
+    background-color: white;
+    position: sticky;
+    top: 68px; /* Height of h1 */
+    z-index: 99;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#schedule-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px 20px;
+}
+
+.day-card {
+    background-color: white;
+    margin-bottom: 15px;
+    margin-top: 60px; /* Space for sticky headers */
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.day-header {
+    background-color: #4c4be7;
+    color: white;
+    padding: 10px 15px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    position: sticky;
+    top: 124px; /* h1 height + week-display height */
+    z-index: 98;
+}
+
+.day-header.today {
+    background-color: #ff0000;
+}
+
+.day-header.today::after {
+    content: "TODAY";
+    font-size: 1.2rem;
+}
+
+.date-number {
+    font-size: 1em;
+}
+
+.venue-list {
+    padding: 15px;
+}
+
+.venue-item {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.venue-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.venue-name {
+    text-transform: uppercase;
+    font-weight: bold;
+    color: #b50027;
+    margin-bottom: 5px;
+}
+
+.venue-kj {
+    font-weight: bold;
+    font-style: italic;
+    font-size: .9em;
+    color: #49306c;
+    margin-bottom: 5px;
+}
+
+.venue-address {
+    font-size: 1em;
+    color: #666;
+}
+
+.venue-address a {
+    font-size: 1em;
+    color: #666;
+    text-decoration: none;
+    border-bottom: 1px solid black;
+}
+
+.social-links {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.social-links a {
+    color: #555;
+    font-size: 1.2em;
+    transition: color 0.2s;
+}
+
+.social-links a:hover {
+    color: #d32f2f;
+}
+
+.no-events {
+    color: #999;
+    font-style: italic;
+}
+
+.venue-time {
+    font-weight: bold;
+    color: #333;
+    margin: 5px 0;
+}
+
+.time-description {
+    font-weight: normal;
+    font-style: italic;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+    </style>
+</head>
+<body>
+    <h1>Greater Austin Karaoke Schedule</h1>
+    <div class="week-display" id="week-display"></div>
+    <div id="schedule-container"></div>
+    <div class="loading" id="loading">Loading more dates...</div>
+
+    <script>
+        // Karaoke data with socials grouped under socials object
+        const karaokeData = {
+    "listings": [
+        {
+            "VenueName": "Common Interest, The",
+            "Dedicated": true,
+            "Address": {
+                "Street": "8440 Burnet Rd",
+                "City": "Austin",
+                "State": "TX",
+                "Zip": "78757"
+            },
+            "KJ": {
+                "Host": "",
+                "Company": ""
+            },
+            "socials": {
+                "Facebook": "https://www.facebook.com/TheCommonInterest",
+                "Instagram": "https://www.instagram.com/ciaustin/",
+                "Website": "https://ciaustin.com",
+                "Bluesky": null
+            },
+            "schedule": {
+                "weekly": {
+                    "Sunday": "4:00 PM - 2:00 AM",
+                    "Monday": "2:00 PM - 1:00 AM",
+                    "Tuesday": "2:00 PM - 1:00 AM",
+                    "Wednesday": "2:00 PM - 1:00 AM",
+                    "Thursday": "2:00 PM - 1:00 AM",
+                    "Friday": "2:00 PM - 1:00 AM",
+                    "Saturday": "4:00 PM - 2:00 AM"
+                },
+                "ordinal": []
+            }
+        },
+        {
+            "VenueName": "Ego's",
+            "Dedicated": true,
+            "Address": {
+                "Street": "510 S Congress Ave",
+                "City": "Austin",
+                "State": "TX",
+                "Zip": "78704"
+            },
+            "KJ": {
+                "Host": "",
+                "Company": ""
+            },
+            "socials": {
+                "Facebook": "https://www.facebook.com/Egos",
+                "Instagram": "https://www.instagram.com/egosbaratx",
+                "Twitter": "https://x.com/egos_bar",
+                "Website": null,
+                "Bluesky": null
+                
+            },
+            "schedule": {
+                "weekly": {
+                    "Sunday": "8:00 PM - 2:00 AM",
+                    "Monday": "8:00 PM - 2:00 AM",
+                    "Tuesday": "8:00 PM - 2:00 AM",
+                    "Wednesday": "8:00 PM - 2:00 AM",
+                    "Thursday": "8:00 PM - 2:00 AM",
+                    "Friday": "8:00 PM - 2:00 AM",
+                    "Saturday": "8:00 PM - 2:00 AM"
+                },
+                "ordinal": []
+            }
+        },
+        {
+            "VenueName": "Canary Roost",
+            "Dedicated": true,
+            "Address": {
+                "Street": "11900 Metric Blvd",
+                "City": "Austin",
+                "State": "TX",
+                "Zip": "78758"
+            },
+            "KJ": {
+                "Host": "",
+                "Company": ""
+            },
+            "socials": {
+                "Facebook": "https://www.facebook.com/canaryroostatx",
+                "Instagram": "https://www.instagram.com/canaryroostatx/",
+                "Website": null,
+                "Bluesky": null
+            },
+            "schedule": {
+                "weekly": {
+                    "Sunday": "8:00 PM - 2:00 AM",
+                    "Monday": "8:00 PM - 2:00 AM",
+                    "Tuesday": "8:00 PM - 2:00 AM",
+                    "Wednesday": "8:00 PM - 2:00 AM",
+                    "Thursday": "8:00 PM - 2:00 AM",
+                    "Friday": "8:00 PM - 2:00 AM",
+                    "Saturday": "8:00 PM - 2:00 AM"
+                },
+                "ordinal": []
+            }
+        },
+        {
+            "VenueName": "Red Rooster's Pub and Grub",
+            "Dedicated": true,
+            "Address": {
+                "Street": "109 E Pecan St",
+                "City": "Pflugerville",
+                "State": "TX",
+                "Zip": "78729"
+            },
+            "KJ": {
+                "Host": "",
+                "Company": ""
+            },
+            "socials": {
+                "Facebook": "https://www.facebook.com/PartyPubAndGrub",
+                "Instagram": null,
+                "Website": "https://www.roosteraustin.com/",
+                "Bluesky": null
+            },
+            "schedule": {
+                "weekly": {
+                    "Sunday": "9:00 PM - 2:00 AM",
+                    "Monday": "9:00 PM - 2:00 AM",
+                    "Tuesday": "9:00 PM - 2:00 AM",
+                    "Wednesday": "9:00 PM - 2:00 AM",
+                    "Thursday": "9:00 PM - 2:00 AM",
+                    "Friday": "9:00 PM - 2:00 AM",
+                    "Saturday": "9:00 PM - 2:00 AM"
+                },
+                "ordinal": []
+            }
+        },
+        {
+            "VenueName": "Cheerz",
+            "Address": {
+                "Street": "14001 Shadow Glen Blvd",
+                "City": "Manor",
+                "State": "TX",
+                "Zip": "78653"
+            },
+            "KJ": {
+                "Host": "Kevin",
+                "Company": ""
+            },
+            "socials": {
+            },
+            "schedule": {
+                "weekly": {
+                    "Friday": "9:00 PM - 1:00 AM",
+                    "Saturday": "9:00 PM - 1:00 AM"
+                },
+                "ordinal": []
+            }
+        },
+        {
+            "VenueName": "Water Tank Bar & Grill, The",
+            "Address": {
+                "Street": "7309 Mcneil Dr",
+                "City": "Austin",
+                "State": "TX",
+                "Zip": "78629"
+            },
+            "KJ": {
+                "Host": "",
+                "Company": ""
+            },
+            "socials": {
+                "Facebook": "https://www.facebook.com/Thewatertankaustin",
+                "Instagram": "https://www.instagram.com/the_water_tank/",
+                "Website": "https://www.austinwatertank.com/",
+                "Bluesky": null
+            },
+            "schedule": {
+                "weekly": {
+                    "Sunday": "5:30 PM - 9:00 PM",
+                    "Wednesday": "8:30 PM - MIDNIGHT",
+                    "Thursday": "8:00 PM - MIDNIGHT",
+                    "Friday": "8:00 PM - 1:30 AM",
+                    "Saturday": "9:00 PM - 2:00 AM"
+                },
+                "ordinal": []
+            }
+        },
+        {
+            "VenueName": "Wicked Wings South Austin",
+            "Address": {
+                "Street": "615 W Slaughter Ln #108",
+                "City": "Austin",
+                "State": "TX",
+                "Zip": "78748"
+            },
+            "KJ": {
+                "Host": "Deb O Rah",
+                "Company": "U Gotta Sing Karaoke"
+            },
+            "socials": {
+                "Facebook": "https://www.facebook.com/p/Wicked-Wings-Slaughter-100063625898136/",
+                "Instagram": null,
+                "Website": null,
+                "Bluesky": null
+            },
+            "schedule": {
+                "weekly": {
+                    "Sunday": "10:00 PM - 2:00 AM",
+                    "Tuesday": "10:00 PM - 2:00 AM",
+                    "Friday": "9:00 PM - 2:00 AM"
+                },
+                "ordinal": []
+            }
+        },
+        {
+            "VenueName": "Alcove Cantina, The",
+            "Address": {
+                "Street": "119 E Main Street",
+                "City": "Round Rock",
+                "State": "TX",
+                "Zip": "78664"
+            },
+            "KJ": {
+                "Host": "",
+                "Company": "Diamond Karaoke Austin"
+            },
+            "socials": {
+                "Facebook": "https://www.facebook.com/groups/1594100210824616/user/100063785610717/",
+                "Instagram": "https://www.instagram.com/alcovecantinarr/",
+                "Website": "https://www.alcovecantina.com/",
+                "Twitter": "https://twitter.com/AlcoveCantina",
+                "Bluesky": null
+            },
+            "schedule": {
+                "weekly": {
+                    "Wednesday": "7:30 PM - MIDNIGHT"
+                },
+                "ordinal": []
+            }
+        },
+        {
+            "VenueName": "Round Rock Tavern",
+            "Address": {
+                "Street": "113 West Main Street",
+                "City": "Round Rock",
+                "State": "TX",
+                "Zip": "78664"
+            },
+            "KJ": {
+                "Host": "",
+                "Company": ""
+            },
+            "socials": {
+                "Facebook": "https://www.facebook.com/RoundRockTavern/",
+                "Instagram": "https://www.instagram.com/roundrocktavern",
+                "Website": "https://www.roundrocktavern.com/",
+                "Bluesky": null
+            },
+            "schedule": {
+                "weekly": {
+                    "Monday": "9:00 PM - 1:00 AM"
+                },
+                "ordinal": []
+            }
+        },
+        {
+            "VenueName": "Millie's on Main",
+            "Address": {
+                "Street": "212 N Main St",
+                "City": "Elgin",
+                "State": "TX",
+                "Zip": "78621"
+            },
+            "KJ": {
+                "Host": "Mandy",
+                "Company": ""
+            },
+            "socials": {
+                "Facebook": "https://www.facebook.com/milliesonmainetx",
+                "Instagram": "https://www.instagram.com/milliesonmainetx",
+                "Website": "https://www.milliesonmainetx.com/",
+                "Bluesky": null,
+                "Tiktok": "https://www.tiktok.com/@millies.on.main.e"
+            },
+            "schedule": {
+                "weekly": {
+                    "Thursday": "6:00 PM - 9:00 PM"
+                },
+                "ordinal": []
+            }
+        },
+        {
+            "VenueName": "Whiskey Girls Saloon, The",
+            "Address": {
+                "Street": "13700 FM 973, Bldg A",
+                "City": "Manor",
+                "State": "TX",
+                "Zip": "78653"
+            },
+            "KJ": {
+                "Host": "",
+                "Company": ""
+            },
+            "socials": {
+                "Facebook": "https://www.facebook.com/thewhiskeygirlssaloon",
+                "Instagram": "https://www.instagram.com/the_whiskey_girls_saloon/",
+                "Website": "https://whiskeygirlssaloon.com/",
+                "Bluesky": null
+            },
+            "schedule": {
+                "weekly": {
+                    "Tuesday": "8:00 PM - MIDNIGHT"
+                },
+                "ordinal": []
+            }
+        },
+        {
+            "VenueName": "Lucky Rabbit",
+            "Address": {
+                "Street": "18626 RM 1431",
+                "City": "Jonestown",
+                "State": "TX",
+                "Zip": "78645"
+            },
+            "KJ": {
+                "Host": "",
+                "Company": ""
+            },
+            "socials": {
+                "Facebook": "https://www.facebook.com/LuckyRabbitJonestown/",
+                "Instagram": "https://www.instagram.com/luckyrabbitjonestown/",
+                "Website": "https://www.luckyrabbitbar.com/",
+                "Bluesky": null,
+                "Youtube": "https://www.youtube.com/@LuckyRabbitBar"
+            },
+            "schedule": {
+                "weekly": {
+                    "Wednesday": "7:00 PM - 11:00 PM"
+                },
+                "ordinal": []
+            }
+        },
+        {
+            "VenueName": "Bar Louie",
+            "Address": {
+                "Street": "270 Bass Pro Dr",
+                "City": "Round Rock",
+                "State": "TX",
+                "Zip": "78645"
+            },
+            "KJ": {
+                "Host": "",
+                "Company": ""
+            },
+            "socials": {
+                "Facebook": null,
+                "Instagram": null,
+                "Website": "https://www.barlouie.com/locations/us/tx/round-rock/round-rock",
+                "Bluesky": null
+            },
+            "schedule": {
+                "weekly": {
+                    "Wednesday": "7:00 PM - 10:00 PM"
+                },
+                "ordinal": []
+            }
+        },
+        {
+            "VenueName": "Baker St. Pub & Grill",
+            "Address": {
+                "Street": "3003 S Lamar Blvd",
+                "City": "Austin",
+                "State": "TX",
+                "Zip": "78704"
+            },
+            "KJ": {
+                "Host": "",
+                "Company": "Texas Live Band Karaoke"
+            },
+            "socials": {
+                "Facebook": null,
+                "Instagram": null,
+                "Website": "https://www.texaslivebandkaraoke.com/",
+                "Bluesky": null
+            },
+            "schedule": {
+                "weekly": {
+                    "Thursday": "9:00 PM - 1:00 AM"
+                },
+                "ordinal": []
+            }
+        },
+        {
+            "VenueName": "CJ's Sports Bar",
+            "Address": {
+                "Street": "1010 N Austin Ave",
+                "City": "Georgetown",
+                "State": "TX",
+                "Zip": "78626"
+            },
+            "KJ": {
+                "Host": "",
+                "Company": ""
+            },
+            "socials": {
+                "Facebook": null,
+                "Instagram": null,
+                "Website": null,
+                "Bluesky": null
+            },
+            "schedule": {
+                "weekly": {
+                    "Wednesday": "6:00 PM - 10:30 PM"
+                },
+                "ordinal": [
+                    {
+                        "day": ["second", "Friday"],
+                        "time": "6:00 PM - 10:00 PM",
+                        "description": "Second Fridays"
+                    },
+                    {
+                        "day": ["fourth", "Friday"],
+                        "time": "6:00 PM - 10:00 PM",
+                        "description": "Fourth Fridays"
+                    }
+                ]
+            }
+        }
+    ]
+};
+
+        // Infinite scroll variables
+        let currentStartDate = new Date();
+        let isLoading = false;
+        const daysToLoad = 7; // Load one week at a time
+        const loadingIndicator = document.getElementById('loading');
+        
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load initial set of days
+            loadMoreDays();
+            
+            // Set up infinite scroll
+            window.addEventListener('scroll', function() {
+                if (isLoading) return;
+                
+                // Check if we've scrolled near the bottom
+                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+                    loadMoreDays();
+                }
+            });
+        });
+
+        function loadMoreDays() {
+            isLoading = true;
+            loadingIndicator.style.display = 'block';
+            
+            // Use setTimeout to allow UI to update before heavy rendering
+            setTimeout(() => {
+                const fragment = document.createDocumentFragment();
+                
+                for (let i = 0; i < daysToLoad; i++) {
+                    const date = new Date(currentStartDate);
+                    date.setDate(currentStartDate.getDate() + i);
+                    const dayElement = createDayElement(date);
+                    if (dayElement) {
+                        fragment.appendChild(dayElement);
+                    }
+                }
+                
+                document.getElementById('schedule-container').appendChild(fragment);
+                currentStartDate.setDate(currentStartDate.getDate() + daysToLoad);
+                
+                // Update week display to show current range
+                updateWeekDisplay();
+                
+                isLoading = false;
+                loadingIndicator.style.display = 'none';
+            }, 100);
+        }
+
+        function createDayElement(date) {
+            const isToday = date.toDateString() === new Date().toDateString();
+            const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+            
+            // Filter venues for this day
+            const venuesToday = karaokeData.listings
+                .map(venue => {
+                    const { hasEvent, timeInfo } = hasKaraokeOnDate(venue, date);
+                    return hasEvent ? { ...venue, timeInfo } : null;
+                })
+                .filter(venue => venue)
+                .sort((a, b) => a.VenueName.localeCompare(b.VenueName));
+            
+            if (venuesToday.length === 0 && !isToday) {
+                return null; // Skip days with no events (except today)
+            }
+            
+            const dayElement = document.createElement('div');
+            dayElement.className = 'day-card';
+            
+            dayElement.innerHTML = `
+                <div class="day-header ${isToday ? 'today' : ''}">
+                    <span>${dayName}</span>
+                    <span class="date-number ${isToday ? 'today' : ''}">
+                        ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                </div>
+                <div class="venue-list">
+                    ${venuesToday.length > 0 
+                        ? venuesToday.map(venue => `
+                            <div class="venue-item">
+                                <div class="venue-name">${venue.VenueName}</div>
+                                <div class="venue-kj">
+                                    ${venue.KJ.Company ? `${venue.KJ.Company}<br>` : ''}
+                                    ${venue.KJ.Host ? `with ${venue.KJ.Host}` : ''}
+                                </div>
+                                <div class="venue-time">
+                                    ${venue.timeInfo.time}
+                                    ${venue.timeInfo.description 
+                                        ? `<span class="time-description">(${venue.timeInfo.description})</span>` 
+                                        : ''}
+                                </div>
+                                <div class="venue-address">
+                                    <a href="${createMapLink(venue)}" target="_blank" title="View on Google Maps">
+                                        ${formatAddress(venue)}
+                                    </a>
+                                </div>
+                                ${createSocialLinks(venue)}
+                            </div>
+                        `).join('') 
+                        : '<div class="no-events">No karaoke venues scheduled</div>'}
+                </div>
+            `;
+            
+            return dayElement;
+        }
+
+        function updateWeekDisplay() {
+            const endDate = new Date(currentStartDate);
+            endDate.setDate(endDate.getDate() - 1); // End date is day before next load
+            
+            const startDate = new Date(endDate);
+            startDate.setDate(startDate.getDate() - 6); // Show 7 day range
+            
+           
+        }
+
+        // [Keep all your existing helper functions:]
+        function hasKaraokeOnDate(venue, date) {
+    const dayName = date.toLocaleDateString("en-US", { weekday: "long" });
+    let timeInfo = null;
+    
+    // Check weekly schedule first
+    if (venue.schedule.weekly[dayName]) {
+        timeInfo = {
+            time: venue.schedule.weekly[dayName],
+            description: "Weekly karaoke"
+        };
+        return { hasEvent: true, timeInfo };
+    }
+
+    // Check ordinal schedule
+    for (const ordinalEvent of venue.schedule.ordinal) {
+        const [ordinal, ordinalDay] = ordinalEvent.day;
+        if (ordinalDay === dayName && isOrdinalDate(date, ordinal, ordinalDay)) {
+            timeInfo = {
+                time: ordinalEvent.time,
+                description: ordinalEvent.description
+            };
+            return { hasEvent: true, timeInfo };
+        }
+    }
+
+    return { hasEvent: false };
+}
+
+        function createMapLink(venue) {
+            const address = `${venue.VenueName} ${venue.Address.Street}, ${venue.Address.City} ${venue.Address.State} ${venue.Address.Zip}`;
+            return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+        }
+
+        function createSocialLinks(venue) {
+            const socials = [];
+            
+            // Always include map link
+            socials.push(`<a href="${createMapLink(venue)}" target="_blank" title="View on Google Maps"><i class="fas fa-map-marker-alt"></i></a>`);
+
+            // Check each social media platform
+            if (venue.socials.Facebook) {
+                socials.push(`<a href="${venue.socials.Facebook}" target="_blank" title="Facebook"><i class="fab fa-facebook"></i></a>`);
+            }
+            if (venue.socials.Instagram) {
+                socials.push(`<a href="${venue.socials.Instagram}" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>`);
+            }
+            if (venue.socials.Website) {
+                socials.push(`<a href="${venue.socials.Website}" target="_blank" title="Website"><i class="fas fa-globe"></i></a>`);
+            }
+            if (venue.socials.Bluesky) {
+                socials.push(`<a href="${venue.socials.Bluesky}" target="_blank" title="Bluesky"><i class="fa-brands fa-bluesky"></i></a>`);
+            }
+            if (venue.socials.Tiktok) {
+                socials.push(`<a href="${venue.socials.Tiktok}" target="_blank" title="TikTok"><i class="fab fa-tiktok"></i></a>`);
+            }
+
+            return socials.length > 1  // Check if we have more than just the map link
+                ? `<div class="social-links">${socials.join('')}</div>`
+                : '';
+        }
+
+        function formatAddress(venue) {
+            return `${venue.Address.Street}<br>${venue.Address.City}, ${venue.Address.State}, ${venue.Address.Zip}`;
+        }
+
+        function isOrdinalDate(date, ordinal, dayName) {
+            const day = date.getDate();
+            const month = date.getMonth();
+            const year = date.getFullYear();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+
+            const occurrences = [];
+            for (let d = 1; d <= lastDay; d++) {
+                const testDate = new Date(year, month, d);
+                if (testDate.toLocaleDateString("en-US", { weekday: "long" }) === dayName) {
+                    occurrences.push(d);
+                }
+            }
+
+            const ordinalIndex = { first: 0, second: 1, third: 2, fourth: 3, last: occurrences.length - 1 }[ordinal];
+            return occurrences[ordinalIndex] === day;
+        }
+    </script>
+</body>
+</html>
