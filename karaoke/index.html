@@ -20,7 +20,7 @@
             }
             .week-display {
                 font-weight: bold;
-                font-size: 1.2em;
+                font-size: 1em;
                 text-align: center;
                 margin-bottom: 15px;
                 padding: 10px;
@@ -100,7 +100,6 @@
                 overflow: hidden;
             }
             .day-header {
-            
                 background-color: #4c4be7;
                 color: white;
                 padding: 10px 15px;
@@ -116,7 +115,7 @@
                 font-size: 1.2rem;
             }
             .date-number {
-                font-size: 1.2em;
+                font-size: 1em;
             }
             .venue-list {
                 padding: 15px;
@@ -133,12 +132,18 @@
             }
             .venue-name {
                 font-weight: bold;
+                color: #ed0101;
+                margin-bottom: 5px;
+            }
+            .venue-kj {
+                font-weight: bold;
+                font-style: italic;
+                font-size: .9em;
                 color: #d81d1d;
                 margin-bottom: 5px;
             }
-            .venue-address,
-            .venue-kj {
-                font-size: 0.9em;
+            .venue-address {
+                font-size: 1em;
                 color: #666;
                 margin-bottom: 3px;
             }
@@ -209,7 +214,7 @@
                             Zip: "78757"
                         },
                         KJ: {
-                            Host: "Various",
+                            Host: "",
                             Company: ""
                         },
                         Facebook: "https://www.facebook.com/TheCommonInterest",
@@ -239,7 +244,7 @@
                             Zip: "78704"
                         },
                         KJ: {
-                            Host: "Various",
+                            Host: "",
                             Company: ""
                         },
                         Facebook: "https://www.facebook.com/Egos",
@@ -269,7 +274,7 @@
                             Zip: "78758"
                         },
                         KJ: {
-                            Host: "Various",
+                            Host: "",
                             Company: ""
                         },
                         Facebook: "https://www.facebook.com/canaryroostatx",
@@ -299,7 +304,7 @@
                             Zip: "78729"
                         },
                         KJ: {
-                            Host: "Various",
+                            Host: "",
                             Company: ""
                         },
                         Facebook: "https://www.facebook.com/PartyPubAndGrub",
@@ -328,7 +333,7 @@
                             Zip: "78653"
                         },
                         KJ: {
-                            Host: "Various",
+                            Host: "Kevin",
                             Company: ""
                         },
                         Facebook: null,
@@ -352,7 +357,7 @@
                             Zip: "78629"
                         },
                         KJ: {
-                            Host: "Various",
+                            Host: "",
                             Company: ""
                         },
                         Facebook: "https://www.facebook.com/Thewatertankaustin",
@@ -379,7 +384,7 @@
                             Zip: "78748"
                         },
                         KJ: {
-                            Host: "Debora",
+                            Host: "Deb O Rah",
                             Company: "U Gotta Sing Karaoke"
                         },
                         Facebook: "https://www.facebook.com/p/Wicked-Wings-Slaughter-100063625898136/",
@@ -450,7 +455,7 @@
                             Zip: "78653"
                         },
                         KJ: {
-                            Host: "Various",
+                            Host: "",
                             Company: ""
                         },
                         Facebook: "https://www.facebook.com/thewhiskeygirlssaloon",
@@ -473,7 +478,7 @@
                             Zip: "78645"
                         },
                         KJ: {
-                            Host: "Various",
+                            Host: "",
                             Company: ""
                         },
                         Facebook: "https://www.facebook.com/LuckyRabbitJonestown/",
@@ -496,7 +501,7 @@
                             Zip: "78645"
                         },
                         KJ: {
-                            Host: "Various",
+                            Host: "",
                             Company: ""
                         },
                         Facebook: null,
@@ -520,7 +525,7 @@
                         },
                         KJ: {
                             Host: "",
-                            Company: "Live Band Karaoke"
+                            Company: "Texas Live Band Karaoke"
                         },
                         Facebook: null,
                         Instagram: null,
@@ -542,7 +547,7 @@
                             Zip: "78626"
                         },
                         KJ: {
-                            Host: "Various",
+                            Host: "",
                             Company: ""
                         },
                         Facebook: null,
@@ -775,6 +780,8 @@
                             venueElement.className = "venue-item";
                             venueElement.innerHTML = `
                     <div class="venue-name">${venue["VenueName"]}</div>
+                    <div class="venue-kj">${venue.KJ.Company ? `${venue.KJ.Company}<br>` : ""} ${venue.KJ.Host ? ` with ${venue.KJ.Host}` : ""}</div>
+
                     <div class="venue-time">${venue.timeInfo.time}${venue.timeInfo.description ? ` <span class="time-description">(${venue.timeInfo.description})</span>` : ""}</div>
                     <div class="venue-address">${formatAddress(venue)}</div>
                     ${createSocialLinks(venue)}
