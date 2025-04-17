@@ -35,6 +35,8 @@
                 border-radius: 8px;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             }
+            
+            
 
             .controls-container {
                 display: flex;
@@ -90,6 +92,7 @@
                 background-color: #f72a2a;
             }
             .day-card {
+    
                 background-color: white;
                 margin-bottom: 15px;
                 border-radius: 8px;
@@ -97,6 +100,7 @@
                 overflow: hidden;
             }
             .day-header {
+            
                 background-color: #4c4be7;
                 color: white;
                 padding: 10px 15px;
@@ -140,7 +144,7 @@
             }
             .social-links {
                 display: flex;
-                gap: 10px;
+                gap: 16px;
                 margin-top: 8px;
             }
             .social-links a {
@@ -172,7 +176,6 @@
     <body>
         <h1>Greater Austin Karaoke Schedule</h1>
 
-        <div class="week-display" id="week-display">Week of ...</div>
 
         <div class="controls">
             <div class="controls-container">
@@ -185,6 +188,8 @@
                 <input type="checkbox" id="dedicated-toggle" checked />
             </div>
         </div>
+        
+        <div class="week-display" id="week-display">Week of ...</div>
 
         <div id="schedule-container">
             <!-- Days will be inserted here by JavaScript -->
@@ -664,7 +669,7 @@
             }
 
             function formatAddress(venue) {
-                return `${venue.Address.Street}<br>${venue.Address.City}, ${venue.Address.State},${venue.Address.Zip}`;
+                return `${venue.Address.Street}<br>${venue.Address.City}, ${venue.Address.State}, ${venue.Address.Zip}`;
             }
             // Render the entire week
             function renderWeek() {
