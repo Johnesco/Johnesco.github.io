@@ -259,8 +259,10 @@
             "socials": {
                 "Facebook": "https://www.facebook.com/Egos",
                 "Instagram": "https://www.instagram.com/egosbaratx",
+                "Twitter": "https://x.com/egos_bar",
                 "Website": null,
                 "Bluesky": null
+                
             },
             "schedule": {
                 "weekly": {
@@ -352,10 +354,6 @@
                 "Company": ""
             },
             "socials": {
-                "Facebook": null,
-                "Instagram": null,
-                "Website": null,
-                "Bluesky": null
             },
             "schedule": {
                 "weekly": {
@@ -539,7 +537,8 @@
                 "Facebook": "https://www.facebook.com/LuckyRabbitJonestown/",
                 "Instagram": "https://www.instagram.com/luckyrabbitjonestown/",
                 "Website": "https://www.luckyrabbitbar.com/",
-                "Bluesky": null
+                "Bluesky": null,
+                "Youtube": "https://www.youtube.com/@LuckyRabbitBar"
             },
             "schedule": {
                 "weekly": {
@@ -738,10 +737,17 @@
                 if (venue.socials.Tiktok) {
                     socials.push(`<a href="${venue.socials.Tiktok}" target="_blank" title="TikTok"><i class="fab fa-tiktok"></i></a>`);
                 }
+                if (venue.socials.Twitter) {
+                    socials.push(`<a href="${venue.socials.Twitter}" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>`);
+                }
+                if (venue.socials.Youtube) {
+                    socials.push(`<a href="${venue.socials.Twitter}" target="_blank" title="Twitter"><i class="fab fa-youtube"></i></a>`);
+                }
 
-                return socials.length > 1  // Check if we have more than just the map link
-                    ? `<div class="social-links">${socials.join('')}</div>`
-                    : '';
+                return `<div class="social-links">${socials.join('')}</div>`
+                //return socials.length > 1  // Check if we have more than just the map link
+                 //   ? `<div class="social-links">${socials.join('')}</div>`
+                 //   : '';
             }
 
             function formatAddress(venue) {
