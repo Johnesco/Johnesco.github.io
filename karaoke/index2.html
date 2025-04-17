@@ -7,155 +7,132 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f5f5f5;
-}
-
-h1 {
-    color: #4b0673;
-    text-align: center;
-    padding: 20px 0;
-    margin: 0;
-    background-color: white;
-
-}
-
-.week-display {
-    font-weight: bold;
-    font-size: 1em;
-    text-align: center;
-    padding: 10px;
-    background-color: white;
-    position: sticky;
-    top: 68px; /* Height of h1 */
-    z-index: 99;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-#schedule-container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 0 20px 20px;
-}
-
-.day-card {
-    background-color: white;
-    margin-bottom: 15px;
-    margin-top: 60px; /* Space for sticky headers */
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-}
-
-.day-header {
-    background-color: #4c4be7;
-    color: white;
-    padding: 10px 15px;
-    font-weight: bold;
-    display: flex;
-    justify-content: space-between;
-    position: sticky;
-    top: 124px; /* h1 height + week-display height */
-    z-index: 98;
-}
-
-.day-header.today {
-    background-color: #ff0000;
-}
-
-.day-header.today::after {
-    content: "TODAY";
-    font-size: 1.2rem;
-}
-
-.date-number {
-    font-size: 1em;
-}
-
-.venue-list {
-    padding: 15px;
-}
-
-.venue-item {
-    margin-bottom: 15px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #eee;
-}
-
-.venue-item:last-child {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-}
-
-.venue-name {
-    text-transform: uppercase;
-    font-weight: bold;
-    color: #b50027;
-    margin-bottom: 5px;
-}
-
-.venue-kj {
-    font-weight: bold;
-    font-style: italic;
-    font-size: .9em;
-    color: #49306c;
-    margin-bottom: 5px;
-}
-
-.venue-address {
-    font-size: 1em;
-    color: #666;
-}
-
-.venue-address a {
-    font-size: 1em;
-    color: #666;
-    text-decoration: none;
-    border-bottom: 1px solid black;
-}
-
-.social-links {
-    display: flex;
-    gap: 16px;
-    margin-top: 8px;
-}
-
-.social-links a {
-    color: #555;
-    font-size: 1.2em;
-    transition: color 0.2s;
-}
-
-.social-links a:hover {
-    color: #d32f2f;
-}
-
-.no-events {
-    color: #999;
-    font-style: italic;
-}
-
-.venue-time {
-    font-weight: bold;
-    color: #333;
-    margin: 5px 0;
-}
-
-.time-description {
-    font-weight: normal;
-    font-style: italic;
-    color: #666;
-    font-size: 0.9em;
-}
-
-.loading {
-    text-align: center;
-    padding: 20px;
-    color: #666;
-}
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #4b0673;
+            text-align: center;
+            padding: 20px 0;
+            margin: 0;
+            background-color: white;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .week-display {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                position: sticky;
+    top: 68px; /* Same as h1 height */
+    z-index: 99; /* Above day headers */
+        }
+        #schedule-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px 20px;
+        }
+        .day-card {
+            background-color: white;
+            margin-top:60px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .day-header {
+            
+            background-color: #4c4be7;
+            color: white;
+            padding: 10px 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            
+    
+        }
+        .day-header.today {
+            padding-top: 26px;
+            background-color: #ff0000;
+        }
+        .day-header.today::after {
+            content: "TODAY";
+            font-size: 1.2rem;
+        }
+        .date-number {
+            font-size: 1em;
+        }
+        .venue-list {
+            padding: 15px;
+        }
+        .venue-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .venue-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        .venue-name {
+            text-transform: uppercase;
+            font-weight: bold;
+            color: #b50027;
+            margin-bottom: 5px;
+        }
+        .venue-kj {
+            font-weight: bold;
+            font-style: italic;
+            font-size: .9em;
+            color: #49306c;
+            margin-bottom: 5px;
+        }
+        .venue-address {
+            font-size: 1em;
+            color: #666;
+        }
+        .venue-address a {
+            font-size: 1em;
+            color: #666;
+            text-decoration: none;
+            border-bottom: 1px solid black;
+        }
+        .social-links {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+        }
+        .social-links a {
+            color: #555;
+            font-size: 1.2em;
+            transition: color 0.2s;
+        }
+        .social-links a:hover {
+            color: #d32f2f;
+        }
+        .no-events {
+            color: #999;
+            font-style: italic;
+        }
+        .venue-time {
+            font-weight: bold;
+            color: #333;
+            margin: 5px 0;
+        }
+        .time-description {
+            font-weight: normal;
+            font-style: italic;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
