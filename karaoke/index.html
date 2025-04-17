@@ -143,9 +143,18 @@
                 margin-bottom: 5px;
             }
             .venue-address {
+                
                 font-size: 1em;
                 color: #666;
-                margin-bottom: 3px;
+
+            }
+            .venue-address a {
+                
+                font-size: 1em;
+                color: #666;
+                margin: .2em;
+                padding: .2em;
+                text-decoration: none;
             }
             .social-links {
                 display: flex;
@@ -713,7 +722,7 @@
                     socials.innerHTML += `<a href="${venue.Website}" target="_blank" title="Website"><i class="fas fa-globe"></i></a>`;
                 }
                 if (venue.Bluesky) {
-                    socials.innerHTML += `<a href="${venue.Bluesky}" target="_blank" title="Bluesky"><i class="fas fa-cloud"></i></a>`;
+                    socials.innerHTML += `<a href="${venue.Bluesky}" target="_blank" title="Bluesky"><i class="fa-brands fa-bluesky"></i></a>`;
                 }
 
                 return socials.outerHTML;
@@ -783,7 +792,8 @@
                     <div class="venue-kj">${venue.KJ.Company ? `${venue.KJ.Company}<br>` : ""} ${venue.KJ.Host ? ` with ${venue.KJ.Host}` : ""}</div>
 
                     <div class="venue-time">${venue.timeInfo.time}${venue.timeInfo.description ? ` <span class="time-description">(${venue.timeInfo.description})</span>` : ""}</div>
-                    <div class="venue-address">${formatAddress(venue)}</div>
+                    <div class="venue-address"><a href="${createMapLink(venue)}" target="_blank" title="View on Google Maps">${formatAddress(venue)}</div></a>
+                    
                     ${createSocialLinks(venue)}
                 `;
                             venueList.appendChild(venueElement);
