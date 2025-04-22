@@ -8,13 +8,13 @@
         <style>
         #backToTop {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            bottom: 10px;
+            right: 10px;
             display: none;
-            width: 109px;
+            width: 82px;
             height: 50px;
             border-radius: 8%;
-            background: #333;
+            background: #700000;
             color: white;
             border: none;
             cursor: pointer;
@@ -55,11 +55,11 @@
             h1 {
                 color: #4b0673;
                 text-align: center;
-                margin-bottom: 25px;
+                margin-bottom: 2px;
             }
             .week-display {
                 font-weight: bold;
-                font-size: 1em;
+                font-size: 1.5em;
                 text-align: center;
                 margin-bottom: 15px;
                 padding: 10px;
@@ -229,6 +229,7 @@
     <body class="parallax">
         <div class="controls">
             <h1>Greater Austin Karaoke Schedule</h1>
+            <div class="week-display" id="week-display">Week of ...</div>
             <div class="controls-container">
                 <button id="prev-week">Previous Week</button>
                 <button id="this-week">This Week</button>
@@ -240,7 +241,7 @@
             </div>
         </div>
 
-        <div class="week-display" id="week-display">Week of ...</div>
+      
 
         <div id="schedule-container">
             <!-- Days will be inserted here by JavaScript -->
