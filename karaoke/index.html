@@ -6,6 +6,30 @@
         <title>Karaoke Schedule</title>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
         <style>
+             #backToTop {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 101;
+        }
+
+        #backToTop:hover {
+            background: #555;
+        }
+
+        #backToTop.visible {
+            display: block;
+        }
             .parallax {
                 /* Set your background image */
                 background-image: url("notes3.jpg");
@@ -220,7 +244,7 @@
         <div id="schedule-container">
             <!-- Days will be inserted here by JavaScript -->
         </div>
-
+    <button id="backToTop" title="Go to top">Top</button>
         <script>
             const karaokeData = {
                 listings: [
@@ -698,6 +722,23 @@
                     }
                 ]
             };
+            
+        const backToTopButton = document.getElementById('backToTop');
+        
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) { // Show button after scrolling 300px
+                backToTopButton.classList.add('visible');
+            } else {
+                backToTopButton.classList.remove('visible');
+            }
+        });
+        
+        backToTopButton.addEventListener('click', function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
             // Current week tracking
             let currentWeekStart = getStartOfWeek(new Date());
             let showDedicated = true;
