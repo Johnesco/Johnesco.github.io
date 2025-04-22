@@ -286,7 +286,7 @@ const karaokeData = {
                             Zip: "78664"
                         },
                         KJ: {
-                            Host: "",
+                            Host: "Marshall Joshua",
                             Company: ""
                         },
                         socials: {
@@ -297,7 +297,8 @@ const karaokeData = {
                         },
                         schedule: {
                             weekly: {
-                                Monday: "9:00 PM - 1:00 AM"
+                                Monday: "9:00 PM - 1:00 AM",
+                                Tuesday: "9:00 PM - 1:00 AM"
                             },
                             ordinal: []
                         }
@@ -407,6 +408,56 @@ const karaokeData = {
                         schedule: {
                             weekly: {
                                 Tuesday: "8:00 PM - MIDNIGHT"
+                            },
+                            ordinal: []
+                        }
+                    },
+                    {
+                        VenueName: "Rabbit Hole (Leander)",
+                        Address: {
+                            Street: "2082 US HWY 183 SUITE 145",
+                            City: "Leander",
+                            State: "TX",
+                            Zip: "78641"
+                        },
+                        KJ: {
+                            Host: "Shelly Dowdy",
+                            Company: ""
+                        },
+                        socials: {
+                            Facebook: "https://www.facebook.com/Rabbitholetx/",
+                            Instagram: "https://www.instagram.com/rabbit.hole.leander/",
+                            Website: "https://www.rabbitholetx.com/",
+                            Bluesky: null
+                        },
+                        schedule: {
+                            weekly: {
+                                Thursday: "9:00 PM - 11:00 PM"
+                            },
+                            ordinal: []
+                        }
+                    },
+                                        {
+                        VenueName: "Rabbit Hole (Cedar Park)",
+                        Address: {
+                            Street: "13920 Ronald Reagan Boulevard STE 202",
+                            City: "Cedar Park",
+                            State: "TX",
+                            Zip: "78641"
+                        },
+                        KJ: {
+                            Host: "Laura Torrez Studio",
+                            Company: ""
+                        },
+                        socials: {
+                            Facebook: null,
+                            Instagram: null,
+                            Website: "https://www.rabbitholetx.com/",
+                            Bluesky: null
+                        },
+                        schedule: {
+                            weekly: {
+                                Wednesday: "9:00 PM - 11:00 PM"
                             },
                             ordinal: []
                         }
