@@ -1,3 +1,42 @@
+#backToTop {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    display: none;
+    width: 82px;
+    height: 50px;
+    border-radius: 8%;
+    background: #700000;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    z-index: 101;
+    transition: opacity 0.3s;
+}
+
+#backToTop:hover {
+    background: #555;
+}
+
+#backToTop.visible {
+    display: block;
+}
+.parallax {
+    /* Set your background image */
+    background-image: url("../notes3.jpg");
+
+    /* Set a fixed height or make it full viewport */
+    min-height: 100vh;
+
+    /* Create the parallax scrolling effect */
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
 body {
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     max-width: 800px;
@@ -8,11 +47,11 @@ body {
 h1 {
     color: #4b0673;
     text-align: center;
-    margin-bottom: 10px;
+    margin-bottom: 2px;
 }
 .week-display {
     font-weight: bold;
-    font-size: 1.2em;
+    font-size: 1.5em;
     text-align: center;
     margin-bottom: 15px;
     padding: 10px;
@@ -21,19 +60,59 @@ h1 {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 .controls {
-    display: flex;
-    justify-content: space-between;
     margin-bottom: 20px;
-    background-color: white;
+    background-color: #fff;
     padding: 15px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.controls-container {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 1em;
+}
+.toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#dedicated-toggle {
+    width: 40px;
+    height: 20px;
+    appearance: none;
+    background-color: #ccc;
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#dedicated-toggle:checked {
+    background-color: #2f40d3;
+}
+
+#dedicated-toggle::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: white;
+    top: 2px;
+    left: 1px;
+    transition: transform 0.2s;
+}
+
+#dedicated-toggle:checked::after {
+    transform: translateX(20px);
 }
 button {
     background-color: #2f40d3;
     color: white;
     border: none;
-    padding: 8px 15px;
+    padding: 8px 10px;
     border-radius: 4px;
     cursor: pointer;
     font-weight: bold;
@@ -43,6 +122,7 @@ button:hover {
 }
 .day-card {
     background-color: white;
+    opacity: 94%;
     margin-bottom: 15px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -64,7 +144,7 @@ button:hover {
     font-size: 1.2rem;
 }
 .date-number {
-    font-size: 1.2em;
+    font-size: 1em;
 }
 .venue-list {
     padding: 15px;
@@ -80,19 +160,31 @@ button:hover {
     border-bottom: none;
 }
 .venue-name {
+    text-transform: uppercase;
     font-weight: bold;
-    color: #d81d1d;
+    color: #b50027;
     margin-bottom: 5px;
 }
-.venue-address,
 .venue-kj {
+    font-weight: bold;
+    font-style: italic;
     font-size: 0.9em;
+    color: #49306c;
+    margin-bottom: 5px;
+}
+.venue-address {
+    font-size: 1em;
     color: #666;
-    margin-bottom: 3px;
+}
+.venue-address a {
+    font-size: 1em;
+    color: #666;
+    text-decoration: none;
+    border-bottom: 1px solid black;
 }
 .social-links {
     display: flex;
-    gap: 10px;
+    gap: 16px;
     margin-top: 8px;
 }
 .social-links a {
@@ -118,4 +210,9 @@ button:hover {
     font-style: italic;
     color: #666;
     font-size: 0.9em;
+}
+@media (min-width: 768px) {
+    .week-display {
+        font-size: 2em;
+    }
 }
