@@ -463,6 +463,29 @@ const karaokeData = {
                         }
                     },
                     {
+                        VenueName: "Firewater Sports Bar",
+                        Address: {
+                            Street: "13010 W Parmer Ln STE 300",
+                            City: "Cedar Park",
+                            State: "TX",
+                            Zip: "78613"
+                        },
+                        KJ: {
+                            Host: "",
+                            Company: ""
+                        },
+                        socials: {
+                            Instagram: "https://www.instagram.com/firewaterbarcafe",
+                            Website: "https://firewatersportsbar.com/",
+                        },
+                        schedule: {
+                            weekly: {
+                                Tuesday: "8:00 PM - 11:00 PM"
+                            },
+                            ordinal: []
+                        }
+                    },
+                    {
                         VenueName: "Film Alley",
                         Address: {
                             Street: "420 Wolf Ranch Parkway",
