@@ -253,6 +253,31 @@ const karaokeData = {
                         }
                     },
                     {
+                        VenueName: "Boomerz",
+                        Address: {
+                            Street: "6148 West US Highway 290",
+                            City: "Austin",
+                            State: "TX",
+                            Zip: "78735"
+                        },
+                        KJ: {
+                            Host: "Dan DeSetto",
+                            Company: "Heart of Texas Music Entertainment"
+                        },
+                        socials: {
+                            Facebook: "https://www.facebook.com/boomerzaustin",
+                            Instagram: "https://www.instagram.com/boomerzaustin/",
+                            Website: "https://boomerzaustin.com/",
+                            Bluesky: null
+                        },
+                        schedule: {
+                            weekly: {
+                                Thursday: "9:00 PM - 1:30 AM"
+                            },
+                            ordinal: []
+                        }
+                    },
+                    {
                         VenueName: "Round Rock Tavern",
                         Address: {
                             Street: "113 West Main Street",
@@ -433,6 +458,31 @@ const karaokeData = {
                         schedule: {
                             weekly: {
                                 Wednesday: "7:00 PM - 10:00 PM"
+                            },
+                            ordinal: []
+                        }
+                    },
+                    {
+                        VenueName: "Mario's Seafood",
+                        Address: {
+                            Street: "522 N Interstate 35 Frontage Rd<br>Building C",
+                            City: "Austin",
+                            State: "TX",
+                            Zip: "78752"
+                        },
+                        KJ: {
+                            Host: "",
+                            Company: ""
+                        },
+                        socials: {
+                            Facebook: null,
+                            Instagram: null,
+                            Website: "https://marioseafood.com/",
+                            Bluesky: null
+                        },
+                        schedule: {
+                            weekly: {
+                                Thursday: "7ish PM - MIDNIGHT"
                             },
                             ordinal: []
                         }
