@@ -1,28 +1,13 @@
-// Create "back to top" button
-const backToTopButton = document.getElementById("backToTop");
-
-window.addEventListener("scroll", function () {
-    if (window.pageYOffset > 300) {
-        // Show button after scrolling 300px
-        backToTopButton.classList.add("visible");
-    } else {
-        backToTopButton.classList.remove("visible");
-    }
-});
-
-backToTopButton.addEventListener("click", function () {
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
-});
-
-// Current week tracking
+// ======================
+// CONSTANTS & CONFIG
+// ======================
+const today = new Date().toDateString();
 let currentWeekStart = getStartOfWeek(new Date());
 let showDedicated = true;
-const today = new Date().toDateString();
 
-// Helper functions
+// ======================
+// DATE UTILITIES
+// ======================
 function getStartOfWeek(date) {
     const d = new Date(date);
     const day = d.getDay();
@@ -63,6 +48,9 @@ function isOrdinalDate(date, ordinal, dayName) {
     return occurrences[ordinalIndex] === day;
 }
 
+// ======================
+// VENUE UTILITIES
+// ======================
 function hasKaraokeOnDate(venue, date) {
     const dayName = date.toLocaleDateString("en-US", { weekday: "long" });
 
@@ -97,58 +85,42 @@ function createMapLink(venue) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
+function formatAddress(venue) {
+    return `${venue.Address.Street}<br>${venue.Address.City}, ${venue.Address.State}, ${venue.Address.Zip}`;
+}
+
 function createSocialLinks(venue) {
     const socials = [];
+    const socialPlatforms = {
+        Facebook: { icon: "facebook", title: "Facebook" },
+        Instagram: { icon: "instagram", title: "Instagram" },
+        Website: { icon: "globe", title: "Website" },
+        Bluesky: { icon: "bluesky", title: "Bluesky" },
+        Tiktok: { icon: "tiktok", title: "TikTok" },
+        Twitter: { icon: "twitter", title: "Twitter" },
+        Youtube: { icon: "youtube", title: "YouTube" }
+    };
 
     // Always include map link
     socials.push(
         `<a href="${createMapLink(venue)}" target="_blank" title="View on Google Maps"><i class="fas fa-map-marker-alt"></i></a>`
     );
 
-    // Check each social media platform
-    if (venue.socials.Facebook) {
-        socials.push(
-            `<a href="${venue.socials.Facebook}" target="_blank" title="Facebook"><i class="fab fa-facebook"></i></a>`
-        );
-    }
-    if (venue.socials.Instagram) {
-        socials.push(
-            `<a href="${venue.socials.Instagram}" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>`
-        );
-    }
-    if (venue.socials.Website) {
-        socials.push(
-            `<a href="${venue.socials.Website}" target="_blank" title="Website"><i class="fas fa-globe"></i></a>`
-        );
-    }
-    if (venue.socials.Bluesky) {
-        socials.push(
-            `<a href="${venue.socials.Bluesky}" target="_blank" title="Bluesky"><i class="fa-brands fa-bluesky"></i></a>`
-        );
-    }
-    if (venue.socials.Tiktok) {
-        socials.push(
-            `<a href="${venue.socials.Tiktok}" target="_blank" title="TikTok"><i class="fab fa-tiktok"></i></a>`
-        );
-    }
-    if (venue.socials.Twitter) {
-        socials.push(
-            `<a href="${venue.socials.Twitter}" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>`
-        );
-    }
-    if (venue.socials.Youtube) {
-        socials.push(
-            `<a href="${venue.socials.Youtube}" target="_blank" title="Twitter"><i class="fab fa-youtube"></i></a>`
-        );
+    // Add other social links
+    for (const [platform, info] of Object.entries(socialPlatforms)) {
+        if (venue.socials[platform]) {
+            socials.push(
+                `<a href="${venue.socials[platform]}" target="_blank" title="${info.title}"><i class="fab fa-${info.icon}"></i></a>`
+            );
+        }
     }
 
     return `<div class="social-links">${socials.join("")}</div>`;
 }
 
-function formatAddress(venue) {
-    return `${venue.Address.Street}<br>${venue.Address.City}, ${venue.Address.State}, ${venue.Address.Zip}`;
-}
-
+// ======================
+// DOM RENDERING
+// ======================
 function renderWeek() {
     const weekDisplay = document.getElementById("week-display");
     const container = document.getElementById("schedule-container");
@@ -170,58 +142,86 @@ function renderWeek() {
             .sort((a, b) => a.VenueName.localeCompare(b.VenueName));
 
         const dayHTML = `
-                        <div class="day-card">
-                            <div class="day-header ${isCurrentDay ? "today" : ""}">
-                                <span>${currentDate.toLocaleDateString("en-US", { weekday: "long" })}</span>
-                                <span class="date-number ${isCurrentDay ? "today" : ""}">
-                                    ${currentDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                </span>
-                            </div>
-                            <div class="venue-list">
-                                ${
-                                    venuesToday.length > 0
-                                        ? venuesToday
-                                              .map(
-                                                  (venue) => `
-                                        <div class="venue-item">
-                                            <div class="venue-name">${venue.VenueName}</div>
-                                            <div class="venue-kj">${venue.KJ.Company ? `${venue.KJ.Company}<br>` : ""}${venue.KJ.Host ? ` with ${venue.KJ.Host}` : ""}</div>
-                                            <div class="venue-time">${venue.timeInfo.time}${venue.timeInfo.description ? ` <span class="time-description">(${venue.timeInfo.description})</span>` : ""}</div>
-                                            <div class="venue-address"><a href="${createMapLink(venue)}" target="_blank" title="View on Google Maps">${formatAddress(venue)}</a></div>
-                                            ${createSocialLinks(venue)}
-                                        </div>
-                                    `
-                                              )
-                                              .join("")
-                                        : '<div class="no-events">No karaoke venues scheduled</div>'
-                                }
-                            </div>
-                        </div>
-                    `;
+            <div class="day-card">
+                <div class="day-header ${isCurrentDay ? "today" : ""}">
+                    <span>${currentDate.toLocaleDateString("en-US", { weekday: "long" })}</span>
+                    <span class="date-number ${isCurrentDay ? "today" : ""}">
+                        ${currentDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                </div>
+                <div class="venue-list">
+                    ${
+                        venuesToday.length > 0
+                            ? venuesToday
+                                .map(
+                                    (venue) => `
+                                    <div class="venue-item">
+                                        <div class="venue-name">${venue.VenueName}</div>
+                                        <div class="venue-kj">${venue.KJ.Company ? `${venue.KJ.Company}<br>` : ""}${venue.KJ.Host ? ` with ${venue.KJ.Host}` : ""}</div>
+                                        <div class="venue-time">${venue.timeInfo.time}${venue.timeInfo.description ? ` <span class="time-description">(${venue.timeInfo.description})</span>` : ""}</div>
+                                        <div class="venue-address"><a href="${createMapLink(venue)}" target="_blank" title="View on Google Maps">${formatAddress(venue)}</a></div>
+                                        ${createSocialLinks(venue)}
+                                    </div>
+                                `
+                                )
+                                .join("")
+                            : '<div class="no-events">No karaoke venues scheduled</div>'
+                    }
+                </div>
+            </div>
+        `;
 
         container.insertAdjacentHTML("beforeend", dayHTML);
     }
 }
 
-// Initialize the page
-document.getElementById("prev-week").addEventListener("click", () => {
-    currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-    renderWeek();
-});
+// ======================
+// EVENT LISTENERS
+// ======================
+function setupEventListeners() {
+    const backToTopButton = document.getElementById("backToTop");
+    
+    // Scroll to top button
+    window.addEventListener("scroll", function() {
+        backToTopButton.classList.toggle("visible", window.pageYOffset > 300);
+    });
 
-document.getElementById("next-week").addEventListener("click", () => {
-    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-    renderWeek();
-});
+    backToTopButton.addEventListener("click", function() {
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    });
 
-document.getElementById("this-week").addEventListener("click", () => {
-    currentWeekStart = getStartOfWeek(new Date());
-    renderWeek();
-});
+    // Week navigation
+    document.getElementById("prev-week").addEventListener("click", () => {
+        currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+        renderWeek();
+    });
 
-document.getElementById("dedicated-toggle").addEventListener("change", function () {
-    showDedicated = this.checked;
-    renderWeek();
-});
+    document.getElementById("next-week").addEventListener("click", () => {
+        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+        renderWeek();
+    });
 
-renderWeek();
+    document.getElementById("this-week").addEventListener("click", () => {
+        currentWeekStart = getStartOfWeek(new Date());
+        renderWeek();
+    });
+
+    document.getElementById("dedicated-toggle").addEventListener("change", function() {
+        showDedicated = this.checked;
+        renderWeek();
+    });
+}
+
+// ======================
+// INITIALIZATION
+// ======================
+function init() {
+    setupEventListeners();
+    renderWeek();
+}
+
+// Start the application
+init();
