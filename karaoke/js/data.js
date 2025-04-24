@@ -412,6 +412,29 @@ const karaokeData = {
                             ordinal: []
                         }
                     },
+                     {
+                        VenueName: "Wildflower Corks & Brews",
+                        Address: {
+                            Street: "108 E. 2nd Street",
+                            City: "Taylor",
+                            State: "TX",
+                            Zip: "76574"
+                        },
+                        KJ: {
+                            Host: "",
+                            Company: "Diamond Karaoke Austin"
+                        },
+                        socials: {
+                            Facebook: "https://www.facebook.com/profile.php?id=61573452677081",
+                            Instagram: "https://www.instagram.com/wildflowertaylortx/",
+                        },
+                        schedule: {
+                            weekly: {
+                                Thursday: "7:00 PM - 11:00 PM"
+                            },
+                            ordinal: []
+                        }
+                    },
                     {
                         VenueName: "Rabbit Hole (Leander)",
                         Address: {
