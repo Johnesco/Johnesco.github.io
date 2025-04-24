@@ -92,13 +92,13 @@ function formatAddress(venue) {
 function createSocialLinks(venue) {
     const socials = [];
     const socialPlatforms = {
-        Facebook: { icon: "facebook", title: "Facebook" },
-        Instagram: { icon: "instagram", title: "Instagram" },
-        Website: { icon: "globe", title: "Website" },
-        Bluesky: { icon: "bluesky", title: "Bluesky" },
-        Tiktok: { icon: "tiktok", title: "TikTok" },
-        Twitter: { icon: "twitter", title: "Twitter" },
-        Youtube: { icon: "youtube", title: "YouTube" }
+        Facebook: { icon: "fa-brands fa-facebook", title: "Facebook" },
+        Instagram: { icon: "fa-brands fa-instagram", title: "Instagram" },
+        Bluesky: { icon: "fa-brands fa-bluesky", title: "Bluesky" },
+        Tiktok: { icon: "fa-brands fa-tiktok", title: "TikTok" },
+        Twitter: { icon: "fa-brands fa-twitter", title: "Twitter" },
+        Youtube: { icon: "fa-brands fa-youtube", title: "YouTube" },
+        Website: { icon: "fa-solid fa-globe", title: "Website" },
     };
 
     // Always include map link
@@ -110,7 +110,7 @@ function createSocialLinks(venue) {
     for (const [platform, info] of Object.entries(socialPlatforms)) {
         if (venue.socials[platform]) {
             socials.push(
-                `<a href="${venue.socials[platform]}" target="_blank" title="${info.title}"><i class="fab fa-${info.icon}"></i></a>`
+                `<a href="${venue.socials[platform]}" target="_blank" title="${info.title}"><i class="${info.icon}"></i></a>`
             );
         }
     }
