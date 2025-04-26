@@ -162,7 +162,10 @@ const karaokeData = {
                             Host: "XPIDER",
                             Company: ""
                         },
-                        socials: {},
+                        socials: {
+                            Facebook: "https://www.facebook.com/LoneStarBarPflugerville/",
+                            Website: "https://lonestarbartexas.com/"
+                        },
                         schedule: {
                             weekly: {
                                 Saturday: "9:00 PM - 1:00 AM"
