@@ -151,6 +151,26 @@ const karaokeData = {
                         }
                     },
                     {
+                        VenueName: "Lone Star Bar",
+                        Address: {
+                            Street: "403 FM 685",
+                            City: "Pflugerville",
+                            State: "TX",
+                            Zip: "78660"
+                        },
+                        KJ: {
+                            Host: "XPIDER",
+                            Company: ""
+                        },
+                        socials: {},
+                        schedule: {
+                            weekly: {
+                                Saturday: "9:00 PM - 1:00 AM"
+                            },
+                            ordinal: []
+                        }
+                    },
+                    {
                         VenueName: "Water Hole 71",
                         Address: {
                             Street: "5244 E Hwy 71",
