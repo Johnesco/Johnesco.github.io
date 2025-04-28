@@ -2,8 +2,61 @@
 // CONSTANTS & CONFIG
 // ======================
 const today = new Date().toDateString();
-let currentWeekStart = new Date(); // getStartOfWeek(new Date());
+let currentWeekStart = new Date();
 let showDedicated = true;
+
+// ======================
+// MODAL FUNCTIONS
+// ======================
+function showVenueDetails(venue) {
+  const modal = document.getElementById('venue-modal');
+  const venueName = document.getElementById('modal-venue-name');
+  const venueInfo = document.getElementById('modal-venue-info');
+  
+  venueName.textContent = venue.VenueName;
+  
+  let infoHTML = `
+    <div class="modal-address">
+      <strong>Address:</strong><br>
+      <div class="venue-address"><a href="${createMapLink(venue)}" target="_blank" title="View on Google Maps">${formatAddress(venue)}</a></div>
+    </div>
+    <div class="modal-kj">
+      <strong>KJ:</strong> <div class="venue-kj">${venue.KJ.Company ? `${venue.KJ.Company}<br>` : ""}${venue.KJ.Host ? ` with ${venue.KJ.Host}` : ""}</div>
+    </div>
+    
+    <div class="modal-schedule">
+      <h3>Schedule:</h3>`;
+  
+  const weeklyDays = Object.entries(venue.schedule.weekly);
+  if (weeklyDays.length > 0) {
+    infoHTML += `<h4>Weekly:</h4><ul>`;
+    weeklyDays.forEach(([day, time]) => {
+      infoHTML += `<li class="modal-schedule-item">Every ${day}: ${time}</li>`;
+    });
+    infoHTML += `</ul>`;
+  }
+  
+  if (venue.schedule.ordinal.length > 0) {
+    infoHTML += `<h4>Special Events:</h4><ul>`;
+    venue.schedule.ordinal.forEach(event => {
+      infoHTML += `<li class="modal-schedule-item">${event.description}: ${event.time}</li>`;
+    });
+    infoHTML += `</ul>`;
+  }
+  
+  venueInfo.innerHTML = infoHTML + `<strong>Social Media:</strong>${createSocialLinks(venue)}</div>`;
+  modal.style.display = 'block';
+  
+  document.querySelector('.close-modal').onclick = () => {
+    modal.style.display = 'none';
+  };
+  
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  };
+}
 
 // ======================
 // DATE UTILITIES
@@ -101,12 +154,10 @@ function createSocialLinks(venue) {
         Website: { icon: "fa-solid fa-globe", title: "Website" },
     };
 
-    // Always include map link
     socials.push(
         `<a href="${createMapLink(venue)}" target="_blank" title="View on Google Maps"><i class="fas fa-map-marker-alt"></i></a>`
     );
 
-    // Add other social links
     for (const [platform, info] of Object.entries(socialPlatforms)) {
         if (venue.socials[platform]) {
             socials.push(
@@ -161,6 +212,9 @@ function renderWeek() {
                                         <div class="venue-time">${venue.timeInfo.time}${venue.timeInfo.description ? ` <span class="time-description">(${venue.timeInfo.description})</span>` : ""}</div>
                                         <div class="venue-address"><a href="${createMapLink(venue)}" target="_blank" title="View on Google Maps">${formatAddress(venue)}</a></div>
                                         ${createSocialLinks(venue)}
+                                        <button class="details-btn" onclick="showVenueDetails(${JSON.stringify(venue).replace(/"/g, '&quot;')})">
+                                            See Details
+                                        </button>
                                     </div>
                                 `
                                 )
@@ -181,7 +235,6 @@ function renderWeek() {
 function setupEventListeners() {
     const backToTopButton = document.getElementById("backToTop");
     
-    // Scroll to top button
     window.addEventListener("scroll", function() {
         backToTopButton.classList.toggle("visible", window.pageYOffset > 300);
     });
@@ -193,7 +246,6 @@ function setupEventListeners() {
         });
     });
 
-    // Week navigation
     document.getElementById("prev-week").addEventListener("click", () => {
         currentWeekStart.setDate(currentWeekStart.getDate() - 7);
         renderWeek();
@@ -205,13 +257,20 @@ function setupEventListeners() {
     });
 
     document.getElementById("this-week").addEventListener("click", () => {
-        currentWeekStart = new Date(); // getStartOfWeek(new Date());
+        currentWeekStart = new Date();
         renderWeek();
     });
 
     document.getElementById("dedicated-toggle").addEventListener("change", function() {
         showDedicated = this.checked;
         renderWeek();
+    });
+
+    document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('venue-modal');
+        if (e.key === 'Escape' && modal.style.display === 'block') {
+            modal.style.display = 'none';
+        }
     });
 }
 
