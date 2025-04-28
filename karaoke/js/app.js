@@ -2,7 +2,7 @@
 // CONSTANTS & CONFIG
 // ======================
 const today = new Date().toDateString();
-let currentWeekStart = getStartOfWeek(new Date());
+let currentWeekStart = new Date(); // getStartOfWeek(new Date());
 let showDedicated = true;
 
 // ======================
@@ -27,7 +27,7 @@ function formatWeekRange(startDate) {
     const startStr = startDate.toLocaleDateString("en-US", options);
     const endStr = endDate.toLocaleDateString("en-US", { ...options, year: "numeric" });
 
-    return `Week of ${startStr} - ${endStr}`;
+    return `Viewing ${startStr} - ${endStr}`;
 }
 
 function isOrdinalDate(date, ordinal, dayName) {
@@ -205,7 +205,7 @@ function setupEventListeners() {
     });
 
     document.getElementById("this-week").addEventListener("click", () => {
-        currentWeekStart = getStartOfWeek(new Date());
+        currentWeekStart = new Date(); // getStartOfWeek(new Date());
         renderWeek();
     });
 
