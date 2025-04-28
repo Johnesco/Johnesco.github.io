@@ -130,6 +130,29 @@ const karaokeData = {
                         }
                     },
                     {
+                        VenueName: "Buddy's Place",
+                        Address: {
+                            Street: "8619 Burnet Road",
+                            City: "Austin",
+                            State: "TX",
+                            Zip: "78757"
+                        },
+                        KJ: {
+                            Host: "",
+                            Company: ""
+                        },
+                        socials: {
+                            Website:"https://buddysplaceatx.com/",
+                            Instagram: "https://www.instagram.com/buddysplaceatx/"
+                        },
+                        schedule: {
+                            weekly: {
+                                Sunday: "7:30 PM - 11:30 PM"
+                            },
+                            ordinal: []
+                        }
+                    },
+                    {
                         VenueName: "Cheerz",
                         Address: {
                             Street: "14001 Shadow Glen Blvd",
