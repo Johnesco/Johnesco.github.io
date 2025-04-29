@@ -151,21 +151,21 @@ button:hover {
 
 /* Venue Items */
 .venue-list {
-    padding: 15px;
-    background-color: antiquewhite
+    padding: 6px;
 }
 
 .venue-item {
-    margin-bottom: 5px;
+    margin-bottom: 4px;
     padding: 15px;
     background-color: white;
-    border-radius: 13px;
+    border-radius: 23px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .venue-item:last-child {
     margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
+    padding-bottom: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .venue-name {
