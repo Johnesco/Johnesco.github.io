@@ -105,8 +105,8 @@ button:hover {
     background-color: #190dab;
     color: white;
     border: none;
-    padding: 8px 15px;
-    border-radius: 22px;
+    padding: 8px 8px;
+    border-radius: 2px;
     cursor: pointer;
     margin-top: 10px;
     font-size: 0.8em;
@@ -132,6 +132,7 @@ button:hover {
     color: white;
     padding: 10px 15px;
     font-weight: bold;
+    font-size:1.5em;
     display: flex;
     justify-content: space-between;
 }
@@ -265,7 +266,7 @@ button:hover {
     cursor: pointer;
     position: absolute;
     right: 20px;
-    top: 0px;
+    top: 0;
 }
 
 .close-modal:hover {
@@ -278,7 +279,9 @@ button:hover {
     color: #b50027;
     margin-bottom: 15px;
     padding-bottom: 10px;
+    margin-right: 32px;
     border-bottom: 1px solid #eee;
+
 }
 
 .modal-address,
@@ -287,32 +290,37 @@ button:hover {
 }
 
 .modal-schedule h3 {
-    margin-top: 20px;
+    margin:0;
+    padding: 0;
+    
     color: #4b0673;
 }
 
 .modal-schedule h4 {
-    margin: 15px 0 10px;
-    color: #2f40d3;
+        margin:0;
+    padding: 0;
+    color: blue;
 }
 
 .modal-schedule ul {
+            margin:0;
+    padding-top: 0;
     list-style-type: none;
     padding-left: 0;
+    padding-bottom: 20px;
 }
 
 .modal-schedule-item {
-    margin-bottom: 10px;
-    padding-bottom: 10px;
+    margin-bottom: 5px;
     border-bottom: 1px solid #f0f0f0;
 }
 
 .modal .social-links {
-    margin: 15px 0;
+    margin: 9px 0;
 }
 
 .modal .social-links a {
-    font-size: 1.5em;
+    font-size: 2.3em;
 }
 
 /* Back to Top Button */
