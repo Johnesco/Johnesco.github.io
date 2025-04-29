@@ -152,12 +152,14 @@ button:hover {
 /* Venue Items */
 .venue-list {
     padding: 15px;
+    background-color: antiquewhite
 }
 
 .venue-item {
-    margin-bottom: 15px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #eee;
+    margin-bottom: 5px;
+    padding: 15px;
+    background-color: white;
+    border-radius: 13px;
 }
 
 .venue-item:last-child {
@@ -168,9 +170,11 @@ button:hover {
 
 .venue-name {
     text-transform: uppercase;
+    font-family: Tahoma, sans-serif;
+    font-size: 17px;
     font-weight: bold;
     color: #b50027;
-    margin-bottom: 5px;
+    margin-bottom: 2px;
 }
 
 .venue-kj {
