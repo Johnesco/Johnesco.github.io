@@ -193,13 +193,14 @@ function renderWeek() {
             .sort((a, b) => a.VenueName.localeCompare(b.VenueName));
 
         const dayHTML = `
-            <div class="day-card">
+            
                 <div class="day-header ${isCurrentDay ? "today" : ""}">
                     <span>${currentDate.toLocaleDateString("en-US", { weekday: "long" })}</span>
                     <span class="date-number ${isCurrentDay ? "today" : ""}">
                         ${currentDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                     </span>
                 </div>
+                <div class="day-card">
                 <div class="venue-list">
                     ${
                         venuesToday.length > 0
