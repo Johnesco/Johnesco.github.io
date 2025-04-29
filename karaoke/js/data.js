@@ -153,6 +153,53 @@ const karaokeData = {
                         }
                     },
                     {
+                        VenueName: "Hudson Tavern",
+                        Address: {
+                            Street: "5000 Hudson Bend Rd Suite D",
+                            City: "Lake Travis",
+                            State: "TX",
+                            Zip: "78734"
+                        },
+                        KJ: {
+                            Host: "",
+                            Company: "Xpider"
+                        },
+                        socials: {
+                            Facebook:"https://www.facebook.com/thehudsontavern/",
+                            Instagram: "https://www.instagram.com/buddysplaceatx/"
+                        },
+                        schedule: {
+                            weekly: {
+                                Friday: "9:00 PM - 1:00 AM"
+                            },
+                            ordinal: []
+                        }
+                    },
+                    {
+                        VenueName: "Gnar Bar",
+                        Address: {
+                            Street: "219 E 6th Street",
+                            City: "Austin",
+                            State: "TX",
+                            Zip: "78701"
+                        },
+                        KJ: {
+                            Host: "Xpider",
+                            Company: ""
+                        },
+                        socials: {
+                            Website:"https://gnarbaratx.com/",
+                            Facebook:"https://www.facebook.com/gnarbaratx/",
+                            Instagram: "https://www.instagram.com/gnarbaratx/"
+                        },
+                        schedule: {
+                            weekly: {
+                                Sunday: "9:00 PM - Close"
+                            },
+                            ordinal: []
+                        }
+                    },
+                    {
                         VenueName: "Cheerz",
                         Address: {
                             Street: "14001 Shadow Glen Blvd",
