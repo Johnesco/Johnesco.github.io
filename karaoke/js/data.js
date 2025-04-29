@@ -76,7 +76,7 @@ const karaokeData = {
                         },
                         KJ: {
                             Host: "",
-                            Company: ""
+                            Company: "Diamond Karaoke Austin"
                         },
                         socials: {
                             Facebook: "https://www.facebook.com/canaryroostatx",
