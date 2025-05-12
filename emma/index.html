@@ -57,15 +57,15 @@
         
         button {
             padding: 8px 15px;
-            background-color: #4CAF50;
             color: white;
             border: none;
             cursor: pointer;
             border-radius: 4px;
+            margin-left: 5px;
         }
         
         button:hover {
-            background-color: #45a049;
+            opacity: 0.9;
         }
         
         ul {
@@ -83,12 +83,24 @@
             align-items: center;
         }
         
+        .song-actions {
+            display: flex;
+        }
+        
         .delete-btn {
             background-color: #f44336;
         }
         
-        .delete-btn:hover {
-            background-color: #d32f2f;
+        .reassign-btn {
+            background-color: #2196F3;
+        }
+        
+        .redistribute-btn {
+            background-color: #9C27B0;
+        }
+        
+        .add-btn {
+            background-color: #4CAF50;
         }
         
         .person-list {
@@ -123,6 +135,10 @@
             font-weight: bold;
             color: #2E7D32;
         }
+        
+        .global-actions {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -136,15 +152,18 @@
     <div id="songs" class="tab-content active">
         <div class="input-group">
             <input type="text" id="songInput" placeholder="Enter a song title">
-            <button id="addSongBtn">Add Song</button>
+            <button id="addSongBtn" class="add-btn">Add Song</button>
         </div>
         <ul id="songList"></ul>
+        <div class="global-actions">
+            <button id="redistributeBtn" class="redistribute-btn">Redistribute All Songs</button>
+        </div>
     </div>
     
     <div id="people" class="tab-content">
         <div class="input-group">
             <input type="text" id="personInput" placeholder="Enter a person's name">
-            <button id="addPersonBtn">Add Person</button>
+            <button id="addPersonBtn" class="add-btn">Add Person</button>
         </div>
         <div id="peopleList" class="person-list"></div>
     </div>
@@ -159,6 +178,7 @@
         const personInput = document.getElementById('personInput');
         const addPersonBtn = document.getElementById('addPersonBtn');
         const peopleList = document.getElementById('peopleList');
+        const redistributeBtn = document.getElementById('redistributeBtn');
         
         // Data structure
         let appData = {
@@ -211,6 +231,9 @@
             personInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') addPerson();
             });
+            
+            // Redistribute all songs
+            redistributeBtn.addEventListener('click', redistributeAllSongs);
         }
         
         // Add a new song
@@ -256,6 +279,36 @@
             // Randomly select from candidates
             const randomIndex = Math.floor(Math.random() * candidates.length);
             appData.assignments[songTitle] = candidates[randomIndex];
+        }
+        
+        // Reassign a specific song to a different person
+        function reassignSong(songTitle) {
+            assignPersonToSong(songTitle);
+            renderSongs();
+            saveData();
+        }
+        
+        // Redistribute all songs to people
+        function redistributeAllSongs() {
+            if (appData.people.length === 0) {
+                // Clear all assignments if no people exist
+                Object.keys(appData.assignments).forEach(song => {
+                    appData.assignments[song] = null;
+                });
+            } else {
+                // Clear all current assignments
+                Object.keys(appData.assignments).forEach(song => {
+                    appData.assignments[song] = null;
+                });
+                
+                // Reassign all songs
+                appData.songs.forEach(song => {
+                    assignPersonToSong(song);
+                });
+            }
+            
+            renderSongs();
+            saveData();
         }
         
         // Reassign songs when a person is removed
@@ -325,7 +378,10 @@
                         ${song} 
                         ${assignedPerson ? `<span class="assigned-person">(${assignedPerson})</span>` : ''}
                     </span>
-                    <button class="delete-btn" data-song="${song}">Delete</button>
+                    <div class="song-actions">
+                        <button class="reassign-btn" data-song="${song}">Reassign</button>
+                        <button class="delete-btn" data-song="${song}">Delete</button>
+                    </div>
                 `;
                 
                 songList.appendChild(li);
@@ -335,6 +391,13 @@
             document.querySelectorAll('.delete-btn[data-song]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     removeSong(btn.dataset.song);
+                });
+            });
+            
+            // Add event listeners to reassign buttons
+            document.querySelectorAll('.reassign-btn[data-song]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    reassignSong(btn.dataset.song);
                 });
             });
         }
