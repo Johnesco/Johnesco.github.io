@@ -6,7 +6,7 @@ var resumeJSON = {
     "email": "letmeshowyou@gmail.com",
     "phone": "(512) 299-3269",
     "website": "",
-    "summary": "QA Specialist with nearly 20 years of experience testing software -- including single-page web apps, desktop software, and mobile apps -- for retail, medical, accessibility, government, and entertainment industries. Strong skills in Agile and Scrum methodologies. Trilingual: English, Spanish, and American Sign Language.",
+    "summary": "Senior QA Engineer with 18+ years of experience spanning entertainment, healthcare, government, and consumer technology sectors. Specialized in establishing QA processes for emerging companies and leading quality initiatives for mission-critical government systems. Expert in full-stack testing including web applications, mobile apps, desktop software, and gaming platforms. Strong background in Agile methodologies, accessibility compliance, and cross-functional team leadership. Trilingual: English, Spanish, and American Sign Language.",
     "location": {
       "address": "16506 Fetching",
       "postalCode": "TX 78653",
@@ -29,7 +29,7 @@ var resumeJSON = {
       "website": "https://www.geeksi.tech/",
       "startDate": "2019-03-01",
       "endDate": "Present",
-      "summary": "Contracted for GeekSI at various Veterans Affair customers in the US Government as a software tester. Roles have included testing various programs assisting Veterans with benefits including housing and healthcare.",
+      "summary": "Senior contractor with GeekSI providing comprehensive QA engineering services to Veterans Affairs for 6 years. Led testing initiatives across VA's healthcare and benefits ecosystem, from telehealth platforms to loan guarantee systems. Subject matter expert in government software testing, 508 accessibility compliance, and modernizing legacy testing processes with Agile methodologies.",
       "highlights": [
          "July 2024 - Present",
         "Customer: VA",
