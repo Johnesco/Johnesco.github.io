@@ -37,6 +37,7 @@ var resumeJSON = {
         "Role: Lead Test Engineer",
         "Built initial test plan for MVP.",
         "Standardized and communicated testing SOP",
+        "Created test framework for User Acceptance Testing teams.",
         "Championed Agile methods to replace Waterfall tendencies.",
         " ",
         "July 2023 - July 2024",
@@ -140,12 +141,12 @@ var resumeJSON = {
       "website": "https://www.docbookmd.com",
       "startDate": "2012-07-01",
       "endDate": "2013-03-01",
-      "summary": "Introduced a QA process to the company's HIPPA-compliant messaging app for doctors. Majority of work was tested on IOS phones with some Android and web components. Maintained and enforced testing protocols.",
+      "summary": "Introduced a QA process to the company's HIPAA-compliant messaging app for doctors. Majority of work was tested on IOS phones with some Android and web components. Maintained and enforced testing protocols.",
       "highlights": [
-        "Introduced QA process for company's HIPPA-compliant messaging app for doctors.",
+        "Introduced QA process for company's HIPAA-compliant messaging app for doctors.",
         "Test lead for mobile app for Android and iOS tablets and phones.",
         "Established new testing procedures and wrote test suites.",
-        "Ensured HIPPA compliance of messaging app.",
+        "Ensured HIPAA-compliance of messaging app.",
         "Managed remote testers and development of local testing team."
       ]
     },
@@ -159,7 +160,7 @@ var resumeJSON = {
       "highlights": [
         "Customer: Heatwave Interactive",
         "Projects: MMORPG \"Gods and Heroes: Rome Rising\" and online Facebook game \"Platinum Life: Country\"",
-        "Role: QA Tester/Lead",
+        "Role: QA Tester / Test Lead",
         "QA Tester for the MMORPG \"Gods and Heroes: Rome Rising\".",
         "Promoted to Test Lead for online Facebook game \"Platinum Life: Country\".",
         "Tested daily builds for basic functionality of the game.",
@@ -177,7 +178,7 @@ var resumeJSON = {
       "highlights": [
         "Customer Support for the online World of Warcraft MMO.",
         "Assisted World of Warcraft customers with in-game play and technical issues.",
-        "Used via live chat and a ticket-based system to assist customers.",
+        "Provided support via live chat and ticket-based systems to assist customers.",
         "Restored compromised accounts; reset inventories that had been modified via unauthorized access.",
         "Investigated fraud and exploitation of game mechanics.",
         "Directed customers to internal and third-party sources of information."
@@ -203,7 +204,7 @@ var resumeJSON = {
         "March 2007 - July 2008",
         "Role: First Responder",
         "Liaison for the on-line world of Second Life.",
-        "Forward facing First Responder to all inworld emergencies.",
+        "Front-facing First Responder to all inworld emergencies.",
         "Helped resolve conflicts between Residents of Second Life.",
         "Created inworld tools in LSL (Linden Scripting Language) including issue diagnosis and tracking tools.",
         "Enforced Linden Lab terms of service, policies and procedures in accordance with company policy and legal stipulations.",
@@ -292,41 +293,135 @@ var resumeJSON = {
     }
   ],
   "skills": [
-    {
-      "name": "Testing and Reporting",
-      "level": "Master",
-      "keywords": [
-        "Agile",
-        "Scrum",
-        "Ad-hoc",
-        "regression",
-        "bug reporting",
-        "JIRA",
-        "Testrail",
-        "IBM Rational Team Concert"
-      ]
-    },
-    {
-      "name": "Technology",
-      "level": "",
-      "keywords": [
-        "HTML",
-        "CSS",
-        "JavaScript",
-        "jQuery",
-        "JSON",
-        "SQL",
-        "JQL",
-        "Chrome Debugger",
-        "REST",
-        "Macintosh",
-        "Windows PC",
-        "Android",
-        "iOS",
-        "GitHub"
-      ]
-    }
-  ],
+  {
+    "name": "Testing Methodologies & Frameworks",
+    "level": "Expert",
+    "keywords": [
+      "Agile Testing",
+      "Scrum",
+      "Waterfall",
+      "Regression Testing",
+      "Integration Testing",
+      "Smoke Testing",
+      "Ad-hoc Testing",
+      "User Acceptance Testing",
+      "Test Planning",
+      "Test Case Design",
+      "Requirement Traceability Matrix",
+      "CI/CD Testing"
+    ]
+  },
+  {
+    "name": "Accessibility & Compliance Testing",
+    "level": "Expert",
+    "keywords": [
+      "508 Compliance",
+      "WCAG Guidelines",
+      "JAWS Screen Reader",
+      "Accessibility Testing",
+      "HIPAA Compliance",
+      "Government Standards"
+    ]
+  },
+  {
+    "name": "Test Management & Documentation",
+    "level": "Expert",
+    "keywords": [
+      "JIRA",
+      "JIRA Xray",
+      "TestRail",
+      "IBM Rational Team Concert",
+      "DevTrack",
+      "Mantis Bug Tracker",
+      "Parature",
+      "Bug Reporting",
+      "SOP Development",
+      "Risk Management"
+    ]
+  },
+  {
+    "name": "Platform & Environment Testing",
+    "level": "Expert",
+    "keywords": [
+      "Web Applications",
+      "Mobile Apps (iOS/Android)",
+      "Desktop Software",
+      "Cross-browser Testing",
+      "Gaming Platforms",
+      "Ruby on Rails Applications",
+      "Single Page Applications",
+      "PC and Mac software",
+      "REST API Testing"
+    ]
+  },
+  {
+    "name": "Tools & Technologies",
+    "level": "Advanced",
+    "keywords": [
+      "Chrome Developer Tools",
+      "GitHub",
+      "VirtualBox",
+      "jQuery",
+      "Analytics Validation",
+      "Database Testing",
+      "Command Line Interfaces",
+      "Virtual Environments",
+      "JavaScript",
+      "HTML",
+      "CSS",
+      "JSON",
+      "SQL",
+      "JQL",
+      "Cucumber",
+      "LSL (Linden Scripting Language)"
+    ]
+  },
+  {
+    "name": "Operating Systems & Devices",
+    "level": "Expert",
+    "keywords": [
+      "Windows",
+      "macOS",
+      "iOS",
+      "Android",
+      "Cross-platform Testing",
+      "Mobile Device Testing",
+      "Tablet Testing",
+      "Console Gaming Systems"
+    ]
+  },
+  {
+    "name": "Industry Expertise",
+    "level": "Expert",
+    "keywords": [
+      "Government Systems",
+      "Healthcare Software",
+      "Veterans Affairs",
+      "Medical Platforms",
+      "E-commerce",
+      "Gaming",
+      "Telehealth",
+      "Financial Services",
+      "Educational Technology",
+      "Accessibility Services"
+    ]
+  },
+  {
+    "name": "Leadership & Process",
+    "level": "Expert",
+    "keywords": [
+      "QA Process Implementation",
+      "Team Leadership",
+      "Cross-functional Collaboration",
+      "Mentoring",
+      "Process Standardization",
+      "Quality Assurance Strategy",
+      "Production Support",
+      "Agile Coaching",
+      "Remote Team Management"
+    ]
+  }
+],
   "languages": [
     {
       "language": "English",
