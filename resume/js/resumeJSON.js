@@ -398,7 +398,6 @@ var resumeJSON = {
       "Healthcare Software",
       "Veterans Affairs",
       "Medical Platforms",
-      "E-commerce",
       "Gaming",
       "Telehealth",
       "Financial Services",
