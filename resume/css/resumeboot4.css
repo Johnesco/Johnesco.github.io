@@ -40,7 +40,7 @@ ul {
 
 h2 {
   font-weight: bold;
-  margin-top: 0.81rem;
+  margin-top: 2rem;
   margin-bottom: 0;
   font-family: "Helvetica", sans-serif;
 }
@@ -178,6 +178,12 @@ strong {
     page-break-inside: avoid;
   }
   
+.job-heading,
+  h4
+  {
+    page-break-after: avoid;
+  }
+  
   /* Ensure sections don't break awkwardly */
   h2 + ul,
   h3 + p,
@@ -185,6 +191,8 @@ strong {
   .job-summary + ul {
     page-break-inside: avoid;
   }
+  
+  
   
   /* Remove link styling for print */
   a {
