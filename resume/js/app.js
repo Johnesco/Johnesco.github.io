@@ -45,10 +45,10 @@ function jobList(work){
 workString +=
 `<div class='job col-md-12'>
   <div class='row job-heading'>
-    <div class='col-md-6'>
+    <div class='col-md-7'>
       <h3 class='job-company'><a href="${job.website}">${job.name}</a>:</h3>
     </div>
-    <div class='col-md-6 text-md-end'>
+    <div class='col-md-5 text-md-end'>
     <p><span class='job-position'>${job.position}</span><br>
     <span class='job-date'>${job.startDate} to ${job.endDate}</span></p>
     </div>
