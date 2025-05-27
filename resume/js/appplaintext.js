@@ -14,7 +14,7 @@ function skillSets(skills) {
   var skillSetsString = '-------- SKILLSETS --------<br>';
   skills.forEach(function(skill) { 
       var keywords = oxfordComma(skill.keywords);
-      skillSetsString += `${skill.name}: ${keywords}<br>`;
+      skillSetsString += `<br>${skill.name}:<br>${keywords}<br>`;
   });
   return skillSetsString + "<br>";
 }
