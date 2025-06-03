@@ -36,7 +36,7 @@ var resumeJSON = {
         "Project: Telehealth Hub (TH)",
         "Role: Lead Test Engineer",
         "Built initial test plan for MVP.",
-        "Standardized and communicated testing SOP",
+        "Standardized and communicated testing SOP.",
         "Created test framework for User Acceptance Testing teams.",
         "Championed Agile methods to replace Waterfall tendencies.",
         " ",
@@ -93,7 +93,7 @@ var resumeJSON = {
       "highlights": [
         "Lead testing for flagship product, an online career and education path assessment tool.",
         "Designed and initiated a QA process into existing software development cycle.",
-        "Defined and enforced QA structure and procedure",
+        "Defined and enforced QA structure and procedure.",
         "Ensured compliance of SOP in order to deliver quality weekly builds.",
         "Created and maintained Test Case Scenarios.",
         "Performed Verification, Integration, and Regression Testing.",
@@ -130,7 +130,7 @@ var resumeJSON = {
         "Created initial QA procedures for GoVineya.com, a Ruby on Rails web app.",
         "Wrote automated, and semi-automated tests in Ruby with Watir-Webdriver.",
         "Created, planned, and executed test runs for each release cycle.",
-        "Tested mobile app version of Vineya on iOS and mobile browser on Android",
+        "Tested mobile app version of Vineya on iOS and mobile browser on Android.",
         "Communicated in American Sign Language, adhering to Deaf culture and norms.",
         "Set up VirtualBox for testing IE browsers on OSX machines."
       ]
