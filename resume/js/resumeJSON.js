@@ -1,7 +1,7 @@
 var resumeJSON = {
   "basics": {
     "name": "John Escobedo",
-    "label": "QA Analyst, Lead, Engineer, and Tester",
+    "label": "SQA Test Manager, Test Lead, and Analyst",
     "picture": "",
     "email": "letmeshowyou@gmail.com",
     "phone": "(512) 299-3269",
