@@ -419,6 +419,29 @@ var resumeJSON = {
       "Agile Coaching",
       "Remote Team Management"
     ]
+  },
+  {
+    "name": "AI LLM and Image Generation",
+    "level": "Proficient",
+    "keywords": [
+      "ChatGPT",
+      "Claude",
+      "Deepseek",
+      "Adobe Firefly",
+      "Google Gemini",
+      "Pi",
+      "Midjourney",
+      "Dream (Android)"
+    ]
+  },
+    {
+    "name": "Office and Image Suites",
+    "level": "Expert",
+    "keywords": [
+      "Adobe Creative Suite: Photoshop, Illustrator, InDesign, Premiere Pro, Acrobat, After Effects, Dreamweaver",
+      "Office 365: Teams, Word, Excel",
+      "Google Workspace: Drive, Docs, Sheets"
+    ]
   }
 ],
   "languages": [
