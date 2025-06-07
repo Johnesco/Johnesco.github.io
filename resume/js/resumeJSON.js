@@ -299,16 +299,17 @@ var resumeJSON = {
     "keywords": [
       "Agile Testing",
       "Scrum",
-      "Waterfall",
       "Regression Testing",
       "Integration Testing",
       "Smoke Testing",
       "Ad-hoc Testing",
+      "SDLC",
       "User Acceptance Testing",
       "Test Planning",
       "Test Case Design",
       "Requirement Traceability Matrix",
-      "CI/CD Testing"
+      "CI/CD Testing",
+      "Waterfall"
     ]
   },
   {
