@@ -11,7 +11,7 @@ function oxfordComma(array){
 }
 
 function skillSets(skills) {
-  var skillSetsString = '-------- SKILLSETS --------<br>';
+  var skillSetsString = '[ SKILLSETS ]<br>';
   skills.forEach(function(skill) { 
       var keywords = oxfordComma(skill.keywords);
       skillSetsString += `<br>${skill.name}:<br>${keywords}<br>`;
@@ -22,21 +22,21 @@ function skillSets(skills) {
 // Takes resumeJSON sub-object and returns a String
 function jobList(work){
   
-  var workString = '-------- WORK HISTORY --------<br><br>';
+  var workString = '[ WORK HISTORY ]<br><br>';
   work.forEach(function(job) {
 
     var jobHighlights = '';
     for(let highlight of job.highlights){
-        jobHighlights += ` - ${highlight}<br>`;
+        jobHighlights += ` * ${highlight}<br>`;
     }
   
 workString +=
-`${job.name}:<br>
-${job.position}<br>
-${job.startDate} to ${job.endDate}<br><br>
-${job.summary}<br><br>
+`Company: ${job.name}:<br>
+Position: ${job.position}<br>
+Date: ${job.startDate} to ${job.endDate}<br><br>
+Position Summary: ${job.summary}<br><br>
 ${jobHighlights}<br>
------------------------------------------<br>`;
+<br>`;
 
 
 });

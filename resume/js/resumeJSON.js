@@ -28,10 +28,10 @@ var resumeJSON = {
       "position": "QA Engineer - Austin Tx",
       "website": "https://www.geeksi.tech/",
       "startDate": "2019-03-01",
-      "endDate": "Present",
+      "endDate": "2025-06-30",
       "summary": "Senior contractor with GeekSI providing comprehensive QA engineering services to Veterans Affairs for 6 years. Led testing initiatives across VA's healthcare and benefits ecosystem, from telehealth platforms to loan guarantee systems. Subject matter expert in government software testing, 508 accessibility compliance, and modernizing legacy testing processes with Agile methodologies.",
       "highlights": [
-         "July 2024 - Present",
+         "July 2024 - June 2025",
         "Customer: VA",
         "Project: Telehealth Hub (TH)",
         "Role: Lead Test Engineer",
