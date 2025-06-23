@@ -1,80 +1,84 @@
-function oxfordComma(array){
-  var keywords = "";
-  array.forEach(function(word, index) {
-          if (index == array.length - 1) {
-              keywords += " and " + word + ".";
-          } else {
-              keywords += word + ", ";
-          }
-      });
-  return keywords;
+function oxfordComma(array) {
+    var keywords = "";
+    array.forEach(function (word, index) {
+        if (index == array.length - 1) {
+            keywords += " and " + word + ".";
+        } else {
+            keywords += word + ", ";
+        }
+    });
+    return keywords;
+}
+
+// Take YYYY-MM-DD format to MM-DD-YYYY
+function USdate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
 }
 
 function skillSets(skills) {
-  var skillSetsString = '[ SKILLSETS ]<br>';
-  skills.forEach(function(skill) { 
-      var keywords = oxfordComma(skill.keywords);
-      skillSetsString += `<br>${skill.name}:<br>${keywords}<br>`;
-  });
-  return skillSetsString + "<br>";
+    var skillSetsString = "[ SKILLS ]<br>";
+    skills.forEach(function (skill) {
+        var keywords = oxfordComma(skill.keywords);
+        skillSetsString += `<br>${skill.name}:<br>${keywords}<br>`;
+    });
+    return skillSetsString + "<br>";
 }
 
 // Takes resumeJSON sub-object and returns a String
-function jobList(work){
-  
-  var workString = '[ WORK HISTORY ]<br><br>';
-  work.forEach(function(job) {
+function jobList(work) {
+    var workString = "[ PROFESSIONAL EXPERIENCE ]<br><br>";
+    work.forEach(function (job) {
+        var jobHighlights = "";
+        for (let highlight of job.highlights) {
+            jobHighlights += ` * ${highlight}<br>`;
+        }
 
-    var jobHighlights = '';
-    for(let highlight of job.highlights){
-        jobHighlights += ` * ${highlight}<br>`;
-    }
-  
-workString +=
-`Company: ${job.name}:<br>
+        job.startDate = USdate(job.startDate);
+        if (!job.endDate) {
+            job.endDate = "Present";
+        } else {
+            job.endDate = USdate(job.endDate);
+        }
+
+        workString += `Company: ${job.name}:<br>
 Position: ${job.position}<br>
 Date: ${job.startDate} to ${job.endDate}<br><br>
 Position Summary: ${job.summary}<br><br>
 ${jobHighlights}<br>
 <br>`;
-
-
-});
-  return workString;
+    });
+    return workString;
 }
 
-function eduList(education){
-  
-  var educationString = '-------- EDUCATION --------<br>';
-  
-  education.forEach(function(school) {
-    educationString +=
-      `${school.institution}: ${school.startDate} - ${school.endDate} <br>
+function eduList(education) {
+    var educationString = "[ EDUCATION ]<br>";
+
+    education.forEach(function (school) {
+        educationString += `${school.institution}: ${school.startDate} - ${school.endDate} <br>
       ${school.area}<br><br>`;
-});
+    });
 
-  return educationString;
+    return educationString;
 }
-
 
 var textResume = "";
 
-textResume += 
-`<p>${resumeJSON.basics.name}<br>
+textResume += `<p>${resumeJSON.basics.name}<br>
 ${resumeJSON.basics.label}<br><br>
 ${resumeJSON.basics.email}<br>
 ${resumeJSON.basics.phone}<br>
 ${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.postalCode}<br><br>
 
-Summary: ${resumeJSON.basics.summary}<br><br>`;
-
-
+PROFESSIONAL SUMMARY: ${resumeJSON.basics.summary}<br><br>`;
 
 textResume += skillSets(resumeJSON.skills);
 
 textResume += jobList(resumeJSON.work);
 
 textResume += eduList(resumeJSON.education);
+
+textResume += "<p>For a more detailed and recent resume, go to https://johnesco.github.io/resume/</p>";
 
 textResume += "</p>";
 /*
@@ -99,4 +103,4 @@ resumeJSON.education.forEach(function(school) {
 $("#schools").html(eduList);
 
 */
-$('body').html(textResume);
+$("body").html(textResume);
