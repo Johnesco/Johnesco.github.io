@@ -12,9 +12,20 @@ function oxfordComma(array) {
 }
 
 // Take YYYY-MM-DD format to MM-DD-YYYY
-function USdate(dateString) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString();
+
+function USdate(inputDate) {
+    // Split the input date into year, month, and day
+    const parts = inputDate.split('-');
+    
+    // Check if the date is in the correct format (YYYY-MM-DD)
+    if (parts.length !== 3 || parts[0].length !== 4 || parts[1].length !== 2 || parts[2].length !== 2) {
+        throw new Error('Invalid date format. Please use YYYY-MM-DD.');
+    }
+    
+    // Reorder the parts to MM-DD-YYYY
+    const formattedDate = `${parts[1]}-${parts[2]}-${parts[0]}`;
+    
+    return formattedDate;
 }
 
 // Take resumeJSON sub-object and returns a String
