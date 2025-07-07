@@ -71,7 +71,7 @@ var resumeJSON = {
       "name": "EverlyWell",
       "position": "QA Engineer - Austin Tx",
       "website": "https://www.everlywell.com/",
-      "startDate": "2018-06-01",
+      "startDate": "2018-06-05",
       "endDate": "2018-10-01",
       "summary": "Lead QA processes for EverlyWell’s health test services where customers sent in biological specimens and ultimately viewed and stored the results on a secure online portal. Created a cross-team agile setup in JIRA to facilitate CI/CD workflow.",
       "highlights": [
@@ -87,7 +87,7 @@ var resumeJSON = {
       "name": "YouScience",
       "position": "QA Engineer - Austin Tx",
       "website": "https://www.youscience.com",
-      "startDate": "2017-07-01",
+      "startDate": "2017-07-17",
       "endDate": "2018-06-01",
       "summary": "Sole tester for YouScience’s first website and on-line evaluation tool that provided career and education path assessments to its customers. Provided a strong quality guidance to ensure releases worked solidly before release.",
       "highlights": [
@@ -105,8 +105,8 @@ var resumeJSON = {
       "name": "Luna Data Solutions",
       "position": "QA Engineer - Austin Tx",
       "website": "https://www.lunadatasolutions.com/",
-      "startDate": "2015-05-01",
-      "endDate": "2017-05-01",
+      "startDate": "2015-05-15",
+      "endDate": "2017-05-19",
       "summary": "Worked as a contract QA tester for RetailMeNot.com, a website for finding coupons, sales, and purchasing gift cards. I tested the roll-out of their new gift card purchasing ability and worked with development teams to effectively document and execute regression tests.",
       "highlights": [
         "Customer: Retail Me Not",
@@ -123,8 +123,8 @@ var resumeJSON = {
       "name": "Communication Services for the Deaf",
       "position": "QA Engineer - Austin Tx",
       "website": "https://csd.org/",
-      "startDate": "2013-05-01",
-      "endDate": "2015-01-01",
+      "startDate": "2013-05-06",
+      "endDate": "2015-01-16",
       "summary": "Learned American Sign Language and Deaf cultural norms while testing and developing a QA system for CSD’s “Vineya” project which brought web-video solutions to the interpreting and accessibility solutions for deaf individuals around the nation. ",
       "highlights": [
         "Created initial QA procedures for GoVineya.com, a Ruby on Rails web app.",
@@ -139,8 +139,8 @@ var resumeJSON = {
       "name": "DocbookMD",
       "position": "Lead QA Tester - Austin, TX",
       "website": "https://www.docbookmd.com",
-      "startDate": "2012-07-01",
-      "endDate": "2013-03-01",
+      "startDate": "2012-07-16",
+      "endDate": "2013-04-18",
       "summary": "Introduced a QA process to the company's HIPAA-compliant messaging app for doctors. Majority of work was tested on IOS phones with some Android and web components. Maintained and enforced testing protocols.",
       "highlights": [
         "Introduced QA process for company's HIPAA-compliant messaging app for doctors.",
@@ -155,7 +155,7 @@ var resumeJSON = {
       "position": "QA Engineer - Austin Tx",
       "website": "https://www.lunadatasolutions.com/",
       "startDate": "2011-08-01",
-      "endDate": "2012-04-01",
+      "endDate": "2012-04-16",
       "summary": "Tested daily builds for basic functionality and participated in improvements to game-play and UI design. ",
       "highlights": [
         "Customer: Heatwave Interactive",
@@ -172,8 +172,8 @@ var resumeJSON = {
       "name": "Blizzard Entertainment",
       "position": "Game Master (Customer Support) - Austin, TX",
       "website": "https://www.blizzard.com",
-      "startDate": "2010-07-01",
-      "endDate": "2011-07-01",
+      "startDate": "2010-07-12",
+      "endDate": "2011-07-12",
       "summary": "As a “Game Master”, provided customer support for players of the number one MMO “World of Warcraft” as well as governance of game rules and restoring hacked accounts in a timely manner.",
       "highlights": [
         "Customer Support for the online World of Warcraft MMO.",
@@ -188,8 +188,8 @@ var resumeJSON = {
       "name": "Linden Lab",
       "position": "QA Engineer and Tester, Support Specialist - San Francisco, CA (Remote)",
       "website": "https://www.lindenlab.com",
-      "startDate": "2007-03-01",
-      "endDate": "2010-06-01",
+      "startDate": "2007-03-26",
+      "endDate": "2010-06-09",
       "summary": "Linden Lab created the online world of Second Life. Started as a First Responder to all inworld emergencies and diagnosing inworld issues. In my time there I created inworld tools in LSL (Linden Scripting Language) for issue diagnosis. Promoted from part-time to full-time after 3 months. Received second promotion 1 year later (July 1, 2008 ) after taking on additional responsibilities via an online ticket system as well as live text support via Parature. Promoted in Nov 2009 to QA department.",
       "highlights": [
         "November 2009 - June 2010",
@@ -216,7 +216,7 @@ var resumeJSON = {
       "position": "QA Tester - Austin, TX",
       "website": "https://www.facebook.com/SuperHappyFunFun/",
       "startDate": "2006-11-01",
-      "endDate": "2007-03-01",
+      "endDate": "2007-02-03",
       "summary": "Freelance tester for games and applications in a cell phone focused digital media company. Tested software across many brands of cell phone including Nokia, Samsung, Sony Ericsson, Motorola and LG Electronics. Used Mantas bug tracker and participated in the production, testing, support, and troubleshooting of phone applications such as: 3D Tilt-a-world, 50-cent Stuntin', Mirinda and Access Search.",
       "highlights": [
         "Freelance tester for games and applications in a cell phone focused digital media company.",
