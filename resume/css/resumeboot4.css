@@ -196,8 +196,10 @@ strong {
   h2 + ul,
   h3 + p,
   h4 + ul,
+  dt + dd,
+  div job,
   .job-summary + ul {
-    page-break-inside: avoid;
+    page-break-inside: none;
   }
   
   /* Remove link styling for print */
