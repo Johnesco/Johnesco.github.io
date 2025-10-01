@@ -10,20 +10,38 @@ function oxfordComma(array) {
     return keywords;
 }
 
-// Take YYYY-MM-DD format to MM-DD-YYYY
+// Take YYYY-MM-DD format to MMM-YYYY
 function USdate(inputDate) {
-    // Split the input date into year, month, and day
+    // Split the input date using underscore as separator
     const parts = inputDate.split('-');
     
-    // Check if the date is in the correct format (YYYY-MM-DD)
+    // Check if the date is in the correct format (YYYY_MM_DD)
     if (parts.length !== 3 || parts[0].length !== 4 || parts[1].length !== 2 || parts[2].length !== 2) {
-        throw new Error('Invalid date format. Please use YYYY-MM-DD.');
+        throw new Error('Invalid date format. Please use YYYY_MM_DD.');
     }
     
-    // Reorder the parts to MM-DD-YYYY
-    const formattedDate = `${parts[1]}-${parts[2]}-${parts[0]}`;
+    const year = parts[0];
+    const month = parts[1];
+    const day = parts[2];
     
-    return formattedDate;
+    // Array of month abbreviations
+    const monthNames = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    
+    // Convert month number to month name (subtract 1 because array is 0-indexed)
+    const monthIndex = parseInt(month, 10) - 1;
+    
+    // Validate month number
+    if (monthIndex < 0 || monthIndex > 11) {
+        throw new Error('Invalid month. Month must be between 01 and 12.');
+    }
+    
+    const monthName = monthNames[monthIndex];
+    
+    // Return formatted date as "Month Year" (e.g., "Jan 2023")
+    return `${monthName} ${year}`;
 }
 
 function skillSets(skills) {

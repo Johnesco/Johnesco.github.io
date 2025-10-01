@@ -54,10 +54,12 @@ h3.job-company {
   margin-top: 0;
   margin-bottom: 0.5rem;
   font-weight: bold;
+  font-size: 1.5em;
 }
 
 .job-position {
   font-style: italic;
+  font-size: 1em;
 }
 
 .job-summary {
@@ -69,7 +71,7 @@ h3.job-company {
 .job-date {
   color: #AAAACC;
   font-weight: bold;
-  font-size: .8em;
+  font-size: 0.9em;
 }
 
 #schools {
@@ -133,7 +135,7 @@ strong {
   
   h3.job-company {
     color: black;
-    font-size: 12pt;
+    font-size: 14pt;
     page-break-after: avoid;
   }
   
