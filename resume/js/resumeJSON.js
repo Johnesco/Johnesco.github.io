@@ -23,6 +23,23 @@ var resumeJSON = {
     ]
   },
   "work": [
+
+    {
+      "name": "Global Insight",
+      "location": "Austin, TX",
+      "position": "Robot Operator",
+      "website": "",
+      "startDate": "2025-07-01",
+      "endDate": "2025-09-11",
+      "summary": "Leveraged extensive VR expertise to directly operate humanoid robots for Apptronik, playing a key role in a fast-paced development cycle. Responsibilities included VR-based operation, environmental staging, and rigorous documentation of issues and processes. Demonstrated extreme adaptability to excel in a novel, process-light environment, directly supporting high-priority company initiatives through consistent achievement of data collection goals.",
+      "highlights": [
+        "Operate and control humanoid robots in real-time using advanced VR systems to execute complex tasks and support the development of next-generation automation.",
+        "Prepare and stage physical testing environments to precise specifications, ensuring optimal conditions for robotic performance and data collection.",
+        "Meticulously document and track software bugs, hardware malfunctions, and performance anomalies in a detailed issue-tracking database, providing critical data to the engineering team.",
+        "Develop and refine troubleshooting protocols and standard operating procedures (SOPs) in a rapidly evolving environment, ensuring documentation remains accurate and up-to-date.",
+        "Contribute directly to high-visibility initiatives by consistently meeting daily and weekly team goals for data collection and operational testing."
+      ]
+    },
     {
       "name": "GeekSI",
       "location": "Tallahassee, Fl",
