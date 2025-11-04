@@ -448,7 +448,7 @@ That story is then reworked to fix that issue. If it can’t be fixed it must be
 <h1>Format</h1>
 
 <p>The sections below recounts what information should be included in the description
-<h2>Title:</h2>
+<p><strong>Title:</strong></p>
 <p>The title should be a short description of unwanted behavior. Describe what is happening, not what is supposed to happen. For instance, let’s say an email should go out when you reset a password but it’s not happening.</p>
 
 <p>Don’t say: “Email should go out with password”</p>
@@ -457,10 +457,10 @@ That story is then reworked to fix that issue. If it can’t be fixed it must be
 
 <p>This pinpoints the unwanted behavior instead of describing a solution (which should be done in “expected behavior”)</p>
 
-<h2>Description:</h2>
+<p><strong>Description:</strong></p>
 <p>The description begins with a paragraph-style summary of the issue that describes it as a  “Given, When, Then” approach literally or very closely.</p>
 
-<h2>Steps For Repro:</h2>
+<p><strong>Steps For Repro:</strong></p>
 <p>The steps for reproduction (or Repro for short) should describe the exact steps, including initial setup that will cause the defect to be visible. </p>
 
 <p>Steps above should also include the following
@@ -470,27 +470,36 @@ That story is then reworked to fix that issue. If it can’t be fixed it must be
 <li>Initial state (logged in, logged out, pre-assessment etc)
 <li>User type 
 <ul></p>
-<h2>Observed Results:</h2>
+<p><strong>Observed Results:</strong></p>
 
 <p>After performing the repro, the Observed Results will describe how the issue appears and the undesired behavior or side effect. It should focus on what happens, not what should happen, save that for the next section.</p>
 
-<h2>Expected Results:</h2>
-This should describe the expected behavior after doing the repro steps. 
-If there is unwanted behavior, but the expected outcome is unclear or requires more development to manifest, then we begin to approach a possible story instead of a bug. When writing a bug, what it *should* do should already be clear and expected, else it may actually be a story that is needed. 
+<p><strong>Expected Results:</strong></p>
+
+<p>This should describe the expected behavior after doing the repro steps. 
+If there is unwanted behavior, but the expected outcome is unclear or requires more development to manifest, then we begin to approach a possible story instead of a bug. When writing a bug, what it *should* do should already be clear and expected, else it may actually be a story that is needed. </p>
+
 <h1>Example</h1>
 
 <p><strong>Title: Group Manager sees all groups under student status</strong></p>
 <p>Summary: When you log in as a group manager and click on Student Status, you see all the students in the org instead of just the group you manage.</p>
 
 <p><strong>Steps for Repro</strong></p>
+
+<p>
 <ul>
 <li>Create or find an org with many groups and students</li>
 <li>Create or find an org manager assigned to only one group</li>
 <li>Log in as that manager and navigate to Student Status</li>
 </ul>
+</p>
+
 <p><strong>Observed Results</strong></p>
+
 <p>List of students includes all students belonging to the org instead of just students in that manager's groups.</p>
+
 <p><strong>Expected Results</strong></p>
+
 <p>Only students in that manager's group(s) should be visible.</p>
 `
           }
