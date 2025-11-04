@@ -408,6 +408,91 @@ Working a job, or doing anything, with mental illness can be its own challenge. 
 
 
                     `
+          },
+          {
+            id: 4,
+            title: "Effective Bug Writing",
+            genre: "Technical Documentation",
+            wordCount: 737,
+            date: "2018-05-20",
+            tags: ["JIRA", "technical", "documentation"],
+            detail: "Bug writing guide for JIRA.",
+            publishedUrl: null,
+            content: `
+<h1>Overview</h1>
+<p>This document describes how to effectively write a bug in Jira</p>
+
+
+
+<h1>Not a Bug</h1>
+
+<p>Before defining a bug, it’s important to understand what is *not* treated as a bug. Work in progress (that is, in a current sprint and not yet deployed to Staging or Development) that raises issues should be tied back to the story that is causing them before that story is deployed to Staging.</p>
+
+<p>The issue should be written up as part of the original story and fixed before shipping. 
+That story is then reworked to fix that issue. If it can’t be fixed it must be removed from the sprint and its changes reverted.</p>
+
+<p>Only things that have progressed to Production (or that will, see “fix forward”) should be labeled as bugs. The reason for this is that any side-effects or issues caused by current work should be fixed in development before deploying to Staging unless it’s decided that we can ship with that defect in place.
+
+<h1>Fix Forward</h1>
+
+<p>Once something has shipped, to Staging and then Production, it will be very rare to revert a change. This is why spotting issues is vital when verifying stories on the Development environment. However, sometimes the change is important enough to note, but not important enough to halt or revert work already done. In those cases the stories pass but bugs are written for the side effects or failing issues it presents. These are then worked on in future sprints.</p>
+
+<h1>Reproduction</h1>
+
+<p>The heart of any bug are its steps for reproduction, or repro and its ability to be reproduced. If a bug can not be reproduced consistently, it may indicate that it’s really only a byproduct. In the rare case it’s a sporadic that only shows up due to unknown factors, please use the industry standard response.</p>
+
+<p>Steps for reproduction should allow anyone, ideally even someone unfamiliar with the product, to recreate the issue. A bug is considered fix when one can no longer reproduce it.
+<h1>Independence</h1>
+<p>A bug should stand on its own and be shippable and depend on no other code. In the case of a severe bug it may ship alone as a hotfix.</p>
+
+<h1>Format</h1>
+
+<p>The sections below recounts what information should be included in the description
+<h2>Title:</h2>
+<p>The title should be a short description of unwanted behavior. Describe what is happening, not what is supposed to happen. For instance, let’s say an email should go out when you reset a password but it’s not happening.</p>
+
+<p>Don’t say: “Email should go out with password”</p>
+
+<p>Instead say: “Email is not going out when resetting password.”</p>
+
+<p>This pinpoints the unwanted behavior instead of describing a solution (which should be done in “expected behavior”)</p>
+
+<h2>Description:</h2>
+<p>The description begins with a paragraph-style summary of the issue that describes it as a  “Given, When, Then” approach literally or very closely.</p>
+
+<h2>Steps For Repro:</h2>
+<p>The steps for reproduction (or Repro for short) should describe the exact steps, including initial setup that will cause the defect to be visible. </p>
+
+<p>Steps above should also include the following
+<ul>
+<li>What environment it happened on (Dev, Staging, Prod)
+<li>What browser or OS it happened on
+<li>Initial state (logged in, logged out, pre-assessment etc)
+<li>User type 
+<ul></p>
+<h2>Observed Results:</h2>
+
+<p>After performing the repro, the Observed Results will describe how the issue appears and the undesired behavior or side effect. It should focus on what happens, not what should happen, save that for the next section.</p>
+
+<h2>Expected Results:</h2>
+This should describe the expected behavior after doing the repro steps. 
+If there is unwanted behavior, but the expected outcome is unclear or requires more development to manifest, then we begin to approach a possible story instead of a bug. When writing a bug, what it *should* do should already be clear and expected, else it may actually be a story that is needed. 
+<h1>Example</h1>
+
+<p><strong>Title: Group Manager sees all groups under student status</strong></p>
+<p>Summary: When you log in as a group manager and click on Student Status, you see all the students in the org instead of just the group you manage.</p>
+
+<p><strong>Steps for Repro</strong></p>
+<ul>
+<li>Create or find an org with many groups and students</li>
+<li>Create or find an org manager assigned to only one group</li>
+<li>Log in as that manager and navigate to Student Status</li>
+</ul>
+<p><strong>Observed Results</strong></p>
+<p>List of students includes all students belonging to the org instead of just students in that manager's groups.</p>
+<p><strong>Expected Results</strong></p>
+<p>Only students in that manager's group(s) should be visible.</p>
+`
           }
         ]
       };
