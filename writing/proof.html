@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sentence-by-Sentence Text Viewer</title>
+    <title>Sentence Proofreader</title>
     <style>
         * {
             margin: 0;
@@ -13,7 +13,7 @@
         }
         
         body {
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 50%, #fdbb2d 100%);
             color: #333;
             min-height: 100vh;
             display: flex;
@@ -23,29 +23,32 @@
         }
         
         .container {
-            max-width: 800px;
+            max-width: 900px;
             width: 100%;
             background-color: white;
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
             overflow: hidden;
         }
         
         header {
-            background: #2575fc;
+            background: linear-gradient(to right, #2c3e50, #4a6491);
             color: white;
-            padding: 20px;
+            padding: 25px;
             text-align: center;
         }
         
         h1 {
-            font-size: 1.8rem;
+            font-size: 2.2rem;
             margin-bottom: 10px;
+            font-weight: 700;
         }
         
         .description {
-            font-size: 1rem;
+            font-size: 1.1rem;
             opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
         }
         
         .input-section {
@@ -55,131 +58,210 @@
         
         textarea {
             width: 100%;
-            height: 150px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
+            height: 180px;
+            padding: 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            line-height: 1.6;
             resize: vertical;
-            transition: border-color 0.3s;
+            transition: all 0.3s;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
         }
         
         textarea:focus {
             outline: none;
-            border-color: #2575fc;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
         }
         
         .button-group {
             display: flex;
             gap: 10px;
-            margin-top: 15px;
+            margin-top: 20px;
         }
         
         button {
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 5px;
-            background: #2575fc;
+            border-radius: 8px;
+            background: #3498db;
             color: white;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
             flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
         button:hover {
-            background: #1a68e3;
+            background: #2980b9;
             transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
         
         button:active {
             transform: translateY(0);
         }
         
+        #clearBtn {
+            background: #e74c3c;
+        }
+        
+        #clearBtn:hover {
+            background: #c0392b;
+        }
+        
         .viewer-section {
-            padding: 25px;
+            padding: 30px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 300px;
+            min-height: 400px;
         }
         
         .sentence-container {
             width: 100%;
-            min-height: 200px;
+            min-height: 250px;
             background: #f8f9fa;
-            border-radius: 10px;
-            padding: 30px;
+            border-radius: 12px;
+            padding: 40px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
-            margin-bottom: 20px;
+            box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s;
+        }
+        
+        .sentence-container.focus {
+            background: #fff;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px);
         }
         
         .sentence {
-            font-size: 1.4rem;
-            line-height: 1.6;
+            font-size: 1.6rem;
+            line-height: 1.7;
             text-align: center;
-            color: #333;
+            color: #2c3e50;
+            max-width: 800px;
         }
         
         .navigation {
             display: flex;
             justify-content: space-between;
             width: 100%;
-            margin-top: 10px;
+            margin-top: 15px;
         }
         
         .nav-button {
-            padding: 12px 25px;
+            padding: 14px 30px;
             border: none;
             border-radius: 50px;
-            background: #2575fc;
+            background: #3498db;
             color: white;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
         }
         
         .nav-button:hover {
-            background: #1a68e3;
-            transform: translateY(-2px);
+            background: #2980b9;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(52, 152, 219, 0.4);
         }
         
         .nav-button:active {
-            transform: translateY(0);
+            transform: translateY(-1px);
         }
         
         .nav-button:disabled {
-            background: #ccc;
+            background: #bdc3c7;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
         
         .counter {
-            margin-top: 15px;
-            font-size: 0.9rem;
-            color: #666;
+            margin-top: 20px;
+            font-size: 1rem;
+            color: #7f8c8d;
             text-align: center;
+            padding: 10px 20px;
+            background: #ecf0f1;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, #3498db, #2ecc71);
+            width: 0%;
+            transition: width 0.5s ease;
         }
         
         .instructions {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f0f7ff;
-            border-radius: 8px;
-            font-size: 0.9rem;
+            margin-top: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            font-size: 0.95rem;
             color: #555;
             text-align: center;
+            border-left: 4px solid #3498db;
         }
         
         .hidden {
             display: none;
+        }
+        
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .shortcuts {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .shortcut-key {
+            background: #2c3e50;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            font-weight: bold;
         }
         
         @media (max-width: 600px) {
@@ -188,16 +270,20 @@
             }
             
             h1 {
-                font-size: 1.5rem;
+                font-size: 1.8rem;
             }
             
             .sentence {
-                font-size: 1.2rem;
+                font-size: 1.3rem;
             }
             
             .navigation {
                 flex-direction: column;
                 gap: 10px;
+            }
+            
+            .button-group {
+                flex-direction: column;
             }
         }
     </style>
@@ -205,39 +291,74 @@
 <body>
     <div class="container">
         <header>
-            <h1>Sentence-by-Sentence Text Viewer</h1>
-            <p class="description">Enter your text and navigate through it one sentence at a time</p>
+            <h1>Sentence Proofreader</h1>
+            <p class="description">Focus on one sentence at a time for better proofreading and editing</p>
         </header>
         
         <div class="input-section">
-            <textarea id="textInput" placeholder="Enter your text here... You can paste long texts. The app will split it into sentences. New lines also count as separate sentences!">This is the first sentence. Is this the second sentence? Wow, this is the third sentence!
+            <textarea id="textInput" placeholder="Paste or type your text here... The app will split it into sentences for focused proofreading. Each new line will be treated as a separate sentence.">This is the first sentence. Is this the second sentence? Wow, this is the third sentence!
 This is a new line that should be a separate sentence.
 And here's another line!
 Last line with punctuation.</textarea>
+            <div class="stats">
+                <span id="wordCount">Words: 0</span>
+                <span id="sentenceCount">Sentences: 0</span>
+                <span id="charCount">Characters: 0</span>
+            </div>
             <div class="button-group">
-                <button id="processBtn">Process Text</button>
-                <button id="clearBtn">Clear Text</button>
+                <button id="processBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M14 2V8H20" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M16 13H8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M16 17H8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M10 9H9H8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Process Text
+                </button>
+                <button id="clearBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 6H5H21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Clear Text
+                </button>
             </div>
         </div>
         
         <div class="viewer-section hidden" id="viewerSection">
-            <div class="sentence-container">
+            <div class="sentence-container" id="sentenceContainer">
                 <p class="sentence" id="currentSentence">Your sentences will appear here</p>
             </div>
             
             <div class="navigation">
                 <button class="nav-button" id="prevBtn">
-                    <span>←</span> Previous
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 18L9 12L15 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Previous Sentence
                 </button>
                 <button class="nav-button" id="nextBtn">
-                    Next <span>→</span>
+                    Next Sentence
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 18L15 12L9 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                 </button>
+            </div>
+            
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
             </div>
             
             <div class="counter" id="counter">Sentence 1 of 1</div>
             
+            <div class="shortcuts">
+                <div class="shortcut-key">← Previous</div>
+                <div class="shortcut-key">→ Next</div>
+            </div>
+            
             <div class="instructions">
-                Use the buttons or the left/right arrow keys to navigate between sentences
+                Focus on one sentence at a time. Use the buttons or arrow keys to navigate. The current sentence is highlighted for better focus.
             </div>
         </div>
     </div>
@@ -253,10 +374,27 @@ Last line with punctuation.</textarea>
             const prevBtn = document.getElementById('prevBtn');
             const nextBtn = document.getElementById('nextBtn');
             const counter = document.getElementById('counter');
+            const progressBar = document.getElementById('progressBar');
+            const sentenceContainer = document.getElementById('sentenceContainer');
+            const wordCount = document.getElementById('wordCount');
+            const sentenceCount = document.getElementById('sentenceCount');
+            const charCount = document.getElementById('charCount');
             
             // State variables
             let sentences = [];
             let currentIndex = 0;
+            
+            // Update text statistics
+            function updateStats() {
+                const text = textInput.value;
+                const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+                const chars = text.length;
+                const sentencesCount = text.trim() ? splitIntoSentences(text).length : 0;
+                
+                wordCount.textContent = `Words: ${words}`;
+                charCount.textContent = `Characters: ${chars}`;
+                sentenceCount.textContent = `Sentences: ${sentencesCount}`;
+            }
             
             // Process text button click
             processBtn.addEventListener('click', function() {
@@ -281,6 +419,9 @@ Last line with punctuation.</textarea>
                 
                 // Show the viewer section
                 viewerSection.classList.remove('hidden');
+                
+                // Add focus effect
+                sentenceContainer.classList.add('focus');
             });
             
             // Clear text button click
@@ -289,7 +430,15 @@ Last line with punctuation.</textarea>
                 viewerSection.classList.add('hidden');
                 sentences = [];
                 currentIndex = 0;
+                updateStats();
+                sentenceContainer.classList.remove('focus');
             });
+            
+            // Text input event listener for live stats
+            textInput.addEventListener('input', updateStats);
+            
+            // Initialize stats
+            updateStats();
             
             // Previous button click
             prevBtn.addEventListener('click', function() {
@@ -323,9 +472,19 @@ Last line with punctuation.</textarea>
                 currentSentence.textContent = sentences[currentIndex];
                 counter.textContent = `Sentence ${currentIndex + 1} of ${sentences.length}`;
                 
+                // Update progress bar
+                const progress = ((currentIndex + 1) / sentences.length) * 100;
+                progressBar.style.width = `${progress}%`;
+                
                 // Update button states
                 prevBtn.disabled = currentIndex === 0;
                 nextBtn.disabled = currentIndex === sentences.length - 1;
+                
+                // Add visual feedback for navigation
+                sentenceContainer.style.transform = 'scale(1.02)';
+                setTimeout(() => {
+                    sentenceContainer.style.transform = 'scale(1)';
+                }, 150);
             }
             
             // Split text into sentences while preserving punctuation and handling new lines
