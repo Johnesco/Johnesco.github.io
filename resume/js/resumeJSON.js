@@ -25,7 +25,7 @@ var resumeJSON = {
   "work": [
 
     {
-      "name": "Global Insight",
+      "name": "Insight Global",
       "location": "Austin, TX",
       "position": "Robot Operator",
       "website": "",
