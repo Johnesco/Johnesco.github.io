@@ -54,12 +54,12 @@ h3.job-company {
   margin-top: 0;
   margin-bottom: 0.5rem;
   font-weight: bold;
-  font-size: 1.5em;
+  font-size: 1.45em;
 }
 
 .job-position {
   font-style: italic;
-  font-size: 1em;
+  font-size: 1.1em;
 }
 
 .job-summary {
