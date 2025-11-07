@@ -27,9 +27,13 @@ function USdate(inputDate) {
     const day = parts[2];
     
     // Array of month abbreviations
-    const monthNames = [
+    /*const monthNames = [
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];*/
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
     ];
     
     // Convert month number to month name (subtract 1 because array is 0-indexed)
@@ -82,7 +86,7 @@ function jobList(work) {
     workString += `<div class='job col-md-12'>
   <div class='row job-heading'>
     <div class='col-md-7'>
-      <h3 class='job-company'><a href="${job.website}">${job.name}</a> (${job.location})</h3>
+      <h3 class='job-company'><a href="${job.website}">${job.name}</a> | ${job.location}</h3>
     </div>
     <div class='col-md-5 text-md-end'>
       <p>
