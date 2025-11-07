@@ -9,7 +9,7 @@ var resumeJSON = {
     "summary": "Senior QA Engineer with 18+ years of experience spanning entertainment, healthcare, government, and consumer technology sectors. Specialized in establishing QA processes for emerging companies and leading quality initiatives for mission-critical government systems. Expert in full-stack testing including web applications, mobile apps, desktop software, and gaming platforms. Strong background in Agile methodologies, accessibility compliance, and cross-functional team leadership. Trilingual: English, Spanish, and American Sign Language.",
     "location": {
       "address": "16506 Fetching",
-      "postalCode": "TX 78653",
+      "postalCode": "78653",
       "city": "Manor",
       "countryCode": "US",
       "region": "Texas"

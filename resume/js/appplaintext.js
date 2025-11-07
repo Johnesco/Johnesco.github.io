@@ -25,9 +25,13 @@ function USdate(inputDate) {
     const day = parts[2];
     
     // Array of month abbreviations
-    const monthNames = [
+    /*const monthNames = [
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];*/
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
     ];
     
     // Convert month number to month name (subtract 1 because array is 0-indexed)
@@ -45,7 +49,7 @@ function USdate(inputDate) {
 }
 
 function skillSets(skills) {
-    var skillSetsString = "[ SKILLS ]<br>";
+    var skillSetsString = "[ SKILL SETS ]<br>";
     skills.forEach(function (skill) {
         var keywords = oxfordComma(skill.keywords);
         skillSetsString += `<br>${skill.name}:<br>${keywords}<br>`;
@@ -55,7 +59,7 @@ function skillSets(skills) {
 
 // Takes resumeJSON sub-object and returns a String
 function jobList(work) {
-    var workString = "[ PROFESSIONAL EXPERIENCE ]<br><br>";
+    var workString = "[ WORK EXPERIENCE ]<br><br>";
     work.forEach(function (job) {
         var jobHighlights = "";
         for (let highlight of job.highlights) {
@@ -69,10 +73,11 @@ function jobList(work) {
             job.endDate = USdate(job.endDate);
         }
 
-        workString += `Company: ${job.name}:<br>
+        workString += `
+Company: ${job.name} | ${job.location}<br>
 Position: ${job.position}<br>
-Date: ${job.startDate} to ${job.endDate}<br><br>
-Position Summary: ${job.summary}<br><br>
+From: ${job.startDate} to ${job.endDate}<br><br>
+Position Summary:<br> ${job.summary}<br><br>
 ${jobHighlights}<br>
 <br>`;
     });
@@ -80,11 +85,11 @@ ${jobHighlights}<br>
 }
 
 function eduList(education) {
-    var educationString = "[ EDUCATION ]<br>";
+    var educationString = "[ EDUCATION ]<br><br>";
 
     education.forEach(function (school) {
-        educationString += `${school.institution}: ${school.startDate} - ${school.endDate} <br>
-      ${school.area}<br><br>`;
+        educationString += `Dates Attended: ${school.startDate} - ${school.endDate} <br>School Name: ${school.institution}<br>
+      Area of Study: ${school.area}<br><br>`;
     });
 
     return educationString;
@@ -92,11 +97,13 @@ function eduList(education) {
 
 var textResume = "";
 
-textResume += `<p>${resumeJSON.basics.name}<br>
-${resumeJSON.basics.label}<br><br>
-${resumeJSON.basics.email}<br>
-${resumeJSON.basics.phone}<br>
-${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.postalCode}<br><br>
+textResume += `
+<p>Name: ${resumeJSON.basics.name}<br>
+<p>Email: ${resumeJSON.basics.email}<br>
+<p>Phone: ${resumeJSON.basics.phone}<br>
+<p>Address:<br>
+${resumeJSON.basics.location.address}<br>
+${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.region},${resumeJSON.basics.location.postalCode}<br><br>
 
 PROFESSIONAL SUMMARY: ${resumeJSON.basics.summary}<br><br>`;
 
