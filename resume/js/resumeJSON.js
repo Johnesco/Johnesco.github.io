@@ -52,6 +52,7 @@ var resumeJSON = {
         "Served as Senior QA Engineer and Test Lead across multiple mission-critical VA projects, including Telehealth Hub, Advanced Medical Platform (AMPL), Veterans Integrated Registries Platform (VIRP), and Home Loan Guarantee (LGY).",
         "Led the full testing lifecycle for the VA Telehealth Hub MVP: built the initial test plan, standardized SOPs, and created the UAT framework while championing Agile adoption over legacy Waterfall processes.",
         "Directed 508 compliance and accessibility testing for flagship VA software, utilizing JAWS screen reader and performing rigorous testing to ensure adherence to government standards.",
+        "Tested desktop and mobile including mainframes, Linux machines, Android, iOS, and iOS Simulator.",
         "Became the Subject Matter Expert (SME) for the Traumatic Brain Injury module within VIRP, managing the Requirement Traceability Matrix and expanding a comprehensive library of regression tests.",
         "Engineered and maintained test cases and scripts within IBM Rational Team Concert for the VA Home Loan system, auditing and validating automated tests built with Cucumber and Selenium.",
         "Modernized testing protocols across all projects, enforcing reproducible testing patterns and leveraging MUMPS CLI for test data creation in government healthcare systems."
@@ -68,7 +69,7 @@ var resumeJSON = {
       "highlights": [
         "Integrated initial QA process into software development cycle.",
         "Developed and maintained QA pipeline for CI/CD.",
-        "Tested incoming features for website.",
+        "Tested incoming features for website on all browsers and on mobile devices including Android, iOS and using iOS Simulator.",
         "Managed risk in releasing new features.",
         "Mentored staff in effective bug writing.",
         "Performed JIRA Administration to match tools to our workflow."
@@ -86,6 +87,7 @@ var resumeJSON = {
         "Lead testing for flagship product, an online career and education path assessment tool.",
         "Designed and initiated a QA process into existing software development cycle.",
         "Defined and enforced QA structure and procedure.",
+        "Tested website on all browsers via Browserstack as well as directly on Android, iOS devices, and on iOS Simulator.",
         "Ensured compliance of SOP in order to deliver quality weekly builds.",
         "Created and maintained Test Case Scenarios.",
         "Performed Verification, Integration, and Regression Testing.",
@@ -106,6 +108,7 @@ var resumeJSON = {
         "Analyzed results and updated code for RetailMeNot's automated test system to improve efficiency and reliability.",
         "Developed custom JavaScript tooling to validate and ensure the accuracy of site-wide analytics implementation.",
         "Standardized the smoke testing data suite to guarantee consistency and reliability across all testing environments.",
+        "Tested new code on Android, iOS devices, and on iOS Simulator.",
         "Authored comprehensive documentation and use cases, utilized for onboarding new team members and as an ongoing reference.",
         "Served as a key member of the Production Support on Duty (PSOD) rotation, providing timely support for live site issues."
       ]
@@ -137,7 +140,7 @@ var resumeJSON = {
       "summary": "Introduced a QA process to the company's HIPAA-compliant messaging app for doctors. Majority of work was tested on IOS phones with some Android and web components. Maintained and enforced testing protocols.",
       "highlights": [
         "Introduced QA process for company's HIPAA-compliant messaging app for doctors.",
-        "Test lead for mobile app for Android and iOS tablets and phones.",
+        "Test lead for mobile app for Android, iOS tablets, real iPhones and iOS Simulator.",
         "Established new testing procedures and wrote test suites.",
         "Ensured HIPAA-compliance of messaging app.",
         "Managed remote testers and development of local testing team."
@@ -366,6 +369,7 @@ var resumeJSON = {
       "Windows",
       "macOS",
       "iOS",
+      "iOS Simulator",
       "Android",
       "Cross-platform Testing",
       "Mobile Device Testing",
