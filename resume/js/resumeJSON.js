@@ -1,7 +1,7 @@
 var resumeJSON = {
   "basics": {
     "name": "John Escobedo",
-    "label": "SQA Lead, Trainer, UAT",
+    "label": "SQA Test Lead, UAT Lead QA Test Analyst, QA Manual Tester",
     "picture": "",
     "email": "letmeshowyou@gmail.com",
     "phone": "(512) 299-3269",
