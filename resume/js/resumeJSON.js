@@ -28,7 +28,7 @@ var resumeJSON = {
       "name": "Insight Global",
       "location": "Austin, TX",
       "position": "Robot Operator",
-      "website": "",
+      "website": "https://insightglobal.com/",
       "startDate": "2025-07-01",
       "endDate": "2025-09-11",
       "summary": "Leveraged extensive VR expertise to directly operate humanoid robots for Apptronik, playing a key role in a fast-paced development cycle. Responsibilities included VR-based operation, environmental staging, and rigorous documentation of issues and processes. Demonstrated extreme adaptability to excel in a novel, process-light environment, directly supporting high-priority company initiatives through consistent achievement of data collection goals.",
