@@ -214,7 +214,7 @@ var resumeJSON = {
         "Conducted extensive proofreading of in-game text and UI elements to ensure linguistic accuracy and quality for the final release.",
         "Collaborated closely with the development team to isolate and reproduce issues specific to the Mac port, contributing to stable product launches.",
     ]
-    }
+    },
   ],
   "education": [
     {
