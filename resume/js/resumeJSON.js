@@ -328,7 +328,7 @@ var resumeJSON = {
       "Gaming Platforms",
       "Ruby on Rails Applications",
       "Single Page Applications",
-      "PC and Mac software",
+      "PC and Mac Software",
       "REST API Testing"
     ]
   },

@@ -125,7 +125,7 @@ $("span#title").text(resumeJSON.basics.label);
 $("p#summary").html(`<strong>Summary: </strong>${resumeJSON.basics.summary}`);
 $("p#contact").html(`${resumeJSON.basics.email}<br>
     ${resumeJSON.basics.phone}<br>
-    ${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.postalCode}<br>`);
+    ${resumeJSON.basics.location.city} ${resumeJSON.basics.location.region}, ${resumeJSON.basics.location.postalCode}<br>`);
 $("#skillSets").html(skillSets(resumeJSON.skills));
 $("#jobs").html(jobList(resumeJSON.work));
 $("#schools").html(eduList(resumeJSON.education));
