@@ -42,7 +42,7 @@ var resumeJSON = {
     },
     {
       "name": "GeekSI",
-      "location": "Tallahassee, Fl",
+      "location": "Tallahassee, FL",
       "position": "Senior QA Engineer & Test Lead",
       "website": "https://www.geeksi.tech/",
       "startDate": "2019-03-01",
@@ -59,7 +59,7 @@ var resumeJSON = {
     },
     {
       "name": "EverlyWell",
-      "location": "Austin, Tx",
+      "location": "Austin, TX",
       "position": "QA Engineer",
       "website": "https://www.everlywell.com/",
       "startDate": "2018-06-05",
@@ -75,7 +75,7 @@ var resumeJSON = {
     },
     {
       "name": "YouScience",
-      "location": "Austin, Tx",
+      "location": "Austin, TX",
       "position": "QA Test Lead | QA Analyst",
       "website": "https://www.youscience.com",
       "startDate": "2017-07-17",
@@ -91,7 +91,7 @@ var resumeJSON = {
     },
     {
       "name": "Luna Data Solutions",
-      "location": "Austin, Tx",
+      "location": "Austin, TX",
       "position": "QA Analyst | QA Engineer",
       "website": "https://www.lunadatasolutions.com/",
       "startDate": "2015-05-15",
@@ -107,7 +107,7 @@ var resumeJSON = {
     },
     {
       "name": "Communication Services for the Deaf",
-      "location": "Austin, Tx",
+      "location": "Austin, TX",
       "position": "QA Test Lead, QA Analyst",
       "website": "https://csd.org/",
       "startDate": "2013-05-06",
@@ -123,7 +123,7 @@ var resumeJSON = {
     {
       "name": "DocbookMD",
       "position": "Lead QA Tester",
-      "location": "Austin, Tx",
+      "location": "Austin, TX",
       "website": "https://www.docbookmd.com",
       "startDate": "2012-07-16",
       "endDate": "2013-04-18",
@@ -139,7 +139,7 @@ var resumeJSON = {
     {
       "name": "Luna Data Solutions",
       "position": "QA Test Lead | QA Tester",
-      "location": "Austin, Tx",
+      "location": "Austin, TX",
       "website": "https://www.lunadatasolutions.com/",
       "startDate": "2011-08-01",
       "endDate": "2012-04-16",
@@ -153,7 +153,7 @@ var resumeJSON = {
     },
     {
       "name": "Blizzard Entertainment",
-      "location": "Austin, Tx",
+      "location": "Austin, TX",
       "position": "Game Master (Technical Support & Customer Service)",
       "website": "https://www.blizzard.com",
       "startDate": "2010-07-12",
@@ -185,7 +185,7 @@ var resumeJSON = {
     },
     {
       "name": "Super Happy Fun Fun",
-      "location": "Austin, Tx",
+      "location": "Austin, TX",
       "position": "QA Tester",
       "website": "https://www.facebook.com/SuperHappyFunFun/",
       "startDate": "2006-11-01",
@@ -201,7 +201,7 @@ var resumeJSON = {
     },
     {
       "name": "Aspyr Media",
-      "location": "Austin, Tx",
+      "location": "Austin, TX",
       "position": "QA Test Lead, QA Game Tester",
       "website": "https://www.aspyr.com",
       "startDate": "2006-02-01",
