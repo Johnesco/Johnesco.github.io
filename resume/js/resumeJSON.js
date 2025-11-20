@@ -6,7 +6,7 @@ var resumeJSON = {
     "email": "letmeshowyou@gmail.com",
     "phone": "(512) 299-3269",
     "website": "",
-    "summary": "Senior QA Engineer with 18+ years of experience spanning entertainment, healthcare, government, and consumer technology sectors. Specialized in establishing QA processes for emerging companies and leading quality initiatives for mission-critical government systems. Expert in full-stack testing including web applications, mobile apps, desktop software, and gaming platforms. Strong background in Agile methodologies, accessibility compliance, and cross-functional team leadership. Trilingual: English, Spanish, and American Sign Language.",
+    "summary": "Senior QA Engineer with a track record of taking full ownership of the software quality lifecycle, from founding QA departments in startup environments to leading testing for high-stakes government projects. Over 18 years of experience in full-stack testing, process implementation, and cross-functional team leadership. A skilled communicator who excels at bridging the gap between technical teams and business stakeholders, ensuring clear alignment on quality goals and project requirements. Trilingual in English, Spanish, and American Sign Language.",
     "location": {
       "address": "16506 Fetching",
       "postalCode": "78653",
@@ -47,15 +47,14 @@ var resumeJSON = {
       "website": "https://www.geeksi.tech/",
       "startDate": "2019-03-01",
       "endDate": "2025-06-30",
-      "summary": "Senior contractor with GeekSI providing comprehensive QA engineering services to Veterans Affairs for 6 years. Led testing initiatives across VA's healthcare and benefits ecosystem, from telehealth platforms to loan guarantee systems. Subject matter expert in government software testing, 508 accessibility compliance, and modernizing legacy testing processes with Agile methodologies.",
+      "summary": "Senior contractor providing comprehensive QA engineering and test leadership across multiple mission-critical projects for the Veterans Affairs over a 6-year engagement. Subject matter expert in government software testing, 508 accessibility compliance, and modernizing legacy testing processes with Agile methodologies.",
       "highlights": [
-        "Served as Senior QA Engineer and Test Lead across multiple mission-critical VA projects, including Telehealth Hub, Advanced Medical Platform (AMPL), Veterans Integrated Registries Platform (VIRP), and Home Loan Guarantee (LGY).",
-        "Led the full testing lifecycle for the VA Telehealth Hub MVP: built the initial test plan, standardized SOPs, and created the UAT framework while championing Agile adoption over legacy Waterfall processes.",
-        "Directed 508 compliance and accessibility testing for flagship VA software, utilizing JAWS screen reader and performing rigorous testing to ensure adherence to government standards.",
-        "Tested desktop and mobile including mainframes, Linux machines, Android, iOS, and iOS Simulator.",
-        "Became the Subject Matter Expert (SME) for the Traumatic Brain Injury module within VIRP, managing the Requirement Traceability Matrix and expanding a comprehensive library of regression tests.",
-        "Engineered and maintained test cases and scripts within IBM Rational Team Concert for the VA Home Loan system, auditing and validating automated tests built with Cucumber and Selenium.",
-        "Modernized testing protocols across all projects, enforcing reproducible testing patterns and leveraging MUMPS CLI for test data creation in government healthcare systems."
+        "Led the full testing lifecycle for the VA Telehealth Hub MVP: built the initial test plan, standardized SOPs, created the UAT framework, and championed Agile adoption to replace legacy Waterfall processes.",
+        "Directed 508 compliance and accessibility testing for flagship VA software, including the Advanced Medical Platform (AMPL), utilizing JAWS screen reader to ensure adherence to strict government standards.",
+        "Served as the Subject Matter Expert (SME) for the Traumatic Brain Injury module within the Veterans Integrated Registries Platform (VIRP), managing the Requirement Traceability Matrix and expanding a comprehensive library of regression tests.",
+        "Engineered and maintained test cases and scripts within IBM Rational Team Concert for the VA Home Loan system (LGY), auditing and validating automated tests built with Cucumber and Selenium.",
+        "Modernized testing protocols across all projects, enforcing reproducible testing patterns and leveraging MUMPS CLI for test data creation in government healthcare systems.",
+        "Tested a diverse array of platforms including web applications, mainframes, Linux machines, and mobile devices (Android, iOS)."
       ]
     },
     {
@@ -65,69 +64,60 @@ var resumeJSON = {
       "website": "https://www.everlywell.com/",
       "startDate": "2018-06-05",
       "endDate": "2018-10-01",
-      "summary": "Lead QA processes for EverlyWell’s health test services where customers sent in biological specimens and ultimately viewed and stored the results on a secure online portal. Created a cross-team agile setup in JIRA to facilitate CI/CD workflow.",
+      "summary": "As the primary QA engineer, established the initial quality assurance process for EverlyWell's health test services, where customers managed lab results through a secure online portal. Took ownership of JIRA administration, configuring the system to support a new cross-team CI/CD workflow.",
       "highlights": [
-        "Integrated initial QA process into software development cycle.",
-        "Developed and maintained QA pipeline for CI/CD.",
-        "Tested incoming features for website on all browsers and on mobile devices including Android, iOS and using iOS Simulator.",
-        "Managed risk in releasing new features.",
-        "Mentored staff in effective bug writing.",
-        "Performed JIRA Administration to match tools to our workflow."
+        "As the initial QA resource, integrated the first formal QA process into the software development cycle for the health test service platform.",
+        "Served as the JIRA administrator, customizing projects, workflows, and fields to align with and facilitate a new cross-team Agile and CI/CD process.",
+        "Developed and maintained the QA pipeline to support continuous integration and deployment, managing risk for new feature releases.",
+        "Performed all testing for new website features across all major browsers and mobile devices, including Android, iOS, and the iOS Simulator.",
+        "Mentored team members on effective bug writing and QA practices to foster a culture of quality across the organization."
       ]
     },
     {
       "name": "YouScience",
       "location": "Austin, Tx",
-      "position": "QA Engineer",
+      "position": "QA Test Lead | QA Analyst",
       "website": "https://www.youscience.com",
       "startDate": "2017-07-17",
       "endDate": "2018-06-01",
-      "summary": "Sole tester for YouScience’s first website and on-line evaluation tool that provided career and education path assessments to its customers. Provided a strong quality guidance to ensure releases worked solidly before release.",
+      "summary": "Served as the sole QA employee, responsible for establishing and managing the quality assurance process for the company's flagship online career and education assessment tool. Worked cross-functionally to integrate QA into the development cycle, ensuring the stability and quality of all weekly releases.",
       "highlights": [
-        "Lead testing for flagship product, an online career and education path assessment tool.",
-        "Designed and initiated a QA process into existing software development cycle.",
-        "Defined and enforced QA structure and procedure.",
-        "Tested website on all browsers via Browserstack as well as directly on Android, iOS devices, and on iOS Simulator.",
-        "Ensured compliance of SOP in order to deliver quality weekly builds.",
-        "Created and maintained Test Case Scenarios.",
-        "Performed Verification, Integration, and Regression Testing.",
-        "Created templates for ticket writing of effective bugs and stories.",
-        "Created documentation for new product features."
+        "As the only QA resource, built the QA process from the ground up and integrated it into the existing software development lifecycle.",
+        "Developed the complete QA framework, including test procedures, test case scenarios, and standards for verification, integration, and regression testing.",
+        "Managed all testing for the flagship web application, performing cross-browser testing via BrowserStack and testing on Android and iOS devices.",
+        "Created and maintained test case scenarios and product documentation to support new feature releases and ensure consistent quality.",
+        "Established standardized templates for bug reports and user stories to improve clarity and streamline communication with development teams."
       ]
     },
     {
       "name": "Luna Data Solutions",
       "location": "Austin, Tx",
-      "position": "QA Engineer",
+      "position": "QA Analyst | QA Engineer",
       "website": "https://www.lunadatasolutions.com/",
       "startDate": "2015-05-15",
       "endDate": "2017-05-19",
-      "summary": "Worked as a contract QA tester for RetailMeNot.com, a website for finding coupons, sales, and purchasing gift cards. I tested the roll-out of their new gift card purchasing ability and worked with development teams to effectively document and execute regression tests.",
+      "summary": "Contracted as a QA Analyst for RetailMeNot, focusing on the launch of new e-commerce features and ensuring site stability. Enhanced testing efficiency through custom automation tooling, analytics validation, and standardized data suites, while providing direct production support for a high-traffic website.",
       "highlights": [
-        "Contracted as a QA Engineer for RetailMeNot, focusing on the rollout of new gift card purchasing features and regression testing.",
-        "Analyzed results and updated code for RetailMeNot's automated test system to improve efficiency and reliability.",
-        "Developed custom JavaScript tooling to validate and ensure the accuracy of site-wide analytics implementation.",
-        "Standardized the smoke testing data suite to guarantee consistency and reliability across all testing environments.",
-        "Tested new code on Android, iOS devices, and on iOS Simulator.",
-        "Authored comprehensive documentation and use cases, utilized for onboarding new team members and as an ongoing reference.",
-        "Served as a key member of the Production Support on Duty (PSOD) rotation, providing timely support for live site issues."
+        "Led QA for the rollout of new gift card purchasing features and conducted extensive regression testing for the RetailMeNot e-commerce platform.",
+        "Authored and updated code for the internal automated test system, improving its efficiency and reliability for the development team.",
+        "Engineered custom JavaScript tools to validate and ensure the accuracy of site-wide analytics implementation and data integrity.",
+        "Developed and standardized the smoke testing data suite to guarantee consistency and reliability across all testing environments.",
+        "Served as a key member of the Production Support on Duty (PSOD) rotation, providing timely investigation and resolution for live site issues."
       ]
     },
     {
       "name": "Communication Services for the Deaf",
       "location": "Austin, Tx",
-      "position": "QA Engineer",
+      "position": "QA Test Lead, QA Analyst",
       "website": "https://csd.org/",
       "startDate": "2013-05-06",
       "endDate": "2015-01-16",
-      "summary": "Learned American Sign Language and Deaf cultural norms while testing and developing a QA system for CSD’s “Vineya” project which brought web-video solutions to the interpreting and accessibility solutions for deaf individuals around the nation. ",
+      "summary": "Developed and implemented the inaugural QA process for the 'Vineya' web-video platform, a critical accessibility solution providing interpreting services for the Deaf and hard-of-hearing community. Acquired conversational American Sign Language (ASL) and cultural competency to effectively collaborate and ensure the product met the needs of its users.",
       "highlights": [
-        "Created initial QA procedures for GoVineya.com, a Ruby on Rails web app.",
-        "Wrote automated, and semi-automated tests in Ruby with Watir-Webdriver.",
-        "Created, planned, and executed test runs for each release cycle.",
-        "Tested mobile app version of Vineya on iOS and mobile browser on Android.",
-        "Communicated in American Sign Language, adhering to Deaf culture and norms.",
-        "Set up VirtualBox for testing IE browsers on OSX machines."
+        "Pioneered the quality assurance function from the ground up, creating the initial test procedures and automation framework for the GoVineya.com Ruby on Rails web application.",
+        "Applied acquired American Sign Language skills and understanding of Deaf cultural norms to collaborate effectively with the team and inform a culturally-aware testing approach.",
+        "Managed the full testing lifecycle for release cycles, including creating test plans, executing test runs, and reporting on results for both web and mobile app versions.",
+        "Engineered the testing environment by configuring VirtualBox to enable cross-browser testing of Internet Explorer on OSX machines."
       ]
     },
     {
@@ -137,23 +127,23 @@ var resumeJSON = {
       "website": "https://www.docbookmd.com",
       "startDate": "2012-07-16",
       "endDate": "2013-04-18",
-      "summary": "Introduced a QA process to the company's HIPAA-compliant messaging app for doctors. Majority of work was tested on IOS phones with some Android and web components. Maintained and enforced testing protocols.",
+      "summary": "As the sole QA professional and founding member of the quality assurance function, established the entire QA process for the company's HIPAA-compliant messaging app for physicians. Led testing efforts across the entire mobile ecosystem, including iPhones, iPads, and Android devices, ensuring the security and reliability of patient data.",
       "highlights": [
-        "Introduced QA process for company's HIPAA-compliant messaging app for doctors.",
-        "Test lead for mobile app for Android, iOS tablets, real iPhones and iOS Simulator.",
-        "Established new testing procedures and wrote test suites.",
-        "Ensured HIPAA-compliance of messaging app.",
-        "Managed remote testers and development of local testing team."
+        "Founded and single-handedly operated the QA department, introducing and standardizing the first formal QA process for the company's flagship HIPAA-compliant messaging app.",
+        "As the sole tester, performed all functional, regression, and compliance testing on the full range of supported devices: real iPhones, iPads, Android tablets, and the iOS Simulator.",
+        "Developed the initial test strategy, authored comprehensive test suites, and enforced testing protocols to ensure software met rigorous quality standards before release.",
+        "Guaranteed the application's adherence to strict HIPAA compliance regulations for the secure transmission of patient health information.",
+        "Scaled the QA function by managing and mentoring new testers, subsequently building and leading a local testing team."
       ]
     },
     {
       "name": "Luna Data Solutions",
-      "position": "QA Engineer / Test Lead",
+      "position": "QA Test Lead | QA Tester",
       "location": "Austin, Tx",
       "website": "https://www.lunadatasolutions.com/",
       "startDate": "2011-08-01",
       "endDate": "2012-04-16",
-      "summary": "Tested daily builds for basic functionality and participated in improvements to game-play and UI design. ",
+      "summary": "Contracted as a QA Tester and rapidly promoted to Test Lead for Heatwave Interactive, assuming responsibility for the quality of multiple game titles. Authored test plans, led a testing team, and executed rigorous testing cycles to improve game stability and user experience.",
       "highlights": [
         "Contracted as a QA Tester and promoted to Test Lead for Heatwave Interactive, working on 'Gods and Heroes: Rome Rising' and 'Platinum Life: Country'.",
         "Executed daily testing of game builds for core functionality, gameplay mechanics, and UI integrity.",
@@ -164,34 +154,33 @@ var resumeJSON = {
     {
       "name": "Blizzard Entertainment",
       "location": "Austin, Tx",
-      "position": "Game Master (Customer Support)",
+      "position": "Game Master (Technical Support & Customer Service)",
       "website": "https://www.blizzard.com",
       "startDate": "2010-07-12",
       "endDate": "2011-07-12",
-      "summary": "As a “Game Master”, provided customer support for players of the number one MMO “World of Warcraft” as well as governance of game rules and restoring hacked accounts in a timely manner.",
+      "summary": "Provided advanced technical support and customer service for the 'World of Warcraft' MMO, serving as a frontline investigator for complex in-game issues, fraud, and exploitation. Developed exceptional skills in problem-solving, data analysis, and customer communication within a high-volume, live-service environment.",
       "highlights": [
-        "Customer Support for the online World of Warcraft MMO.",
-        "Assisted World of Warcraft customers with in-game play and technical issues.",
-        "Provided support via live chat and ticket-based systems to assist customers.",
-        "Restored compromised accounts; reset inventories that had been modified via unauthorized access.",
-        "Investigated fraud and exploitation of game mechanics.",
-        "Directed customers to internal and third-party sources of information."
+        "Investigated and diagnosed a high volume of complex technical and gameplay issues, utilizing analytical skills to identify root causes and implement solutions.",
+        "Restored compromised player accounts and inventories with precision, adhering to strict security and data integrity protocols.",
+        "Analyzed and documented cases of fraud and exploitation of game mechanics, providing detailed reports for development teams.",
+        "Delivered expert support via live chat and ticket systems, effectively communicating technical solutions to a diverse user base.",
+        "Developed a deep understanding of live service operations and the player support lifecycle for a large-scale, always-on application."
       ]
     },
     {
       "name": "Linden Lab",
-      "location": "San Francisco, CA",
-      "position": "QA Engineer",
+      "location": "San Francisco, CA (Remote)",
+      "position": "QA Analyst | Customer Support & Tools Specialist",
       "website": "https://www.lindenlab.com",
       "startDate": "2007-03-26",
       "endDate": "2010-06-09",
-      "summary": "Linden Lab created the online world of Second Life. Started as a First Responder to all inworld emergencies and diagnosing inworld issues. In my time there I created inworld tools in LSL (Linden Scripting Language) for issue diagnosis. Promoted from part-time to full-time after 3 months. Received second promotion 1 year later (July 1, 2008 ) after taking on additional responsibilities via an online ticket system as well as live text support via Parature. Promoted in Nov 2009 to QA department.",
+      "summary": "Progressed through a series of promotions from frontline support to QA Analyst for the complex virtual world of Second Life. Culminated in a QA role testing daily builds and diagnosing critical issues, building upon a strong foundation in customer support, tool development, and live service management.",
       "highlights": [
-        "Progressed from First Responder to Customer Service and finally to QA Engineer, demonstrating consistent performance and adaptability.",
-        "As QA Engineer, tested daily software builds, tracked bugs, and diagnosed complex in-world issues, escalating technical emergencies as needed.",
-        "Authored custom in-world tools using Linden Scripting Language (LSL) to enhance issue diagnosis, tracking, and resolution efficiency.",
-        "Provided front-line customer support as a First Responder, managing in-world emergencies and enforcing Terms of Service.",
-        "Played a key role in establishing and providing customer support initiatives using the Parature ticket system and live text chat."
+        "Promoted to QA Analyst after demonstrating exceptional technical and diagnostic skills in prior support roles; responsible for testing daily software builds, tracking bugs, and diagnosing complex in-world issues.",
+        "Authored custom in-world diagnostic and tracking tools using Linden Scripting Language (LSL), enhancing the efficiency of issue resolution for both support and QA teams.",
+        "Served as a frontline First Responder, managing in-world emergencies, enforcing Terms of Service, and resolving user conflicts within a large-scale, live online environment.",
+        "Played a key role in establishing and providing customer support initiatives using the Parature ticket system and live text chat, supporting a seamless user experience.",
+        "Rapidly promoted from part-time to full-time and again to a senior support role, based on consistent performance and initiative before final promotion to the QA department."
       ]
     },
     {
@@ -201,11 +190,13 @@ var resumeJSON = {
       "website": "https://www.facebook.com/SuperHappyFunFun/",
       "startDate": "2006-11-01",
       "endDate": "2007-02-03",
-      "summary": "Freelance tester for games and applications in a cell phone focused digital media company. Tested software across many brands of cell phone including Nokia, Samsung, Sony Ericsson, Motorola and LG Electronics. Used Mantas bug tracker and participated in the production, testing, support, and troubleshooting of phone applications such as: 3D Tilt-a-world, 50-cent Stuntin', Mirinda and Access Search.",
+      "summary": "Performed cross-platform compatibility testing for mobile games and applications on a diverse library of hundreds of feature phones, including the popular Motorola Razr. Navigated the complexities of pre-smartphone mobile development by validating software performance across major manufacturers like Nokia, Samsung, Sony Ericsson, and LG Electronics.",
       "highlights": [
-        "Freelance tester for games and applications in a cell phone focused digital media company.",
-        "Tested software on Nokia, Samsung, Sony, Motorola, and LG Electronics cell phones.",
-        "Used Mantis bug tracker to assist in testing, support, and troubleshooting of phone applications."
+        "Executed comprehensive functional and compatibility testing for J2ME-based mobile games and applications across a vast inventory of 100+ unique feature phone models.",
+        "Managed testing on a wide array of devices and platforms, including Nokia, Samsung, Sony Ericsson, Motorola (including the Razr), and LG Electronics, to ensure broad market compatibility.",
+        "Identified, documented, and tracked platform-specific bugs using the Mantis bug tracker, providing critical data to developers for issue resolution.",
+        "Supported the full product lifecycle for multiple titles, from initial testing through production and post-release support and troubleshooting.",
+        "Gained early expertise in the challenges of fragmented mobile environments, developing strategies for efficient testing across disparate hardware and software platforms."
       ]
     },
     {
@@ -215,13 +206,14 @@ var resumeJSON = {
       "website": "https://www.aspyr.com",
       "startDate": "2006-02-01",
       "endDate": "2006-11-01",
-      "summary": "Tested games and documented bugs on Mac, PC, and various consoles. Used JIRA and DevTrack to provide product feedback and assistance with isolating product bugs.",
+      "summary": "Executed rigorous quality assurance testing for high-profile video game titles being ported to the Mac platform. Gained foundational expertise in the software development lifecycle by documenting defects, validating fixes, and ensuring a seamless user experience for a new audience.",
       "highlights": [
-        "Tested play mechanics and documented bugs for games on Mac, PC, and various consoles.",
-        "Used JIRA and DevTrack to provide product feedback and assistance with isolating and testing bugs.",
-        "Proofread extensive game text. Provided test suites and test plans for team of game testers.",
-        "Shipped titles included Call of Duty 2, Civilization 4, The Sims 2: Nightlife, The Sims 2: Pets, Roller Coaster Tycoon and Spellforce 2."
-      ]
+        "Performed functional, compatibility, and regression testing on ports of major game titles (including Call of Duty 2, Civilization IV) from Windows to the macOS environment.",
+        "Authored and maintained detailed test plans and test suites to guide a team of testers, establishing organized testing protocols.",
+        "Utilized JIRA and DevTrack to meticulously document, track, and verify software defects, providing developers with clear and actionable bug reports.",
+        "Conducted extensive proofreading of in-game text and UI elements to ensure linguistic accuracy and quality for the final release.",
+        "Collaborated closely with the development team to isolate and reproduce issues specific to the Mac port, contributing to stable product launches.",
+    ]
     }
   ],
   "education": [
