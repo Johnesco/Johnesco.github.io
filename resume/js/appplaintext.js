@@ -103,7 +103,7 @@ textResume += `
 <p>Phone: ${resumeJSON.basics.phone}<br>
 <p>Address:<br>
 ${resumeJSON.basics.location.address}<br>
-${resumeJSON.basics.location.city} ${resumeJSON.basics.location.region}, ${resumeJSON.basics.location.postalCode}<br><br>
+${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.region} ${resumeJSON.basics.location.postalCode}<br><br>
 
 PROFESSIONAL SUMMARY: ${resumeJSON.basics.summary}<br><br>`;
 

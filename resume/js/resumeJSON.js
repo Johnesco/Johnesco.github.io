@@ -1,12 +1,12 @@
 var resumeJSON = {
   "basics": {
     "name": "John Escobedo",
-    "label": "SQA Test Lead, UAT Lead QA Test Analyst, QA Manual Tester",
+    "label": "QA Test Lead, UAT Lead QA Test Analyst, QA Manual Tester",
     "picture": "",
     "email": "letmeshowyou@gmail.com",
     "phone": "(512) 299-3269",
     "website": "",
-    "summary": "Senior QA Engineer with a track record of taking full ownership of the software quality lifecycle, from founding QA departments in startup environments to leading testing for high-stakes government projects. Over 18 years of experience in full-stack testing, process implementation, and cross-functional team leadership. A skilled communicator who excels at bridging the gap between technical teams and business stakeholders, ensuring clear alignment on quality goals and project requirements. Trilingual in English, Spanish, and American Sign Language.",
+    "summary": "Senior QA Test Lead with a track record of taking full ownership of the software quality lifecycle, from founding QA departments in startup environments to leading testing for high-stakes government projects. Over 18 years of experience in full-stack testing, process implementation, and cross-functional team leadership. A skilled communicator who excels at bridging the gap between technical teams and business stakeholders, ensuring clear alignment on quality goals and project requirements. Trilingual in English, Spanish, and American Sign Language.",
     "location": {
       "address": "16506 Fetching",
       "postalCode": "78653",
@@ -43,11 +43,11 @@ var resumeJSON = {
     {
       "name": "GeekSI",
       "location": "Tallahassee, FL",
-      "position": "Senior QA Engineer & Test Lead",
+      "position": "Senior QA Test Lead | QA Analyst",
       "website": "https://www.geeksi.tech/",
       "startDate": "2019-03-01",
       "endDate": "2025-06-30",
-      "summary": "Senior contractor providing comprehensive QA engineering and test leadership across multiple mission-critical projects for the Veterans Affairs over a 6-year engagement. Subject matter expert in government software testing, 508 accessibility compliance, and modernizing legacy testing processes with Agile methodologies.",
+      "summary": "Senior contractor providing comprehensive QA testing and test leadership across multiple mission-critical projects for the Veterans Affairs over a 6-year engagement. Subject matter expert in government software testing, 508 accessibility compliance, and modernizing legacy testing processes with Agile methodologies.",
       "highlights": [
         "Led the full testing lifecycle for the VA Telehealth Hub MVP: built the initial test plan, standardized SOPs, created the UAT framework, and championed Agile adoption to replace legacy Waterfall processes.",
         "Directed 508 compliance and accessibility testing for flagship VA software, including the Advanced Medical Platform (AMPL), utilizing JAWS screen reader to ensure adherence to strict government standards.",
@@ -60,11 +60,11 @@ var resumeJSON = {
     {
       "name": "EverlyWell",
       "location": "Austin, TX",
-      "position": "QA Engineer",
+      "position": "QA Test Lead",
       "website": "https://www.everlywell.com/",
       "startDate": "2018-06-05",
       "endDate": "2018-10-01",
-      "summary": "As the primary QA engineer, established the initial quality assurance process for EverlyWell's health test services, where customers managed lab results through a secure online portal. Took ownership of JIRA administration, configuring the system to support a new cross-team CI/CD workflow.",
+      "summary": "As the primary QA Test Lead, established the initial quality assurance process for EverlyWell's health test services, where customers managed lab results through a secure online portal. Took ownership of JIRA administration, configuring the system to support a new cross-team CI/CD workflow.",
       "highlights": [
         "As the initial QA resource, integrated the first formal QA process into the software development cycle for the health test service platform.",
         "Served as the JIRA administrator, customizing projects, workflows, and fields to align with and facilitate a new cross-team Agile and CI/CD process.",
