@@ -98,31 +98,33 @@ function renderWorkExperience(work) {
         const startDate = formatDate(job.startDate);
         const endDate = job.endDate ? formatDate(job.endDate) : 'Present';
         
-        // Group highlights by paragraph (blank lines in original)
-        let highlightsHTML = '';
+        // Group highlights - split into arrays where lines starting with space trigger new group
+        const highlightGroups = [];
         let currentGroup = [];
         
         if (job.highlights && job.highlights.length > 0) {
             job.highlights.forEach((highlight, index) => {
-                if (highlight.charAt(0) === ' ' || index === job.highlights.length - 1) {
-                    if (currentGroup.length > 0) {
-                        highlightsHTML += `<ul>${currentGroup.map(h => `<li>${h}</li>`).join('')}</ul>`;
-                        currentGroup = [];
-                    }
-                    if (highlight.charAt(0) === ' ') {
-                        highlightsHTML += '</ul><ul>';
-                    } else {
-                        currentGroup.push(highlight);
-                    }
-                } else {
-                    currentGroup.push(highlight);
+                const isNewGroupMarker = highlight.charAt(0) === ' ';
+                const cleanedHighlight = isNewGroupMarker ? highlight.substring(1) : highlight;
+                
+                if (isNewGroupMarker && currentGroup.length > 0) {
+                    highlightGroups.push([...currentGroup]);
+                    currentGroup = [];
+                }
+                
+                currentGroup.push(cleanedHighlight);
+                
+                // If this is the last item, add the final group
+                if (index === job.highlights.length - 1 && currentGroup.length > 0) {
+                    highlightGroups.push([...currentGroup]);
                 }
             });
-            
-            if (currentGroup.length > 0) {
-                highlightsHTML += `<ul>${currentGroup.map(h => `<li>${h}</li>`).join('')}</ul>`;
-            }
         }
+        
+        // Render each group as its own <ul>
+        const highlightsHTML = highlightGroups.map(group => 
+            `<ul>${group.map(item => `<li>${item}</li>`).join('')}</ul>`
+        ).join('');
         
         return `
             <article class="job">
