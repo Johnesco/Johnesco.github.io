@@ -85,7 +85,7 @@ function renderSkills(skills) {
         const keywords = oxfordComma(skill.keywords);
         return `
             <div class="skillset">
-                <p><strong>${skill.name}:</strong><br>${keywords}</p>
+                <p><strong>${skill.name}:</strong>${keywords}</p>
             </div>
         `;
     }).join('');
