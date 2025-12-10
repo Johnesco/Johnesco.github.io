@@ -1,21 +1,139 @@
 <!doctype html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-    <title>John Escobedo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>John Escobedo - Plain Text Resume</title>
+    <style>
+        body {
+            font-family: monospace;
+            line-height: 1.4;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            white-space: pre-line;
+        }
+        h1, h2 {
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 0.5rem;
+        }
+        .section {
+            margin-bottom: 2rem;
+        }
+        .job {
+            margin-bottom: 1.5rem;
+            page-break-inside: avoid;
+        }
+        .highlight {
+            margin-left: 2rem;
+        }
+        @media print {
+            body { margin: 0; padding: 0; }
+            .no-print { display: none; }
+        }
+    </style>
 </head>
-
-<body style="max-width: 800px; margin: 0 auto;">
+<body>
+    <div id="resume-content">
+        Loading resume...
+    </div>
+    <p class="no-print">
+        <a href="index.html">← Back to formatted resume</a>
+    </p>
     
-    <!-- Container close -->
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-
-  <script type="text/javascript" src="js/resumeJSON.js"></script>
-    <script type="text/javascript" src="js/appplaintext.js"></script>
-
+    <script src="js/resumeJSON.js"></script>
+    <script>
+        // Plain text rendering logic
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof resumeJSON !== 'undefined') {
+                renderPlainTextResume();
+            }
+        });
+        
+        function oxfordComma(array) {
+            if (!array || array.length === 0) return '';
+            if (array.length === 1) return array[0] + '.';
+            if (array.length === 2) return array[0] + ' and ' + array[1] + '.';
+            const last = array[array.length - 1];
+            const rest = array.slice(0, -1);
+            return rest.join(', ') + ', and ' + last + '.';
+        }
+        
+        function formatDate(inputDate) {
+            if (!inputDate) return 'Present';
+            const parts = inputDate.split('-');
+            if (parts.length !== 3) return inputDate;
+            const year = parts[0];
+            const month = parseInt(parts[1], 10) - 1;
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                               'July', 'August', 'September', 'October', 'November', 'December'];
+            if (month < 0 || month > 11) return inputDate;
+            return monthNames[month] + ' ' + year;
+        }
+        
+        function renderPlainTextResume() {
+            const content = document.getElementById('resume-content');
+            let html = '';
+            
+            // Header
+            html += `NAME: ${resumeJSON.basics.name}\n`;
+            html += `TITLE: ${resumeJSON.basics.label}\n`;
+            html += `EMAIL: ${resumeJSON.basics.email}\n`;
+            html += `PHONE: ${resumeJSON.basics.phone}\n`;
+            html += `LOCATION: ${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.region} ${resumeJSON.basics.location.postalCode}\n`;
+            html += '\n';
+            
+            // Summary
+            html += `PROFESSIONAL SUMMARY:\n${resumeJSON.basics.summary}\n\n`;
+            
+            // Skills
+            html += '='.repeat(60) + '\n';
+            html += 'SKILL SETS\n';
+            html += '='.repeat(60) + '\n\n';
+            resumeJSON.skills.forEach(skill => {
+                html += `${skill.name}:\n`;
+                html += `${oxfordComma(skill.keywords)}\n\n`;
+            });
+            
+            // Work Experience
+            html += '='.repeat(60) + '\n';
+            html += 'WORK EXPERIENCE\n';
+            html += '='.repeat(60) + '\n\n';
+            resumeJSON.work.forEach(job => {
+                const startDate = formatDate(job.startDate);
+                const endDate = job.endDate ? formatDate(job.endDate) : 'Present';
+                
+                html += `COMPANY: ${job.name} | ${job.location}\n`;
+                html += `POSITION: ${job.position}\n`;
+                html += `DATES: ${startDate} to ${endDate}\n\n`;
+                html += `SUMMARY: ${job.summary}\n\n`;
+                html += `RESPONSIBILITIES AND ACCOMPLISHMENTS:\n`;
+                job.highlights.forEach(highlight => {
+                    if (highlight.charAt(0) === ' ') {
+                        html += '\n';
+                    }
+                    html += `  * ${highlight.trim()}\n`;
+                });
+                html += '\n' + '-'.repeat(60) + '\n\n';
+            });
+            
+            // Education
+            html += '='.repeat(60) + '\n';
+            html += 'EDUCATION AND TRAINING\n';
+            html += '='.repeat(60) + '\n\n';
+            resumeJSON.education.forEach(school => {
+                html += `INSTITUTION: ${school.institution}\n`;
+                html += `DATES: ${school.startDate} - ${school.endDate}\n`;
+                html += `AREA OF STUDY: ${school.area}\n\n`;
+            });
+            
+            // Footer
+            html += '\n' + '='.repeat(60) + '\n';
+            html += 'For the most recent version of this resume, visit:\n';
+            html += 'https://johnesco.github.io/resume/\n';
+            
+            content.textContent = html;
+        }
+    </script>
 </body>
-
 </html>

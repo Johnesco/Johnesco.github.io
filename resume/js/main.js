@@ -1,0 +1,168 @@
+// Main application script - Vanilla JS version
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the resume
+    if (typeof resumeJSON !== 'undefined') {
+        renderResume();
+    } else {
+        console.error('resumeJSON not found');
+        document.querySelector('.professional-summary').textContent = 
+            'Error loading resume data. Please enable JavaScript and refresh.';
+    }
+});
+
+// Utility Functions
+function oxfordComma(array) {
+    if (!array || array.length === 0) return '';
+    if (array.length === 1) return array[0] + '.';
+    if (array.length === 2) return array[0] + ' and ' + array[1] + '.';
+    
+    const last = array[array.length - 1];
+    const rest = array.slice(0, -1);
+    return rest.join(', ') + ', and ' + last + '.';
+}
+
+function formatDate(inputDate, format = 'long') {
+    if (!inputDate) return 'Present';
+    
+    const parts = inputDate.split('-');
+    if (parts.length !== 3) return inputDate;
+    
+    const year = parts[0];
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parts[2];
+    
+    const monthNames = {
+        long: [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ],
+        short: [
+            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        ]
+    };
+    
+    if (month < 0 || month > 11) return inputDate;
+    
+    if (format === 'short') {
+        return `${monthNames.short[month]} ${year}`;
+    }
+    
+    return `${monthNames.long[month]} ${year}`;
+}
+
+// Rendering Functions
+function renderResume() {
+    // Set basic information
+    document.querySelector('.resume-name').textContent = resumeJSON.basics.name;
+    document.querySelector('.resume-title').textContent = resumeJSON.basics.label;
+    document.querySelector('.professional-summary').innerHTML = 
+        `<strong>Summary: </strong>${resumeJSON.basics.summary}`;
+    
+    // Update contact info
+    const contactHTML = `
+        ${resumeJSON.basics.email}<br>
+        ${resumeJSON.basics.phone}<br>
+        ${resumeJSON.basics.location.address ? resumeJSON.basics.location.address + '<br>' : ''}
+        ${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.region} ${resumeJSON.basics.location.postalCode}
+    `;
+    document.querySelector('.contact-info').innerHTML = contactHTML;
+    
+    // Render skill sets
+    document.getElementById('skillSets').innerHTML = renderSkills(resumeJSON.skills);
+    
+    // Render work experience
+    document.getElementById('jobs').innerHTML = renderWorkExperience(resumeJSON.work);
+    
+    // Render education
+    document.getElementById('schools').innerHTML = renderEducation(resumeJSON.education);
+}
+
+function renderSkills(skills) {
+    if (!skills || skills.length === 0) return '';
+    
+    return skills.map(skill => {
+        const keywords = oxfordComma(skill.keywords);
+        return `
+            <div class="skillset">
+                <p><strong>${skill.name}:</strong><br>${keywords}</p>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderWorkExperience(work) {
+    if (!work || work.length === 0) return '';
+    
+    return work.map(job => {
+        const startDate = formatDate(job.startDate);
+        const endDate = job.endDate ? formatDate(job.endDate) : 'Present';
+        
+        // Group highlights by paragraph (blank lines in original)
+        let highlightsHTML = '';
+        let currentGroup = [];
+        
+        if (job.highlights && job.highlights.length > 0) {
+            job.highlights.forEach((highlight, index) => {
+                if (highlight.charAt(0) === ' ' || index === job.highlights.length - 1) {
+                    if (currentGroup.length > 0) {
+                        highlightsHTML += `<ul>${currentGroup.map(h => `<li>${h}</li>`).join('')}</ul>`;
+                        currentGroup = [];
+                    }
+                    if (highlight.charAt(0) === ' ') {
+                        highlightsHTML += '</ul><ul>';
+                    } else {
+                        currentGroup.push(highlight);
+                    }
+                } else {
+                    currentGroup.push(highlight);
+                }
+            });
+            
+            if (currentGroup.length > 0) {
+                highlightsHTML += `<ul>${currentGroup.map(h => `<li>${h}</li>`).join('')}</ul>`;
+            }
+        }
+        
+        return `
+            <article class="job">
+                <div class="job-header">
+                    <div>
+                        <h3 class="job-company">
+                            <a href="${job.website}" target="_blank" rel="noopener">${job.name}</a> | ${job.location}
+                        </h3>
+                        <span class="job-position">${job.position}</span>
+                    </div>
+                    <div>
+                        <span class="job-date">${startDate} to ${endDate}</span>
+                    </div>
+                </div>
+                <div class="job-content">
+                    <p class="job-summary">${job.summary}</p>
+                    <div class="job-highlights">
+                        <h4>Responsibilities and Accomplishments</h4>
+                        ${highlightsHTML}
+                    </div>
+                </div>
+            </article>
+        `;
+    }).join('');
+}
+
+function renderEducation(education) {
+    if (!education || education.length === 0) return '';
+    
+    return education.map(school => {
+        const startDate = school.startDate || '';
+        const endDate = school.endDate || '';
+        
+        return `
+            <div class="institution">
+                <dl>
+                    <dt class="school-title">${school.institution}: ${startDate} - ${endDate}</dt>
+                    <dd>${school.area}</dd>
+                </dl>
+            </div>
+        `;
+    }).join('');
+}

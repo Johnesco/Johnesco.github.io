@@ -1,0 +1,418 @@
+/* CSS Variables for consistent theming */
+:root {
+    --primary-color: #1144cc;
+    --secondary-color: #1144aa;
+    --accent-color: #374ba4;
+    --light-accent: #AAAACC;
+    --text-color: #333;
+    --light-bg: #f4f4f4;
+    --lighter-bg: #f8f8f8;
+    --border-color: #e0e0e0;
+    --print-border: #ccc;
+    --print-light-bg: #f0f0f0;
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 1rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 2rem;
+    --spacing-xl: 3rem;
+}
+
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #EEECEE;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: var(--spacing-sm);
+}
+
+.resume-container {
+    background-color: #FFFFFF;
+    margin: var(--spacing-lg) auto;
+    padding: var(--spacing-xl);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Typography */
+h1, h2, h3, h4 {
+    font-family: "Helvetica", "Arial", sans-serif;
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+h1 {
+    font-size: 2.2rem;
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-xs);
+}
+
+h2 {
+    font-size: 1.6rem;
+    margin: var(--spacing-lg) 0 var(--spacing-md);
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+h3 {
+    font-size: 1.3rem;
+    margin-bottom: var(--spacing-xs);
+}
+
+h4 {
+    font-size: 1rem;
+    margin: var(--spacing-sm) 0 var(--spacing-xs);
+}
+
+p {
+    margin-bottom: var(--spacing-sm);
+}
+
+strong {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Header Layout */
+.resume-header {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+@media (min-width: 768px) {
+    .resume-header {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+    }
+}
+
+.resume-title {
+    color: var(--secondary-color);
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.contact-info {
+    text-align: left;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+    .contact-info {
+        text-align: right;
+    }
+}
+
+/* Professional Summary */
+.summary-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.professional-summary {
+    text-align: justify;
+    line-height: 1.6;
+}
+
+/* Skills Grid */
+.skills-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+@media (min-width: 768px) {
+    .skills-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.skillset {
+    margin-bottom: var(--spacing-md);
+}
+
+.skillset strong {
+    display: block;
+    margin-bottom: 0.3rem;
+}
+
+/* Work Experience */
+.jobs-list {
+    margin-top: var(--spacing-md);
+}
+
+.job {
+    margin-bottom: var(--spacing-lg);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+}
+
+.job:first-of-type {
+    border-top: none;
+    padding-top: 0;
+}
+
+.job-header {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+@media (min-width: 768px) {
+    .job-header {
+        grid-template-columns: 2fr 1fr;
+        align-items: start;
+    }
+}
+
+.job-company {
+    color: var(--accent-color);
+    margin: 0;
+}
+
+.job-company a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.job-company a:hover {
+    text-decoration: underline;
+}
+
+.job-position {
+    font-style: italic;
+    font-size: 1.05rem;
+    display: block;
+}
+
+.job-date {
+    color: var(--light-accent);
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: block;
+    text-align: left;
+    margin-top: 0.3rem;
+}
+
+@media (min-width: 768px) {
+    .job-date {
+        text-align: right;
+    }
+}
+
+.job-summary {
+    background-color: var(--light-bg);
+    padding: var(--spacing-sm);
+    border-radius: 4px;
+    font-size: 0.95rem;
+    margin: var(--spacing-sm) 0;
+}
+
+.job-highlights ul {
+    margin-left: 1.5rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.job-highlights li {
+    margin-bottom: 0.4rem;
+}
+
+/* Education Grid */
+.education-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+@media (min-width: 768px) {
+    .education-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.institution {
+    margin-bottom: var(--spacing-sm);
+}
+
+.school-title {
+    font-weight: bold;
+    margin-bottom: 0.2rem;
+}
+
+.institution dd {
+    margin-left: 1rem;
+    color: #555;
+}
+
+/* Downloads */
+.download-section {
+    margin-top: var(--spacing-xl);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+}
+
+.download-links {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin-top: 0.5rem;
+}
+
+.download-links li {
+    display: inline;
+}
+
+.download-links a {
+    text-decoration: none;
+    color: var(--primary-color);
+    padding: 0.3rem 0.5rem;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+}
+
+.download-links a:hover {
+    background-color: var(--light-bg);
+}
+
+/* Print Styles - Enhanced from original */
+@media print {
+    @page {
+        margin: 1in;
+    }
+    
+    body {
+        background-color: white;
+        max-width: none;
+        margin: 0;
+        font-size: 12pt;
+        line-height: 1.3;
+        color: black;
+        padding: 0;
+    }
+    
+    .resume-container {
+        background-color: white;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        width: 100%;
+        max-width: none;
+    }
+    
+    h1 {
+        color: black;
+        font-size: 18pt;
+    }
+    
+    .resume-title {
+        color: black;
+        font-size: 14pt;
+    }
+    
+    h2 {
+        color: black;
+        font-size: 14pt;
+        page-break-after: avoid;
+        border-bottom: 1px solid var(--print-border);
+    }
+    
+    h3 {
+        color: black;
+        font-size: 13pt;
+        page-break-after: avoid;
+    }
+    
+    .job {
+        page-break-inside: avoid;
+        padding-top: 12pt;
+        border-top: 1px solid var(--print-border);
+    }
+    
+    .job:first-of-type {
+        border-top: none;
+        padding-top: 0;
+    }
+    
+    .job-summary {
+        background-color: var(--print-light-bg);
+        border: 1px solid var(--print-border);
+        padding: 8pt;
+        font-size: 11pt;
+    }
+    
+    .job-date {
+        color: #666;
+        font-size: 10pt;
+    }
+    
+    strong {
+        color: black;
+    }
+    
+    ul {
+        border-top: 1px solid var(--print-border);
+        margin-bottom: 8pt;
+        padding-top: 8pt;
+    }
+    
+    li {
+        font-size: 11pt;
+        margin-bottom: 3pt;
+    }
+    
+    /* Prevent orphans and widows */
+    p, li {
+        orphans: 2;
+        widows: 2;
+    }
+    
+    /* Keep sections together when possible */
+    .job-header,
+    h2, h3, h4 {
+        page-break-after: avoid;
+    }
+    
+    /* Ensure sections don't break awkwardly */
+    .skills-grid,
+    .education-grid,
+    .job-summary + .job-highlights {
+        page-break-inside: avoid;
+    }
+    
+    /* Remove link styling for print */
+    a {
+        color: black;
+        text-decoration: none;
+    }
+    
+    /* Hide download info and show URL instead */
+    .download-section {
+        display: none;
+    }
+    
+    /* Add URL at bottom of last page only */
+    .resume-container::after {
+        content: "Online version: https://johnesco.github.io/resume";
+        display: block;
+        text-align: center;
+        font-size: 10pt;
+        color: #666;
+        border-top: 1px solid var(--print-border);
+        padding-top: 12pt;
+        margin-top: 24pt;
+    }
+}
