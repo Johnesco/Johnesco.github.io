@@ -87,25 +87,26 @@
             html += `PROFESSIONAL SUMMARY:\n${resumeJSON.basics.summary}\n\n`;
             
             // Skills
-            html += '='.repeat(60) + '\n';
+            html += '\n\n';
             html += 'SKILL SETS\n';
-            html += '='.repeat(60) + '\n\n';
+            html += '\n\n';
             resumeJSON.skills.forEach(skill => {
                 html += `${skill.name}:\n`;
                 html += `${oxfordComma(skill.keywords)}\n\n`;
             });
             
             // Work Experience
-            html += '='.repeat(60) + '\n';
+            html += '\n\n';
             html += 'WORK EXPERIENCE\n';
-            html += '='.repeat(60) + '\n\n';
+            html += '\n\n';
             resumeJSON.work.forEach(job => {
                 const startDate = formatDate(job.startDate);
                 const endDate = job.endDate ? formatDate(job.endDate) : 'Present';
                 
-                html += `COMPANY: ${job.name} | ${job.location}\n`;
+                html += `COMPANY: ${job.name}\n`;
+                html += `LOCATION: ${job.location}\n`;
                 html += `POSITION: ${job.position}\n`;
-                html += `DATES: ${startDate} to ${endDate}\n\n`;
+                html += `DATES: ${startDate} - ${endDate}\n\n`;
                 html += `SUMMARY: ${job.summary}\n\n`;
                 html += `RESPONSIBILITIES AND ACCOMPLISHMENTS:\n`;
                 job.highlights.forEach(highlight => {
@@ -114,13 +115,13 @@
                     }
                     html += `  * ${highlight.trim()}\n`;
                 });
-                html += '\n' + '-'.repeat(60) + '\n\n';
+                html += '\n\n';
             });
             
             // Education
-            html += '='.repeat(60) + '\n';
+            
             html += 'EDUCATION AND TRAINING\n';
-            html += '='.repeat(60) + '\n\n';
+            html += '\n\n';
             resumeJSON.education.forEach(school => {
                 html += `INSTITUTION: ${school.institution}\n`;
                 html += `DATES: ${school.startDate} - ${school.endDate}\n`;
@@ -128,7 +129,7 @@
             });
             
             // Footer
-            html += '\n' + '='.repeat(60) + '\n';
+            html += '\n' + '\n';
             html += 'For the most recent version of this resume, visit:\n';
             html += 'https://johnesco.github.io/resume/\n';
             

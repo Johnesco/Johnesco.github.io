@@ -56,24 +56,19 @@ h1 {
 }
 
 h2 {
-    font-size: 1.6rem;
+    font-size: 3rem;
     margin: var(--spacing-lg) 0 var(--spacing-md);
     padding-bottom: 0.5rem;
+    text-align: center;
     border-bottom: 2px solid var(--border-color);
 }
 
 h3 {
-    font-size: 1.3rem;
-    margin-bottom: var(--spacing-xs);
+    font-size: 1.5rem;
 }
 
 h4 {
     font-size: 1rem;
-    margin: var(--spacing-sm) 0 var(--spacing-xs);
-}
-
-p {
-    margin-bottom: var(--spacing-sm);
 }
 
 strong {
@@ -127,8 +122,7 @@ strong {
 .skills-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-md);
+    gap: 1rem;
 }
 
 @media (min-width: 768px) {
@@ -138,7 +132,7 @@ strong {
 }
 
 .skillset {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: .5rem;
 }
 
 .skillset strong {
@@ -290,7 +284,7 @@ strong {
 /* Print Styles - Enhanced from original */
 @media print {
     @page {
-        margin: 1in;
+        margin: 0.5in;
     }
     
     body {
@@ -331,14 +325,7 @@ strong {
     
     h3 {
         color: black;
-        font-size: 13pt;
         page-break-after: avoid;
-    }
-    
-    .job {
-        page-break-inside: avoid;
-        padding-top: 12pt;
-        border-top: 1px solid var(--print-border);
     }
     
     .job:first-of-type {
@@ -373,23 +360,20 @@ strong {
         margin-bottom: 3pt;
     }
     
-    /* Prevent orphans and widows */
-    p, li {
-        orphans: 2;
-        widows: 2;
+    body {
+        font-size: 10pt; /* Even smaller font */
+        line-height: 1.25;
     }
     
-    /* Keep sections together when possible */
-    .job-header,
-    h2, h3, h4 {
-        page-break-after: avoid;
-    }
-    
-    /* Ensure sections don't break awkwardly */
+    /* Force single column layout for print */
     .skills-grid,
-    .education-grid,
-    .job-summary + .job-highlights {
-        page-break-inside: avoid;
+    .education-grid {
+        display: block !important; /* Force single column */
+    }
+    
+    /* Allow more breaking within content */
+    .job-summary {
+        page-break-inside: auto; /* Allow breaking in long summaries */
     }
     
     /* Remove link styling for print */
