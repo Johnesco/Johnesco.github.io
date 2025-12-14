@@ -1,6 +1,21 @@
 // Main application script - Vanilla JS version
 
 // Utility Functions
+
+function updateDownloadLinks() {
+    const plainTextLink = document.getElementById('plainTextLink');
+    if (plainTextLink) {
+        const currentQueryString = window.location.search;
+        plainTextLink.href = 'plaintextresume.html' + currentQueryString;
+    }
+    
+    // Also update the back link if it exists
+    const backLink = document.querySelector('a[href^="plaintextresume.html"]');
+    if (backLink && backLink !== plainTextLink) {
+        backLink.href = 'plaintextresume.html' + currentQueryString;
+    }
+}
+
 function oxfordComma(array) {
     if (!array || array.length === 0) return '';
     if (array.length === 1) return array[0] + '.';
