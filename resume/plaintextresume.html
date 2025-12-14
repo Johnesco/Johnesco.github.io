@@ -27,16 +27,9 @@
         .highlight {
             margin-left: 2rem;
         }
-        .filter-info {
-            background-color: #f0f0f0;
-            padding: 0.5rem;
-            margin-bottom: 1rem;
-            border-left: 3px solid #1144cc;
-        }
         @media print {
             body { margin: 0; padding: 0; }
             .no-print { display: none; }
-            .filter-info { background-color: transparent; border: 1px solid #ccc; }
         }
     </style>
 </head>
@@ -56,13 +49,6 @@
                 renderPlainTextResume();
             }
         });
-        
-        function getQueryParams() {
-            const params = new URLSearchParams(window.location.search);
-            return {
-                timeframe: params.get('timeframe') || 'all'
-            };
-        }
         
         function oxfordComma(array) {
             if (!array || array.length === 0) return '';
@@ -85,50 +71,9 @@
             return monthNames[month] + ' ' + year;
         }
         
-        function filterWorkExperience(workArray, timeframe) {
-            if (timeframe === 'all') return workArray;
-            
-            const now = new Date();
-            const cutoffDate = new Date();
-            
-            switch(timeframe) {
-                case '10y':
-                    cutoffDate.setFullYear(now.getFullYear() - 10);
-                    break;
-                case '5y':
-                    cutoffDate.setFullYear(now.getFullYear() - 5);
-                    break;
-                case 'current':
-                    return [workArray[0]]; // Only most recent job
-            }
-            
-            return workArray.filter(job => {
-                const jobStartDate = new Date(job.startDate);
-                return jobStartDate >= cutoffDate;
-            });
-        }
-        
-        function getFilterMessage(timeframe, filteredCount, totalCount) {
-            const messages = {
-                'all': `Full career history (${totalCount} positions)`,
-                '10y': `Last 10 years of experience (${filteredCount} of ${totalCount} positions)`,
-                '5y': `Last 5 years of experience (${filteredCount} of ${totalCount} positions)`,
-                'current': `Current position only (1 of ${totalCount} positions)`
-            };
-            return messages[timeframe] || messages.all;
-        }
-        
         function renderPlainTextResume() {
             const content = document.getElementById('resume-content');
             let html = '';
-            
-            // Get query parameters
-            const queryParams = getQueryParams();
-            
-            // Filter work experience based on query parameter
-            const filteredWork = filterWorkExperience(resumeJSON.work, queryParams.timeframe);
-            const filteredCount = filteredWork.length;
-            const totalCount = resumeJSON.work.length;
             
             // Header
             html += `NAME: ${resumeJSON.basics.name}\n`;
@@ -137,12 +82,6 @@
             html += `PHONE: ${resumeJSON.basics.phone}\n`;
             html += `LOCATION: ${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.region} ${resumeJSON.basics.location.postalCode}\n`;
             html += '\n';
-            
-            // Filter information
-            if (queryParams.timeframe !== 'all') {
-                html += 'FILTER: ' + getFilterMessage(queryParams.timeframe, filteredCount, totalCount) + '\n';
-                html += 'URL PARAMETER: ?timeframe=' + queryParams.timeframe + '\n\n';
-            }
             
             // Summary
             html += `PROFESSIONAL SUMMARY:\n${resumeJSON.basics.summary}\n\n`;
@@ -160,8 +99,7 @@
             html += '\n\n';
             html += 'WORK EXPERIENCE\n';
             html += '\n\n';
-            
-            filteredWork.forEach(job => {
+            resumeJSON.work.forEach(job => {
                 const startDate = formatDate(job.startDate);
                 const endDate = job.endDate ? formatDate(job.endDate) : 'Present';
                 
@@ -181,6 +119,7 @@
             });
             
             // Education
+            
             html += 'EDUCATION AND TRAINING\n';
             html += '\n\n';
             resumeJSON.education.forEach(school => {
@@ -189,18 +128,8 @@
                 html += `AREA OF STUDY: ${school.area}\n\n`;
             });
             
-            // Footer with filter info if applicable
-            html += '\n\n';
-            if (queryParams.timeframe !== 'all') {
-                html += 'NOTE: This view is filtered. For full career history, visit:\n';
-                html += 'https://johnesco.github.io/resume/?timeframe=all\n\n';
-            } else {
-                html += 'For different timeframes, use these URLs:\n';
-                html += 'Last 10 years: https://johnesco.github.io/resume/?timeframe=10y\n';
-                html += 'Last 5 years:  https://johnesco.github.io/resume/?timeframe=5y\n';
-                html += 'Current only:   https://johnesco.github.io/resume/?timeframe=current\n\n';
-            }
-            
+            // Footer
+            html += '\n' + '\n';
             html += 'For the most recent version of this resume, visit:\n';
             html += 'https://johnesco.github.io/resume/\n';
             

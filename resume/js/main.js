@@ -1,4 +1,14 @@
 // Main application script - Vanilla JS version
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the resume
+    if (typeof resumeJSON !== 'undefined') {
+        renderResume();
+    } else {
+        console.error('resumeJSON not found');
+        document.querySelector('.professional-summary').textContent = 
+            'Error loading resume data. Please enable JavaScript and refresh.';
+    }
+});
 
 // Utility Functions
 function oxfordComma(array) {
@@ -41,68 +51,33 @@ function formatDate(inputDate, format = 'long') {
     return `${monthNames.long[month]} ${year}`;
 }
 
-// Query Parameter Functions
-function getQueryParams() {
-    const params = new URLSearchParams(window.location.search);
-    return {
-        timeframe: params.get('timeframe') || 'all'
-    };
-}
-
-function filterWorkExperience(workArray, timeframe) {
-    const now = new Date();
-    const cutoffDate = new Date();
-    
-    switch(timeframe) {
-        case '10y':
-            cutoffDate.setFullYear(now.getFullYear() - 10);
-            break;
-        case '5y':
-            cutoffDate.setFullYear(now.getFullYear() - 5);
-            break;
-        case 'current':
-            // Only show current/most recent job
-            return workArray.map((job, index) => ({
-                ...job,
-                isFilteredOut: index !== 0
-            }));
-        case 'all':
-        default:
-            return workArray.map(job => ({ ...job, isFilteredOut: false }));
-    }
-    
-    return workArray.map(job => {
-        const jobStartDate = new Date(job.startDate);
-        const isFilteredOut = jobStartDate < cutoffDate;
-        return { ...job, isFilteredOut };
-    });
-}
-
-function updateFilterStatus(timeframe, filteredCount, totalCount) {
-    const statusElement = document.getElementById('filterStatus');
-    if (!statusElement) return;
-    
-    const messages = {
-        'all': `Showing full career history (${totalCount} positions)`,
-        '10y': `Showing last 10 years of experience (${totalCount - filteredCount} of ${totalCount} positions)`,
-        '5y': `Showing last 5 years of experience (${totalCount - filteredCount} of ${totalCount} positions)`,
-        'current': `Showing current position only (1 of ${totalCount} positions)`
-    };
-    
-    statusElement.textContent = messages[timeframe] || messages.all;
-}
-
-function createFilterToggle(filteredJobsCount) {
-    if (filteredJobsCount === 0) return '';
-    
-    return `
-        <button class="toggle-filtered-btn" id="toggleFilteredBtn">
-            ${filteredJobsCount} earlier position${filteredJobsCount !== 1 ? 's' : ''} hidden (click to show)
-        </button>
-    `;
-}
-
 // Rendering Functions
+function renderResume() {
+    // Set basic information
+    document.querySelector('.resume-name').textContent = resumeJSON.basics.name;
+    document.querySelector('.resume-title').textContent = resumeJSON.basics.label;
+    document.querySelector('.professional-summary').innerHTML = 
+        `<strong>Summary: </strong>${resumeJSON.basics.summary}`;
+    
+    // Update contact info
+    const contactHTML = `
+        ${resumeJSON.basics.email}<br>
+        ${resumeJSON.basics.phone}<br>
+        ${resumeJSON.basics.location.address ? resumeJSON.basics.location.address + '<br>' : ''}
+        ${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.region} ${resumeJSON.basics.location.postalCode}
+    `;
+    document.querySelector('.contact-info').innerHTML = contactHTML;
+    
+    // Render skill sets
+    document.getElementById('skillSets').innerHTML = renderSkills(resumeJSON.skills);
+    
+    // Render work experience
+    document.getElementById('jobs').innerHTML = renderWorkExperience(resumeJSON.work);
+    
+    // Render education
+    document.getElementById('schools').innerHTML = renderEducation(resumeJSON.education);
+}
+
 function renderSkills(skills) {
     if (!skills || skills.length === 0) return '';
     
@@ -116,20 +91,12 @@ function renderSkills(skills) {
     }).join('');
 }
 
-function renderWorkExperience(work, filteredWork) {
+function renderWorkExperience(work) {
     if (!work || work.length === 0) return '';
     
-    const totalCount = work.length;
-    const filteredCount = filteredWork.filter(job => job.isFilteredOut).length;
-    
-    let html = createFilterToggle(filteredCount);
-    
-    return html + filteredWork.map(job => {
+    return work.map(job => {
         const startDate = formatDate(job.startDate);
         const endDate = job.endDate ? formatDate(job.endDate) : 'Present';
-        
-        // Add filtered-out class if applicable
-        const filteredClass = job.isFilteredOut ? 'filtered-out collapsed' : '';
         
         // Group highlights - split into arrays where lines starting with space trigger new group
         const highlightGroups = [];
@@ -160,7 +127,7 @@ function renderWorkExperience(work, filteredWork) {
         ).join('');
         
         return `
-            <article class="job ${filteredClass}" data-job-index="${work.indexOf(job)}">
+            <article class="job">
                 <div class="job-header">
                     <div>
                         <h3 class="job-company">
@@ -201,77 +168,3 @@ function renderEducation(education) {
         `;
     }).join('');
 }
-
-// Filter Toggle Setup
-function setupFilterToggle() {
-    const toggleBtn = document.getElementById('toggleFilteredBtn');
-    if (!toggleBtn) return;
-    
-    toggleBtn.addEventListener('click', function() {
-        const filteredJobs = document.querySelectorAll('.job.filtered-out');
-        const isExpanded = this.classList.contains('expanded');
-        
-        if (isExpanded) {
-            // Collapse
-            filteredJobs.forEach(job => job.classList.add('collapsed'));
-            this.classList.remove('expanded');
-            this.innerHTML = `${filteredJobs.length} earlier position${filteredJobs.length !== 1 ? 's' : ''} hidden (click to show) ▼`;
-        } else {
-            // Expand
-            filteredJobs.forEach(job => job.classList.remove('collapsed'));
-            this.classList.add('expanded');
-            this.innerHTML = `${filteredJobs.length} earlier position${filteredJobs.length !== 1 ? 's' : ''} visible (click to hide) ▲`;
-        }
-    });
-}
-
-// Main Resume Rendering
-function renderResume() {
-    // Set basic information
-    document.querySelector('.resume-name').textContent = resumeJSON.basics.name;
-    document.querySelector('.resume-title').textContent = resumeJSON.basics.label;
-    document.querySelector('.professional-summary').innerHTML = 
-        `<strong>Summary: </strong>${resumeJSON.basics.summary}`;
-    
-    // Update contact info
-    const contactHTML = `
-        ${resumeJSON.basics.email}<br>
-        ${resumeJSON.basics.phone}<br>
-        ${resumeJSON.basics.location.address ? resumeJSON.basics.location.address + '<br>' : ''}
-        ${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.region} ${resumeJSON.basics.location.postalCode}
-    `;
-    document.querySelector('.contact-info').innerHTML = contactHTML;
-    
-    // Get query parameters
-    const queryParams = getQueryParams();
-    
-    // Filter work experience based on query parameter
-    const filteredWork = filterWorkExperience(resumeJSON.work, queryParams.timeframe);
-    const filteredCount = filteredWork.filter(job => job.isFilteredOut).length;
-    
-    // Update filter status display
-    updateFilterStatus(queryParams.timeframe, filteredCount, resumeJSON.work.length);
-    
-    // Render skill sets
-    document.getElementById('skillSets').innerHTML = renderSkills(resumeJSON.skills);
-    
-    // Render work experience
-    document.getElementById('jobs').innerHTML = renderWorkExperience(resumeJSON.work, filteredWork);
-    
-    // Render education
-    document.getElementById('schools').innerHTML = renderEducation(resumeJSON.education);
-    
-    // Add toggle functionality
-    setupFilterToggle();
-}
-
-// Initialize
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof resumeJSON !== 'undefined') {
-        renderResume();
-    } else {
-        console.error('resumeJSON not found');
-        document.querySelector('.professional-summary').textContent = 
-            'Error loading resume data. Please enable JavaScript and refresh.';
-    }
-});
