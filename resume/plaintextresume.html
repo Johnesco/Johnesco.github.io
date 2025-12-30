@@ -38,15 +38,66 @@
         Loading resume...
     </div>
     <p class="no-print">
-        <a href="index.html">← Back to formatted resume</a>
+        <a id="back-link" href="index.html">← Back to formatted resume</a>
     </p>
     
     <script src="js/resumeJSON.js"></script>
     <script>
+        // URL Query Parameter Utilities
+        function getQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                tags: params.get('tags') ? params.get('tags').split(',').map(t => t.trim().toLowerCase()) : null,
+                years: params.get('years') ? parseInt(params.get('years'), 10) : null,
+                skills: params.get('skills') ? params.get('skills').split(',').map(s => s.trim().toLowerCase()) : null
+            };
+        }
+
+        function filterWorkByTags(work, tags) {
+            if (!tags || tags.length === 0) return work;
+            return work.filter(job => {
+                if (!job.tags || job.tags.length === 0) return false;
+                return job.tags.some(tag => tags.includes(tag.toLowerCase()));
+            });
+        }
+
+        function filterWorkByYears(work, years) {
+            if (!years || years <= 0 || years > 30) return work;
+            const now = new Date();
+            const cutoffDate = new Date(now.getFullYear() - years, now.getMonth(), now.getDate());
+
+            return work.filter(job => {
+                const dateStr = job.endDate || job.startDate;
+                if (!dateStr) return true;
+
+                const parts = dateStr.split('-');
+                if (parts.length < 2) return true;
+
+                const jobDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parts[2] ? parseInt(parts[2]) : 1);
+                return jobDate >= cutoffDate;
+            });
+        }
+
+        function filterSkills(skills, skillFilter) {
+            if (!skillFilter || skillFilter.length === 0) return skills;
+            return skills.filter(skill => {
+                const skillName = skill.name.toLowerCase();
+                return skillFilter.some(filter => skillName.includes(filter));
+            });
+        }
+
+        function updateBackLink() {
+            const link = document.getElementById('back-link');
+            if (!link) return;
+            const currentSearch = window.location.search;
+            link.href = 'index.html' + currentSearch;
+        }
+
         // Plain text rendering logic
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof resumeJSON !== 'undefined') {
                 renderPlainTextResume();
+                updateBackLink();
             }
         });
         
@@ -74,7 +125,16 @@
         function renderPlainTextResume() {
             const content = document.getElementById('resume-content');
             let html = '';
-            
+
+            // Get query parameters and apply filters
+            const params = getQueryParams();
+            let filteredWork = resumeJSON.work;
+            let filteredSkills = resumeJSON.skills;
+
+            filteredWork = filterWorkByTags(filteredWork, params.tags);
+            filteredWork = filterWorkByYears(filteredWork, params.years);
+            filteredSkills = filterSkills(filteredSkills, params.skills);
+
             // Header
             html += `NAME: ${resumeJSON.basics.name}\n`;
             html += `TITLE: ${resumeJSON.basics.label}\n`;
@@ -82,24 +142,24 @@
             html += `PHONE: ${resumeJSON.basics.phone}\n`;
             html += `LOCATION: ${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.region} ${resumeJSON.basics.location.postalCode}\n`;
             html += '\n';
-            
+
             // Summary
             html += `PROFESSIONAL SUMMARY:\n${resumeJSON.basics.summary}\n\n`;
-            
-            // Skills
+
+            // Skills (filtered)
             html += '\n\n';
             html += 'SKILL SETS\n';
             html += '\n\n';
-            resumeJSON.skills.forEach(skill => {
+            filteredSkills.forEach(skill => {
                 html += `${skill.name}:\n`;
                 html += `${oxfordComma(skill.keywords)}\n\n`;
             });
-            
-            // Work Experience
+
+            // Work Experience (filtered)
             html += '\n\n';
             html += 'WORK EXPERIENCE\n';
             html += '\n\n';
-            resumeJSON.work.forEach(job => {
+            filteredWork.forEach(job => {
                 const startDate = formatDate(job.startDate);
                 const endDate = job.endDate ? formatDate(job.endDate) : 'Present';
                 

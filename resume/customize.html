@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/style.css" type="text/css" />
+    <title>Customize Resume - John Escobedo</title>
+    <style>
+        .customize-section {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .customize-section h3 {
+            margin-bottom: var(--spacing-sm);
+            color: var(--primary-color);
+        }
+
+        .tag-grid, .skill-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tag-btn, .skill-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .tag-btn:hover, .skill-btn:hover {
+            border-color: var(--primary-color);
+            background: var(--lighter-bg);
+        }
+
+        .tag-btn.selected, .skill-btn.selected {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .years-control {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .years-slider {
+            width: 200px;
+            height: 8px;
+            -webkit-appearance: none;
+            background: var(--border-color);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .years-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .years-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .years-display {
+            font-weight: bold;
+            min-width: 80px;
+        }
+
+        .years-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .years-toggle input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .output-section {
+            background: var(--light-bg);
+            padding: var(--spacing-md);
+            border-radius: 8px;
+            margin-top: var(--spacing-lg);
+        }
+
+        .output-section h3 {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .link-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .link-btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .link-btn:hover {
+            background: var(--secondary-color);
+        }
+
+        .link-btn.secondary {
+            background: var(--accent-color);
+        }
+
+        .generated-url {
+            background: white;
+            padding: 0.75rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+            border: 1px solid var(--border-color);
+        }
+
+        .copy-btn {
+            margin-top: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            background: var(--light-accent);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .clear-btn {
+            padding: 0.5rem 1rem;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .clear-btn:hover {
+            background: #c82333;
+        }
+
+        .filter-summary {
+            margin-top: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            background: white;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .filter-summary strong {
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: var(--spacing-md);
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="resume-container">
+        <a href="index.html" class="back-link">← Back to Resume</a>
+
+        <header class="resume-header">
+            <div class="header-info">
+                <h1>Customize Resume View</h1>
+                <p class="resume-title">Select filters to create a tailored resume link</p>
+            </div>
+        </header>
+
+        <!-- Tags Section -->
+        <section class="customize-section">
+            <h3>Filter by Industry/Role Tags</h3>
+            <p style="margin-bottom: 0.75rem; color: #666;">Select one or more tags to show only matching jobs:</p>
+            <div class="tag-grid" id="tagGrid"></div>
+        </section>
+
+        <!-- Years Section -->
+        <section class="customize-section">
+            <h3>Limit by Years of Experience</h3>
+            <div class="years-control">
+                <label class="years-toggle">
+                    <input type="checkbox" id="yearsEnabled">
+                    <span>Enable years filter</span>
+                </label>
+                <input type="range" class="years-slider" id="yearsSlider" min="1" max="30" value="10" disabled>
+                <span class="years-display" id="yearsDisplay">10 years</span>
+            </div>
+        </section>
+
+        <!-- Skills Section -->
+        <section class="customize-section">
+            <h3>Filter Skill Categories</h3>
+            <p style="margin-bottom: 0.75rem; color: #666;">Select which skill sections to display:</p>
+            <div class="skill-grid" id="skillGrid"></div>
+        </section>
+
+        <!-- Actions -->
+        <section class="customize-section">
+            <button class="clear-btn" id="clearAll">Clear All Filters</button>
+        </section>
+
+        <!-- Output Section -->
+        <section class="output-section">
+            <h3>Your Customized Resume</h3>
+
+            <div class="filter-summary" id="filterSummary">
+                <strong>Active Filters:</strong>
+                <span id="summaryText">None - showing full resume</span>
+            </div>
+
+            <div class="link-buttons" style="margin-top: 1rem;">
+                <a href="index.html" class="link-btn" id="styledLink">Open Styled Resume</a>
+                <a href="plaintextresume.html" class="link-btn secondary" id="plaintextLink">Open Plain Text (ATS)</a>
+            </div>
+
+            <p style="margin-top: 1rem; margin-bottom: 0.5rem;"><strong>Generated URL:</strong></p>
+            <div class="generated-url" id="generatedUrl">index.html</div>
+            <button class="copy-btn" id="copyBtn">Copy URL</button>
+        </section>
+
+    </div>
+
+    <script src="js/resumeJSON.js"></script>
+    <script>
+        // Extract unique tags from work entries
+        function getUniqueTags() {
+            const tags = new Set();
+            resumeJSON.work.forEach(job => {
+                if (job.tags) {
+                    job.tags.forEach(tag => tags.add(tag));
+                }
+            });
+            return Array.from(tags).sort();
+        }
+
+        // Get skill category names
+        function getSkillCategories() {
+            return resumeJSON.skills.map(skill => skill.name);
+        }
+
+        // State
+        const state = {
+            selectedTags: [],
+            yearsEnabled: false,
+            years: 10,
+            selectedSkills: []
+        };
+
+        // Initialize tag buttons
+        function initTags() {
+            const grid = document.getElementById('tagGrid');
+            const tags = getUniqueTags();
+
+            tags.forEach(tag => {
+                const btn = document.createElement('button');
+                btn.className = 'tag-btn';
+                btn.textContent = tag;
+                btn.dataset.tag = tag;
+                btn.addEventListener('click', () => toggleTag(tag, btn));
+                grid.appendChild(btn);
+            });
+        }
+
+        // Initialize skill buttons
+        function initSkills() {
+            const grid = document.getElementById('skillGrid');
+            const skills = getSkillCategories();
+
+            skills.forEach(skill => {
+                const btn = document.createElement('button');
+                btn.className = 'skill-btn';
+                btn.textContent = skill;
+                btn.dataset.skill = skill;
+                btn.addEventListener('click', () => toggleSkill(skill, btn));
+                grid.appendChild(btn);
+            });
+        }
+
+        // Toggle tag selection
+        function toggleTag(tag, btn) {
+            const index = state.selectedTags.indexOf(tag);
+            if (index === -1) {
+                state.selectedTags.push(tag);
+                btn.classList.add('selected');
+            } else {
+                state.selectedTags.splice(index, 1);
+                btn.classList.remove('selected');
+            }
+            updateOutput();
+        }
+
+        // Toggle skill selection
+        function toggleSkill(skill, btn) {
+            const index = state.selectedSkills.indexOf(skill);
+            if (index === -1) {
+                state.selectedSkills.push(skill);
+                btn.classList.add('selected');
+            } else {
+                state.selectedSkills.splice(index, 1);
+                btn.classList.remove('selected');
+            }
+            updateOutput();
+        }
+
+        // Years slider handling
+        function initYearsControl() {
+            const checkbox = document.getElementById('yearsEnabled');
+            const slider = document.getElementById('yearsSlider');
+            const display = document.getElementById('yearsDisplay');
+
+            checkbox.addEventListener('change', () => {
+                state.yearsEnabled = checkbox.checked;
+                slider.disabled = !checkbox.checked;
+                updateOutput();
+            });
+
+            slider.addEventListener('input', () => {
+                state.years = parseInt(slider.value);
+                display.textContent = state.years + (state.years === 1 ? ' year' : ' years');
+                updateOutput();
+            });
+        }
+
+        // Build query string
+        function buildQueryString() {
+            const params = new URLSearchParams();
+
+            if (state.selectedTags.length > 0) {
+                params.set('tags', state.selectedTags.join(','));
+            }
+
+            if (state.yearsEnabled && state.years > 0) {
+                params.set('years', state.years);
+            }
+
+            if (state.selectedSkills.length > 0) {
+                // Use simplified skill names for URL (first word, lowercase)
+                const skillParams = state.selectedSkills.map(s => {
+                    // Extract first meaningful word for matching
+                    const words = s.split(' ');
+                    return words[0].toLowerCase();
+                });
+                params.set('skills', skillParams.join(','));
+            }
+
+            return params.toString();
+        }
+
+        // Update output links and display
+        function updateOutput() {
+            const queryString = buildQueryString();
+            const styledUrl = 'index.html' + (queryString ? '?' + queryString : '');
+            const plaintextUrl = 'plaintextresume.html' + (queryString ? '?' + queryString : '');
+
+            document.getElementById('styledLink').href = styledUrl;
+            document.getElementById('plaintextLink').href = plaintextUrl;
+            document.getElementById('generatedUrl').textContent = styledUrl;
+
+            // Update summary
+            const summaryParts = [];
+            if (state.selectedTags.length > 0) {
+                summaryParts.push('Tags: ' + state.selectedTags.join(', '));
+            }
+            if (state.yearsEnabled) {
+                summaryParts.push('Years: ' + state.years);
+            }
+            if (state.selectedSkills.length > 0) {
+                summaryParts.push('Skills: ' + state.selectedSkills.length + ' selected');
+            }
+
+            document.getElementById('summaryText').textContent =
+                summaryParts.length > 0 ? summaryParts.join(' | ') : 'None - showing full resume';
+        }
+
+        // Clear all filters
+        function initClearButton() {
+            document.getElementById('clearAll').addEventListener('click', () => {
+                state.selectedTags = [];
+                state.selectedSkills = [];
+                state.yearsEnabled = false;
+
+                document.querySelectorAll('.tag-btn.selected').forEach(btn => btn.classList.remove('selected'));
+                document.querySelectorAll('.skill-btn.selected').forEach(btn => btn.classList.remove('selected'));
+                document.getElementById('yearsEnabled').checked = false;
+                document.getElementById('yearsSlider').disabled = true;
+
+                updateOutput();
+            });
+        }
+
+        // Copy URL button
+        function initCopyButton() {
+            document.getElementById('copyBtn').addEventListener('click', () => {
+                const url = window.location.origin + window.location.pathname.replace('customize.html', '') +
+                    document.getElementById('generatedUrl').textContent;
+                navigator.clipboard.writeText(url).then(() => {
+                    const btn = document.getElementById('copyBtn');
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => btn.textContent = originalText, 1500);
+                });
+            });
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            initTags();
+            initSkills();
+            initYearsControl();
+            initClearButton();
+            initCopyButton();
+            updateOutput();
+        });
+    </script>
+</body>
+
+</html>

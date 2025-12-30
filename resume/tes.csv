@@ -1,6 +1,0 @@
-Date,Type,Description,Amount,Balance,Client/Supplier,Category,Notes
-2024-01-01,Income,Website project for Client A,1000,1000,Client A,Web Development,Final payment
-2024-01-05,Expense,Hosting service,-200,800,Hosting Provider,Software,Tech expenses
-2024-01-10,Income,Logo design,500,1300,Client B,Design,Quick turnaround
-2024-01-12,Expense,Adobe Creative Cloud,-60,1240,Adobe,Software,Monthly subscription
-2024-01-15,Expense,Coffee meeting,-25,1215,Local Cafe,Business Meeting,Client networking

@@ -5,10 +5,62 @@ document.addEventListener('DOMContentLoaded', function() {
         renderResume();
     } else {
         console.error('resumeJSON not found');
-        document.querySelector('.professional-summary').textContent = 
+        document.querySelector('.professional-summary').textContent =
             'Error loading resume data. Please enable JavaScript and refresh.';
     }
 });
+
+// URL Query Parameter Utilities
+function getQueryParams() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        tags: params.get('tags') ? params.get('tags').split(',').map(t => t.trim().toLowerCase()) : null,
+        years: params.get('years') ? parseInt(params.get('years'), 10) : null,
+        skills: params.get('skills') ? params.get('skills').split(',').map(s => s.trim().toLowerCase()) : null
+    };
+}
+
+function filterWorkByTags(work, tags) {
+    if (!tags || tags.length === 0) return work;
+    return work.filter(job => {
+        if (!job.tags || job.tags.length === 0) return false;
+        return job.tags.some(tag => tags.includes(tag.toLowerCase()));
+    });
+}
+
+function filterWorkByYears(work, years) {
+    if (!years || years <= 0 || years > 30) return work;
+    const now = new Date();
+    const cutoffDate = new Date(now.getFullYear() - years, now.getMonth(), now.getDate());
+
+    return work.filter(job => {
+        // Use endDate if available, otherwise use startDate (for current jobs)
+        const dateStr = job.endDate || job.startDate;
+        if (!dateStr) return true;
+
+        const parts = dateStr.split('-');
+        if (parts.length < 2) return true;
+
+        const jobDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parts[2] ? parseInt(parts[2]) : 1);
+        return jobDate >= cutoffDate;
+    });
+}
+
+function filterSkills(skills, skillFilter) {
+    if (!skillFilter || skillFilter.length === 0) return skills;
+    return skills.filter(skill => {
+        const skillName = skill.name.toLowerCase();
+        return skillFilter.some(filter => skillName.includes(filter));
+    });
+}
+
+function updatePlainTextLink() {
+    const link = document.getElementById('plaintext-link');
+    if (!link) return;
+
+    const currentSearch = window.location.search;
+    link.href = 'plaintextresume.html' + currentSearch;
+}
 
 // Utility Functions
 function oxfordComma(array) {
@@ -53,12 +105,24 @@ function formatDate(inputDate, format = 'long') {
 
 // Rendering Functions
 function renderResume() {
+    // Get query parameters and apply filters
+    const params = getQueryParams();
+    let filteredWork = resumeJSON.work;
+    let filteredSkills = resumeJSON.skills;
+
+    // Apply work filters
+    filteredWork = filterWorkByTags(filteredWork, params.tags);
+    filteredWork = filterWorkByYears(filteredWork, params.years);
+
+    // Apply skills filter
+    filteredSkills = filterSkills(filteredSkills, params.skills);
+
     // Set basic information
     document.querySelector('.resume-name').textContent = resumeJSON.basics.name;
     document.querySelector('.resume-title').textContent = resumeJSON.basics.label;
-    document.querySelector('.professional-summary').innerHTML = 
+    document.querySelector('.professional-summary').innerHTML =
         `<strong>Summary: </strong>${resumeJSON.basics.summary}`;
-    
+
     // Update contact info
     const contactHTML = `
         ${resumeJSON.basics.email}<br>
@@ -67,15 +131,18 @@ function renderResume() {
         ${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.region} ${resumeJSON.basics.location.postalCode}
     `;
     document.querySelector('.contact-info').innerHTML = contactHTML;
-    
-    // Render skill sets
-    document.getElementById('skillSets').innerHTML = renderSkills(resumeJSON.skills);
-    
-    // Render work experience
-    document.getElementById('jobs').innerHTML = renderWorkExperience(resumeJSON.work);
-    
+
+    // Render skill sets (filtered)
+    document.getElementById('skillSets').innerHTML = renderSkills(filteredSkills);
+
+    // Render work experience (filtered)
+    document.getElementById('jobs').innerHTML = renderWorkExperience(filteredWork);
+
     // Render education
     document.getElementById('schools').innerHTML = renderEducation(resumeJSON.education);
+
+    // Update plaintext link to preserve query params
+    updatePlainTextLink();
 }
 
 function renderSkills(skills) {

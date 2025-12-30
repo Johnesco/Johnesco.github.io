@@ -37,7 +37,8 @@ var resumeJSON ={
 				"Meticulously document and track software bugs, hardware malfunctions, and performance anomalies in a detailed issue-tracking database, providing critical data to the engineering team.",
 				"Develop and refine troubleshooting protocols and standard operating procedures (SOPs) in a rapidly evolving environment, ensuring documentation remains accurate and up-to-date.",
 				"Contribute directly to high-visibility initiatives by consistently meeting daily and weekly team goals for data collection and operational testing."
-			]
+			],
+			"tags": ["robotics", "vr", "hardware"]
 		},
 		{
 			"name": "GeekSI",
@@ -54,7 +55,8 @@ var resumeJSON ={
 				"Engineered and maintained test cases and scripts within IBM Rational Team Concert for the VA Home Loan system (LGY), auditing and validating automated tests built with Cucumber and Selenium.",
 				"Modernized testing protocols across all projects, enforcing reproducible testing patterns and leveraging MUMPS CLI for test data creation in government healthcare systems.",
 				"Tested a diverse array of platforms including web applications, mainframes, Linux machines, and mobile devices (Android, iOS)."
-			]
+			],
+			"tags": ["government", "healthcare", "lead", "accessibility", "agile"]
 		},
 		{
 			"name": "EverlyWell",
@@ -70,7 +72,8 @@ var resumeJSON ={
 				"Developed and maintained the QA pipeline to support continuous integration and deployment, managing risk for new feature releases.",
 				"Performed all testing for new website features across all major browsers and mobile devices, including Android, iOS, and the iOS Simulator.",
 				"Mentored team members on effective bug writing and QA practices to foster a culture of quality across the organization."
-			]
+			],
+			"tags": ["healthcare", "lead", "startup", "cicd"]
 		},
 		{
 			"name": "YouScience",
@@ -86,7 +89,8 @@ var resumeJSON ={
 				"Managed all testing for the flagship web application, performing cross-browser testing via BrowserStack and testing on Android and iOS devices.",
 				"Created and maintained test case scenarios and product documentation to support new feature releases and ensure consistent quality.",
 				"Established standardized templates for bug reports and user stories to improve clarity and streamline communication with development teams."
-			]
+			],
+			"tags": ["edtech", "lead", "startup"]
 		},
 		{
 			"name": "Luna Data Solutions",
@@ -102,7 +106,8 @@ var resumeJSON ={
 				"Engineered custom JavaScript tools to validate and ensure the accuracy of site-wide analytics implementation and data integrity.",
 				"Developed and standardized the smoke testing data suite to guarantee consistency and reliability across all testing environments.",
 				"Served as a key member of the Production Support on Duty (PSOD) rotation, providing timely investigation and resolution for live site issues."
-			]
+			],
+			"tags": ["ecommerce", "automation"]
 		},
 		{
 			"name": "Communication Services for the Deaf",
@@ -117,7 +122,8 @@ var resumeJSON ={
 				"Applied acquired American Sign Language skills and understanding of Deaf cultural norms to collaborate effectively with the team and inform a culturally-aware testing approach.",
 				"Managed the full testing lifecycle for release cycles, including creating test plans, executing test runs, and reporting on results for both web and mobile app versions.",
 				"Engineered the testing environment by configuring VirtualBox to enable cross-browser testing of Internet Explorer on OSX machines."
-			]
+			],
+			"tags": ["accessibility", "lead", "startup", "asl"]
 		},
 		{
 			"name": "DocbookMD",
@@ -133,7 +139,8 @@ var resumeJSON ={
 				"Developed the initial test strategy, authored comprehensive test suites, and enforced testing protocols to ensure software met rigorous quality standards before release.",
 				"Guaranteed the application's adherence to strict HIPAA compliance regulations for the secure transmission of patient health information.",
 				"Scaled the QA function by managing and mentoring new testers, subsequently building and leading a local testing team."
-			]
+			],
+			"tags": ["healthcare", "lead", "startup", "mobile", "hipaa"]
 		},
 		{
 			"name": "Luna Data Solutions",
@@ -148,7 +155,8 @@ var resumeJSON ={
 				"Executed daily testing of game builds for core functionality, gameplay mechanics, and UI integrity.",
 				"Authored comprehensive test plans for smoke and regression testing cycles, improving test coverage.",
 				"Led and mentored a team of testers, providing guidance on bug reporting and test execution best practices."
-			]
+			],
+			"tags": ["gaming", "lead"]
 		},
 		{
 			"name": "Blizzard Entertainment",
@@ -164,7 +172,8 @@ var resumeJSON ={
 				"Analyzed and documented cases of fraud and exploitation of game mechanics, providing detailed reports for development teams.",
 				"Delivered expert support via live chat and ticket systems, effectively communicating technical solutions to a diverse user base.",
 				"Developed a deep understanding of live service operations and the player support lifecycle for a large-scale, always-on application."
-			]
+			],
+			"tags": ["gaming", "support"]
 		},
 		{
 			"name": "Linden Lab",
@@ -180,7 +189,8 @@ var resumeJSON ={
 				"Served as a frontline First Responder, managing in-world emergencies, enforcing Terms of Service, and resolving user conflicts within a large-scale, live online environment.",
 				"Played a key role in establishing and providing customer support initiatives using the Parature ticket system and live text chat, supporting a seamless user experience.",
 				"Rapidly promoted from part-time to full-time and again to a senior support role, based on consistent performance and initiative before final promotion to the QA department."
-			]
+			],
+			"tags": ["gaming", "support", "automation"]
 		},
 		{
 			"name": "Super Happy Fun Fun",
@@ -196,7 +206,8 @@ var resumeJSON ={
 				"Identified, documented, and tracked platform-specific bugs using the Mantis bug tracker, providing critical data to developers for issue resolution.",
 				"Supported the full product lifecycle for multiple titles, from initial testing through production and post-release support and troubleshooting.",
 				"Gained early expertise in the challenges of fragmented mobile environments, developing strategies for efficient testing across disparate hardware and software platforms."
-			]
+			],
+			"tags": ["gaming", "mobile"]
 		},
 		{
 			"name": "Aspyr Media",
@@ -212,7 +223,8 @@ var resumeJSON ={
 				"Utilized JIRA and DevTrack to meticulously document, track, and verify software defects, providing developers with clear and actionable bug reports.",
 				"Conducted extensive proofreading of in-game text and UI elements to ensure linguistic accuracy and quality for the final release.",
 				"Collaborated closely with the development team to isolate and reproduce issues specific to the Mac port, contributing to stable product launches."
-			]
+			],
+			"tags": ["gaming", "lead"]
 		}
 	],
 	"education": [
