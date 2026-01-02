@@ -132,12 +132,41 @@ strong {
 }
 
 .skillset {
-    margin-bottom: .5rem;
+    margin-bottom: 1rem;
 }
 
 .skillset strong {
-    display: block;
-    margin-bottom: 0.3rem;
+    display: inline;
+}
+
+/* Proficiency level badge */
+.skill-level {
+    display: inline-block;
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    margin-left: 0.5rem;
+    background: #e8e8e8;
+    color: #555;
+    font-weight: normal;
+}
+
+/* Keyword tags container */
+.skill-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+}
+
+/* Individual keyword pill */
+.skill-tag {
+    display: inline-block;
+    background: #f0f4f8;
+    border: 1px solid #d0d7de;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
 }
 
 /* Work Experience */

@@ -147,12 +147,20 @@ function renderResume() {
 
 function renderSkills(skills) {
     if (!skills || skills.length === 0) return '';
-    
+
     return skills.map(skill => {
-        const keywords = oxfordComma(skill.keywords);
+        const limitedKeywords = skill.keywords.slice(0, 6);
+        const tags = limitedKeywords.map(kw =>
+            `<span class="skill-tag">${kw}</span>`
+        ).join('');
+
         return `
             <div class="skillset">
-                <p><strong>${skill.name}:</strong>${keywords}</p>
+                <p>
+                    <strong>${skill.name}</strong>
+                    <span class="skill-level">${skill.level}</span>
+                </p>
+                <div class="skill-tags">${tags}</div>
             </div>
         `;
     }).join('');
