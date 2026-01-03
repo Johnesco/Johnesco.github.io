@@ -1,0 +1,187 @@
+/* CSS Variables - bridging resume and karaoke themes */
+:root {
+    --primary-color: #1144cc;
+    --primary-dark: #0d38ad;
+    --accent-purple: #4b0673;
+    --accent-red: #b50027;
+    --text-color: #333;
+    --text-muted: #666;
+    --bg-color: #f4f4f4;
+    --card-bg: #ffffff;
+    --border-color: #e0e0e0;
+    --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.15);
+    --radius: 8px;
+    --transition: 0.2s ease;
+}
+
+/* Reset and Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+/* Main Container */
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+/* Hero Section */
+.hero {
+    text-align: center;
+    padding: 3rem 1rem;
+    margin-bottom: 2rem;
+}
+
+.hero h1 {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.hero .subtitle {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+/* Navigation Grid */
+.nav-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+/* Navigation Cards */
+.nav-card {
+    background-color: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-light);
+    padding: 1.5rem;
+    text-decoration: none;
+    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+    border: 2px solid transparent;
+}
+
+.nav-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--primary-color);
+}
+
+.nav-card:hover .card-title {
+    color: var(--primary-color);
+}
+
+.card-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    transition: color var(--transition);
+}
+
+.card-description {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* Card Accent Colors on Hover */
+.nav-card.resume:hover {
+    border-color: var(--primary-color);
+}
+
+.nav-card.karaoke:hover {
+    border-color: var(--accent-purple);
+}
+
+.nav-card.karaoke:hover .card-title {
+    color: var(--accent-purple);
+}
+
+.nav-card.writing:hover,
+.nav-card.blackout:hover {
+    border-color: #2a6f2a;
+}
+
+.nav-card.writing:hover .card-title,
+.nav-card.blackout:hover .card-title {
+    color: #2a6f2a;
+}
+
+.nav-card.javascript:hover,
+.nav-card.decode:hover {
+    border-color: #d4a017;
+}
+
+.nav-card.javascript:hover .card-title,
+.nav-card.decode:hover .card-title {
+    color: #b8860b;
+}
+
+.nav-card.spotcheck:hover {
+    border-color: var(--accent-red);
+}
+
+.nav-card.spotcheck:hover .card-title {
+    color: var(--accent-red);
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    padding: 2rem 1rem;
+    margin-top: 2rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .hero .subtitle {
+        font-size: 1rem;
+    }
+
+    .nav-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .container {
+        padding: 1rem;
+    }
+
+    .hero {
+        padding: 2rem 1rem;
+    }
+}
+
+@media (min-width: 601px) and (max-width: 900px) {
+    .nav-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
