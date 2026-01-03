@@ -132,7 +132,9 @@
             let filteredSkills = resumeJSON.skills;
 
             filteredWork = filterWorkByTags(filteredWork, params.tags);
-            filteredWork = filterWorkByYears(filteredWork, params.years);
+            // Default to 10 years if no years parameter specified
+            const yearsFilter = params.years !== undefined ? params.years : 10;
+            filteredWork = filterWorkByYears(filteredWork, yearsFilter);
             filteredSkills = filterSkills(filteredSkills, params.skills);
 
             // Header
