@@ -154,11 +154,15 @@ function renderSkills(skills) {
             `<span class="skill-tag">${kw}</span>`
         ).join('');
 
+        const levelBadge = skill.level
+            ? `<span class="skill-level">${skill.level}</span>`
+            : '';
+
         return `
             <div class="skillset">
                 <p>
                     <strong>${skill.name}</strong>
-                    <span class="skill-level">${skill.level}</span>
+                    ${levelBadge}
                 </p>
                 <div class="skill-tags">${tags}</div>
             </div>

@@ -24,6 +24,23 @@ var resumeJSON ={
 	},
 	"work": [
 		{
+    "name": "Freelance",
+"location": "Austin, TX",
+    "position": "Karaoke Host",
+	"website": "https://www.karaokedirectory.com/",
+
+    "startDate": "2025-07-17",
+    "summary": "Host live karaoke events, managing all aspects of audio equipment, song selection, and audience engagement to create memorable entertainment experiences. Combine technical expertise with interpersonal skills to deliver smooth, high-energy events for diverse audiences.",
+    "highlights": [
+      "Set up and operate sound systems, speakers, and karaoke software for events.",
+      "Create a welcoming, fun atmosphere that encourages audience participation.",
+      "Troubleshoot technical and audio issues in real-time to ensure seamless performances.",
+      "Manage song queues and requests while maintaining event flow and timing.",
+      "Engage with guests to build rapport and ensure an inclusive experience for all skill levels."
+    ],
+    "tags": ["entertainment"]
+  },
+		{
 			"name": "Insight Global",
 			"location": "Austin, TX",
 			"position": "Robot Operator",
@@ -225,6 +242,71 @@ var resumeJSON ={
 				"Collaborated closely with the development team to isolate and reproduce issues specific to the Mac port, contributing to stable product launches."
 			],
 			"tags": ["gaming", "lead"]
+		},
+		{
+			"name": "Media Alliance",
+			"location": "San Francisco, CA",
+			"position": "Contract Instructor",
+			"website": "https://www.media-alliance.org/",
+			"startDate": "2001-03-01",
+			"endDate": "2002-02-28",
+			"summary": "Provided hands-on software instruction and technical support to diverse adult learners in a dynamic, non-profit community technology center. Developed and delivered engaging curriculum for small group workshops, empowering students with essential digital literacy skills for personal and professional development.",
+			"highlights": [
+				"Designed and taught structured workshops on industry-standard desktop software, including Microsoft Office Suite (Word, Excel, PowerPoint), Adobe Photoshop, and fundamental web browsing and email clients.",
+				"Facilitated a positive learning environment by adapting teaching methods to accommodate varied skill levels and learning styles within small adult classrooms.",
+				"Provided one-on-one tutoring and technical assistance to students, troubleshooting software and hardware issues to ensure a seamless learning experience.",
+				"Managed the computer lab facility, ensuring all equipment and software were properly maintained and functional for daily classes and open lab sessions."
+			],
+			"tags": ["education", "instructor"]
+		},
+		{
+			"name": "Tele Atlas (Formerly Etak)",
+			"location": "Menlo Park, CA",
+			"position": "Instructor",
+			"startDate": "2000-11-01",
+			"endDate": "2001-01-31",
+			"summary": "Trained students and contractors on precise methodologies for collecting and recording critical road and geographic data to enhance the accuracy of digital navigation maps. Focused on teaching observational protocols and data entry standards to ensure the integrity and reliability of sourced information.",
+			"highlights": [
+				"Developed and delivered comprehensive training programs on field data collection techniques, observational best practices, and proprietary software use.",
+				"Instructed individuals on how to accurately identify, categorize, and record geographic features, signage, and road attributes.",
+				"Evaluated trainee performance through practical exercises and graded assessments to ensure comprehension and adherence to strict data quality guidelines.",
+				"Provided constructive feedback and one-on-one coaching to improve trainee accuracy and efficiency in data recording processes.",
+				"Served as a key resource for clarifying mapping protocols, directly contributing to the improvement of data quality at the point of collection."
+			],
+			"tags": ["education", "instructor"]
+		},
+		{
+			"name": "Bay Area Video Coalition",
+			"location": "San Francisco, CA",
+			"position": "Contract Instructor",
+			"website": "https://www.bavc.org/",
+			"startDate": "1999-10-01",
+			"endDate": "2000-05-31",
+			"summary": "Delivered expert-level instruction in professional digital media software to adult professionals and creatives at a leading Bay Area media arts non-profit. Empowered students to master industry-standard tools for motion graphics and web design, supporting their creative projects and career advancement.",
+			"highlights": [
+				"Developed and taught comprehensive curricula for Adobe After Effects (motion graphics, visual effects, compositing) and Adobe Dreamweaver (website design, HTML, site management).",
+				"Led multi-session workshops for small groups, combining lecture, live demonstration, and hands-on practice to ensure mastery of complex technical concepts.",
+				"Mentored students on best practices for digital media production, from concept through final output, enhancing the professional quality of their portfolios.",
+				"Provided constructive feedback on student projects, fostering a collaborative and creative workshop environment.",
+				"Maintained and troubleshot advanced lab workstations to ensure full functionality of software and hardware for all sessions."
+			],
+			"tags": ["education", "instructor", "creative"]
+		},
+		{
+			"name": "Houston Multimedia Center",
+			"location": "Houston, TX",
+			"position": "Instructor",
+			"startDate": "1997-01-01",
+			"endDate": "1998-04-30",
+			"summary": "Designed and instructed hands-on courses in foundational and advanced web design and motion graphics software for adult learners and professionals. Fostered a collaborative classroom environment to build student competency in essential digital content creation tools.",
+			"highlights": [
+				"Developed curriculum and led small-group classes for industry-standard applications, including Adobe PageMill 2, HTML, Adobe Photoshop, and Adobe After Effects.",
+				"Broke down complex technical and design concepts into digestible lessons, catering to a variety of learning styles and skill levels.",
+				"Guided students through hands-on projects from concept to execution, enabling them to build practical skills for professional or personal use.",
+				"Provided individualized support and constructive feedback to help students overcome challenges and master software techniques.",
+				"Managed all aspects of classroom instruction, including lesson planning, live demonstration, and management of training materials and software."
+			],
+			"tags": ["education", "instructor", "creative"]
 		}
 	],
 	"education": [
@@ -282,155 +364,113 @@ var resumeJSON ={
 	],
 	"skills": [
 		{
-			"name": "Testing Methodologies & Frameworks",
-			"level": "Expert",
+			"name": "Problem-Solving & Analysis",
 			"keywords": [
-				"Agile Testing",
-				"Scrum",
-				"Regression Testing",
-				"Integration Testing",
-				"Smoke Testing",
-				"Ad-hoc Testing",
-				"SDLC",
-				"User Acceptance Testing",
-				"Test Planning",
-				"Test Case Design",
-				"Requirement Traceability Matrix",
-				"CI/CD Testing",
-				"Waterfall"
+				"Attention to Detail",
+				"Analytical Thinking",
+				"Problem-Solving",
+				"Critical Thinking",
+				"Root Cause Analysis",
+				"Troubleshooting"
 			]
 		},
 		{
-			"name": "Accessibility & Compliance Testing",
-			"level": "Expert",
+			"name": "Interpersonal & Collaboration",
 			"keywords": [
-				"508 Compliance",
-				"WCAG Guidelines",
-				"JAWS Screen Reader",
-				"Accessibility Testing",
-				"HIPAA Compliance",
-				"Government Standards"
+				"Clear Communication",
+				"Curiosity",
+				"Cross-functional Collaboration",
+				"Mentoring",
+				"Agile Coaching",
+				"Public Speaking"
+			]
+		},
+		{
+			"name": "Leadership & Process",
+			"keywords": [
+				"QA Process Implementation",
+				"Team Leadership",
+				"Process Standardization",
+				"Agile/Scrum",
+				"Production Support",
+				"Remote Team Management"
+			]
+		},
+		{
+			"name": "Testing Methodologies & Frameworks",
+			"keywords": [
+				"Agile Testing",
+				"Regression Testing",
+				"User Acceptance Testing",
+				"Test Planning",
+				"CI/CD Testing",
+				"Accessibility & 508 Testing"
 			]
 		},
 		{
 			"name": "Test Management & Documentation",
-			"level": "Expert",
 			"keywords": [
-				"JIRA",
-				"JIRA Xray",
+				"JIRA/Xray",
 				"TestRail",
-				"IBM Rational Team Concert",
-				"DevTrack",
-				"Mantis Bug Tracker",
-				"Parature",
+				"Test Case Design",
 				"Bug Reporting",
 				"SOP Development",
 				"Risk Management"
 			]
 		},
 		{
-			"name": "Platform & Environment Testing",
-			"level": "Expert",
+			"name": "Platforms & Environments",
 			"keywords": [
 				"Web Applications",
-				"Mobile Apps (iOS/Android)",
-				"Desktop Software",
-				"Cross-browser Testing",
-				"Gaming Platforms",
-				"Ruby on Rails Applications",
-				"Single Page Applications",
-				"PC and Mac Software",
-				"REST API Testing"
+				"Mobile (iOS/Android)",
+				"Desktop (PC, Mac, Linux)",
+				"Cross-browser/Cross-platform",
+				"REST API Testing",
+				"Gaming Platforms & Consoles"
 			]
 		},
 		{
 			"name": "Tools & Technologies",
-			"level": "Advanced",
 			"keywords": [
-				"Chrome Developer Tools",
 				"GitHub",
-				"VirtualBox",
-				"jQuery",
-				"Analytics Validation",
-				"Database Testing",
-				"Command Line Interfaces",
-				"Virtual Environments",
-				"JavaScript",
-				"HTML",
-				"CSS",
-				"JSON",
+				"Chrome Developer Tools",
 				"SQL",
-				"JQL",
-				"Cucumber",
-				"LSL (Linden Scripting Language)"
-			]
-		},
-		{
-			"name": "Operating Systems & Devices",
-			"level": "Expert",
-			"keywords": [
-				"Windows",
-				"macOS",
-				"iOS",
-				"iOS Simulator",
-				"Android",
-				"Cross-platform Testing",
-				"Mobile Device Testing",
-				"Tablet Testing",
-				"Console Gaming Systems"
+				"JavaScript/HTML/CSS",
+				"Command Line Interfaces",
+				"JQL"
 			]
 		},
 		{
 			"name": "Industry Expertise",
-			"level": "Expert",
 			"keywords": [
-				"Government Systems",
-				"Healthcare Software",
-				"Veterans Affairs",
-				"Medical Platforms",
-				"Gaming",
-				"Telehealth",
-				"Financial Services",
+				"Healthcare & Telehealth",
+				"Gaming & Entertainment",
 				"Educational Technology",
-				"Accessibility Services"
+				"Live Events",
+				"Government & Veterans Affairs",
+				"Virtual Reality (VR)"
 			]
 		},
 		{
-			"name": "Leadership & Process",
-			"level": "Expert",
+			"name": "AI Collaboration & Prompting",
 			"keywords": [
-				"QA Process Implementation",
-				"Team Leadership",
-				"Cross-functional Collaboration",
-				"Mentoring",
-				"Process Standardization",
-				"Quality Assurance Strategy",
-				"Production Support",
-				"Agile Coaching",
-				"Remote Team Management"
-			]
-		},
-		{
-			"name": "AI LLM and Image Generation",
-			"level": "Proficient",
-			"keywords": [
-				"ChatGPT",
-				"Claude",
-				"Deepseek",
-				"Adobe Firefly",
-				"Google Gemini",
-				"Pi",
-				"Midjourney",
-				"Dream (Android)"
+				"Prompt Engineering",
+				"Detailed Specification Writing",
+				"Complex Task Decomposition",
+				"Iterative Refinement",
+				"Output Verification & Validation",
+				"AI Tools (ChatGPT, Claude, Midjourney)"
 			]
 		},
 		{
 			"name": "Office and Image Suites",
-			"level": "Expert",
 			"keywords": [
-				"Adobe Creative Suite: Photoshop, Illustrator, InDesign, Premiere Pro, Acrobat, After Effects, Dreamweaver",
-				"Office 365: Teams, Word, Excel",
-				"Google Workspace: Drive, Docs, Sheets"
+				"Adobe Creative Suite",
+				"Office 365: Teams, Word, Excel, PowerPoint, Outlook",
+				"Google Workspace: Drive, Docs, Sheets",
+				"Canva",
+				"JIRA Confluence",
+				"GIMP"
 			]
 		}
 	],

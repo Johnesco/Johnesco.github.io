@@ -193,6 +193,70 @@
         .back-link:hover {
             text-decoration: underline;
         }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .section-header h3 {
+            margin-bottom: 0;
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .section-actions button {
+            padding: 0.25rem 0.6rem;
+            font-size: 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .section-actions button:hover {
+            background: var(--light-bg);
+        }
+
+        .preview-count {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .url-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: stretch;
+            margin-bottom: 0.75rem;
+        }
+
+        .url-row .generated-url {
+            flex: 1;
+            margin: 0;
+        }
+
+        .url-row .copy-btn {
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .url-label {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 
@@ -209,7 +273,13 @@
 
         <!-- Tags Section -->
         <section class="customize-section">
-            <h3>Filter by Industry/Role Tags</h3>
+            <div class="section-header">
+                <h3>Filter by Industry/Role Tags</h3>
+                <div class="section-actions">
+                    <button id="selectAllTags">Select All</button>
+                    <button id="clearTags">Clear</button>
+                </div>
+            </div>
             <p style="margin-bottom: 0.75rem; color: #666;">Select one or more tags to show only matching jobs:</p>
             <div class="tag-grid" id="tagGrid"></div>
         </section>
@@ -229,7 +299,13 @@
 
         <!-- Skills Section -->
         <section class="customize-section">
-            <h3>Filter Skill Categories</h3>
+            <div class="section-header">
+                <h3>Filter Skill Categories</h3>
+                <div class="section-actions">
+                    <button id="selectAllSkills">Select All</button>
+                    <button id="clearSkills">Clear</button>
+                </div>
+            </div>
             <p style="margin-bottom: 0.75rem; color: #666;">Select which skill sections to display:</p>
             <div class="skill-grid" id="skillGrid"></div>
         </section>
@@ -243,6 +319,10 @@
         <section class="output-section">
             <h3>Your Customized Resume</h3>
 
+            <div class="preview-count" id="previewCount">
+                Will display: X jobs, Y skill categories
+            </div>
+
             <div class="filter-summary" id="filterSummary">
                 <strong>Active Filters:</strong>
                 <span id="summaryText">None - showing full resume</span>
@@ -253,9 +333,19 @@
                 <a href="plaintextresume.html" class="link-btn secondary" id="plaintextLink">Open Plain Text (ATS)</a>
             </div>
 
-            <p style="margin-top: 1rem; margin-bottom: 0.5rem;"><strong>Generated URL:</strong></p>
-            <div class="generated-url" id="generatedUrl">index.html</div>
-            <button class="copy-btn" id="copyBtn">Copy URL</button>
+            <div style="margin-top: 1.5rem;">
+                <div class="url-label">Styled Resume URL:</div>
+                <div class="url-row">
+                    <div class="generated-url" id="styledUrl">index.html</div>
+                    <button class="copy-btn" id="copyStyledBtn">Copy</button>
+                </div>
+
+                <div class="url-label">Plain Text Resume URL:</div>
+                <div class="url-row">
+                    <div class="generated-url" id="plaintextUrl">plaintextresume.html</div>
+                    <button class="copy-btn" id="copyPlaintextBtn">Copy</button>
+                </div>
+            </div>
         </section>
 
     </div>
@@ -386,6 +476,36 @@
             return params.toString();
         }
 
+        // Calculate preview counts
+        function getPreviewCounts() {
+            let jobs = resumeJSON.work;
+
+            // Filter by tags
+            if (state.selectedTags.length > 0) {
+                jobs = jobs.filter(job => {
+                    if (!job.tags) return false;
+                    return state.selectedTags.some(tag => job.tags.includes(tag));
+                });
+            }
+
+            // Filter by years
+            if (state.yearsEnabled && state.years > 0) {
+                const cutoffDate = new Date();
+                cutoffDate.setFullYear(cutoffDate.getFullYear() - state.years);
+                jobs = jobs.filter(job => {
+                    if (!job.startDate) return true;
+                    return new Date(job.startDate) >= cutoffDate;
+                });
+            }
+
+            // Count skills (if none selected, show all)
+            const skillCount = state.selectedSkills.length > 0
+                ? state.selectedSkills.length
+                : resumeJSON.skills.length;
+
+            return { jobs: jobs.length, skills: skillCount };
+        }
+
         // Update output links and display
         function updateOutput() {
             const queryString = buildQueryString();
@@ -394,7 +514,13 @@
 
             document.getElementById('styledLink').href = styledUrl;
             document.getElementById('plaintextLink').href = plaintextUrl;
-            document.getElementById('generatedUrl').textContent = styledUrl;
+            document.getElementById('styledUrl').textContent = styledUrl;
+            document.getElementById('plaintextUrl').textContent = plaintextUrl;
+
+            // Update preview count
+            const counts = getPreviewCounts();
+            document.getElementById('previewCount').textContent =
+                `Will display: ${counts.jobs} job${counts.jobs !== 1 ? 's' : ''}, ${counts.skills} skill categor${counts.skills !== 1 ? 'ies' : 'y'}`;
 
             // Update summary
             const summaryParts = [];
@@ -428,17 +554,58 @@
             });
         }
 
-        // Copy URL button
-        function initCopyButton() {
-            document.getElementById('copyBtn').addEventListener('click', () => {
-                const url = window.location.origin + window.location.pathname.replace('customize.html', '') +
-                    document.getElementById('generatedUrl').textContent;
-                navigator.clipboard.writeText(url).then(() => {
-                    const btn = document.getElementById('copyBtn');
-                    const originalText = btn.textContent;
-                    btn.textContent = 'Copied!';
-                    setTimeout(() => btn.textContent = originalText, 1500);
-                });
+        // Copy URL buttons
+        function initCopyButtons() {
+            const baseUrl = window.location.origin + window.location.pathname.replace('customize.html', '');
+
+            document.getElementById('copyStyledBtn').addEventListener('click', () => {
+                const url = baseUrl + document.getElementById('styledUrl').textContent;
+                copyToClipboard(url, document.getElementById('copyStyledBtn'));
+            });
+
+            document.getElementById('copyPlaintextBtn').addEventListener('click', () => {
+                const url = baseUrl + document.getElementById('plaintextUrl').textContent;
+                copyToClipboard(url, document.getElementById('copyPlaintextBtn'));
+            });
+        }
+
+        function copyToClipboard(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = originalText, 1500);
+            });
+        }
+
+        // Select All / Clear buttons for tags
+        function initTagActions() {
+            document.getElementById('selectAllTags').addEventListener('click', () => {
+                const allTags = getUniqueTags();
+                state.selectedTags = [...allTags];
+                document.querySelectorAll('.tag-btn').forEach(btn => btn.classList.add('selected'));
+                updateOutput();
+            });
+
+            document.getElementById('clearTags').addEventListener('click', () => {
+                state.selectedTags = [];
+                document.querySelectorAll('.tag-btn').forEach(btn => btn.classList.remove('selected'));
+                updateOutput();
+            });
+        }
+
+        // Select All / Clear buttons for skills
+        function initSkillActions() {
+            document.getElementById('selectAllSkills').addEventListener('click', () => {
+                const allSkills = getSkillCategories();
+                state.selectedSkills = [...allSkills];
+                document.querySelectorAll('.skill-btn').forEach(btn => btn.classList.add('selected'));
+                updateOutput();
+            });
+
+            document.getElementById('clearSkills').addEventListener('click', () => {
+                state.selectedSkills = [];
+                document.querySelectorAll('.skill-btn').forEach(btn => btn.classList.remove('selected'));
+                updateOutput();
             });
         }
 
@@ -448,7 +615,9 @@
             initSkills();
             initYearsControl();
             initClearButton();
-            initCopyButton();
+            initCopyButtons();
+            initTagActions();
+            initSkillActions();
             updateOutput();
         });
     </script>
