@@ -113,7 +113,7 @@ function renderResume() {
     // Apply work filters
     filteredWork = filterWorkByTags(filteredWork, params.tags);
     // Default to 10 years if no years parameter specified
-    const yearsFilter = params.years !== undefined ? params.years : 10;
+    const yearsFilter = params.years != null ? params.years : 10;
     filteredWork = filterWorkByYears(filteredWork, yearsFilter);
 
     // Apply skills filter
