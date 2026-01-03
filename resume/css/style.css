@@ -244,6 +244,7 @@ strong {
 
 .job-highlights ul {
     margin-left: 1.5rem;
+    padding: var(--spacing-sm);
     margin-bottom: var(--spacing-sm);
 }
 
