@@ -61,8 +61,8 @@
             });
         }
 
-        function filterWorkByYears(work, years) {
-            if (!years || years <= 0 || years > 30) return work;
+        function filterWorkByYears(work, years = 10) {
+            if (years <= 0 || years > 50) return work;
             const now = new Date();
             const cutoffDate = new Date(now.getFullYear() - years, now.getMonth(), now.getDate());
 

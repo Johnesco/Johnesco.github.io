@@ -382,7 +382,7 @@ var resumeJSON ={
 				"Cross-functional Collaboration",
 				"Mentoring",
 				"Agile Coaching",
-				"Public Speaking"
+				"Public Speaking & MC"
 			]
 		},
 		{
@@ -446,7 +446,7 @@ var resumeJSON ={
 				"Healthcare & Telehealth",
 				"Gaming & Entertainment",
 				"Educational Technology",
-				"Live Events",
+				"Live Events & Hosting",
 				"Government & Veterans Affairs",
 				"Virtual Reality (VR)"
 			]
