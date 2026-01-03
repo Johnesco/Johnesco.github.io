@@ -259,13 +259,19 @@ var resumeJSON = {
 		},
 		{
 			name: "LOC Consultants",
-			location: "",
+			location: "Austin, TX",
 			position: "Executive Assistant",
 			startDate: "2005-10-01",
 			endDate: "2006-01-31",
-			summary: "",
-			highlights: [],
-			tags: ["admin"]
+			summary:
+				"Provided bilingual administrative support for an architectural firm, serving as the primary point of contact for English and Spanish-speaking clients. Managed executive scheduling, correspondence, and daily office operations.",
+			highlights: [
+				"Delivered professional customer service in both English and Spanish, ensuring clear communication with a diverse client base.",
+				"Managed and maintained the supervisor's daily calendar, coordinating appointments and prioritizing scheduling conflicts.",
+				"Processed incoming and outgoing mail, ensuring timely distribution and accurate record-keeping.",
+				"Handled high-volume phone calls in both languages, directing inquiries and providing information to clients and vendors."
+			],
+			tags: ["admin", "bilingual"]
 		},
 		{
 			name: "GoDance Studios",
@@ -379,7 +385,7 @@ var resumeJSON = {
 		},
 		{
 			name: "Adecco Northwest Division",
-			location: "",
+			location: "Emeryville, CA",
 			position: "Temporary Administrative Assistant",
 			startDate: "2001-08-01",
 			endDate: "2001-10-31",
@@ -409,7 +415,7 @@ var resumeJSON = {
 		},
 		{
 			name: "DigitalThink.com",
-			location: "",
+			location: "San Francisco",
 			position: "Contract Graphic Designer",
 			startDate: "2000-07-01",
 			endDate: "2000-10-31",
@@ -419,13 +425,20 @@ var resumeJSON = {
 		},
 		{
 			name: "Mediaplex",
-			location: "",
+			location: "San Francisco, CA",
 			position: "Designer / Media Consultant",
 			startDate: "1999-09-01",
 			endDate: "2000-06-30",
-			summary: "",
-			highlights: [],
-			tags: ["creative"]
+			summary:
+				"Served as a Rich Media specialist at a leading ad-serving technology company during the rise of interactive online advertising. Researched and documented emerging web technologies to enable the delivery of dynamic, interactive advertisements beyond traditional static banners.",
+			highlights: [
+				"Conducted in-depth technical research on emerging Rich Media technologies, including Macromedia Flash, Shockwave, Java Applets, JavaScript, DHTML, and animated GIFs.",
+				"Translated complex technical specifications into actionable insights, enabling the ad-serving platform to support interactive and multimedia ad formats.",
+				"Collaborated with engineering and product teams to expand ad delivery capabilities beyond static images and text.",
+				"Evaluated browser plugin ecosystems and compatibility requirements to inform cross-platform ad delivery strategies.",
+				"Contributed to the company's competitive positioning during a pivotal era in digital advertising technology."
+			],
+			tags: ["adtech", "creative", "web"]
 		},
 		{
 			name: "Media Alliance",
