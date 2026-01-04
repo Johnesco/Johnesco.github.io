@@ -52,10 +52,10 @@ var resumeJSON = {
 			summary:
 				"Leveraged extensive VR expertise to directly operate humanoid robots for Apptronik, playing a key role in a fast-paced development cycle. Responsibilities included VR-based operation, environmental staging, and rigorous documentation of issues and processes. Demonstrated extreme adaptability to excel in a novel, process-light environment, directly supporting high-priority company initiatives through consistent achievement of data collection goals.",
 			highlights: [
-				"Operate and control humanoid robots in real-time using advanced VR systems to execute complex tasks and support the development of next-generation automation.",
+				"Rapidly adapted to a novel role with minimal onboarding, mastering VR-based robot operation within days to meet aggressive development timelines.",
 				"Prepare and stage physical testing environments to precise specifications, ensuring optimal conditions for robotic performance and data collection.",
-				"Meticulously document and track software bugs, hardware malfunctions, and performance anomalies in a detailed issue-tracking database, providing critical data to the engineering team.",
-				"Develop and refine troubleshooting protocols and standard operating procedures (SOPs) in a rapidly evolving environment, ensuring documentation remains accurate and up-to-date.",
+				"Served as a critical communication bridge between operations and engineering, translating observed robot behaviors into actionable bug reports that accelerated issue resolution.",
+				"Proactively authored troubleshooting protocols and SOPs in a process-light environment, establishing documentation standards adopted by the broader team.",
 				"Contribute directly to high-visibility initiatives by consistently meeting daily and weekly team goals for data collection and operational testing."
 			],
 			tags: ["robotics", "vr", "hardware"]
@@ -70,11 +70,11 @@ var resumeJSON = {
 			summary:
 				"Senior contractor providing comprehensive QA testing and test leadership across multiple mission-critical projects for the Veterans Affairs over a 6-year engagement. Subject matter expert in government software testing, 508 accessibility compliance, and modernizing legacy testing processes with Agile methodologies.",
 			highlights: [
-				"Led the full testing lifecycle for the VA Telehealth Hub MVP: built the initial test plan, standardized SOPs, created the UAT framework, and championed Agile adoption to replace legacy Waterfall processes.",
-				"Directed 508 compliance and accessibility testing for flagship VA software, including the Advanced Medical Platform (AMPL), utilizing JAWS screen reader to ensure adherence to strict government standards.",
-				"Served as the Subject Matter Expert (SME) for the Traumatic Brain Injury module within the Veterans Integrated Registries Platform (VIRP), managing the Requirement Traceability Matrix and expanding a comprehensive library of regression tests.",
-				"Engineered and maintained test cases and scripts within IBM Rational Team Concert for the VA Home Loan system (LGY), auditing and validating automated tests built with Cucumber and Selenium.",
-				"Modernized testing protocols across all projects, enforcing reproducible testing patterns and leveraging MUMPS CLI for test data creation in government healthcare systems.",
+				"Championed the transition from Waterfall to Agile methodologies for the VA Telehealth Hub, gaining stakeholder buy-in and coaching cross-functional teams through the adoption process.",
+				"Advocated for accessibility as a core quality metric, leading 508 compliance initiatives and educating team members on the importance of inclusive design for veteran users.",
+				"Served as the go-to SME for the Traumatic Brain Injury module, facilitating knowledge transfer sessions and mentoring junior analysts on complex healthcare domain requirements.",
+				"Collaborated with automation engineers to validate Cucumber/Selenium scripts, ensuring alignment between manual test intent and automated execution.",
+				"Drove standardization of testing practices across multiple VA projects, building consensus among distributed teams and reducing onboarding time for new testers.",
 				"Tested a diverse array of platforms including web applications, mainframes, Linux machines, and mobile devices (Android, iOS)."
 			],
 			tags: ["government", "healthcare", "lead", "accessibility", "agile"]
@@ -90,8 +90,8 @@ var resumeJSON = {
 				"As the primary QA Test Lead, established the initial quality assurance process for EverlyWell's health test services, where customers managed lab results through a secure online portal. Took ownership of JIRA administration, configuring the system to support a new cross-team CI/CD workflow.",
 			highlights: [
 				"As the initial QA resource, integrated the first formal QA process into the software development cycle for the health test service platform.",
-				"Served as the JIRA administrator, customizing projects, workflows, and fields to align with and facilitate a new cross-team Agile and CI/CD process.",
-				"Developed and maintained the QA pipeline to support continuous integration and deployment, managing risk for new feature releases.",
+				"Partnered with engineering and product leadership to design a unified JIRA workflow, facilitating smoother cross-team collaboration and visibility into release status.",
+				"Assessed release risks and communicated go/no-go recommendations to stakeholders, balancing speed-to-market with quality assurance.",
 				"Performed all testing for new website features across all major browsers and mobile devices, including Android, iOS, and the iOS Simulator.",
 				"Mentored team members on effective bug writing and QA practices to foster a culture of quality across the organization."
 			],
@@ -107,11 +107,11 @@ var resumeJSON = {
 			summary:
 				"Served as the sole QA employee, responsible for establishing and managing the quality assurance process for the company's flagship online career and education assessment tool. Worked cross-functionally to integrate QA into the development cycle, ensuring the stability and quality of all weekly releases.",
 			highlights: [
-				"As the only QA resource, built the QA process from the ground up and integrated it into the existing software development lifecycle.",
+				"As the sole QA voice, built credibility with development and product teams by demonstrating the value of structured testing, ultimately integrating QA as a respected part of the SDLC.",
 				"Developed the complete QA framework, including test procedures, test case scenarios, and standards for verification, integration, and regression testing.",
 				"Managed all testing for the flagship web application, performing cross-browser testing via BrowserStack and testing on Android and iOS devices.",
 				"Created and maintained test case scenarios and product documentation to support new feature releases and ensure consistent quality.",
-				"Established standardized templates for bug reports and user stories to improve clarity and streamline communication with development teams."
+				"Improved developer-QA communication by introducing standardized bug report and user story templates, reducing back-and-forth and accelerating fix turnaround."
 			],
 			tags: ["edtech", "lead", "startup"]
 		},
@@ -125,11 +125,11 @@ var resumeJSON = {
 			summary:
 				"Contracted as a QA Analyst for RetailMeNot, focusing on the launch of new e-commerce features and ensuring site stability. Enhanced testing efficiency through custom automation tooling, analytics validation, and standardized data suites, while providing direct production support for a high-traffic website.",
 			highlights: [
-				"Led QA for the rollout of new gift card purchasing features and conducted extensive regression testing for the RetailMeNot e-commerce platform.",
-				"Authored and updated code for the internal automated test system, improving its efficiency and reliability for the development team.",
+				"Coordinated QA efforts across multiple teams for the high-visibility gift card feature launch, aligning testing priorities with business objectives.",
+				"Partnered with developers to enhance the internal test automation framework, contributing code improvements that increased team efficiency.",
 				"Engineered custom JavaScript tools to validate and ensure the accuracy of site-wide analytics implementation and data integrity.",
 				"Developed and standardized the smoke testing data suite to guarantee consistency and reliability across all testing environments.",
-				"Served as a key member of the Production Support on Duty (PSOD) rotation, providing timely investigation and resolution for live site issues."
+				"Responded to live production issues under pressure, triaging problems and communicating status updates to stakeholders during critical outages."
 			],
 			tags: ["ecommerce", "automation"]
 		},
@@ -144,9 +144,9 @@ var resumeJSON = {
 				"Developed and implemented the inaugural QA process for the 'Vineya' web-video platform, a critical accessibility solution providing interpreting services for the Deaf and hard-of-hearing community. Acquired conversational American Sign Language (ASL) and cultural competency to effectively collaborate and ensure the product met the needs of its users.",
 			highlights: [
 				"Pioneered the quality assurance function from the ground up, creating the initial test procedures and automation framework for the GoVineya.com Ruby on Rails web application.",
-				"Applied acquired American Sign Language skills and understanding of Deaf cultural norms to collaborate effectively with the team and inform a culturally-aware testing approach.",
+				"Invested in learning American Sign Language and Deaf cultural norms to build authentic relationships with colleagues and ensure the product truly served its community.",
 				"Managed the full testing lifecycle for release cycles, including creating test plans, executing test runs, and reporting on results for both web and mobile app versions.",
-				"Engineered the testing environment by configuring VirtualBox to enable cross-browser testing of Internet Explorer on OSX machines."
+				"Problem-solved cross-browser testing limitations on Mac hardware by implementing a VirtualBox-based solution, enabling comprehensive IE testing without additional equipment costs."
 			],
 			tags: ["accessibility", "lead", "startup", "asl"]
 		},
@@ -164,7 +164,7 @@ var resumeJSON = {
 				"As the sole tester, performed all functional, regression, and compliance testing on the full range of supported devices: real iPhones, iPads, Android tablets, and the iOS Simulator.",
 				"Developed the initial test strategy, authored comprehensive test suites, and enforced testing protocols to ensure software met rigorous quality standards before release.",
 				"Guaranteed the application's adherence to strict HIPAA compliance regulations for the secure transmission of patient health information.",
-				"Scaled the QA function by managing and mentoring new testers, subsequently building and leading a local testing team."
+				"Scaled the QA function from a one-person operation to a team, hiring, onboarding, and mentoring new testers while maintaining quality standards during rapid growth."
 			],
 			tags: ["healthcare", "lead", "startup", "mobile", "hipaa"]
 		},
@@ -195,7 +195,7 @@ var resumeJSON = {
 			summary:
 				"Provided advanced technical support and customer service for the 'World of Warcraft' MMO, serving as a frontline investigator for complex in-game issues, fraud, and exploitation. Developed exceptional skills in problem-solving, data analysis, and customer communication within a high-volume, live-service environment.",
 			highlights: [
-				"Investigated and diagnosed a high volume of complex technical and gameplay issues, utilizing analytical skills to identify root causes and implement solutions.",
+				"Resolved high-pressure player escalations by diagnosing complex issues and communicating solutions clearly, maintaining player trust in a live-service environment.",
 				"Restored compromised player accounts and inventories with precision, adhering to strict security and data integrity protocols.",
 				"Analyzed and documented cases of fraud and exploitation of game mechanics, providing detailed reports for development teams.",
 				"Delivered expert support via live chat and ticket systems, effectively communicating technical solutions to a diverse user base.",
@@ -214,10 +214,10 @@ var resumeJSON = {
 				"Progressed through a series of promotions from frontline support to QA Analyst for the complex virtual world of Second Life. Culminated in a QA role testing daily builds and diagnosing critical issues, building upon a strong foundation in customer support, tool development, and live service management.",
 			highlights: [
 				"Promoted to QA Analyst after demonstrating exceptional technical and diagnostic skills in prior support roles; responsible for testing daily software builds, tracking bugs, and diagnosing complex in-world issues.",
-				"Authored custom in-world diagnostic and tracking tools using Linden Scripting Language (LSL), enhancing the efficiency of issue resolution for both support and QA teams.",
+				"Identified operational inefficiencies and took initiative to build custom diagnostic tools, improving issue resolution speed for both support and QA teams.",
 				"Served as a frontline First Responder, managing in-world emergencies, enforcing Terms of Service, and resolving user conflicts within a large-scale, live online environment.",
 				"Played a key role in establishing and providing customer support initiatives using the Parature ticket system and live text chat, supporting a seamless user experience.",
-				"Rapidly promoted from part-time to full-time and again to a senior support role, based on consistent performance and initiative before final promotion to the QA department."
+				"Earned three promotions in three years through consistent performance, initiative, and demonstrated ability to take on increasing responsibility."
 			],
 			tags: ["gaming", "support", "automation"]
 		},
@@ -275,37 +275,50 @@ var resumeJSON = {
 		},
 		{
 			name: "GoDance Studios",
-			location: "",
+			location: "Austin, TX",
 			position: "Receptionist",
 			startDate: "2005-04-28",
 			endDate: "2005-09-30",
-			summary: "",
-			highlights: [],
+			summary: "Served as the front desk point of contact for a ballroom and partner dance studio, managing customer check-ins, new student reservations, and payment processing for classes and events.",
+			highlights: [
+				"Greeted and checked in students for classes, ensuring a welcoming first impression and smooth class transitions.",
+				"Fielded inquiries from prospective students, answering questions and booking reservations to support new enrollments.",
+				"Processed payments for classes and events, accurately handling cash and card transactions."
+			],
 			tags: ["admin"]
 		},
 		{
 			name: "Diva Productions",
-			location: "",
+			location: "Austin, TX",
 			position: "Animator",
 			startDate: "2004-11-15",
 			endDate: "2005-04-22",
-			summary: "",
-			highlights: [],
+			summary: "Owned the full animation production pipeline for educational children's content, creating animated book reviews and character-driven lessons using ToonBoom, After Effects, and hand-drawn techniques. Contributed across disciplines including scriptwriting, audio editing, and web design.",
+			highlights: [
+				"Managed end-to-end animation projects for children's educational content: writing scripts, creating storyboards, building animatics, and delivering final animations.",
+				"Developed animated characters and segments designed to engage young audiences and reinforce learning objectives.",
+				"Edited voice recordings into polished audio tracks, syncing dialogue and sound to animated sequences.",
+				"Supported the company's web presence through light website maintenance and design updates."
+			],
 			tags: ["creative"]
 		},
 		{
 			name: "UT Performing Arts Center",
-			location: "",
+			location: "Austin, TX",
 			position: "Building Monitor",
 			startDate: "2004-10-01",
 			endDate: "2004-11-15",
-			summary: "",
-			highlights: [],
+			summary: "Provided security and access control for live performances at the UT Performing Arts Center, ensuring artists had unimpeded access while maintaining a safe environment for audiences during operas, concerts, and musicals.",
+			highlights: [
+				"Monitored venue access points to ensure performers moved freely while keeping unauthorized individuals from restricted areas.",
+				"Maintained audience safety during performances, preventing disruptions and unauthorized stage access.",
+				"Conducted building safety checks before, during, and after each show to identify and address potential issues."
+			],
 			tags: ["admin"]
 		},
 		{
 			name: "El Dia Daily Newspaper (Cuatro Communications)",
-			location: "",
+			location: "Houston, TX",
 			position: "Designer",
 			startDate: "2004-05-20",
 			endDate: "2004-08-20",
@@ -315,12 +328,16 @@ var resumeJSON = {
 		},
 		{
 			name: "Computer Discovery Center",
-			location: "",
+			location: "Houston, TX",
 			position: "Digital Artist / Webmaster",
 			startDate: "2002-07-01",
 			endDate: "2004-06-30",
-			summary: "",
-			highlights: [],
+			summary: "Provided professional photo retouching and restoration services for customers at a computer hardware retailer, combining technical Photoshop expertise with client consultation to deliver high-quality results. Assisted artists with large-format Giclée printing, ensuring their work was reproduced to exacting standards.",
+			highlights: [
+				"Consulted with customers to understand their photo restoration and retouching needs, translating requests into polished final products.",
+				"Performed detailed photo editing and repair work in Adobe Photoshop, restoring damaged images and enhancing quality for client satisfaction.",
+				"Assisted artists with Giclée printing workflows, ensuring accurate color reproduction and proper handling of oversized print formats."
+			],
 			tags: ["creative", "web"]
 		},
 		{
@@ -335,7 +352,7 @@ var resumeJSON = {
 		},
 		{
 			name: "Weddings Performed",
-			location: "",
+			location: "Houston, TX",
 			position: "Minister / Web Master",
 			startDate: "2002-07-01",
 			endDate: "2003-07-31",
@@ -345,7 +362,7 @@ var resumeJSON = {
 		},
 		{
 			name: "Adecco Temp Agency",
-			location: "",
+			location: "Houston, TX",
 			position: "Temp Worker",
 			startDate: "2001-10-01",
 			endDate: "2003-12-31",
@@ -355,7 +372,7 @@ var resumeJSON = {
 		},
 		{
 			name: "Wild Brain",
-			location: "",
+			location: "San Francisco, CA",
 			position: "Intern",
 			startDate: "2002-01-22",
 			endDate: "2002-04-15",
@@ -375,41 +392,21 @@ var resumeJSON = {
 		},
 		{
 			name: "Management Strategies International",
-			location: "",
+			location: "Berkeley, CA",
 			position: "Graphic Designer",
 			startDate: "2001-11-01",
 			endDate: "2002-02-28",
 			summary: "",
 			highlights: [],
-			tags: ["creative"]
+			tags: ["creative", "design"]
 		},
 		{
 			name: "Adecco Northwest Division",
 			location: "Emeryville, CA",
 			position: "Temporary Administrative Assistant",
-			startDate: "2001-08-01",
-			endDate: "2001-10-31",
-			summary: "",
-			highlights: [],
-			tags: ["temp"]
-		},
-		{
-			name: "Chiron",
-			location: "Emeryville, CA",
-			position: "",
-			startDate: "2001-07-01",
-			endDate: "2001-09-30",
-			summary: "",
-			highlights: [],
-			tags: ["temp"]
-		},
-		{
-			name: "Leap Frog",
-			location: "Emeryville, CA",
-			position: "Administrative Assistant (Temp)",
 			startDate: "2001-02-01",
-			endDate: "2001-07-01",
-			summary: "",
+			endDate: "2001-11-31",
+			summary: "Worked for various clients in the Emeryville area including Chiron and Leap Frog",
 			highlights: [],
 			tags: ["temp"]
 		},
@@ -421,7 +418,7 @@ var resumeJSON = {
 			endDate: "2000-10-31",
 			summary: "",
 			highlights: [],
-			tags: ["creative"]
+			tags: ["creative", "web"]
 		},
 		{
 			name: "Mediaplex",
