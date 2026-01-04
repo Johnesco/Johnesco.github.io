@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>John Escobedo - Work History Timeline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 0.5rem;
+            color: #1144cc;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .timeline-container {
+            display: flex;
+            gap: 0;
+            position: relative;
+        }
+
+        .year-axis {
+            width: 60px;
+            flex-shrink: 0;
+            position: relative;
+            border-right: 2px solid #ccc;
+        }
+
+        .year-marker {
+            position: absolute;
+            right: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #666;
+            transform: translateY(-50%);
+        }
+
+        .year-line {
+            position: absolute;
+            right: 0;
+            width: 10px;
+            height: 1px;
+            background-color: #ccc;
+        }
+
+        .jobs-area {
+            flex: 1;
+            position: relative;
+            min-height: 100px;
+        }
+
+        .job-box {
+            position: absolute;
+            border-radius: 4px;
+            padding: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid;
+        }
+
+        .job-box:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 100 !important;
+        }
+
+        .job-box.column-0 {
+            left: 10px;
+            right: 52%;
+        }
+
+        .job-box.column-1 {
+            left: 52%;
+            right: 10px;
+        }
+
+        .job-box.full-width {
+            left: 10px;
+            right: 10px;
+        }
+
+        .job-company {
+            font-weight: bold;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .job-position {
+            font-size: 11px;
+            color: #555;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .job-dates {
+            font-size: 10px;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        .job-duration {
+            font-size: 10px;
+            color: #999;
+        }
+
+        /* Color coding by tag */
+        .tag-gaming { background-color: #e8f5e9; border-color: #4caf50; }
+        .tag-healthcare { background-color: #e3f2fd; border-color: #2196f3; }
+        .tag-government { background-color: #fff3e0; border-color: #ff9800; }
+        .tag-education { background-color: #f3e5f5; border-color: #9c27b0; }
+        .tag-creative { background-color: #fce4ec; border-color: #e91e63; }
+        .tag-admin { background-color: #efebe9; border-color: #795548; }
+        .tag-web { background-color: #e0f7fa; border-color: #00bcd4; }
+        .tag-ecommerce { background-color: #fff8e1; border-color: #ffc107; }
+        .tag-entertainment { background-color: #f1f8e9; border-color: #8bc34a; }
+        .tag-robotics { background-color: #eceff1; border-color: #607d8b; }
+        .tag-default { background-color: #f5f5f5; border-color: #9e9e9e; }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 4px;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 12px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+            border-left: 3px solid;
+        }
+
+        .tooltip {
+            display: none;
+            position: fixed;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 12px;
+            max-width: 350px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            font-size: 13px;
+        }
+
+        .tooltip.visible {
+            display: block;
+        }
+
+        .tooltip h3 {
+            margin-bottom: 4px;
+            color: #1144cc;
+        }
+
+        .tooltip .position {
+            font-style: italic;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .tooltip .summary {
+            font-size: 12px;
+            color: #666;
+        }
+
+        @media (max-width: 600px) {
+            .job-box.column-0,
+            .job-box.column-1 {
+                left: 10px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Work History Timeline</h1>
+        <p class="subtitle">Visual representation of career progression</p>
+        <a href="index.html" class="back-link">← Back to Resume</a>
+
+        <div class="timeline-container">
+            <div class="year-axis" id="year-axis"></div>
+            <div class="jobs-area" id="jobs-area"></div>
+        </div>
+
+        <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script src="js/resumeJSON.js"></script>
+    <script>
+        // Configuration
+        const PIXELS_PER_MONTH = 8;
+        const MIN_JOB_HEIGHT = 40;
+
+        // Parse date string to Date object
+        function parseDate(dateStr) {
+            if (!dateStr) return new Date();
+            const parts = dateStr.split('-');
+            return new Date(
+                parseInt(parts[0]),
+                parts[1] ? parseInt(parts[1]) - 1 : 0,
+                parts[2] ? parseInt(parts[2]) : 1
+            );
+        }
+
+        // Format date for display
+        function formatDate(date) {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${months[date.getMonth()]} ${date.getFullYear()}`;
+        }
+
+        // Calculate months between two dates
+        function monthsBetween(start, end) {
+            return (end.getFullYear() - start.getFullYear()) * 12 +
+                   (end.getMonth() - start.getMonth());
+        }
+
+        // Format duration
+        function formatDuration(months) {
+            const years = Math.floor(months / 12);
+            const remainingMonths = months % 12;
+            if (years === 0) return `${remainingMonths} mo`;
+            if (remainingMonths === 0) return `${years} yr`;
+            return `${years} yr ${remainingMonths} mo`;
+        }
+
+        // Get primary tag for color coding
+        function getPrimaryTag(tags) {
+            if (!tags || tags.length === 0) return 'default';
+            const priority = ['healthcare', 'government', 'gaming', 'education',
+                            'creative', 'ecommerce', 'entertainment', 'robotics', 'web', 'admin'];
+            for (const p of priority) {
+                if (tags.includes(p)) return p;
+            }
+            return tags[0] || 'default';
+        }
+
+        // Check if two jobs truly overlap (not just adjacent)
+        // Jobs must overlap by more than 2 weeks to be considered overlapping
+        function jobsOverlap(job1, job2) {
+            const overlapBuffer = 14 * 24 * 60 * 60 * 1000; // 14 days in ms
+            const overlapStart = Math.max(job1.startDate.getTime(), job2.startDate.getTime());
+            const overlapEnd = Math.min(job1.endDate.getTime(), job2.endDate.getTime());
+            return (overlapEnd - overlapStart) > overlapBuffer;
+        }
+
+        // Assign columns to overlapping jobs
+        function assignColumns(jobs) {
+            // First pass: identify all overlapping pairs
+            const overlapGroups = [];
+
+            jobs.forEach((job, i) => {
+                job.column = -1; // Default to full width
+                job.overlaps = [];
+
+                // Check against all other jobs
+                jobs.forEach((other, j) => {
+                    if (i !== j && jobsOverlap(job, other)) {
+                        job.overlaps.push(j);
+                    }
+                });
+            });
+
+            // Second pass: assign columns only to jobs that have overlaps
+            jobs.forEach((job, i) => {
+                if (job.overlaps.length === 0) {
+                    job.column = -1; // Full width - no overlaps
+                } else if (job.column === -1) {
+                    // Need to assign a column
+                    // Check what columns overlapping jobs are using
+                    const overlappingJobs = job.overlaps.map(idx => jobs[idx]);
+                    const usedColumns = overlappingJobs
+                        .map(j => j.column)
+                        .filter(c => c >= 0);
+
+                    if (!usedColumns.includes(0)) {
+                        job.column = 0;
+                    } else {
+                        job.column = 1;
+                    }
+
+                    // Assign columns to overlapping jobs that don't have one yet
+                    overlappingJobs.forEach(j => {
+                        if (j.column === -1) {
+                            j.column = job.column === 0 ? 1 : 0;
+                        }
+                    });
+                }
+            });
+        }
+
+        // Build the timeline
+        function buildTimeline() {
+            const jobs = resumeJSON.work.map(job => ({
+                ...job,
+                startDate: parseDate(job.startDate),
+                endDate: job.endDate ? parseDate(job.endDate) : new Date(),
+                isPresent: !job.endDate
+            })).sort((a, b) => b.startDate - a.startDate);
+
+            // Find date range
+            const allDates = jobs.flatMap(j => [j.startDate, j.endDate]);
+            const minDate = new Date(Math.min(...allDates));
+            const maxDate = new Date(Math.max(...allDates));
+
+            // Add padding
+            minDate.setMonth(minDate.getMonth() - 3);
+            maxDate.setMonth(maxDate.getMonth() + 3);
+
+            const totalMonths = monthsBetween(minDate, maxDate);
+            const totalHeight = totalMonths * PIXELS_PER_MONTH;
+
+            // Assign columns for overlapping jobs
+            assignColumns(jobs);
+
+            // Render year axis
+            const yearAxis = document.getElementById('year-axis');
+            yearAxis.style.height = `${totalHeight}px`;
+
+            const startYear = maxDate.getFullYear();
+            const endYear = minDate.getFullYear();
+
+            for (let year = startYear; year >= endYear; year--) {
+                const yearDate = new Date(year, 0, 1);
+                const monthsFromTop = monthsBetween(yearDate, maxDate);
+                const topPos = monthsFromTop * PIXELS_PER_MONTH;
+
+                const marker = document.createElement('div');
+                marker.className = 'year-marker';
+                marker.style.top = `${topPos}px`;
+                marker.textContent = year;
+                yearAxis.appendChild(marker);
+
+                const line = document.createElement('div');
+                line.className = 'year-line';
+                line.style.top = `${topPos}px`;
+                yearAxis.appendChild(line);
+            }
+
+            // Render jobs
+            const jobsArea = document.getElementById('jobs-area');
+            jobsArea.style.height = `${totalHeight}px`;
+
+            const tagsUsed = new Set();
+
+            jobs.forEach((job, index) => {
+                const monthsFromTop = monthsBetween(job.endDate, maxDate);
+                const durationMonths = monthsBetween(job.startDate, job.endDate);
+                const height = Math.max(durationMonths * PIXELS_PER_MONTH, MIN_JOB_HEIGHT);
+                const topPos = monthsFromTop * PIXELS_PER_MONTH;
+
+                const primaryTag = getPrimaryTag(job.tags);
+                tagsUsed.add(primaryTag);
+
+                const box = document.createElement('div');
+                box.className = `job-box tag-${primaryTag}`;
+
+                if (job.column === -1) {
+                    box.classList.add('full-width');
+                } else {
+                    box.classList.add(`column-${job.column}`);
+                }
+
+                box.style.top = `${topPos}px`;
+                box.style.height = `${height}px`;
+                box.style.zIndex = jobs.length - index;
+
+                const startStr = formatDate(job.startDate);
+                const endStr = job.isPresent ? 'Present' : formatDate(job.endDate);
+
+                box.innerHTML = `
+                    <div class="job-company">${job.name}</div>
+                    <div class="job-position">${job.position}</div>
+                    ${height > 50 ? `<div class="job-dates">${startStr} - ${endStr}</div>` : ''}
+                    ${height > 65 ? `<div class="job-duration">${formatDuration(durationMonths)}</div>` : ''}
+                `;
+
+                // Tooltip events
+                box.addEventListener('mouseenter', (e) => showTooltip(e, job, startStr, endStr, durationMonths));
+                box.addEventListener('mouseleave', hideTooltip);
+                box.addEventListener('mousemove', moveTooltip);
+
+                jobsArea.appendChild(box);
+            });
+
+            // Render legend
+            renderLegend(tagsUsed);
+        }
+
+        function showTooltip(e, job, startStr, endStr, durationMonths) {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.innerHTML = `
+                <h3>${job.name}</h3>
+                <div class="position">${job.position}</div>
+                <div><strong>${startStr} - ${endStr}</strong> (${formatDuration(durationMonths)})</div>
+                ${job.summary ? `<div class="summary">${job.summary}</div>` : ''}
+            `;
+            tooltip.classList.add('visible');
+            moveTooltip(e);
+        }
+
+        function moveTooltip(e) {
+            const tooltip = document.getElementById('tooltip');
+            const x = e.clientX + 15;
+            const y = e.clientY + 15;
+
+            // Keep tooltip on screen
+            const rect = tooltip.getBoundingClientRect();
+            const maxX = window.innerWidth - rect.width - 20;
+            const maxY = window.innerHeight - rect.height - 20;
+
+            tooltip.style.left = `${Math.min(x, maxX)}px`;
+            tooltip.style.top = `${Math.min(y, maxY)}px`;
+        }
+
+        function hideTooltip() {
+            document.getElementById('tooltip').classList.remove('visible');
+        }
+
+        function renderLegend(tagsUsed) {
+            const legend = document.getElementById('legend');
+            const tagLabels = {
+                gaming: 'Gaming',
+                healthcare: 'Healthcare',
+                government: 'Government',
+                education: 'Education',
+                creative: 'Creative',
+                admin: 'Administrative',
+                web: 'Web',
+                ecommerce: 'E-Commerce',
+                entertainment: 'Entertainment',
+                robotics: 'Robotics',
+                default: 'Other'
+            };
+
+            tagsUsed.forEach(tag => {
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.innerHTML = `
+                    <div class="legend-color tag-${tag}"></div>
+                    <span>${tagLabels[tag] || tag}</span>
+                `;
+                legend.appendChild(item);
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', buildTimeline);
+    </script>
+</body>
+</html>
