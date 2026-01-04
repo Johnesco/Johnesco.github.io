@@ -341,16 +341,6 @@ var resumeJSON = {
 			tags: ["creative", "web"]
 		},
 		{
-			name: "Houston Swing Dance Society",
-			location: "Houston, TX",
-			position: "Web Master",
-			startDate: "2003-01-01",
-			endDate: "2004-01-31",
-			summary: "",
-			highlights: [],
-			tags: ["web"]
-		},
-		{
 			name: "Weddings Performed",
 			location: "Houston, TX",
 			position: "Minister / Web Master",
