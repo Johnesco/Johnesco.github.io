@@ -17,7 +17,7 @@ var resumeJSON = {
 		},
 		profiles: [
 			{
-				network: "Linked In",
+				network: "LinkedIn",
 				username: "johnesco",
 				url: "https://www.linkedin.com/in/johnesco/"
 			}
@@ -53,10 +53,10 @@ var resumeJSON = {
 				"Leveraged extensive VR expertise to directly operate humanoid robots for Apptronik, playing a key role in a fast-paced development cycle. Responsibilities included VR-based operation, environmental staging, and rigorous documentation of issues and processes. Demonstrated extreme adaptability to excel in a novel, process-light environment, directly supporting high-priority company initiatives through consistent achievement of data collection goals.",
 			highlights: [
 				"Rapidly adapted to a novel role with minimal onboarding, mastering VR-based robot operation within days to meet aggressive development timelines.",
-				"Prepare and stage physical testing environments to precise specifications, ensuring optimal conditions for robotic performance and data collection.",
+				"Prepared and staged physical testing environments to precise specifications, ensuring optimal conditions for robotic performance and data collection.",
 				"Served as a critical communication bridge between operations and engineering, translating observed robot behaviors into actionable bug reports that accelerated issue resolution.",
 				"Proactively authored troubleshooting protocols and SOPs in a process-light environment, establishing documentation standards adopted by the broader team.",
-				"Contribute directly to high-visibility initiatives by consistently meeting daily and weekly team goals for data collection and operational testing."
+				"Contributed directly to high-visibility initiatives by consistently meeting daily and weekly team goals for data collection and operational testing."
 			],
 			tags: ["robotics", "vr", "hardware"]
 		},
@@ -365,11 +365,11 @@ var resumeJSON = {
 			position: "Temp Worker",
 			startDate: "2001-10-01",
 			endDate: "2003-12-31",
-			summary: "Completed various temporary assignments through Adecco, ranging from administrative document work to hands-on technical projects for clients including Chiron and Leap Frog.",
+			summary: "Worked as a temp office administrator doing various daily jobs for different clients.",
 			highlights: [
-				"Assisted Chiron with decommissioning and archiving materials for their HSV research project.",
-				"Supported Leap Frog's product development by working with breadboard prototypes and creating content for educational learning quizzes.",
-				"Adapted quickly to diverse work environments and client needs across multiple short-term assignments."
+				"Assisted businesses to modernize or update documents.",
+				"Learned to redline documents for legal review.",
+				"Maintained a good relationship with other workers."
 			],
 			tags: ["admin"]
 		},
@@ -420,10 +420,14 @@ var resumeJSON = {
 			location: "Emeryville, CA",
 			position: "Temporary Administrative Assistant",
 			startDate: "2001-02-01",
-			endDate: "2001-11-31",
-			summary: "Worked for various clients in the Emeryville area including Chiron and Leap Frog",
-			highlights: [],
-			tags: ["temp"]
+			endDate: "2001-11-30",
+			summary: "Completed various temporary assignments through Adecco, ranging from administrative document work to hands-on technical projects for clients including Chiron and Leap Frog.",
+			highlights: [
+				"Assisted Chiron with decommissioning and archiving materials for their HSV research project.",
+				"Supported Leap Frog's product development by working with breadboard prototypes and creating content for educational learning quizzes.",
+				"Adapted quickly to diverse work environments and client needs across multiple short-term assignments."
+			],
+			tags: ["admin"]
 		},
 		{
 			name: "DigitalThink.com",
