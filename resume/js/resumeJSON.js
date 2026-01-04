@@ -322,8 +322,13 @@ var resumeJSON = {
 			position: "Designer",
 			startDate: "2004-05-20",
 			endDate: "2004-08-20",
-			summary: "",
-			highlights: [],
+			summary: "Served as a layout designer for a Spanish-language daily newspaper, working exclusively in Spanish to prepare articles and classifieds for publication. Contributed to the newsroom's transition from QuarkXPress to Adobe InDesign.",
+			highlights: [
+				"Designed and laid out newspaper pages in both QuarkXPress and Adobe InDesign, supporting the team's migration between platforms.",
+				"Edited headlines and adjusted layouts to copyfit articles into designated spaces under daily deadline pressure.",
+				"Prepared and retouched photos for classified advertisements and editorial content.",
+				"Conducted all work and communication in Spanish, collaborating with reporters and editors in a bilingual newsroom environment."
+			],
 			tags: ["creative"]
 		},
 		{
@@ -346,8 +351,12 @@ var resumeJSON = {
 			position: "Minister / Web Master",
 			startDate: "2002-07-01",
 			endDate: "2003-07-31",
-			summary: "",
-			highlights: [],
+			summary: "Served as an ordained wedding officiant performing bilingual ceremonies in English and Spanish. Additionally provided web design tutoring to the business owner to support their online presence.",
+			highlights: [
+				"Officiated wedding ceremonies for diverse couples, delivering personalized services in both English and Spanish.",
+				"Communicated with couples to understand their vision and craft meaningful, customized ceremonies.",
+				"Tutored the business owner on fundamental web design skills, empowering them to maintain their own website."
+			],
 			tags: ["web"]
 		},
 		{
@@ -356,8 +365,12 @@ var resumeJSON = {
 			position: "Temp Worker",
 			startDate: "2001-10-01",
 			endDate: "2003-12-31",
-			summary: "",
-			highlights: [],
+			summary: "Completed various temporary assignments through Adecco, ranging from administrative document work to hands-on technical projects for clients including Chiron and Leap Frog.",
+			highlights: [
+				"Assisted Chiron with decommissioning and archiving materials for their HSV research project.",
+				"Supported Leap Frog's product development by working with breadboard prototypes and creating content for educational learning quizzes.",
+				"Adapted quickly to diverse work environments and client needs across multiple short-term assignments."
+			],
 			tags: ["admin"]
 		},
 		{
@@ -366,8 +379,12 @@ var resumeJSON = {
 			position: "Intern",
 			startDate: "2002-01-22",
 			endDate: "2002-04-15",
-			summary: "",
-			highlights: [],
+			summary: "Interned at a professional animation studio, gaining hands-on exposure to the animation production process while supporting daily office operations. Experimented with digital coloring techniques and traditional animation on professional equipment.",
+			highlights: [
+				"Supported studio operations through general office assistance and workspace organization.",
+				"Gained hands-on experience with digital coloring workflows for animated productions.",
+				"Developed traditional animation skills using professional animation desks under studio guidance."
+			],
 			tags: ["creative"]
 		},
 		{
@@ -376,8 +393,12 @@ var resumeJSON = {
 			position: "Teaching Assistant",
 			startDate: "2001-10-01",
 			endDate: "2002-05-31",
-			summary: "",
-			highlights: [],
+			summary: "Served as a teaching assistant in the computer lab, providing one-on-one tutoring and technical support to students working on digital art assignments. Assisted with troubleshooting while also pursuing coursework in video editing.",
+			highlights: [
+				"Tutored fellow students in Adobe Photoshop, Adobe Illustrator, and other digital art applications, helping them complete assignments and build skills.",
+				"Provided light technical troubleshooting to keep lab workstations functional for student use.",
+				"Balanced TA responsibilities while attending classes in Final Cut Pro video editing."
+			],
 			tags: ["education"]
 		},
 		{
@@ -386,8 +407,12 @@ var resumeJSON = {
 			position: "Graphic Designer",
 			startDate: "2001-11-01",
 			endDate: "2002-02-28",
-			summary: "",
-			highlights: [],
+			summary: "Created graphics and visual assets for brochures and technical documents, supporting the company's client deliverables using Adobe Photoshop and Illustrator.",
+			highlights: [
+				"Designed graphics and visual elements for client brochures and technical documentation.",
+				"Produced print-ready assets in Adobe Photoshop and Illustrator to meet project specifications.",
+				"Collaborated with team members to ensure designs aligned with document content and client requirements."
+			],
 			tags: ["creative", "design"]
 		},
 		{
@@ -406,8 +431,12 @@ var resumeJSON = {
 			position: "Contract Graphic Designer",
 			startDate: "2000-07-01",
 			endDate: "2000-10-31",
-			summary: "",
-			highlights: [],
+			summary: "Created visual assets for an eLearning platform specializing in technical training courses, producing web-optimized graphics to illustrate educational concepts.",
+			highlights: [
+				"Designed instructional graphics and illustrations to support technical eLearning course content.",
+				"Optimized all images for web delivery using web-safe color palettes to ensure consistent display across browsers.",
+				"Collaborated with course developers to visually communicate complex technical concepts for online learners."
+			],
 			tags: ["creative", "web"]
 		},
 		{
