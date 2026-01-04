@@ -137,64 +137,67 @@
             filteredWork = filterWorkByYears(filteredWork, yearsFilter);
             filteredSkills = filterSkills(filteredSkills, params.skills);
 
-            // Header
-            html += `NAME: ${resumeJSON.basics.name}\n`;
-            html += `TITLE: ${resumeJSON.basics.label}\n`;
-            html += `EMAIL: ${resumeJSON.basics.email}\n`;
-            html += `PHONE: ${resumeJSON.basics.phone}\n`;
-            html += `LOCATION: ${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.region} ${resumeJSON.basics.location.postalCode}\n`;
+            // Header (ATS-friendly format)
+            html += `${resumeJSON.basics.name.toUpperCase()}\n`;
+            html += `${resumeJSON.basics.label}\n`;
+            html += `${resumeJSON.basics.email} | ${resumeJSON.basics.phone}\n`;
+            html += `${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.region} ${resumeJSON.basics.location.postalCode}\n`;
+            // Add LinkedIn if available
+            const linkedIn = resumeJSON.basics.profiles?.find(p => p.network.toLowerCase() === 'linkedin');
+            if (linkedIn) {
+                html += `${linkedIn.url}\n`;
+            }
             html += '\n';
 
             // Summary
-            html += `PROFESSIONAL SUMMARY:\n${resumeJSON.basics.summary}\n\n`;
+            html += `PROFESSIONAL SUMMARY\n\n`;
+            html += `${resumeJSON.basics.summary}\n\n`;
 
-            // Skills (filtered)
-            html += '\n\n';
-            html += 'SKILL SETS\n';
-            html += '\n\n';
+            // Skills (filtered) - sentence format for ATS
+            html += 'SKILLS\n\n';
             filteredSkills.forEach(skill => {
-                html += `${skill.name}:\n`;
-                html += `${oxfordComma(skill.keywords)}\n\n`;
+                html += `${skill.name}: ${oxfordComma(skill.keywords)}\n\n`;
             });
 
-            // Work Experience (filtered)
-            html += '\n\n';
-            html += 'WORK EXPERIENCE\n';
-            html += '\n\n';
+            // Work Experience (filtered) - standard format
+            html += 'WORK EXPERIENCE\n\n';
             filteredWork.forEach(job => {
                 const startDate = formatDate(job.startDate);
                 const endDate = job.endDate ? formatDate(job.endDate) : 'Present';
-                
-                html += `COMPANY: ${job.name}\n`;
-                html += `LOCATION: ${job.location}\n`;
-                html += `POSITION: ${job.position}\n`;
-                html += `DATES: ${startDate} - ${endDate}\n\n`;
-                html += `SUMMARY: ${job.summary}\n\n`;
-                html += `RESPONSIBILITIES AND ACCOMPLISHMENTS:\n`;
-                job.highlights.forEach(highlight => {
-                    if (highlight.charAt(0) === ' ') {
-                        html += '\n';
-                    }
-                    html += `  * ${highlight.trim()}\n`;
-                });
+
+                html += `${job.position.toUpperCase()}\n`;
+                html += `${job.name} | ${job.location}\n`;
+                html += `${startDate} - ${endDate}\n\n`;
+                if (job.summary) {
+                    html += `${job.summary}\n\n`;
+                }
+                if (job.highlights && job.highlights.length > 0) {
+                    job.highlights.forEach(highlight => {
+                        html += `- ${highlight.trim()}\n`;
+                    });
+                }
                 html += '\n\n';
             });
-            
+
             // Education
-            
-            html += 'EDUCATION AND TRAINING\n';
-            html += '\n\n';
+            html += 'EDUCATION\n\n';
             resumeJSON.education.forEach(school => {
-                html += `INSTITUTION: ${school.institution}\n`;
-                html += `DATES: ${school.startDate} - ${school.endDate}\n`;
-                html += `AREA OF STUDY: ${school.area}\n\n`;
+                html += `${school.institution}\n`;
+                html += `${school.area} | ${school.startDate} - ${school.endDate}\n\n`;
             });
-            
+
+            // Languages
+            if (resumeJSON.languages && resumeJSON.languages.length > 0) {
+                html += 'LANGUAGES\n\n';
+                const langList = resumeJSON.languages.map(lang => `${lang.language} (${lang.fluency})`);
+                html += langList.join(', ') + '\n\n';
+            }
+
             // Footer
-            html += '\n' + '\n';
+            html += '\n';
             html += 'For the most recent version of this resume, visit:\n';
             html += 'https://johnesco.github.io/resume/\n';
-            
+
             content.textContent = html;
         }
     </script>
