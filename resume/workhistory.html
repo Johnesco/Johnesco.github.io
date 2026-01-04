@@ -39,7 +39,34 @@
         .back-link {
             display: block;
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .controls label {
+            font-weight: 500;
+        }
+
+        .controls input[type="range"] {
+            width: 200px;
+            cursor: pointer;
+        }
+
+        #scale-value {
+            font-weight: bold;
+            min-width: 24px;
+            text-align: right;
         }
 
         .timeline-container {
@@ -222,6 +249,12 @@
         <p class="subtitle">Visual representation of career progression</p>
         <a href="index.html" class="back-link">← Back to Resume</a>
 
+        <div class="controls">
+            <label for="scale-slider">Timeline Scale:</label>
+            <input type="range" id="scale-slider" min="5" max="30" value="18">
+            <span id="scale-value">18</span> px/month
+        </div>
+
         <div class="timeline-container">
             <div class="year-axis" id="year-axis"></div>
             <div class="jobs-area" id="jobs-area"></div>
@@ -235,7 +268,7 @@
     <script src="js/resumeJSON.js"></script>
     <script>
         // Configuration
-        const PIXELS_PER_MONTH = 18;
+        let pixelsPerMonth = 18;
         const MIN_JOB_HEIGHT = 50;
 
         // Parse date string to Date object
@@ -355,7 +388,7 @@
             maxDate.setMonth(maxDate.getMonth() + 3);
 
             const totalMonths = monthsBetween(minDate, maxDate);
-            const totalHeight = totalMonths * PIXELS_PER_MONTH;
+            const totalHeight = totalMonths * pixelsPerMonth;
 
             // Assign columns for overlapping jobs
             assignColumns(jobs);
@@ -370,7 +403,7 @@
             for (let year = startYear; year >= endYear; year--) {
                 const yearDate = new Date(year, 0, 1);
                 const monthsFromTop = monthsBetween(yearDate, maxDate);
-                const topPos = monthsFromTop * PIXELS_PER_MONTH;
+                const topPos = monthsFromTop * pixelsPerMonth;
 
                 const marker = document.createElement('div');
                 marker.className = 'year-marker';
@@ -393,8 +426,8 @@
             jobs.forEach((job, index) => {
                 const monthsFromTop = monthsBetween(job.endDate, maxDate);
                 const durationMonths = monthsBetween(job.startDate, job.endDate);
-                const height = Math.max(durationMonths * PIXELS_PER_MONTH, MIN_JOB_HEIGHT);
-                const topPos = monthsFromTop * PIXELS_PER_MONTH;
+                const height = Math.max(durationMonths * pixelsPerMonth, MIN_JOB_HEIGHT);
+                const topPos = monthsFromTop * pixelsPerMonth;
 
                 const primaryTag = getPrimaryTag(job.tags);
                 tagsUsed.add(primaryTag);
@@ -491,8 +524,28 @@
             });
         }
 
+        // Rebuild timeline (clears existing content first)
+        function rebuildTimeline() {
+            document.getElementById('year-axis').innerHTML = '';
+            document.getElementById('jobs-area').innerHTML = '';
+            document.getElementById('legend').innerHTML = '';
+            buildTimeline();
+        }
+
         // Initialize
-        document.addEventListener('DOMContentLoaded', buildTimeline);
+        document.addEventListener('DOMContentLoaded', () => {
+            buildTimeline();
+
+            // Slider event listener
+            const slider = document.getElementById('scale-slider');
+            const scaleValue = document.getElementById('scale-value');
+
+            slider.addEventListener('input', (e) => {
+                pixelsPerMonth = parseInt(e.target.value, 10);
+                scaleValue.textContent = pixelsPerMonth;
+                rebuildTimeline();
+            });
+        });
     </script>
 </body>
 </html>
