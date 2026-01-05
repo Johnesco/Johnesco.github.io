@@ -363,7 +363,7 @@ var resumeJSON = {
 			name: "Adecco Temp Agency",
 			location: "Houston, TX",
 			position: "Temp Worker",
-			startDate: "2001-10-01",
+			startDate: "2002-10-01",
 			endDate: "2003-12-31",
 			summary: "Worked as a temp office administrator doing various daily jobs for different clients.",
 			highlights: [
