@@ -32,13 +32,13 @@ var resumeJSON = {
 
 			startDate: "2025-07-17",
 			summary:
-				"Host live karaoke events, managing all aspects of audio equipment, song selection, and audience engagement to create memorable entertainment experiences. Combine technical expertise with interpersonal skills to deliver smooth, high-energy events for diverse audiences.",
+				"Hosted live karaoke events, managed all aspects of audio equipment, song selection, and audience engagement to create memorable entertainment experiences. Combined technical expertise with interpersonal skills to deliver smooth, high-energy events for diverse audiences.",
 			highlights: [
-				"Set up and operate sound systems, speakers, and karaoke software for events.",
-				"Create a welcoming, fun atmosphere that encourages audience participation.",
-				"Troubleshoot technical and audio issues in real-time to ensure seamless performances.",
-				"Manage song queues and requests while maintaining event flow and timing.",
-				"Engage with guests to build rapport and ensure an inclusive experience for all skill levels."
+				"Set up and operated sound systems, speakers, and karaoke software for events.",
+				"Created a welcoming, fun atmosphere that encouraged audience participation.",
+				"Troubleshot technical and audio issues in real-time to ensure seamless performances.",
+				"Managed song queues and requests while maintaining event flow and timing.",
+				"Engaged with guests to build rapport and ensure an inclusive experience for all skill levels."
 			],
 			tags: ["entertainment"]
 		},
