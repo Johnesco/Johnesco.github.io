@@ -82,12 +82,12 @@ var resumeJSON = {
 		{
 			name: "EverlyWell",
 			location: "Austin, TX",
-			position: "QA Test Lead",
+			position: "Senior QA Engineer",
 			website: "https://www.everlywell.com/",
 			startDate: "2018-06-05",
 			endDate: "2018-10-01",
 			summary:
-				"As the primary QA Test Lead, established the initial quality assurance process for EverlyWell's health test services, where customers managed lab results through a secure online portal. Took ownership of JIRA administration, configuring the system to support a new cross-team CI/CD workflow.",
+				"As the primary QA tester, established the initial quality assurance process for EverlyWell's health test services, where customers managed lab results through a secure online portal. Took ownership of JIRA administration, configuring the system to support a new cross-team CI/CD workflow.",
 			highlights: [
 				"As the initial QA resource, integrated the first formal QA process into the software development cycle for the health test service platform.",
 				"Partnered with engineering and product leadership to design a unified JIRA workflow, facilitating smoother cross-team collaboration and visibility into release status.",
