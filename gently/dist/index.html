@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gently - Programming Language Playground</title>
+  <script type="module" crossorigin src="./assets/index-CubrS9Ew.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CzZFCxj6.css">
+</head>
+<body>
+  <header>
+    <h1>Gently</h1>
+    <p class="tagline">A beginner-friendly programming language</p>
+  </header>
+
+  <main>
+    <div class="editor-section">
+      <div class="toolbar">
+        <button id="run-btn">Run</button>
+        <select id="examples">
+          <option value="">Load an example...</option>
+          <option value="hello">Hello World</option>
+          <option value="math">Math Operations</option>
+          <option value="loops">Loops</option>
+          <option value="drawing">Drawing Shapes</option>
+          <option value="function">Functions</option>
+        </select>
+      </div>
+      <textarea id="editor" spellcheck="false" placeholder="Write your Clear code here..."></textarea>
+    </div>
+
+    <div class="output-section">
+      <div class="tabs">
+        <button class="tab active" data-tab="output">Output</button>
+        <button class="tab" data-tab="canvas">Canvas</button>
+      </div>
+      <div id="output-panel" class="panel active">
+        <div id="output"></div>
+      </div>
+      <div id="canvas-panel" class="panel">
+        <canvas id="canvas" width="400" height="300"></canvas>
+      </div>
+      <div id="error" class="error hidden"></div>
+    </div>
+  </main>
+
+  <footer>
+    <p>Gently is designed to be easy to read and write, like English.</p>
+  </footer>
+
+</body>
+</html>

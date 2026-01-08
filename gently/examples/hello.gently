@@ -1,0 +1,8 @@
+note: Welcome to Gently!
+note: This is a simple Hello World program
+
+print "Hello, World!"
+print "Welcome to Gently programming language"
+
+set name to "Friend"
+print "Nice to meet you, " joined with name

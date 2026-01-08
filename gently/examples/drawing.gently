@@ -1,0 +1,52 @@
+note: Drawing shapes on the canvas
+
+clear canvas
+
+note: Draw a colorful scene
+
+note: Blue sky
+set color to "lightblue"
+draw rectangle at 0, 0 with width 400 and height 200
+
+note: Sun
+set color to "yellow"
+draw circle at 350, 50 with radius 40
+
+note: Sun rays
+set color to "orange"
+draw line from 350, 50 to 350, 10
+draw line from 350, 50 to 390, 50
+draw line from 350, 50 to 380, 20
+draw line from 350, 50 to 380, 80
+
+note: Grass
+set color to "green"
+draw rectangle at 0, 200 with width 400 and height 100
+
+note: House body
+set color to "tan"
+draw rectangle at 150, 120 with width 100 and height 80
+
+note: Roof
+set color to "brown"
+draw line from 140, 120 to 200, 70
+draw line from 200, 70 to 260, 120
+draw line from 140, 120 to 260, 120
+
+note: Door
+set color to "saddlebrown"
+draw rectangle at 185, 150 with width 30 and height 50
+
+note: Window
+set color to "lightcyan"
+draw rectangle at 160, 140 with width 20 and height 20
+
+note: Tree trunk
+set color to "saddlebrown"
+draw rectangle at 50, 160 with width 20 and height 40
+
+note: Tree leaves
+set color to "darkgreen"
+draw circle at 60, 140 with radius 30
+
+print "Scene complete!"

@@ -1,0 +1,28 @@
+note: Basic math operations in Clear
+
+set a to 10
+set b to 3
+
+print "Math with " joined with a joined with " and " joined with b
+
+set sum to a plus b
+print "Sum: " joined with sum
+
+set difference to a minus b
+print "Difference: " joined with difference
+
+set product to a times b
+print "Product: " joined with product
+
+set quotient to a divided by b
+print "Quotient: " joined with quotient
+
+set remainder to a mod b
+print "Remainder: " joined with remainder
+
+note: Check if numbers are even or odd
+if remainder is equal to 0 then
+    print a joined with " divided by " joined with b joined with " has no remainder"
+else
+    print a joined with " divided by " joined with b joined with " has remainder " joined with remainder
+end if
