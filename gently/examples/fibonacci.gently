@@ -1,0 +1,19 @@
+note: Fibonacci sequence
+note: Tests: recursion, functions returning values, conditionals
+
+function fib taking n
+    if n is less than or equal to 1 then
+        return n
+    end if
+    set a to fib with n minus 1
+    set b to fib with n minus 2
+    return a plus b
+end function
+
+print "Fibonacci sequence:"
+set i to 0
+repeat 10 times
+    set result to fib with i
+    print "fib(" joined with i joined with ") = " joined with result
+    set i to i plus 1
+end repeat

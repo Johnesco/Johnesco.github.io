@@ -16,16 +16,37 @@
     <div class="editor-section">
       <div class="toolbar">
         <button id="run-btn">Run</button>
+        <button id="help-btn">Guide</button>
         <select id="examples">
           <option value="">Load an example...</option>
-          <option value="hello">Hello World</option>
-          <option value="math">Math Operations</option>
-          <option value="loops">Loops</option>
-          <option value="drawing">Drawing Shapes</option>
-          <option value="function">Functions</option>
+          <optgroup label="Basics">
+            <option value="hello">Hello World</option>
+            <option value="math">Math Operations</option>
+            <option value="loops">Loops</option>
+            <option value="function">Functions</option>
+            <option value="lists">List Operations</option>
+          </optgroup>
+          <optgroup label="Algorithms">
+            <option value="fibonacci">Fibonacci</option>
+            <option value="factorial">Factorial</option>
+            <option value="fizzbuzz">FizzBuzz</option>
+            <option value="primes">Prime Checker</option>
+            <option value="temperature">Temperature Converter</option>
+            <option value="multiplication">Multiplication Table</option>
+          </optgroup>
+          <optgroup label="Graphics">
+            <option value="drawing">Drawing Shapes</option>
+            <option value="patterns">Drawing Patterns</option>
+          </optgroup>
+          <optgroup label="Advanced">
+            <option value="newfeatures">New Features Demo</option>
+          </optgroup>
         </select>
       </div>
-      <textarea id="editor" spellcheck="false" placeholder="Write your Clear code here..."></textarea>
+      <div class="editor-wrapper">
+        <pre id="highlight-layer" aria-hidden="true"><code id="highlight-code"></code></pre>
+        <textarea id="editor" spellcheck="false" placeholder="Write your Gently code here..."></textarea>
+      </div>
     </div>
 
     <div class="output-section">
@@ -46,6 +67,132 @@
   <footer>
     <p>Gently is designed to be easy to read and write, like English.</p>
   </footer>
+
+  <!-- Language Guide Modal -->
+  <div id="guide-modal" class="modal hidden">
+    <div class="modal-content">
+      <button id="close-modal" class="close-btn">&times;</button>
+      <h2>Gently Language Guide</h2>
+
+      <div class="guide-section">
+        <h3>Variables</h3>
+        <pre>set name to "Alice"
+set age to 25
+set playing to yes</pre>
+      </div>
+
+      <div class="guide-section">
+        <h3>Math</h3>
+        <pre>set sum to a plus b
+set diff to a minus b
+set product to a times b
+set quotient to a divided by b
+set remainder to a mod b
+
+note: Also works with symbols
+set result to 5 + 3 * 2
+set grouped to (a plus b) times c</pre>
+      </div>
+
+      <div class="guide-section">
+        <h3>Text</h3>
+        <pre>set greeting to "Hello " joined with name
+print greeting
+set len to length of greeting</pre>
+      </div>
+
+      <div class="guide-section">
+        <h3>Comparisons</h3>
+        <pre>a is equal to b
+a is greater than b
+a is less than b
+a is greater than or equal to b
+a is less than or equal to b</pre>
+      </div>
+
+      <div class="guide-section">
+        <h3>Logic</h3>
+        <pre>a and b
+a or b
+not a</pre>
+      </div>
+
+      <div class="guide-section">
+        <h3>Conditionals</h3>
+        <pre>if score is greater than 90 then
+    print "A"
+else if score is greater than 80 then
+    print "B"
+else
+    print "C"
+end if</pre>
+      </div>
+
+      <div class="guide-section">
+        <h3>Loops</h3>
+        <pre>repeat 5 times
+    print "Hello"
+end repeat
+
+repeat while n is greater than 0
+    print n
+    set n to n minus 1
+end repeat
+
+for each item in myList do
+    print item
+end for</pre>
+      </div>
+
+      <div class="guide-section">
+        <h3>Lists</h3>
+        <pre>set fruits to list of "apple", "banana", "cherry"
+set first to item 1 of fruits
+set count to length of fruits
+set item 2 of fruits to "blueberry"</pre>
+      </div>
+
+      <div class="guide-section">
+        <h3>Functions</h3>
+        <pre>function greet taking name
+    print "Hello, " joined with name
+end function
+
+greet with "World"
+
+function add taking a b
+    return a plus b
+end function
+
+set result to add with 5 and 3</pre>
+      </div>
+
+      <div class="guide-section">
+        <h3>Random Numbers</h3>
+        <pre>set dice to random number from 1 to 6</pre>
+      </div>
+
+      <div class="guide-section">
+        <h3>Drawing</h3>
+        <pre>clear canvas
+set color to "red"
+draw circle at 100, 100 with radius 50
+draw rectangle at 50, 50 with width 100 and height 80
+draw line from 0, 0 to 200, 200</pre>
+      </div>
+
+      <div class="guide-section">
+        <h3>Comments</h3>
+        <pre>note: This is a comment</pre>
+      </div>
+
+      <div class="guide-section">
+        <h3>Booleans</h3>
+        <pre>set playing to yes
+set gameOver to no</pre>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="playground.ts"></script>
 </body>

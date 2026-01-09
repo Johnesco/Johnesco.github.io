@@ -1,0 +1,27 @@
+note: FizzBuzz
+note: Tests: modulo, conditionals, loops, nested logic
+
+print "FizzBuzz from 1 to 20:"
+print ""
+
+set n to 1
+repeat 20 times
+    set by3 to n mod 3
+    set by5 to n mod 5
+
+    if by3 is equal to 0 and by5 is equal to 0 then
+        print "FizzBuzz"
+    else
+        if by3 is equal to 0 then
+            print "Fizz"
+        else
+            if by5 is equal to 0 then
+                print "Buzz"
+            else
+                print n
+            end if
+        end if
+    end if
+
+    set n to n plus 1
+end repeat

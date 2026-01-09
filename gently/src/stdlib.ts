@@ -43,6 +43,10 @@ export function createCanvasCallbacks(
     clearCanvas(): void {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     },
+
+    async ask(prompt: string): Promise<string> {
+      return window.prompt(prompt) ?? '';
+    },
   };
 }
 
@@ -70,6 +74,11 @@ export function createConsoleCallbacks(): InterpreterCallbacks {
 
     clearCanvas(): void {
       console.log('[Clear canvas]');
+    },
+
+    async ask(prompt: string): Promise<string> {
+      console.log(`[Ask: ${prompt}]`);
+      return '';
     },
   };
 }

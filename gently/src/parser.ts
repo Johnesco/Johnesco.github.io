@@ -5,6 +5,7 @@ import {
   Statement,
   Expression,
   SetStatement,
+  SetItemStatement,
   IfStatement,
   RepeatTimesStatement,
   RepeatWhileStatement,
@@ -16,12 +17,16 @@ import {
   DrawStatement,
   SetColorStatement,
   ClearCanvasStatement,
+  AskStatement,
   NumberLiteral,
   StringLiteral,
   BooleanLiteral,
   Identifier,
   ListLiteral,
   ItemAccess,
+  LengthExpression,
+  RandomExpression,
+  GroupedExpression,
   BinaryExpression,
   JoinedExpression,
   FunctionCallExpression,
@@ -96,6 +101,10 @@ export class Parser {
       return this.parseClearCanvasStatement();
     }
 
+    if (this.check(TokenType.ASK)) {
+      return this.parseAskStatement();
+    }
+
     // Check for function call (identifier followed by 'with')
     if (this.check(TokenType.IDENTIFIER)) {
       const next = this.peekNext();
@@ -115,7 +124,7 @@ export class Parser {
     );
   }
 
-  private parseSetStatement(): SetStatement | SetColorStatement {
+  private parseSetStatement(): SetStatement | SetColorStatement | SetItemStatement {
     const setToken = this.consume(TokenType.SET, "Expected 'set'");
 
     // Check for "set color to" (drawing command)
@@ -126,6 +135,23 @@ export class Parser {
       return {
         type: 'SetColorStatement',
         color,
+        line: setToken.line,
+      };
+    }
+
+    // Check for "set item N of list to value"
+    if (this.check(TokenType.ITEM)) {
+      this.advance();
+      const index = this.parseSimpleExpression();
+      this.consume(TokenType.OF, "Expected 'of' after item index");
+      const list = this.consume(TokenType.IDENTIFIER, "Expected list name after 'of'");
+      this.consume(TokenType.TO, "Expected 'to' after list name");
+      const value = this.parseExpression();
+      return {
+        type: 'SetItemStatement',
+        index,
+        list: list.value,
+        value,
         line: setToken.line,
       };
     }
@@ -163,6 +189,22 @@ export class Parser {
     let elseBranch: Statement[] | null = null;
     if (this.check(TokenType.ELSE)) {
       this.advance();
+
+      // Check for "else if" (no 'end if' needed between else and if)
+      if (this.check(TokenType.IF)) {
+        // Parse nested if as the else branch
+        const nestedIf = this.parseIfStatement();
+        elseBranch = [nestedIf];
+        // Don't consume end if - the nested if already did
+        return {
+          type: 'IfStatement',
+          condition,
+          thenBranch,
+          elseBranch,
+          line: ifToken.line,
+        };
+      }
+
       elseBranch = [];
       while (!this.check(TokenType.END) && !this.isAtEnd()) {
         const stmt = this.parseStatement();
@@ -206,8 +248,8 @@ export class Parser {
       };
     }
 
-    // repeat N times
-    const count = this.parseExpression();
+    // repeat N times - just parse a simple value, not a full expression
+    const count = this.parseValueExpression();
     this.consume(TokenType.TIMES, "Expected 'times' after the number");
 
     const body: Statement[] = [];
@@ -321,23 +363,14 @@ export class Parser {
     if (this.check(TokenType.WITH)) {
       this.advance();
 
-      // Parse arguments: with a b c  OR  with a, b, c  OR  with a, b, and c
-      do {
-        args.push(this.parseExpression());
+      // Parse first argument
+      args.push(this.parseSimpleExpression());
 
-        if (this.check(TokenType.COMMA)) {
-          this.advance();
-        }
-        if (this.check(TokenType.AND)) {
-          this.advance();
-        }
-      } while (
-        !this.isAtEnd() &&
-        !this.checkStatementStart() &&
-        !this.check(TokenType.END) &&
-        !this.check(TokenType.ELSE) &&
-        !this.check(TokenType.THEN)
-      );
+      // Parse additional arguments only if separated by comma or 'and'
+      while (this.check(TokenType.COMMA) || this.check(TokenType.AND)) {
+        this.advance(); // consume comma or 'and'
+        args.push(this.parseSimpleExpression());
+      }
     }
 
     return {
@@ -380,12 +413,12 @@ export class Parser {
     if (this.check(TokenType.CIRCLE)) {
       this.advance();
       this.consume(TokenType.AT, "Expected 'at' after 'draw circle'");
-      params.x = this.parseExpression();
+      params.x = this.parseBasicValue();
       this.consumeOptionalComma();
-      params.y = this.parseExpression();
+      params.y = this.parseBasicValue();
       this.consume(TokenType.WITH, "Expected 'with' before radius");
       this.consume(TokenType.RADIUS, "Expected 'radius'");
-      params.radius = this.parseExpression();
+      params.radius = this.parseBasicValue();
 
       return { type: 'DrawStatement', shape: 'circle', params, line: drawToken.line };
     }
@@ -393,15 +426,15 @@ export class Parser {
     if (this.check(TokenType.RECTANGLE)) {
       this.advance();
       this.consume(TokenType.AT, "Expected 'at' after 'draw rectangle'");
-      params.x = this.parseExpression();
+      params.x = this.parseBasicValue();
       this.consumeOptionalComma();
-      params.y = this.parseExpression();
+      params.y = this.parseBasicValue();
       this.consume(TokenType.WITH, "Expected 'with' before dimensions");
       this.consume(TokenType.WIDTH, "Expected 'width'");
-      params.width = this.parseExpression();
+      params.width = this.parseBasicValue();
       if (this.check(TokenType.AND)) this.advance();
       this.consume(TokenType.HEIGHT, "Expected 'height'");
-      params.height = this.parseExpression();
+      params.height = this.parseBasicValue();
 
       return { type: 'DrawStatement', shape: 'rectangle', params, line: drawToken.line };
     }
@@ -409,13 +442,13 @@ export class Parser {
     if (this.check(TokenType.LINE)) {
       this.advance();
       this.consume(TokenType.FROM, "Expected 'from' after 'draw line'");
-      params.x1 = this.parseExpression();
+      params.x1 = this.parseBasicValue();
       this.consumeOptionalComma();
-      params.y1 = this.parseExpression();
+      params.y1 = this.parseBasicValue();
       this.consume(TokenType.TO, "Expected 'to' in 'draw line from x1, y1 to x2, y2'");
-      params.x2 = this.parseExpression();
+      params.x2 = this.parseBasicValue();
       this.consumeOptionalComma();
-      params.y2 = this.parseExpression();
+      params.y2 = this.parseBasicValue();
 
       return { type: 'DrawStatement', shape: 'line', params, line: drawToken.line };
     }
@@ -437,10 +470,120 @@ export class Parser {
     };
   }
 
+  private parseAskStatement(): AskStatement {
+    const askToken = this.consume(TokenType.ASK, "Expected 'ask'");
+    const prompt = this.parseExpression();
+    this.consume(TokenType.AND, "Expected 'and' after the prompt");
+    this.consume(TokenType.STORE, "Expected 'store' after 'and'");
+    this.consume(TokenType.IN, "Expected 'in' after 'store'");
+    const variable = this.consume(TokenType.IDENTIFIER, "Expected variable name after 'in'");
+
+    return {
+      type: 'AskStatement',
+      prompt,
+      variable: variable.value,
+      line: askToken.line,
+    };
+  }
+
   // Expression parsing with precedence
 
   private parseExpression(): Expression {
     return this.parseOr();
+  }
+
+  // Parse expression but stop at 'and' (for function args, draw params)
+  private parseSimpleExpression(): Expression {
+    return this.parseComparison();
+  }
+
+  // Parse just a value - no operators (for repeat N times)
+  private parseValueExpression(): Expression {
+    return this.parsePrimary();
+  }
+
+  // Parse coordinate values for draw - allows math but not function calls
+  private parseBasicValue(): Expression {
+    return this.parseAdditiveNoFunctionCall();
+  }
+
+  // Parse additive expressions without function call lookahead
+  private parseAdditiveNoFunctionCall(): Expression {
+    let left = this.parseMultiplicativeNoFunctionCall();
+
+    while (true) {
+      let operator: BinaryExpression['operator'] | null = null;
+
+      if (this.check(TokenType.PLUS) || this.check(TokenType.PLUS_SYMBOL)) {
+        this.advance();
+        operator = 'plus';
+      } else if (this.check(TokenType.MINUS) || this.check(TokenType.MINUS_SYMBOL)) {
+        this.advance();
+        operator = 'minus';
+      }
+
+      if (operator) {
+        const right = this.parseMultiplicativeNoFunctionCall();
+        left = { type: 'BinaryExpression', operator, left, right };
+      } else {
+        break;
+      }
+    }
+
+    return left;
+  }
+
+  private parseMultiplicativeNoFunctionCall(): Expression {
+    let left = this.parsePrimaryNoFunctionCall();
+
+    while (true) {
+      let operator: BinaryExpression['operator'] | null = null;
+
+      if (this.check(TokenType.TIMES_OP) || this.check(TokenType.STAR) || this.check(TokenType.TIMES)) {
+        this.advance();
+        operator = 'times';
+      } else if (this.check(TokenType.DIVIDED)) {
+        this.advance();
+        this.consume(TokenType.BY, "Expected 'by' after 'divided'");
+        operator = 'divided by';
+      } else if (this.check(TokenType.SLASH)) {
+        this.advance();
+        operator = 'divided by';
+      } else if (this.check(TokenType.MOD)) {
+        this.advance();
+        operator = 'mod';
+      }
+
+      if (operator) {
+        const right = this.parsePrimaryNoFunctionCall();
+        left = { type: 'BinaryExpression', operator, left, right };
+      } else {
+        break;
+      }
+    }
+
+    return left;
+  }
+
+  private parsePrimaryNoFunctionCall(): Expression {
+    if (this.check(TokenType.NUMBER)) {
+      const token = this.advance();
+      return { type: 'NumberLiteral', value: parseFloat(token.value) };
+    }
+    if (this.check(TokenType.IDENTIFIER)) {
+      const token = this.advance();
+      return { type: 'Identifier', name: token.value };
+    }
+    if (this.check(TokenType.MINUS_SYMBOL)) {
+      this.advance();
+      const operand = this.parsePrimaryNoFunctionCall();
+      return { type: 'UnaryExpression', operator: 'minus', operand };
+    }
+    throw new ParseError(
+      `Expected a number or variable here`,
+      this.peek().line,
+      this.peek().column
+    );
   }
 
   private parseOr(): Expression {
@@ -667,6 +810,14 @@ export class Parser {
   }
 
   private parsePrimary(): Expression {
+    // Grouped expression: (expression)
+    if (this.check(TokenType.LEFT_PAREN)) {
+      this.advance();
+      const expression = this.parseExpression();
+      this.consume(TokenType.RIGHT_PAREN, "Expected ')' after expression");
+      return { type: 'GroupedExpression', expression };
+    }
+
     // Number literal
     if (this.check(TokenType.NUMBER)) {
       const token = this.advance();
@@ -696,30 +847,40 @@ export class Parser {
       return { type: 'BooleanLiteral', value: false };
     }
 
+    // Length of list: length of list
+    if (this.check(TokenType.LENGTH)) {
+      this.advance();
+      this.consume(TokenType.OF, "Expected 'of' after 'length'");
+      const list = this.parseExpression();
+      return { type: 'LengthExpression', list };
+    }
+
+    // Random number: random number from X to Y
+    if (this.check(TokenType.RANDOM)) {
+      this.advance();
+      this.consume(TokenType.NUMBER_KW, "Expected 'number' after 'random'");
+      this.consume(TokenType.FROM, "Expected 'from' after 'random number'");
+      const min = this.parseSimpleExpression();
+      this.consume(TokenType.TO, "Expected 'to' in 'random number from X to Y'");
+      const max = this.parseSimpleExpression();
+      return { type: 'RandomExpression', min, max };
+    }
+
     // List literal: list of 1, 2, 3
     if (this.check(TokenType.LIST)) {
       this.advance();
       this.consume(TokenType.OF, "Expected 'of' after 'list'");
 
       const elements: Expression[] = [];
-      do {
-        elements.push(this.parseExpression());
-        if (this.check(TokenType.COMMA)) {
-          this.advance();
-        }
-        if (this.check(TokenType.AND)) {
-          this.advance();
-        }
-      } while (
-        !this.isAtEnd() &&
-        !this.checkStatementStart() &&
-        !this.check(TokenType.END) &&
-        this.check(TokenType.NUMBER) ||
-        this.check(TokenType.STRING) ||
-        this.check(TokenType.IDENTIFIER) ||
-        this.check(TokenType.YES) ||
-        this.check(TokenType.NO)
-      );
+
+      // Parse first element
+      elements.push(this.parseSimpleExpression());
+
+      // Parse additional elements only if separated by comma or 'and'
+      while (this.check(TokenType.COMMA) || this.check(TokenType.AND)) {
+        this.advance(); // consume comma or 'and'
+        elements.push(this.parseSimpleExpression());
+      }
 
       return { type: 'ListLiteral', elements };
     }

@@ -1,0 +1,40 @@
+note: Drawing patterns
+note: Tests: drawing commands, math in coordinates, loops with graphics
+
+clear canvas
+
+note: Draw a row of circles with different colors
+set x to 30
+set colors to list of "red", "orange", "yellow", "green", "blue", "purple"
+set i to 1
+
+repeat 6 times
+    set clr to item i of colors
+    set color to clr
+    draw circle at x, 50 with radius 20
+    set x to x plus 60
+    set i to i plus 1
+end repeat
+
+note: Draw a grid of rectangles
+set y to 100
+set color to "gray"
+repeat 4 times
+    set x to 20
+    repeat 6 times
+        draw rectangle at x, y with width 50 and height 40
+        set x to x plus 60
+    end repeat
+    set y to y plus 50
+end repeat
+
+note: Draw diagonal lines
+set color to "black"
+set i to 0
+repeat 8 times
+    set startx to i times 50
+    draw line from startx, 0 to 400, 300 minus startx
+    set i to i plus 1
+end repeat
+
+print "Pattern complete!"

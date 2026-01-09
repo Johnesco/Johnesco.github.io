@@ -58,12 +58,21 @@ export enum TokenType {
   STRING = 'STRING',
   IDENTIFIER = 'IDENTIFIER',
 
+  // Additional keywords
+  LENGTH = 'LENGTH',
+  ASK = 'ASK',
+  STORE = 'STORE',
+  RANDOM = 'RANDOM',
+  NUMBER_KW = 'NUMBER_KW',
+
   // Symbols
   COMMA = 'COMMA',
   PLUS_SYMBOL = 'PLUS_SYMBOL',
   MINUS_SYMBOL = 'MINUS_SYMBOL',
   STAR = 'STAR',
   SLASH = 'SLASH',
+  LEFT_PAREN = 'LEFT_PAREN',
+  RIGHT_PAREN = 'RIGHT_PAREN',
   NEWLINE = 'NEWLINE',
   EOF = 'EOF',
 }
@@ -89,6 +98,7 @@ export interface Program {
 
 export type Statement =
   | SetStatement
+  | SetItemStatement
   | IfStatement
   | RepeatTimesStatement
   | RepeatWhileStatement
@@ -99,7 +109,8 @@ export type Statement =
   | PrintStatement
   | DrawStatement
   | SetColorStatement
-  | ClearCanvasStatement;
+  | ClearCanvasStatement
+  | AskStatement;
 
 export interface SetStatement {
   type: 'SetStatement';
@@ -182,6 +193,21 @@ export interface ClearCanvasStatement {
   line: number;
 }
 
+export interface AskStatement {
+  type: 'AskStatement';
+  prompt: Expression;
+  variable: string;
+  line: number;
+}
+
+export interface SetItemStatement {
+  type: 'SetItemStatement';
+  index: Expression;
+  list: string;
+  value: Expression;
+  line: number;
+}
+
 // Expressions
 
 export type Expression =
@@ -191,11 +217,14 @@ export type Expression =
   | Identifier
   | ListLiteral
   | ItemAccess
+  | LengthExpression
+  | RandomExpression
   | BinaryExpression
   | UnaryExpression
   | JoinedExpression
   | FunctionCallExpression
-  | ComparisonExpression;
+  | ComparisonExpression
+  | GroupedExpression;
 
 export interface NumberLiteral {
   type: 'NumberLiteral';
@@ -226,6 +255,22 @@ export interface ItemAccess {
   type: 'ItemAccess';
   index: Expression;
   list: Expression;
+}
+
+export interface LengthExpression {
+  type: 'LengthExpression';
+  list: Expression;
+}
+
+export interface RandomExpression {
+  type: 'RandomExpression';
+  min: Expression;
+  max: Expression;
+}
+
+export interface GroupedExpression {
+  type: 'GroupedExpression';
+  expression: Expression;
 }
 
 export interface BinaryExpression {

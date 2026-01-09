@@ -1,0 +1,18 @@
+note: Nested loops - multiplication table
+note: Tests: nested repeat, string building
+
+print "Multiplication Table (1-5):"
+print ""
+
+set row to 1
+repeat 5 times
+    set col to 1
+    set row_text to ""
+    repeat 5 times
+        set product to row times col
+        set row_text to row_text joined with product joined with "  "
+        set col to col plus 1
+    end repeat
+    print row_text
+    set row to row plus 1
+end repeat

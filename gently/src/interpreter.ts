@@ -5,6 +5,7 @@ import {
   ClearValue,
   ClearFunction,
   SetStatement,
+  SetItemStatement,
   IfStatement,
   RepeatTimesStatement,
   RepeatWhileStatement,
@@ -16,12 +17,16 @@ import {
   DrawStatement,
   SetColorStatement,
   ClearCanvasStatement,
+  AskStatement,
   BinaryExpression,
   UnaryExpression,
   ComparisonExpression,
   JoinedExpression,
   FunctionCallExpression,
   ItemAccess,
+  LengthExpression,
+  RandomExpression,
+  GroupedExpression,
 } from './types';
 import { RuntimeError } from './errors';
 
@@ -32,6 +37,7 @@ export interface InterpreterCallbacks {
   drawLine: (x1: number, y1: number, x2: number, y2: number) => void;
   setColor: (color: string) => void;
   clearCanvas: () => void;
+  ask: (prompt: string) => Promise<string>;
 }
 
 class ReturnValue {
@@ -60,6 +66,9 @@ export class Interpreter {
     switch (statement.type) {
       case 'SetStatement':
         this.executeSetStatement(statement);
+        break;
+      case 'SetItemStatement':
+        this.executeSetItemStatement(statement);
         break;
       case 'IfStatement':
         this.executeIfStatement(statement);
@@ -94,6 +103,9 @@ export class Interpreter {
       case 'ClearCanvasStatement':
         this.callbacks.clearCanvas();
         break;
+      case 'AskStatement':
+        this.executeAskStatement(statement);
+        break;
       default:
         throw new RuntimeError(
           `Unknown statement type: ${(statement as Statement).type}`,
@@ -105,6 +117,48 @@ export class Interpreter {
   private executeSetStatement(statement: SetStatement): void {
     const value = this.evaluate(statement.value);
     this.environment.set(statement.identifier, value);
+  }
+
+  private executeSetItemStatement(statement: SetItemStatement): void {
+    const index = this.evaluate(statement.index);
+    const value = this.evaluate(statement.value);
+    const list = this.lookupVariable(statement.list);
+
+    if (typeof index !== 'number') {
+      throw new RuntimeError(
+        `The item number needs to be a number, but got ${typeof index}`,
+        statement.line
+      );
+    }
+
+    if (!Array.isArray(list)) {
+      throw new RuntimeError(
+        `'${statement.list}' is not a list`,
+        statement.line
+      );
+    }
+
+    // 1-indexed
+    const i = Math.floor(index) - 1;
+
+    if (i < 0 || i >= list.length) {
+      throw new RuntimeError(
+        `There is no item ${index} in this list. The list has ${list.length} item(s).`,
+        statement.line,
+        1,
+        `Valid item numbers are 1 to ${list.length}`
+      );
+    }
+
+    list[i] = value;
+  }
+
+  private executeAskStatement(statement: AskStatement): void {
+    const prompt = this.stringify(this.evaluate(statement.prompt));
+    // For browser: use window.prompt, for now just store empty string
+    // The actual prompt will be handled by the callback
+    const result = window.prompt(prompt) ?? '';
+    this.environment.set(statement.variable, result);
   }
 
   private executeIfStatement(statement: IfStatement): void {
@@ -169,17 +223,13 @@ export class Interpreter {
       );
     }
 
-    const previousEnv = this.environment;
-    this.environment = new Map(previousEnv);
-
+    // Don't create new scope - keep variables accessible after loop
     for (const item of iterable) {
       this.environment.set(statement.variable, item);
       for (const stmt of statement.body) {
         this.executeStatement(stmt);
       }
     }
-
-    this.environment = previousEnv;
   }
 
   private executeFunctionDeclaration(statement: FunctionDeclaration): void {
@@ -271,6 +321,15 @@ export class Interpreter {
 
       case 'FunctionCallExpression':
         return this.evaluateFunctionCall(expression);
+
+      case 'LengthExpression':
+        return this.evaluateLengthExpression(expression);
+
+      case 'RandomExpression':
+        return this.evaluateRandomExpression(expression);
+
+      case 'GroupedExpression':
+        return this.evaluate(expression.expression);
 
       default:
         throw new RuntimeError(
@@ -474,6 +533,38 @@ export class Interpreter {
     const left = this.evaluate(expression.left);
     const right = this.evaluate(expression.right);
     return this.stringify(left) + this.stringify(right);
+  }
+
+  private evaluateLengthExpression(expression: LengthExpression): ClearValue {
+    const list = this.evaluate(expression.list);
+
+    if (typeof list === 'string') {
+      return list.length;
+    }
+
+    if (!Array.isArray(list)) {
+      throw new RuntimeError(
+        `'length of' needs a list or text, but got ${typeof list}`,
+        0
+      );
+    }
+
+    return list.length;
+  }
+
+  private evaluateRandomExpression(expression: RandomExpression): ClearValue {
+    const min = this.evaluate(expression.min);
+    const max = this.evaluate(expression.max);
+
+    if (typeof min !== 'number' || typeof max !== 'number') {
+      throw new RuntimeError(
+        `'random number from' needs two numbers, but got ${typeof min} and ${typeof max}`,
+        0
+      );
+    }
+
+    // Return a random integer between min and max (inclusive)
+    return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
   private evaluateFunctionCall(expression: FunctionCallExpression): ClearValue {

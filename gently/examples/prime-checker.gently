@@ -1,0 +1,34 @@
+note: Prime number checker
+note: Tests: nested logic, early returns, modulo
+
+function is_prime taking n
+    if n is less than 2 then
+        return no
+    end if
+    if n is equal to 2 then
+        return yes
+    end if
+    if n mod 2 is equal to 0 then
+        return no
+    end if
+
+    note: Check odd divisors up to square root approximation
+    set divisor to 3
+    repeat while divisor times divisor is less than or equal to n
+        if n mod divisor is equal to 0 then
+            return no
+        end if
+        set divisor to divisor plus 2
+    end repeat
+
+    return yes
+end function
+
+print "Prime numbers from 1 to 30:"
+set n to 1
+repeat 30 times
+    if is_prime with n then
+        print n joined with " is prime"
+    end if
+    set n to n plus 1
+end repeat

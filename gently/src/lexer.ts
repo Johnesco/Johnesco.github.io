@@ -51,6 +51,11 @@ const KEYWORDS: Record<string, TokenType> = {
   'color': TokenType.COLOR,
   'clear': TokenType.CLEAR,
   'canvas': TokenType.CANVAS,
+  'length': TokenType.LENGTH,
+  'ask': TokenType.ASK,
+  'store': TokenType.STORE,
+  'random': TokenType.RANDOM,
+  'number': TokenType.NUMBER_KW,
 };
 
 export class Lexer {
@@ -117,6 +122,14 @@ export class Lexer {
 
       case '/':
         this.addToken(TokenType.SLASH, '/');
+        break;
+
+      case '(':
+        this.addToken(TokenType.LEFT_PAREN, '(');
+        break;
+
+      case ')':
+        this.addToken(TokenType.RIGHT_PAREN, ')');
         break;
 
       case '"':
