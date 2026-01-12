@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/style.css" type="text/css" />
+    <title>About This Resume System</title>
+    <style>
+        .about-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .about-container h1 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+        }
+        .about-container h2 {
+            color: var(--secondary-color);
+            margin-top: 2rem;
+        }
+        .about-container code {
+            background: var(--light-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .about-container pre {
+            background: var(--light-bg);
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        .about-container table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        .about-container th, .about-container td {
+            border: 1px solid var(--border-color);
+            padding: 0.5rem;
+            text-align: left;
+        }
+        .about-container th {
+            background: var(--light-bg);
+        }
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .feature-card {
+            background: var(--light-bg);
+            padding: 1rem;
+            border-radius: 6px;
+            border-left: 4px solid var(--primary-color);
+        }
+        .feature-card h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1rem;
+        }
+        .feature-card p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="about-container">
+        <h1>About This Resume System</h1>
+
+        <p>This is a dynamic, JavaScript-powered resume website. All resume content is stored in a single JSON data file and rendered dynamically, allowing for multiple output formats and URL-based filtering.</p>
+
+        <h2>Key Features</h2>
+
+        <div class="feature-list">
+            <div class="feature-card">
+                <h3>Single Source of Truth</h3>
+                <p>All resume data lives in one JSON file. Update once, changes appear everywhere.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Multiple Formats</h3>
+                <p>Styled HTML, plain text (ATS-friendly), visual timeline, and Bootstrap versions.</p>
+            </div>
+            <div class="feature-card">
+                <h3>URL Filtering</h3>
+                <p>Filter by years, industry tags, or skills using URL query parameters.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Customization UI</h3>
+                <p>Interactive interface to build custom filtered resume URLs.</p>
+            </div>
+        </div>
+
+        <h2>Available Pages</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Page</th>
+                    <th>Purpose</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>index.html</code></td>
+                    <td>Main styled resume with modern CSS layout</td>
+                </tr>
+                <tr>
+                    <td><code>plaintextresume.html</code></td>
+                    <td>Plain text version optimized for ATS systems and copy/paste</td>
+                </tr>
+                <tr>
+                    <td><code>customize.html</code></td>
+                    <td>Interactive filter builder to create custom resume URLs</td>
+                </tr>
+                <tr>
+                    <td><code>workhistory.html</code></td>
+                    <td>Visual timeline showing career progression</td>
+                </tr>
+                <tr>
+                    <td><code>geeksiresume.html</code></td>
+                    <td>Bootstrap-styled alternative layout</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>URL Query Parameters</h2>
+
+        <p>Filter the resume dynamically by adding query parameters to the URL:</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Description</th>
+                    <th>Example</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>years</code></td>
+                    <td>Show only jobs within the last N years</td>
+                    <td><code>?years=10</code></td>
+                </tr>
+                <tr>
+                    <td><code>tags</code></td>
+                    <td>Filter by industry/role tags (comma-separated)</td>
+                    <td><code>?tags=healthcare,government</code></td>
+                </tr>
+                <tr>
+                    <td><code>skills</code></td>
+                    <td>Filter which skill categories to display</td>
+                    <td><code>?skills=testing,tools</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Example URLs</h3>
+        <ul>
+            <li>Last 10 years only: <code>index.html?years=10</code></li>
+            <li>Healthcare experience: <code>index.html?tags=healthcare</code></li>
+            <li>Government and healthcare: <code>index.html?tags=government,healthcare</code></li>
+            <li>Combined filters: <code>index.html?years=15&tags=lead</code></li>
+        </ul>
+
+        <h2>Available Tags</h2>
+
+        <p>Jobs are categorized with the following tags for filtering:</p>
+
+        <div class="feature-list">
+            <div class="feature-card">
+                <h3>Industry</h3>
+                <p>healthcare, government, gaming, education, ecommerce, entertainment, robotics, creative, web, adtech</p>
+            </div>
+            <div class="feature-card">
+                <h3>Role Type</h3>
+                <p>lead, startup, support, admin, instructor</p>
+            </div>
+            <div class="feature-card">
+                <h3>Specialty</h3>
+                <p>accessibility, mobile, automation, hipaa, cicd, agile, asl, vr</p>
+            </div>
+        </div>
+
+        <h2>Architecture</h2>
+
+        <h3>Data Flow</h3>
+        <pre>
+resumeJSON.js (data)
+       │
+       ▼
+resume-utils.js (shared filtering & formatting)
+       │
+       ├──► main.js ──► index.html
+       │
+       └──► plaintextresume.html (inline renderer)
+        </pre>
+
+        <h3>File Structure</h3>
+        <pre>
+resume/
+├── index.html              # Main styled resume
+├── plaintextresume.html    # Plain text version
+├── customize.html          # Filter builder UI
+├── workhistory.html        # Visual timeline
+├── geeksiresume.html       # Bootstrap version
+├── about.html              # This documentation
+├── css/
+│   ├── style.css           # Main styles
+│   └── resumeboot4.css     # Bootstrap version styles
+├── js/
+│   ├── resumeJSON.js       # Resume data (single source)
+│   ├── resume-utils.js     # Shared utilities
+│   ├── main.js             # Main renderer
+│   └── app-geeksi.js       # Bootstrap renderer
+└── files/
+    ├── EscobedoJohnResume.docx
+    └── EscobedoJohnResume.pdf
+        </pre>
+
+        <h2>Technical Details</h2>
+
+        <ul>
+            <li><strong>No Build Process</strong>: Static files, edit and refresh</li>
+            <li><strong>Vanilla JavaScript</strong>: No framework dependencies (except Bootstrap version uses jQuery)</li>
+            <li><strong>CSS Custom Properties</strong>: Colors and spacing defined as variables</li>
+            <li><strong>Print Optimized</strong>: Includes print styles for PDF generation</li>
+            <li><strong>Default Years Filter</strong>: Shows last 15 years of work history by default</li>
+        </ul>
+
+        <h2>Data Format</h2>
+
+        <p>The resume data follows a modified <a href="https://jsonresume.org/" target="_blank" rel="noopener">JSON Resume</a> schema with these sections:</p>
+
+        <ul>
+            <li><code>basics</code> - Name, title, contact info, summary</li>
+            <li><code>work</code> - Array of job objects with <code>tags</code> for filtering</li>
+            <li><code>education</code> - Array of educational institutions</li>
+            <li><code>skills</code> - Array of skill categories with keywords</li>
+            <li><code>languages</code> - Array of spoken languages</li>
+        </ul>
+
+        <h2>Updating Content</h2>
+
+        <p>To update resume content:</p>
+        <ol>
+            <li>Edit <code>js/resumeJSON.js</code></li>
+            <li>All pages automatically reflect changes on next load</li>
+            <li>No compilation or build step required</li>
+        </ol>
+
+    </div>
+</body>
+</html>
