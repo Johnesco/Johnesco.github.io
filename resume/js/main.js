@@ -28,7 +28,7 @@ function filterWorkByTags(work, tags) {
     });
 }
 
-function filterWorkByYears(work, years = 10) {
+function filterWorkByYears(work, years = 15) {
     if (years <= 0 || years > 50) return work;
     const now = new Date();
     const cutoffDate = new Date(now.getFullYear() - years, now.getMonth(), now.getDate());
@@ -112,8 +112,8 @@ function renderResume() {
 
     // Apply work filters
     filteredWork = filterWorkByTags(filteredWork, params.tags);
-    // Default to 10 years if no years parameter specified
-    const yearsFilter = params.years != null ? params.years : 10;
+    // Default to 15 years if no years parameter specified
+    const yearsFilter = params.years != null ? params.years : 15;
     filteredWork = filterWorkByYears(filteredWork, yearsFilter);
 
     // Apply skills filter
