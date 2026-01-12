@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gently - Programming Language Playground</title>
-  <script type="module" crossorigin src="./assets/index-C68HxzRi.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-pRtHNLX8.css">
+  <script type="module" crossorigin src="./assets/index-D3mE5PVz.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BPrb81Z8.css">
 </head>
 <body>
   <header>
@@ -38,6 +38,10 @@
           <optgroup label="Graphics">
             <option value="drawing">Drawing Shapes</option>
             <option value="patterns">Drawing Patterns</option>
+            <option value="sierpinski">Sierpinski Triangle</option>
+          </optgroup>
+          <optgroup label="Interactive">
+            <option value="guessnumber">Guess the Number</option>
           </optgroup>
           <optgroup label="Advanced">
             <option value="newfeatures">New Features Demo</option>
@@ -57,6 +61,10 @@
       </div>
       <div id="output-panel" class="panel active">
         <div id="output"></div>
+        <div id="input-container" class="hidden">
+          <span id="input-prompt"></span>
+          <input type="text" id="input-field" autocomplete="off" />
+        </div>
       </div>
       <div id="canvas-panel" class="panel">
         <canvas id="canvas" width="400" height="300"></canvas>
@@ -171,6 +179,13 @@ set result to add with 5 and 3</pre>
       <div class="guide-section">
         <h3>Random Numbers</h3>
         <pre>set dice to random number from 1 to 6</pre>
+      </div>
+
+      <div class="guide-section">
+        <h3>User Input</h3>
+        <pre>ask "What is your name?" and store in name
+ask "Enter a number:" and store in num
+note: Numbers are automatically detected</pre>
       </div>
 
       <div class="guide-section">

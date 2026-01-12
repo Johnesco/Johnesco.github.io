@@ -1,5 +1,4 @@
 import { run } from '../src/index';
-import { createCanvasCallbacks } from '../src/stdlib';
 
 // Syntax highlighting
 const KEYWORDS = [
@@ -457,6 +456,96 @@ end repeat
 
 print "Pattern complete! Click Canvas tab to see."`,
 
+  sierpinski: `note: Sierpinski Triangle using the Chaos Game algorithm
+note: This creates a fractal by repeatedly moving halfway toward random vertices
+
+clear canvas
+
+note: Define the three vertices of the triangle
+set x1 to 200
+set y1 to 10
+set x2 to 10
+set y2 to 290
+set x3 to 390
+set y3 to 290
+
+note: Start at a random point inside the triangle
+set x to 200
+set y to 150
+
+note: Draw the fractal using the chaos game
+set color to "purple"
+set i to 0
+repeat 5000 times
+    note: Pick a random vertex (1, 2, or 3)
+    set vertex to random number from 1 to 3
+
+    note: Move halfway toward the chosen vertex
+    if vertex is equal to 1 then
+        set x to (x plus x1) divided by 2
+        set y to (y plus y1) divided by 2
+    end if
+    if vertex is equal to 2 then
+        set x to (x plus x2) divided by 2
+        set y to (y plus y2) divided by 2
+    end if
+    if vertex is equal to 3 then
+        set x to (x plus x3) divided by 2
+        set y to (y plus y3) divided by 2
+    end if
+
+    note: Draw a tiny dot at the current position
+    note: Skip first few iterations to let the pattern stabilize
+    if i is greater than 10 then
+        draw circle at x, y with radius 1
+    end if
+
+    set i to i plus 1
+end repeat
+
+print "Sierpinski Triangle complete!"
+print "Click the Canvas tab to see the fractal."`,
+
+  guessnumber: `note: Guess the Number Game
+note: This demonstrates user input with the "ask" statement
+
+print "Welcome to Guess the Number!"
+print ""
+
+note: Generate a secret number between 1 and 100
+set secret to random number from 1 to 100
+set guesses to 0
+set won to no
+
+print "I'm thinking of a number between 1 and 100."
+print "You have 7 tries to guess it!"
+print ""
+
+note: Give the player 7 attempts
+repeat 7 times
+    if won is equal to no then
+        ask "Enter your guess:" and store in guess
+        set guesses to guesses plus 1
+
+        if guess is equal to secret then
+            set won to yes
+            print "Congratulations! You got it!"
+            print "The number was " joined with secret
+            print "You guessed it in " joined with guesses joined with " tries!"
+        else if guess is less than secret then
+            print guess joined with " is too low. Try higher!"
+        else
+            print guess joined with " is too high. Try lower!"
+        end if
+        print ""
+    end if
+end repeat
+
+if won is equal to no then
+    print "Game over! The number was " joined with secret
+    print "Better luck next time!"
+end if`,
+
   newfeatures: `note: Test new language features
 
 note: Test parentheses for grouping
@@ -513,8 +602,15 @@ const errorDiv = document.getElementById('error') as HTMLDivElement;
 const helpBtn = document.getElementById('help-btn') as HTMLButtonElement;
 const guideModal = document.getElementById('guide-modal') as HTMLDivElement;
 const closeModal = document.getElementById('close-modal') as HTMLButtonElement;
+const inputContainer = document.getElementById('input-container') as HTMLDivElement;
+const inputPrompt = document.getElementById('input-prompt') as HTMLSpanElement;
+const inputField = document.getElementById('input-field') as HTMLInputElement;
 const tabs = document.querySelectorAll('.tab');
 const panels = document.querySelectorAll('.panel');
+
+// State for handling input
+let inputResolve: ((value: string) => void) | null = null;
+let isRunning = false;
 
 // Update syntax highlighting
 function updateHighlight() {
@@ -571,12 +667,100 @@ guideModal.addEventListener('click', (e) => {
   }
 });
 
+// Create custom callbacks with inline input support
+function createPlaygroundCallbacks() {
+  const ctx = canvas.getContext('2d')!;
+  let currentColor = 'black';
+
+  return {
+    print(value: string): void {
+      const line = document.createElement('div');
+      line.textContent = value;
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+    },
+
+    drawCircle(x: number, y: number, radius: number): void {
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = currentColor;
+      ctx.fill();
+    },
+
+    drawRectangle(x: number, y: number, width: number, height: number): void {
+      ctx.fillStyle = currentColor;
+      ctx.fillRect(x, y, width, height);
+    },
+
+    drawLine(x1: number, y1: number, x2: number, y2: number): void {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = currentColor;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    },
+
+    setColor(color: string): void {
+      currentColor = color;
+    },
+
+    clearCanvas(): void {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    },
+
+    ask(prompt: string): Promise<string> {
+      return new Promise((resolve) => {
+        // Show the prompt in output
+        const promptLine = document.createElement('div');
+        promptLine.textContent = prompt;
+        promptLine.style.color = '#56b6c2';
+        output.appendChild(promptLine);
+
+        // Show input container
+        inputPrompt.textContent = '>';
+        inputField.value = '';
+        inputContainer.classList.remove('hidden');
+        inputField.focus();
+
+        // Store the resolve function
+        inputResolve = (value: string) => {
+          // Hide input container
+          inputContainer.classList.add('hidden');
+
+          // Show what the user typed in output
+          const responseLine = document.createElement('div');
+          responseLine.textContent = `> ${value}`;
+          responseLine.style.color = '#98c379';
+          output.appendChild(responseLine);
+          output.scrollTop = output.scrollHeight;
+
+          resolve(value);
+        };
+      });
+    },
+  };
+}
+
+// Handle input submission
+inputField.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && inputResolve) {
+    e.preventDefault();
+    const value = inputField.value;
+    inputResolve(value);
+    inputResolve = null;
+  }
+});
+
 // Run code
-function runCode() {
+async function runCode() {
+  if (isRunning) return;
+
   // Clear previous output
   output.innerHTML = '';
   errorDiv.classList.add('hidden');
   errorDiv.textContent = '';
+  inputContainer.classList.add('hidden');
 
   // Clear canvas
   const ctx = canvas.getContext('2d')!;
@@ -588,12 +772,25 @@ function runCode() {
     return;
   }
 
-  const callbacks = createCanvasCallbacks(canvas, output);
-  const result = run(source, callbacks);
+  // Disable run button while executing
+  isRunning = true;
+  runBtn.disabled = true;
+  runBtn.textContent = 'Running...';
 
-  if (!result.success && result.error) {
-    errorDiv.textContent = result.error.formatted;
-    errorDiv.classList.remove('hidden');
+  try {
+    const callbacks = createPlaygroundCallbacks();
+    const result = await run(source, callbacks);
+
+    if (!result.success && result.error) {
+      errorDiv.textContent = result.error.formatted;
+      errorDiv.classList.remove('hidden');
+    }
+  } finally {
+    isRunning = false;
+    runBtn.disabled = false;
+    runBtn.textContent = 'Run';
+    inputContainer.classList.add('hidden');
+    inputResolve = null;
   }
 }
 

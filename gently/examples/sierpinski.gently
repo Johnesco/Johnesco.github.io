@@ -1,0 +1,49 @@
+note: Sierpinski Triangle using the Chaos Game algorithm
+note: This creates a fractal by repeatedly moving halfway toward random vertices
+
+clear canvas
+
+note: Define the three vertices of the triangle
+set x1 to 200
+set y1 to 10
+set x2 to 10
+set y2 to 290
+set x3 to 390
+set y3 to 290
+
+note: Start at a random point inside the triangle
+set x to 200
+set y to 150
+
+note: Draw the fractal using the chaos game
+set color to "purple"
+set i to 0
+repeat 5000 times
+    note: Pick a random vertex (1, 2, or 3)
+    set vertex to random number from 1 to 3
+
+    note: Move halfway toward the chosen vertex
+    if vertex is equal to 1 then
+        set x to (x plus x1) divided by 2
+        set y to (y plus y1) divided by 2
+    end if
+    if vertex is equal to 2 then
+        set x to (x plus x2) divided by 2
+        set y to (y plus y2) divided by 2
+    end if
+    if vertex is equal to 3 then
+        set x to (x plus x3) divided by 2
+        set y to (y plus y3) divided by 2
+    end if
+
+    note: Draw a tiny dot at the current position
+    note: Skip first few iterations to let the pattern stabilize
+    if i is greater than 10 then
+        draw circle at x, y with radius 1
+    end if
+
+    set i to i plus 1
+end repeat
+
+print "Sierpinski Triangle complete!"
+print "Click the Canvas tab to see the fractal."

@@ -56,13 +56,13 @@ export class Interpreter {
     this.callbacks = callbacks;
   }
 
-  run(program: Program): void {
+  async run(program: Program): Promise<void> {
     for (const statement of program.statements) {
-      this.executeStatement(statement);
+      await this.executeStatement(statement);
     }
   }
 
-  private executeStatement(statement: Statement): void {
+  private async executeStatement(statement: Statement): Promise<void> {
     switch (statement.type) {
       case 'SetStatement':
         this.executeSetStatement(statement);
@@ -71,22 +71,22 @@ export class Interpreter {
         this.executeSetItemStatement(statement);
         break;
       case 'IfStatement':
-        this.executeIfStatement(statement);
+        await this.executeIfStatement(statement);
         break;
       case 'RepeatTimesStatement':
-        this.executeRepeatTimesStatement(statement);
+        await this.executeRepeatTimesStatement(statement);
         break;
       case 'RepeatWhileStatement':
-        this.executeRepeatWhileStatement(statement);
+        await this.executeRepeatWhileStatement(statement);
         break;
       case 'ForEachStatement':
-        this.executeForEachStatement(statement);
+        await this.executeForEachStatement(statement);
         break;
       case 'FunctionDeclaration':
         this.executeFunctionDeclaration(statement);
         break;
       case 'FunctionCallStatement':
-        this.evaluateFunctionCall(statement.call);
+        await this.evaluateFunctionCall(statement.call);
         break;
       case 'ReturnStatement':
         this.executeReturnStatement(statement);
@@ -104,7 +104,7 @@ export class Interpreter {
         this.callbacks.clearCanvas();
         break;
       case 'AskStatement':
-        this.executeAskStatement(statement);
+        await this.executeAskStatement(statement);
         break;
       default:
         throw new RuntimeError(
@@ -153,29 +153,34 @@ export class Interpreter {
     list[i] = value;
   }
 
-  private executeAskStatement(statement: AskStatement): void {
+  private async executeAskStatement(statement: AskStatement): Promise<void> {
     const prompt = this.stringify(this.evaluate(statement.prompt));
-    // For browser: use window.prompt, for now just store empty string
-    // The actual prompt will be handled by the callback
-    const result = window.prompt(prompt) ?? '';
-    this.environment.set(statement.variable, result);
+    const result = await this.callbacks.ask(prompt);
+
+    // Try to convert to number if it looks like a number
+    const numValue = parseFloat(result);
+    if (!isNaN(numValue) && result.trim() !== '') {
+      this.environment.set(statement.variable, numValue);
+    } else {
+      this.environment.set(statement.variable, result);
+    }
   }
 
-  private executeIfStatement(statement: IfStatement): void {
+  private async executeIfStatement(statement: IfStatement): Promise<void> {
     const condition = this.evaluate(statement.condition);
 
     if (this.isTruthy(condition)) {
       for (const stmt of statement.thenBranch) {
-        this.executeStatement(stmt);
+        await this.executeStatement(stmt);
       }
     } else if (statement.elseBranch) {
       for (const stmt of statement.elseBranch) {
-        this.executeStatement(stmt);
+        await this.executeStatement(stmt);
       }
     }
   }
 
-  private executeRepeatTimesStatement(statement: RepeatTimesStatement): void {
+  private async executeRepeatTimesStatement(statement: RepeatTimesStatement): Promise<void> {
     const count = this.evaluate(statement.count);
 
     if (typeof count !== 'number') {
@@ -187,18 +192,18 @@ export class Interpreter {
 
     for (let i = 0; i < count; i++) {
       for (const stmt of statement.body) {
-        this.executeStatement(stmt);
+        await this.executeStatement(stmt);
       }
     }
   }
 
-  private executeRepeatWhileStatement(statement: RepeatWhileStatement): void {
+  private async executeRepeatWhileStatement(statement: RepeatWhileStatement): Promise<void> {
     let iterations = 0;
     const maxIterations = 100000; // Prevent infinite loops
 
     while (this.isTruthy(this.evaluate(statement.condition))) {
       for (const stmt of statement.body) {
-        this.executeStatement(stmt);
+        await this.executeStatement(stmt);
       }
 
       iterations++;
@@ -213,7 +218,7 @@ export class Interpreter {
     }
   }
 
-  private executeForEachStatement(statement: ForEachStatement): void {
+  private async executeForEachStatement(statement: ForEachStatement): Promise<void> {
     const iterable = this.evaluate(statement.iterable);
 
     if (!Array.isArray(iterable)) {
@@ -227,7 +232,7 @@ export class Interpreter {
     for (const item of iterable) {
       this.environment.set(statement.variable, item);
       for (const stmt of statement.body) {
-        this.executeStatement(stmt);
+        await this.executeStatement(stmt);
       }
     }
   }
@@ -320,7 +325,9 @@ export class Interpreter {
         return this.evaluateJoinedExpression(expression);
 
       case 'FunctionCallExpression':
-        return this.evaluateFunctionCall(expression);
+        // For sync evaluation, we need to handle this specially
+        // Function calls that might contain ask statements need async handling
+        return this.evaluateFunctionCallSync(expression);
 
       case 'LengthExpression':
         return this.evaluateLengthExpression(expression);
@@ -395,6 +402,10 @@ export class Interpreter {
       case 'plus':
         if (typeof left === 'number' && typeof right === 'number') {
           return left + right;
+        }
+        // Allow string + number for convenience
+        if (typeof left === 'string' || typeof right === 'string') {
+          return String(left) + String(right);
         }
         throw new RuntimeError(
           `Cannot add ${typeof left} and ${typeof right}. Both sides need to be numbers.`,
@@ -567,7 +578,60 @@ export class Interpreter {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
-  private evaluateFunctionCall(expression: FunctionCallExpression): ClearValue {
+  // Sync version for expression evaluation (doesn't support ask in functions used as expressions)
+  private evaluateFunctionCallSync(expression: FunctionCallExpression): ClearValue {
+    const func = this.lookupVariable(expression.name);
+
+    if (!func || typeof func !== 'object' || (func as ClearFunction).type !== 'function') {
+      throw new RuntimeError(
+        `'${expression.name}' is not a function`,
+        0,
+        1,
+        `Make sure you defined a function called '${expression.name}'`
+      );
+    }
+
+    const clearFunc = func as ClearFunction;
+    const args = expression.arguments.map(arg => this.evaluate(arg));
+
+    if (args.length !== clearFunc.parameters.length) {
+      throw new RuntimeError(
+        `The function '${expression.name}' needs ${clearFunc.parameters.length} value(s), but you gave it ${args.length}`,
+        0
+      );
+    }
+
+    // Create new environment for function
+    const previousEnv = this.environment;
+    this.environment = new Map(this.globals);
+
+    // Bind parameters
+    for (let i = 0; i < clearFunc.parameters.length; i++) {
+      this.environment.set(clearFunc.parameters[i], args[i]);
+    }
+
+    let result: ClearValue = null;
+
+    try {
+      // Note: This is sync, so ask statements in functions used as expressions won't work
+      // For that use case, call the function as a statement instead
+      for (const stmt of clearFunc.body) {
+        this.executeStatementSync(stmt);
+      }
+    } catch (e) {
+      if (e instanceof ReturnValue) {
+        result = e.value;
+      } else {
+        throw e;
+      }
+    }
+
+    this.environment = previousEnv;
+    return result;
+  }
+
+  // Async version for statement execution
+  private async evaluateFunctionCall(expression: FunctionCallExpression): Promise<ClearValue> {
     const func = this.lookupVariable(expression.name);
 
     if (!func || typeof func !== 'object' || (func as ClearFunction).type !== 'function') {
@@ -602,7 +666,7 @@ export class Interpreter {
 
     try {
       for (const stmt of clearFunc.body) {
-        this.executeStatement(stmt);
+        await this.executeStatement(stmt);
       }
     } catch (e) {
       if (e instanceof ReturnValue) {
@@ -614,6 +678,113 @@ export class Interpreter {
 
     this.environment = previousEnv;
     return result;
+  }
+
+  // Sync statement execution for functions used in expressions
+  private executeStatementSync(statement: Statement): void {
+    switch (statement.type) {
+      case 'SetStatement':
+        this.executeSetStatement(statement);
+        break;
+      case 'SetItemStatement':
+        this.executeSetItemStatement(statement);
+        break;
+      case 'IfStatement':
+        this.executeIfStatementSync(statement);
+        break;
+      case 'RepeatTimesStatement':
+        this.executeRepeatTimesStatementSync(statement);
+        break;
+      case 'RepeatWhileStatement':
+        this.executeRepeatWhileStatementSync(statement);
+        break;
+      case 'ForEachStatement':
+        this.executeForEachStatementSync(statement);
+        break;
+      case 'FunctionDeclaration':
+        this.executeFunctionDeclaration(statement);
+        break;
+      case 'FunctionCallStatement':
+        this.evaluateFunctionCallSync(statement.call);
+        break;
+      case 'ReturnStatement':
+        this.executeReturnStatement(statement);
+        break;
+      case 'PrintStatement':
+        this.executePrintStatement(statement);
+        break;
+      case 'DrawStatement':
+        this.executeDrawStatement(statement);
+        break;
+      case 'SetColorStatement':
+        this.executeSetColorStatement(statement);
+        break;
+      case 'ClearCanvasStatement':
+        this.callbacks.clearCanvas();
+        break;
+      case 'AskStatement':
+        throw new RuntimeError(
+          `'ask' cannot be used inside a function that returns a value. Call the function as a statement instead.`,
+          statement.line
+        );
+      default:
+        throw new RuntimeError(
+          `Unknown statement type: ${(statement as Statement).type}`,
+          0
+        );
+    }
+  }
+
+  private executeIfStatementSync(statement: IfStatement): void {
+    const condition = this.evaluate(statement.condition);
+    if (this.isTruthy(condition)) {
+      for (const stmt of statement.thenBranch) {
+        this.executeStatementSync(stmt);
+      }
+    } else if (statement.elseBranch) {
+      for (const stmt of statement.elseBranch) {
+        this.executeStatementSync(stmt);
+      }
+    }
+  }
+
+  private executeRepeatTimesStatementSync(statement: RepeatTimesStatement): void {
+    const count = this.evaluate(statement.count);
+    if (typeof count !== 'number') {
+      throw new RuntimeError(`'repeat' needs a number, but got ${typeof count}`, statement.line);
+    }
+    for (let i = 0; i < count; i++) {
+      for (const stmt of statement.body) {
+        this.executeStatementSync(stmt);
+      }
+    }
+  }
+
+  private executeRepeatWhileStatementSync(statement: RepeatWhileStatement): void {
+    let iterations = 0;
+    const maxIterations = 100000;
+    while (this.isTruthy(this.evaluate(statement.condition))) {
+      for (const stmt of statement.body) {
+        this.executeStatementSync(stmt);
+      }
+      iterations++;
+      if (iterations > maxIterations) {
+        throw new RuntimeError('This loop has run too many times.', statement.line);
+      }
+    }
+  }
+
+  private executeForEachStatementSync(statement: ForEachStatement): void {
+    const iterable = this.evaluate(statement.iterable);
+    if (!Array.isArray(iterable)) {
+      throw new RuntimeError(`'for each' needs a list, but got ${typeof iterable}`, statement.line);
+    }
+    for (const item of iterable) {
+      this.environment.set(statement.variable, item);
+      for (const stmt of statement.body) {
+        this.executeStatementSync(stmt);
+      }
+    }
   }
 
   private evaluateNumber(expression: Expression, name: string, line: number): number {

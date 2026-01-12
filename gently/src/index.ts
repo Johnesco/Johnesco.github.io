@@ -22,12 +22,12 @@ export interface RunResult {
   };
 }
 
-export function run(source: string, callbacks: InterpreterCallbacks): RunResult {
+export async function run(source: string, callbacks: InterpreterCallbacks): Promise<RunResult> {
   try {
     const tokens = tokenize(source);
     const program = parse(tokens);
     const interpreter = createInterpreter(callbacks);
-    interpreter.run(program);
+    await interpreter.run(program);
     return { success: true };
   } catch (error) {
     if (error instanceof ClearError) {

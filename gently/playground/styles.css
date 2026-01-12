@@ -213,6 +213,41 @@ main {
   padding: 0.1rem 0;
 }
 
+#input-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid #0f3460;
+  margin-top: 0.5rem;
+}
+
+#input-container.hidden {
+  display: none;
+}
+
+#input-prompt {
+  color: #56b6c2;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 14px;
+}
+
+#input-field {
+  flex: 1;
+  background: #1a1a2e;
+  border: 1px solid #0f3460;
+  border-radius: 4px;
+  padding: 0.5rem;
+  color: #eee;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 14px;
+  outline: none;
+}
+
+#input-field:focus {
+  border-color: #e94560;
+}
+
 #canvas-panel {
   display: none;
   justify-content: center;
