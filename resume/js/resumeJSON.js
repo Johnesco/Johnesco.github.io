@@ -649,10 +649,10 @@ var resumeJSON = {
 			keywords: [
 				"GitHub",
 				"Chrome Developer Tools",
-				"SQL",
+				"SQL / JQL",
 				"JavaScript/HTML/CSS",
 				"Command Line Interfaces",
-				"JQL"
+				"Postman"
 			]
 		},
 		{
