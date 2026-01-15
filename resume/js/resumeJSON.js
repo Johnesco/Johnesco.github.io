@@ -7,7 +7,7 @@ var resumeJSON = {
         phone: "(512) 299-3269",
         website: "",
         summary:
-            "Senior QA Test Lead with a track record of taking full ownership of the software quality lifecycle, from founding QA departments in startup environments to leading testing for high-stakes government projects. Over 18 years of experience in full-stack testing, process implementation, and cross-functional team leadership. A skilled communicator who excels at bridging the gap between technical teams and business stakeholders, ensuring clear alignment on quality goals and project requirements. Trilingual in English, Spanish, and American Sign Language.",
+            "Professional User Experience Advocate with 18+ years of experience in SQA, Customer Service, and hosting live events in everything from startups to high-stakes government systems. My background is built on three pillars: ensuring product quality as a QA lead, advocating for users in technical support, and reading and energizing live audiences as a host. This triad sharpens my ability to bridge technical teams and end-users, translating complex system needs into deeply intuitive, engaging experiences. A trilingual communicator (English, Spanish, ASL) skilled in aligning cross-functional teams on quality goals.",
         location: {
             address: "16506 Fetching",
             postalCode: "78653",
