@@ -1,7 +1,7 @@
 var resumeJSON = {
     basics: {
         name: "John Escobedo",
-        label: "QA Test Lead | UAT Lead | QA Test Analyst | QA Manual Tester",
+        label: "SQA Test Lead | UAT Lead | DJ & Event Host",
         picture: "",
         email: "letmeshowyou@gmail.com",
         phone: "(512) 299-3269",
@@ -202,7 +202,7 @@ var resumeJSON = {
             tags: ["gaming", "lead"]
         },
         {
-            name: "Dances (Various)",
+            name: "Kick Butt Coffee",
             location: "Austin, TX",
             position: "Event Coordinator and Host",
             startDate: "2011-01-01",
