@@ -531,17 +531,19 @@
                 this.opacity = options.opacity || 1;
                 this.textureAmount = options.textureAmount || 0;
                 this.type = options.type || 'default';
+                this.softEdge = options.softEdge || false;
+                this.stamped = false;
             }
 
             update(dt) {
                 this.x += this.vx * dt;
                 this.y += this.vy * dt;
-                this.vx *= 0.98;
-                this.vy *= 0.98;
-                this.life -= dt * 0.01;
+                this.vx *= 0.85;
+                this.vy *= 0.85;
+                this.life -= 1;
 
                 if (this.wetness > 0) {
-                    this.wetness -= dt * 0.001;
+                    this.wetness *= 0.9;
                 }
 
                 return this.life > 0;
@@ -626,62 +628,68 @@
 
         const BrushPresets = {
             watercolor: {
-                particleCount: 15,
-                sizeVariation: 0.5,
-                velocitySpread: 2,
+                particleCount: 12,
+                sizeVariation: 0.6,
+                velocitySpread: 0.8,
                 wetness: 0.8,
-                opacity: 0.15,
-                lifeBase: 80,
-                lifeVariation: 40,
-                bleedRate: 0.02,
+                opacity: 0.06,
+                lifeBase: 8,
+                lifeVariation: 6,
+                bleedRate: 0.15,
                 edgeDarkening: true,
-                granulation: 0.3
+                granulation: 0.25,
+                softEdge: true
             },
             oil: {
-                particleCount: 8,
-                sizeVariation: 0.3,
-                velocitySpread: 0.5,
+                particleCount: 6,
+                sizeVariation: 0.25,
+                velocitySpread: 0.1,
                 wetness: 0,
-                opacity: 0.6,
-                lifeBase: 100,
-                lifeVariation: 20,
-                thickness: 0.7,
+                opacity: 0.7,
+                lifeBase: 3,
+                lifeVariation: 2,
+                thickness: 0.8,
                 colorMixing: true,
-                directional: true
+                directional: true,
+                softEdge: false
             },
             ink: {
-                particleCount: 5,
-                sizeVariation: 0.2,
-                velocitySpread: 0.3,
+                particleCount: 4,
+                sizeVariation: 0.15,
+                velocitySpread: 0.05,
                 wetness: 0.3,
-                opacity: 0.9,
-                lifeBase: 100,
-                lifeVariation: 10,
+                opacity: 0.85,
+                lifeBase: 2,
+                lifeVariation: 1,
                 pooling: true,
-                dryBrush: true
+                dryBrush: true,
+                softEdge: false
             },
             pastel: {
-                particleCount: 12,
-                sizeVariation: 0.4,
-                velocitySpread: 1,
+                particleCount: 18,
+                sizeVariation: 0.5,
+                velocitySpread: 0.3,
                 wetness: 0,
-                opacity: 0.4,
-                lifeBase: 100,
-                lifeVariation: 30,
-                textureAmount: 0.8,
-                grainy: true
+                opacity: 0.25,
+                lifeBase: 3,
+                lifeVariation: 2,
+                textureAmount: 0.9,
+                grainy: true,
+                gapProbability: 0.15,
+                softEdge: false
             },
             chalk: {
-                particleCount: 10,
-                sizeVariation: 0.5,
-                velocitySpread: 1.5,
+                particleCount: 14,
+                sizeVariation: 0.6,
+                velocitySpread: 0.4,
                 wetness: 0,
-                opacity: 0.5,
-                lifeBase: 100,
-                lifeVariation: 40,
+                opacity: 0.35,
+                lifeBase: 3,
+                lifeVariation: 2,
                 textureAmount: 1.0,
                 grainy: true,
-                gapProbability: 0.3
+                gapProbability: 0.25,
+                softEdge: false
             },
             eraser: {
                 particleCount: 1,
@@ -691,7 +699,8 @@
                 opacity: 1,
                 lifeBase: 1,
                 lifeVariation: 0,
-                isEraser: true
+                isEraser: true,
+                softEdge: false
             }
         };
 
@@ -803,7 +812,8 @@
                         thickness: preset.thickness || 0,
                         opacity: particleOpacity,
                         textureAmount: textureAmount,
-                        type: this.currentBrush
+                        type: this.currentBrush,
+                        softEdge: preset.softEdge || false
                     });
 
                     this.particleEngine.addParticle(particle);
@@ -918,15 +928,27 @@
                 particles.forEach(p => {
                     if (p.life <= 0) return;
 
-                    const lifeRatio = p.life / p.maxLife;
-                    let alpha = p.opacity * lifeRatio;
+                    // Watercolor can stamp multiple times as it bleeds
+                    const canBleed = p.type === 'watercolor' && p.wetness > 0.1 && (Math.abs(p.vx) > 0.01 || Math.abs(p.vy) > 0.01);
+
+                    if (p.stamped && !canBleed) return;
+
+                    // Mark as stamped (watercolor will keep stamping while bleeding)
+                    if (!canBleed) p.stamped = true;
+
+                    let alpha = p.opacity;
+
+                    // Reduce alpha for bleeding watercolor
+                    if (canBleed) {
+                        alpha *= p.wetness * 0.3;
+                    }
 
                     // Paper texture interaction for pastel/chalk
                     if (p.textureAmount > 0) {
                         const paperVal = this.getPaperValue(p.x, p.y);
-                        alpha *= (0.3 + paperVal * 0.7);
-                        if (paperVal < 0.95) {
-                            alpha *= (paperVal + 0.2);
+                        // Only deposit on raised areas of paper
+                        if (paperVal < 0.94) {
+                            alpha *= Math.pow(paperVal, 0.5);
                         }
                     }
 
@@ -935,25 +957,36 @@
 
                     // Different rendering based on brush type
                     if (p.type === 'oil' && p.thickness > 0) {
-                        // Impasto effect - add highlight/shadow
+                        // Impasto effect - thick paint with highlight/shadow
                         const gradient = ctx.createRadialGradient(
-                            p.x - p.size * 0.3, p.y - p.size * 0.3, 0,
+                            p.x - p.size * 0.25, p.y - p.size * 0.25, 0,
                             p.x, p.y, p.size
                         );
-                        const highlightColor = `rgba(${Math.min(255, p.color.r + 40)}, ${Math.min(255, p.color.g + 40)}, ${Math.min(255, p.color.b + 40)}, ${alpha})`;
+                        const highlightColor = `rgba(${Math.min(255, p.color.r + 30)}, ${Math.min(255, p.color.g + 30)}, ${Math.min(255, p.color.b + 30)}, ${alpha})`;
                         const mainColor = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha})`;
-                        const shadowColor = `rgba(${Math.max(0, p.color.r - 30)}, ${Math.max(0, p.color.g - 30)}, ${Math.max(0, p.color.b - 30)}, ${alpha})`;
+                        const shadowColor = `rgba(${Math.max(0, p.color.r - 20)}, ${Math.max(0, p.color.g - 20)}, ${Math.max(0, p.color.b - 20)}, ${alpha})`;
 
                         gradient.addColorStop(0, highlightColor);
-                        gradient.addColorStop(0.5, mainColor);
+                        gradient.addColorStop(0.6, mainColor);
                         gradient.addColorStop(1, shadowColor);
                         ctx.fillStyle = gradient;
-                    } else if (p.type === 'watercolor') {
-                        // Soft watercolor with edge variation
+                    } else if (p.type === 'watercolor' || p.softEdge) {
+                        // Soft watercolor with feathered edges
                         const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
                         gradient.addColorStop(0, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha})`);
-                        gradient.addColorStop(0.7, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha * 0.5})`);
+                        gradient.addColorStop(0.4, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha * 0.7})`);
+                        gradient.addColorStop(0.8, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha * 0.3})`);
                         gradient.addColorStop(1, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, 0)`);
+                        ctx.fillStyle = gradient;
+                    } else if (p.type === 'ink') {
+                        // Sharp ink marks
+                        ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha})`;
+                    } else if (p.type === 'pastel' || p.type === 'chalk') {
+                        // Chalky texture - slightly rough edges
+                        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+                        gradient.addColorStop(0, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha})`);
+                        gradient.addColorStop(0.7, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha * 0.8})`);
+                        gradient.addColorStop(1, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha * 0.1})`);
                         ctx.fillStyle = gradient;
                     } else {
                         ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha})`;

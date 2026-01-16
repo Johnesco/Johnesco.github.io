@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start \"\" \"C:\\\\code\\\\Johnesco.github.io\\\\hyperpaint\\\\index.html\")"
+    ]
+  }
+}
