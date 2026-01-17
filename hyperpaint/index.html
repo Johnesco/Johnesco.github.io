@@ -628,16 +628,16 @@
 
         const BrushPresets = {
             watercolor: {
-                particleCount: 12,
-                sizeVariation: 0.6,
-                velocitySpread: 0.8,
-                wetness: 0.8,
-                opacity: 0.06,
-                lifeBase: 8,
-                lifeVariation: 6,
-                bleedRate: 0.15,
+                particleCount: 10,
+                sizeVariation: 0.5,
+                velocitySpread: 0.3,
+                wetness: 1.0,
+                opacity: 0.04,
+                lifeBase: 5,
+                lifeVariation: 3,
+                bleedRate: 0.1,
                 edgeDarkening: true,
-                granulation: 0.25,
+                granulation: 0.2,
                 softEdge: true
             },
             oil: {
@@ -861,6 +861,261 @@
         }
 
         // ============================================
+        // Watercolor Wet System
+        // ============================================
+
+        class WetCanvas {
+            constructor(width, height, perlin) {
+                this.width = width;
+                this.height = height;
+                this.perlin = perlin;
+                this.dryTime = 30000; // 30 seconds to dry
+
+                // Wet layer canvas for color data
+                this.wetCanvas = document.createElement('canvas');
+                this.wetCanvas.width = width;
+                this.wetCanvas.height = height;
+                this.wetCtx = this.wetCanvas.getContext('2d', { willReadFrequently: true });
+
+                // Wetness map (tracks wetness level and time for each region)
+                this.wetRegions = []; // { x, y, radius, color, wetness, createdAt, pigment }
+                this.cellSize = 8;
+                this.cols = Math.ceil(width / this.cellSize);
+                this.rows = Math.ceil(height / this.cellSize);
+
+                // Grid for wetness tracking
+                this.wetnessGrid = new Float32Array(this.cols * this.rows);
+                this.colorGrid = []; // Store color data per cell
+                for (let i = 0; i < this.cols * this.rows; i++) {
+                    this.colorGrid.push({ r: 0, g: 0, b: 0, pigment: 0 });
+                }
+            }
+
+            resize(width, height) {
+                this.width = width;
+                this.height = height;
+                this.wetCanvas.width = width;
+                this.wetCanvas.height = height;
+                this.cols = Math.ceil(width / this.cellSize);
+                this.rows = Math.ceil(height / this.cellSize);
+                this.wetnessGrid = new Float32Array(this.cols * this.rows);
+                this.colorGrid = [];
+                for (let i = 0; i < this.cols * this.rows; i++) {
+                    this.colorGrid.push({ r: 0, g: 0, b: 0, pigment: 0 });
+                }
+                this.wetRegions = [];
+            }
+
+            getGridIndex(x, y) {
+                const col = Math.floor(x / this.cellSize);
+                const row = Math.floor(y / this.cellSize);
+                if (col < 0 || col >= this.cols || row < 0 || row >= this.rows) return -1;
+                return row * this.cols + col;
+            }
+
+            addWetPaint(x, y, radius, color, amount = 1) {
+                const now = Date.now();
+
+                // Add to wet regions for edge pooling simulation
+                this.wetRegions.push({
+                    x, y, radius,
+                    color: { ...color },
+                    wetness: amount,
+                    createdAt: now,
+                    pigment: amount
+                });
+
+                // Update grid cells in radius
+                const minCol = Math.max(0, Math.floor((x - radius) / this.cellSize));
+                const maxCol = Math.min(this.cols - 1, Math.floor((x + radius) / this.cellSize));
+                const minRow = Math.max(0, Math.floor((y - radius) / this.cellSize));
+                const maxRow = Math.min(this.rows - 1, Math.floor((y + radius) / this.cellSize));
+
+                for (let row = minRow; row <= maxRow; row++) {
+                    for (let col = minCol; col <= maxCol; col++) {
+                        const cx = (col + 0.5) * this.cellSize;
+                        const cy = (row + 0.5) * this.cellSize;
+                        const dist = Math.sqrt((cx - x) ** 2 + (cy - y) ** 2);
+
+                        if (dist <= radius) {
+                            const idx = row * this.cols + col;
+                            const falloff = 1 - (dist / radius);
+                            const addWet = amount * falloff;
+
+                            // Blend colors if already wet
+                            const cell = this.colorGrid[idx];
+                            const existingWet = this.wetnessGrid[idx];
+
+                            if (existingWet > 0.01 && cell.pigment > 0.01) {
+                                // Mix colors
+                                const ratio = addWet / (existingWet + addWet);
+                                cell.r = cell.r * (1 - ratio) + color.r * ratio;
+                                cell.g = cell.g * (1 - ratio) + color.g * ratio;
+                                cell.b = cell.b * (1 - ratio) + color.b * ratio;
+                                cell.pigment = Math.min(1, cell.pigment + addWet * 0.5);
+                            } else {
+                                cell.r = color.r;
+                                cell.g = color.g;
+                                cell.b = color.b;
+                                cell.pigment = addWet;
+                            }
+
+                            this.wetnessGrid[idx] = Math.min(1, existingWet + addWet);
+                        }
+                    }
+                }
+            }
+
+            isWet(x, y) {
+                const idx = this.getGridIndex(x, y);
+                if (idx < 0) return false;
+                return this.wetnessGrid[idx] > 0.05;
+            }
+
+            getWetness(x, y) {
+                const idx = this.getGridIndex(x, y);
+                if (idx < 0) return 0;
+                return this.wetnessGrid[idx];
+            }
+
+            getWetColor(x, y) {
+                const idx = this.getGridIndex(x, y);
+                if (idx < 0) return null;
+                const cell = this.colorGrid[idx];
+                if (cell.pigment < 0.01) return null;
+                return { r: cell.r, g: cell.g, b: cell.b };
+            }
+
+            update(dt, paintCtx) {
+                const now = Date.now();
+
+                // Simulate water flow - pigment moves to edges
+                this.simulateWaterFlow(dt);
+
+                // Remove dried regions and render drying paint
+                this.wetRegions = this.wetRegions.filter(region => {
+                    const age = now - region.createdAt;
+                    const dryRatio = Math.min(1, age / this.dryTime);
+
+                    // Still wet
+                    if (dryRatio < 1) {
+                        region.wetness = 1 - dryRatio;
+                        return true;
+                    }
+
+                    return false;
+                });
+
+                // Decay wetness grid
+                for (let i = 0; i < this.wetnessGrid.length; i++) {
+                    if (this.wetnessGrid[i] > 0) {
+                        this.wetnessGrid[i] *= 0.9995; // Slow decay
+                        if (this.wetnessGrid[i] < 0.01) {
+                            this.wetnessGrid[i] = 0;
+                        }
+                    }
+                }
+            }
+
+            simulateWaterFlow(dt) {
+                // Simple flow simulation - pigment spreads and pools at edges
+                const newColorGrid = this.colorGrid.map(c => ({ ...c }));
+
+                for (let row = 1; row < this.rows - 1; row++) {
+                    for (let col = 1; col < this.cols - 1; col++) {
+                        const idx = row * this.cols + col;
+                        const wetness = this.wetnessGrid[idx];
+
+                        if (wetness > 0.1) {
+                            const cell = this.colorGrid[idx];
+                            if (cell.pigment < 0.01) continue;
+
+                            // Check neighbors for flow
+                            const neighbors = [
+                                (row - 1) * this.cols + col,
+                                (row + 1) * this.cols + col,
+                                row * this.cols + (col - 1),
+                                row * this.cols + (col + 1)
+                            ];
+
+                            for (const nIdx of neighbors) {
+                                const nWet = this.wetnessGrid[nIdx];
+                                // Flow towards less wet areas (edge pooling)
+                                if (nWet < wetness && nWet > 0.05) {
+                                    const flowAmount = (wetness - nWet) * 0.02 * cell.pigment;
+                                    if (flowAmount > 0.001) {
+                                        const nCell = newColorGrid[nIdx];
+                                        const ratio = flowAmount / (nCell.pigment + flowAmount + 0.01);
+                                        nCell.r = nCell.r * (1 - ratio) + cell.r * ratio;
+                                        nCell.g = nCell.g * (1 - ratio) + cell.g * ratio;
+                                        nCell.b = nCell.b * (1 - ratio) + cell.b * ratio;
+                                        nCell.pigment = Math.min(1, nCell.pigment + flowAmount);
+                                        newColorGrid[idx].pigment = Math.max(0, newColorGrid[idx].pigment - flowAmount * 0.5);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                this.colorGrid = newColorGrid;
+            }
+
+            renderWetLayer(ctx) {
+                // Render wet paint on top
+                for (let row = 0; row < this.rows; row++) {
+                    for (let col = 0; col < this.cols; col++) {
+                        const idx = row * this.cols + col;
+                        const cell = this.colorGrid[idx];
+                        const wetness = this.wetnessGrid[idx];
+
+                        if (cell.pigment > 0.01 && wetness > 0.01) {
+                            const x = col * this.cellSize;
+                            const y = row * this.cellSize;
+                            const alpha = cell.pigment * 0.15 * wetness;
+
+                            ctx.fillStyle = `rgba(${Math.round(cell.r)}, ${Math.round(cell.g)}, ${Math.round(cell.b)}, ${alpha})`;
+                            ctx.fillRect(x, y, this.cellSize, this.cellSize);
+                        }
+                    }
+                }
+            }
+
+            // Bake wet paint to permanent layer when drying
+            bakeToPermanent(paintCtx) {
+                for (let row = 0; row < this.rows; row++) {
+                    for (let col = 0; col < this.cols; col++) {
+                        const idx = row * this.cols + col;
+                        const cell = this.colorGrid[idx];
+                        const wetness = this.wetnessGrid[idx];
+
+                        // Bake cells that are drying (low wetness but have pigment)
+                        if (cell.pigment > 0.02 && wetness < 0.1 && wetness > 0.01) {
+                            const x = col * this.cellSize;
+                            const y = row * this.cellSize;
+                            const alpha = cell.pigment * 0.08;
+
+                            paintCtx.fillStyle = `rgba(${Math.round(cell.r)}, ${Math.round(cell.g)}, ${Math.round(cell.b)}, ${alpha})`;
+                            paintCtx.fillRect(x, y, this.cellSize, this.cellSize);
+
+                            // Clear the cell after baking
+                            cell.pigment *= 0.8;
+                        }
+                    }
+                }
+            }
+
+            clear() {
+                this.wetRegions = [];
+                this.wetnessGrid.fill(0);
+                for (let i = 0; i < this.colorGrid.length; i++) {
+                    this.colorGrid[i] = { r: 0, g: 0, b: 0, pigment: 0 };
+                }
+                this.wetCtx.clearRect(0, 0, this.width, this.height);
+            }
+        }
+
+        // ============================================
         // Renderer
         // ============================================
 
@@ -874,6 +1129,7 @@
                 this.previewCtx = previewCanvas.getContext('2d');
                 this.perlin = perlin;
                 this.paperTexture = null;
+                this.wetCanvas = null;
             }
 
             resize(width, height) {
@@ -882,6 +1138,13 @@
                     canvas.height = height;
                 });
                 this.generatePaperTexture();
+
+                // Initialize or resize wet canvas
+                if (!this.wetCanvas) {
+                    this.wetCanvas = new WetCanvas(width, height, this.perlin);
+                } else {
+                    this.wetCanvas.resize(width, height);
+                }
             }
 
             generatePaperTexture() {
@@ -971,6 +1234,11 @@
                         gradient.addColorStop(1, shadowColor);
                         ctx.fillStyle = gradient;
                     } else if (p.type === 'watercolor' || p.softEdge) {
+                        // Add to wet canvas for blending and pooling
+                        if (this.wetCanvas && p.type === 'watercolor') {
+                            this.wetCanvas.addWetPaint(p.x, p.y, p.size * 1.5, p.color, p.wetness);
+                        }
+
                         // Soft watercolor with feathered edges
                         const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
                         gradient.addColorStop(0, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha})`);
@@ -998,8 +1266,8 @@
 
             renderCursor(x, y, size, color) {
                 const ctx = this.previewCtx;
-                ctx.clearRect(0, 0, this.previewCanvas.width, this.previewCanvas.height);
 
+                // Draw cursor on top of wet layer (wet layer is rendered by animate loop)
                 ctx.beginPath();
                 ctx.arc(x, y, size / 2, 0, Math.PI * 2);
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
@@ -1015,15 +1283,41 @@
 
             clearPaint() {
                 this.paintCtx.clearRect(0, 0, this.paintCanvas.width, this.paintCanvas.height);
+                if (this.wetCanvas) {
+                    this.wetCanvas.clear();
+                }
+            }
+
+            updateWetLayer(dt) {
+                if (this.wetCanvas) {
+                    this.wetCanvas.update(dt, this.paintCtx);
+                    this.wetCanvas.bakeToPermanent(this.paintCtx);
+                }
+            }
+
+            renderWetLayer() {
+                if (this.wetCanvas) {
+                    this.wetCanvas.renderWetLayer(this.previewCtx);
+                }
+            }
+
+            isAreaWet(x, y) {
+                return this.wetCanvas && this.wetCanvas.isWet(x, y);
             }
 
             eraseAt(x, y, size) {
+                // Only erase dry paint - wet areas can't be erased
+                if (this.isAreaWet(x, y)) {
+                    return false; // Area is wet, can't erase
+                }
+
                 this.paintCtx.save();
                 this.paintCtx.globalCompositeOperation = 'destination-out';
                 this.paintCtx.beginPath();
                 this.paintCtx.arc(x, y, size, 0, Math.PI * 2);
                 this.paintCtx.fill();
                 this.paintCtx.restore();
+                return true;
             }
 
             getSnapshot() {
@@ -1361,6 +1655,13 @@
 
                 this.particleEngine.update(dt);
                 this.renderer.renderParticles(this.particleEngine.particles);
+
+                // Update wet watercolor layer (handles drying and flow simulation)
+                this.renderer.updateWetLayer(dt);
+
+                // Clear preview and render wet layer (cursor is drawn on mouse move)
+                this.renderer.previewCtx.clearRect(0, 0, this.renderer.previewCanvas.width, this.renderer.previewCanvas.height);
+                this.renderer.renderWetLayer();
 
                 requestAnimationFrame(() => this.animate());
             }
