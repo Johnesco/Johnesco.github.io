@@ -2,3 +2,11 @@
 writing/.DS_Store
 writing/media/.DS_Store
 .DS_Store
+resume/generate-pdf.bat
+resume/generate-docx.bat
+resume/generate-docx.js
+resume/.claude/settings.local.json
+/resume/node_modules
+resume/package-lock.json
+resume/nul
+resume/package.json

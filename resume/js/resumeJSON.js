@@ -45,7 +45,7 @@ var resumeJSON = {
         {
             name: "Insight Global",
             location: "Austin, TX",
-            position: "Robot Operator",
+            position: "Robot Tele-Operator",
             website: "https://insightglobal.com/",
             startDate: "2025-07-01",
             endDate: "2025-09-11",
