@@ -351,6 +351,7 @@
             <div class="section-title">Canvas</div>
             <div class="action-buttons">
                 <button class="action-btn" id="undo-btn">Undo (Ctrl+Z)</button>
+                <button class="action-btn" id="dry-btn">Dry Watercolor</button>
                 <button class="action-btn" id="save-btn">Save as PNG</button>
                 <button class="action-btn danger" id="clear-btn">Clear Canvas</button>
             </div>
@@ -532,6 +533,7 @@
                 this.textureAmount = options.textureAmount || 0;
                 this.type = options.type || 'default';
                 this.softEdge = options.softEdge || false;
+                this.strokeAngle = options.strokeAngle || 0;
                 this.stamped = false;
             }
 
@@ -628,7 +630,7 @@
 
         const BrushPresets = {
             watercolor: {
-                particleCount: 10,
+                particleCount: 2,
                 sizeVariation: 0.5,
                 velocitySpread: 0.3,
                 wetness: 1.0,
@@ -638,10 +640,15 @@
                 bleedRate: 0.1,
                 edgeDarkening: true,
                 granulation: 0.2,
-                softEdge: true
+                softEdge: true,
+                // Bristle settings - soft mop brush
+                bristleCount: 12,
+                bristleSpread: 0.9,
+                bristleDrag: 0.15,
+                bristleStiffness: 0.3
             },
             oil: {
-                particleCount: 6,
+                particleCount: 2,
                 sizeVariation: 0.25,
                 velocitySpread: 0.1,
                 wetness: 0,
@@ -650,11 +657,15 @@
                 lifeVariation: 2,
                 thickness: 0.8,
                 colorMixing: true,
-                directional: true,
-                softEdge: false
+                softEdge: false,
+                // Bristle settings - stiff flat brush
+                bristleCount: 8,
+                bristleSpread: 0.8,
+                bristleDrag: 0.25,
+                bristleStiffness: 0.6
             },
             ink: {
-                particleCount: 4,
+                particleCount: 2,
                 sizeVariation: 0.15,
                 velocitySpread: 0.05,
                 wetness: 0.3,
@@ -663,10 +674,15 @@
                 lifeVariation: 1,
                 pooling: true,
                 dryBrush: true,
-                softEdge: false
+                softEdge: false,
+                // Bristle settings - pointed brush
+                bristleCount: 5,
+                bristleSpread: 0.4,
+                bristleDrag: 0.1,
+                bristleStiffness: 0.8
             },
             pastel: {
-                particleCount: 18,
+                particleCount: 3,
                 sizeVariation: 0.5,
                 velocitySpread: 0.3,
                 wetness: 0,
@@ -676,10 +692,15 @@
                 textureAmount: 0.9,
                 grainy: true,
                 gapProbability: 0.15,
-                softEdge: false
+                softEdge: false,
+                // Bristle settings - chunky stick
+                bristleCount: 6,
+                bristleSpread: 0.95,
+                bristleDrag: 0.35,
+                bristleStiffness: 0.2
             },
             chalk: {
-                particleCount: 14,
+                particleCount: 3,
                 sizeVariation: 0.6,
                 velocitySpread: 0.4,
                 wetness: 0,
@@ -689,7 +710,12 @@
                 textureAmount: 1.0,
                 grainy: true,
                 gapProbability: 0.25,
-                softEdge: false
+                softEdge: false,
+                // Bristle settings - rough edge
+                bristleCount: 7,
+                bristleSpread: 1.0,
+                bristleDrag: 0.4,
+                bristleStiffness: 0.15
             },
             eraser: {
                 particleCount: 1,
@@ -700,7 +726,12 @@
                 lifeBase: 1,
                 lifeVariation: 0,
                 isEraser: true,
-                softEdge: false
+                softEdge: false,
+                // No bristles for eraser
+                bristleCount: 1,
+                bristleSpread: 0,
+                bristleDrag: 0,
+                bristleStiffness: 1.0
             }
         };
 
@@ -714,6 +745,13 @@
                 this.flow = 0.5;
                 this.color = { r: 233, g: 69, b: 96 };
                 this.points = [];
+
+                // Bristle system
+                this.bristles = [];
+                this.lastBrushX = 0;
+                this.lastBrushY = 0;
+                this.strokeAngle = 0;
+                this.initBristles();
             }
 
             setColor(r, g, b) {
@@ -722,6 +760,98 @@
 
             setBrush(brushType) {
                 this.currentBrush = brushType;
+                this.initBristles();
+            }
+
+            initBristles() {
+                const preset = BrushPresets[this.currentBrush];
+                const count = preset.bristleCount || 1;
+                this.bristles = [];
+
+                for (let i = 0; i < count; i++) {
+                    // Distribute bristles across the brush width
+                    // Position is relative offset from brush center (-0.5 to 0.5)
+                    const t = count === 1 ? 0 : (i / (count - 1)) - 0.5;
+
+                    this.bristles.push({
+                        // Base offset from center (perpendicular to stroke)
+                        baseOffset: t * (preset.bristleSpread || 0.5),
+                        // Current lagging position (world coordinates)
+                        x: 0,
+                        y: 0,
+                        // Velocity for smooth dragging
+                        vx: 0,
+                        vy: 0,
+                        // Individual variation
+                        dragVariation: 0.8 + Math.random() * 0.4,
+                        sizeVariation: 0.7 + Math.random() * 0.6
+                    });
+                }
+            }
+
+            updateBristles(brushX, brushY, pressure) {
+                const preset = BrushPresets[this.currentBrush];
+                const effectiveSize = this.size * (0.5 + pressure * 0.5);
+                const drag = preset.bristleDrag || 0.2;
+                const stiffness = preset.bristleStiffness || 0.5;
+
+                // Calculate stroke direction
+                const dx = brushX - this.lastBrushX;
+                const dy = brushY - this.lastBrushY;
+                const speed = Math.sqrt(dx * dx + dy * dy);
+
+                if (speed > 0.1) {
+                    this.strokeAngle = Math.atan2(dy, dx);
+                }
+
+                // Perpendicular angle for bristle spread
+                const perpAngle = this.strokeAngle + Math.PI / 2;
+
+                for (const bristle of this.bristles) {
+                    // Target position: brush center + perpendicular offset
+                    const targetX = brushX + Math.cos(perpAngle) * bristle.baseOffset * effectiveSize;
+                    const targetY = brushY + Math.sin(perpAngle) * bristle.baseOffset * effectiveSize;
+
+                    // Calculate drag force - bristles lag behind based on speed and drag amount
+                    const lagAmount = drag * bristle.dragVariation * Math.min(speed * 0.5, 20);
+                    const lagX = -Math.cos(this.strokeAngle) * lagAmount;
+                    const lagY = -Math.sin(this.strokeAngle) * lagAmount;
+
+                    // Desired position with lag
+                    const desiredX = targetX + lagX;
+                    const desiredY = targetY + lagY;
+
+                    // Spring physics: bristle moves toward desired position
+                    // Higher stiffness = snappier response, lower = more drag
+                    const springForce = 0.3 + stiffness * 0.5;
+                    bristle.vx += (desiredX - bristle.x) * springForce;
+                    bristle.vy += (desiredY - bristle.y) * springForce;
+
+                    // Damping
+                    bristle.vx *= 0.6;
+                    bristle.vy *= 0.6;
+
+                    // Update position
+                    bristle.x += bristle.vx;
+                    bristle.y += bristle.vy;
+                }
+
+                this.lastBrushX = brushX;
+                this.lastBrushY = brushY;
+            }
+
+            resetBristles(x, y) {
+                // Snap all bristles to brush position (for stroke start)
+                const preset = BrushPresets[this.currentBrush];
+                for (const bristle of this.bristles) {
+                    bristle.x = x;
+                    bristle.y = y;
+                    bristle.vx = 0;
+                    bristle.vy = 0;
+                }
+                this.lastBrushX = x;
+                this.lastBrushY = y;
+                this.strokeAngle = 0;
             }
 
             addPoint(x, y, pressure = 0.5) {
@@ -734,7 +864,7 @@
             emitParticles(x, y, pressure, prevX, prevY) {
                 const preset = BrushPresets[this.currentBrush];
                 const effectiveSize = this.size * (0.5 + pressure * 0.5);
-                const particleCount = Math.ceil(preset.particleCount * this.flow * pressure);
+                const particlesPerBristle = Math.ceil(preset.particleCount * this.flow * pressure);
 
                 // Calculate stroke direction
                 const dx = x - prevX;
@@ -742,81 +872,80 @@
                 const strokeAngle = Math.atan2(dy, dx);
                 const speed = dist(x, y, prevX, prevY);
 
-                for (let i = 0; i < particleCount; i++) {
-                    // Skip particles for chalk gaps
-                    if (preset.gapProbability && Math.random() < preset.gapProbability) {
-                        continue;
+                // Update bristle positions with drag physics
+                this.updateBristles(x, y, pressure);
+
+                // Emit particles from each bristle position
+                for (const bristle of this.bristles) {
+                    for (let i = 0; i < particlesPerBristle; i++) {
+                        // Skip particles for chalk gaps
+                        if (preset.gapProbability && Math.random() < preset.gapProbability) {
+                            continue;
+                        }
+
+                        // Size variation - each bristle has its own size variation
+                        const sizeVar = 1 + (Math.random() - 0.5) * 2 * preset.sizeVariation;
+                        const bristleSize = (effectiveSize / Math.sqrt(this.bristles.length)) * bristle.sizeVariation;
+                        const particleSize = bristleSize * sizeVar * (0.3 + Math.random() * 0.7);
+
+                        // Position: centered on bristle with small random offset
+                        const jitter = particleSize * 0.5;
+                        let px = bristle.x + (Math.random() - 0.5) * jitter;
+                        let py = bristle.y + (Math.random() - 0.5) * jitter;
+
+                        // Velocity - particles inherit some bristle velocity
+                        let vx = bristle.vx * 0.1 + (Math.random() - 0.5) * preset.velocitySpread;
+                        let vy = bristle.vy * 0.1 + (Math.random() - 0.5) * preset.velocitySpread;
+
+                        // Watercolor bleeding velocity
+                        if (preset.bleedRate) {
+                            vx += (Math.random() - 0.5) * preset.bleedRate * 10;
+                            vy += (Math.random() - 0.5) * preset.bleedRate * 10;
+                        }
+
+                        // Color variation for watercolor granulation
+                        let particleColor = { ...this.color };
+                        if (preset.granulation) {
+                            const variation = (Math.random() - 0.5) * preset.granulation * 50;
+                            particleColor.r = clamp(particleColor.r + variation, 0, 255);
+                            particleColor.g = clamp(particleColor.g + variation, 0, 255);
+                            particleColor.b = clamp(particleColor.b + variation, 0, 255);
+                        }
+
+                        // Edge darkening for watercolor - based on distance from brush center
+                        let particleOpacity = preset.opacity * this.opacity;
+                        if (preset.edgeDarkening) {
+                            const distFromCenter = dist(bristle.x, bristle.y, x, y) / effectiveSize;
+                            particleOpacity *= (0.5 + distFromCenter * 0.8);
+                        }
+
+                        // Dry brush effect for ink - faster strokes leave gaps
+                        if (preset.dryBrush && speed > 15) {
+                            const dryFactor = Math.min(1, (speed - 15) / 30);
+                            if (Math.random() < dryFactor * 0.5) continue;
+                        }
+
+                        // Texture amount for pastel/chalk
+                        let textureAmount = preset.textureAmount || 0;
+                        if (textureAmount > 0) {
+                            const noiseVal = this.perlin.fbm(px * 0.05, py * 0.05, 3);
+                            if (noiseVal < textureAmount * 0.3 - 0.3) continue;
+                        }
+
+                        const particle = new Particle(px, py, particleColor, particleSize, {
+                            vx, vy,
+                            life: preset.lifeBase + Math.random() * preset.lifeVariation,
+                            wetness: preset.wetness * this.flow,
+                            thickness: preset.thickness || 0,
+                            opacity: particleOpacity,
+                            textureAmount: textureAmount,
+                            type: this.currentBrush,
+                            softEdge: preset.softEdge || false,
+                            strokeAngle: strokeAngle
+                        });
+
+                        this.particleEngine.addParticle(particle);
                     }
-
-                    // Size variation
-                    const sizeVar = 1 + (Math.random() - 0.5) * 2 * preset.sizeVariation;
-                    const particleSize = effectiveSize * sizeVar * (0.3 + Math.random() * 0.7);
-
-                    // Position offset
-                    const angle = Math.random() * Math.PI * 2;
-                    const radius = Math.random() * effectiveSize * 0.5;
-                    let px = x + Math.cos(angle) * radius;
-                    let py = y + Math.sin(angle) * radius;
-
-                    // Directional particles for oil
-                    if (preset.directional) {
-                        const perpAngle = strokeAngle + Math.PI / 2;
-                        const offset = (Math.random() - 0.5) * effectiveSize;
-                        px = x + Math.cos(perpAngle) * offset;
-                        py = y + Math.sin(perpAngle) * offset;
-                    }
-
-                    // Velocity
-                    let vx = (Math.random() - 0.5) * preset.velocitySpread;
-                    let vy = (Math.random() - 0.5) * preset.velocitySpread;
-
-                    // Watercolor bleeding velocity
-                    if (preset.bleedRate) {
-                        vx += (Math.random() - 0.5) * preset.bleedRate * 10;
-                        vy += (Math.random() - 0.5) * preset.bleedRate * 10;
-                    }
-
-                    // Color variation for watercolor granulation
-                    let particleColor = { ...this.color };
-                    if (preset.granulation) {
-                        const variation = (Math.random() - 0.5) * preset.granulation * 50;
-                        particleColor.r = clamp(particleColor.r + variation, 0, 255);
-                        particleColor.g = clamp(particleColor.g + variation, 0, 255);
-                        particleColor.b = clamp(particleColor.b + variation, 0, 255);
-                    }
-
-                    // Edge darkening for watercolor
-                    let particleOpacity = preset.opacity * this.opacity;
-                    if (preset.edgeDarkening) {
-                        const distFromCenter = dist(px, py, x, y) / effectiveSize;
-                        particleOpacity *= (0.5 + distFromCenter * 0.8);
-                    }
-
-                    // Dry brush effect for ink
-                    if (preset.dryBrush && speed > 15) {
-                        const dryFactor = Math.min(1, (speed - 15) / 30);
-                        if (Math.random() < dryFactor * 0.5) continue;
-                    }
-
-                    // Texture amount for pastel/chalk
-                    let textureAmount = preset.textureAmount || 0;
-                    if (textureAmount > 0) {
-                        const noiseVal = this.perlin.fbm(px * 0.05, py * 0.05, 3);
-                        if (noiseVal < textureAmount * 0.3 - 0.3) continue;
-                    }
-
-                    const particle = new Particle(px, py, particleColor, particleSize, {
-                        vx, vy,
-                        life: preset.lifeBase + Math.random() * preset.lifeVariation,
-                        wetness: preset.wetness * this.flow,
-                        thickness: preset.thickness || 0,
-                        opacity: particleOpacity,
-                        textureAmount: textureAmount,
-                        type: this.currentBrush,
-                        softEdge: preset.softEdge || false
-                    });
-
-                    this.particleEngine.addParticle(particle);
                 }
             }
 
@@ -877,9 +1006,15 @@
                 this.wetCanvas.height = height;
                 this.wetCtx = this.wetCanvas.getContext('2d', { willReadFrequently: true });
 
+                // Temp canvas for blur operations
+                this.tempCanvas = document.createElement('canvas');
+                this.tempCanvas.width = width;
+                this.tempCanvas.height = height;
+                this.tempCtx = this.tempCanvas.getContext('2d');
+
                 // Wetness map (tracks wetness level and time for each region)
                 this.wetRegions = []; // { x, y, radius, color, wetness, createdAt, pigment }
-                this.cellSize = 8;
+                this.cellSize = 6; // Larger cells, fewer to process
                 this.cols = Math.ceil(width / this.cellSize);
                 this.rows = Math.ceil(height / this.cellSize);
 
@@ -896,6 +1031,8 @@
                 this.height = height;
                 this.wetCanvas.width = width;
                 this.wetCanvas.height = height;
+                this.tempCanvas.width = width;
+                this.tempCanvas.height = height;
                 this.cols = Math.ceil(width / this.cellSize);
                 this.rows = Math.ceil(height / this.cellSize);
                 this.wetnessGrid = new Float32Array(this.cols * this.rows);
@@ -1062,7 +1199,8 @@
             }
 
             renderWetLayer(ctx) {
-                // Render wet paint on top
+                this.tempCtx.clearRect(0, 0, this.width, this.height);
+
                 for (let row = 0; row < this.rows; row++) {
                     for (let col = 0; col < this.cols; col++) {
                         const idx = row * this.cols + col;
@@ -1072,17 +1210,27 @@
                         if (cell.pigment > 0.01 && wetness > 0.01) {
                             const x = col * this.cellSize;
                             const y = row * this.cellSize;
-                            const alpha = cell.pigment * 0.15 * wetness;
+                            const alpha = cell.pigment * 0.18 * wetness;
 
-                            ctx.fillStyle = `rgba(${Math.round(cell.r)}, ${Math.round(cell.g)}, ${Math.round(cell.b)}, ${alpha})`;
-                            ctx.fillRect(x, y, this.cellSize, this.cellSize);
+                            this.tempCtx.fillStyle = `rgba(${Math.round(cell.r)}, ${Math.round(cell.g)}, ${Math.round(cell.b)}, ${alpha})`;
+                            this.tempCtx.fillRect(x, y, this.cellSize, this.cellSize);
                         }
                     }
                 }
+
+                // Strong blur smooths out the larger cells
+                ctx.save();
+                ctx.filter = 'blur(8px)';
+                ctx.drawImage(this.tempCanvas, 0, 0);
+                ctx.restore();
             }
 
             // Bake wet paint to permanent layer when drying
             bakeToPermanent(paintCtx) {
+                let hasPigmentToBake = false;
+
+                this.tempCtx.clearRect(0, 0, this.width, this.height);
+
                 for (let row = 0; row < this.rows; row++) {
                     for (let col = 0; col < this.cols; col++) {
                         const idx = row * this.cols + col;
@@ -1091,18 +1239,57 @@
 
                         // Bake cells that are drying (low wetness but have pigment)
                         if (cell.pigment > 0.02 && wetness < 0.1 && wetness > 0.01) {
+                            hasPigmentToBake = true;
                             const x = col * this.cellSize;
                             const y = row * this.cellSize;
-                            const alpha = cell.pigment * 0.08;
+                            const alpha = cell.pigment * 0.1;
 
-                            paintCtx.fillStyle = `rgba(${Math.round(cell.r)}, ${Math.round(cell.g)}, ${Math.round(cell.b)}, ${alpha})`;
-                            paintCtx.fillRect(x, y, this.cellSize, this.cellSize);
+                            this.tempCtx.fillStyle = `rgba(${Math.round(cell.r)}, ${Math.round(cell.g)}, ${Math.round(cell.b)}, ${alpha})`;
+                            this.tempCtx.fillRect(x, y, this.cellSize, this.cellSize);
 
                             // Clear the cell after baking
                             cell.pigment *= 0.8;
                         }
                     }
                 }
+
+                // Apply blur and composite to paint canvas
+                if (hasPigmentToBake) {
+                    paintCtx.save();
+                    paintCtx.filter = 'blur(8px)';
+                    paintCtx.drawImage(this.tempCanvas, 0, 0);
+                    paintCtx.restore();
+                }
+            }
+
+            // Force dry all wet paint immediately
+            forceDry(paintCtx) {
+                this.tempCtx.clearRect(0, 0, this.width, this.height);
+
+                for (let row = 0; row < this.rows; row++) {
+                    for (let col = 0; col < this.cols; col++) {
+                        const idx = row * this.cols + col;
+                        const cell = this.colorGrid[idx];
+
+                        if (cell.pigment > 0.01) {
+                            const x = col * this.cellSize;
+                            const y = row * this.cellSize;
+                            const alpha = cell.pigment * 0.2;
+
+                            this.tempCtx.fillStyle = `rgba(${Math.round(cell.r)}, ${Math.round(cell.g)}, ${Math.round(cell.b)}, ${alpha})`;
+                            this.tempCtx.fillRect(x, y, this.cellSize, this.cellSize);
+                        }
+                    }
+                }
+
+                // Apply blur and composite to paint canvas
+                paintCtx.save();
+                paintCtx.filter = 'blur(10px)';
+                paintCtx.drawImage(this.tempCanvas, 0, 0);
+                paintCtx.restore();
+
+                // Clear all wet data
+                this.clear();
             }
 
             clear() {
@@ -1112,6 +1299,7 @@
                     this.colorGrid[i] = { r: 0, g: 0, b: 0, pigment: 0 };
                 }
                 this.wetCtx.clearRect(0, 0, this.width, this.height);
+                this.tempCtx.clearRect(0, 0, this.width, this.height);
             }
         }
 
@@ -1305,6 +1493,12 @@
                 return this.wetCanvas && this.wetCanvas.isWet(x, y);
             }
 
+            forceDry() {
+                if (this.wetCanvas) {
+                    this.wetCanvas.forceDry(this.paintCtx);
+                }
+            }
+
             eraseAt(x, y, size) {
                 // Only erase dry paint - wet areas can't be erased
                 if (this.isAreaWet(x, y)) {
@@ -1445,6 +1639,7 @@
                     this.lastX = x;
                     this.lastY = y;
                     this.brushEngine.clearPoints();
+                    this.brushEngine.resetBristles(x, y);
                     this.brushEngine.addPoint(x, y, pressure);
 
                     // Save snapshot for undo
@@ -1571,6 +1766,7 @@
 
                 // Action buttons
                 document.getElementById('undo-btn').addEventListener('click', () => this.undo());
+                document.getElementById('dry-btn').addEventListener('click', () => this.dry());
                 document.getElementById('save-btn').addEventListener('click', () => this.save());
                 document.getElementById('clear-btn').addEventListener('click', () => this.clear());
             }
@@ -1632,6 +1828,12 @@
                     this.renderer.restoreSnapshot(snapshot);
                     this.particleEngine.clear();
                 }
+            }
+
+            dry() {
+                // Save snapshot before drying for undo
+                this.undoSystem.save(this.renderer.getSnapshot());
+                this.renderer.forceDry();
             }
 
             save() {
