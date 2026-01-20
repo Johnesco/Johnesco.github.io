@@ -1,13 +1,13 @@
 var resumeJSON = {
     basics: {
         name: "John Escobedo",
-        label: "Quality & User Experience Leader | Technical Trainer | AI-Curious Problem Solver",
+        label: "SQA Test Lead | UAT Lead | DJ & Event Host",
         picture: "",
         email: "letmeshowyou@gmail.com",
         phone: "(512) 299-3269",
         website: "",
         summary:
-            "Quality and user experience professional with 18+ years bridging technical teams and end-users across healthcare, gaming, e-commerce, and government systems. I've built QA processes from scratch, led testing for mission-critical applications, trained teams on tools and best practices, and advocated for accessibility as a core product value. Currently expanding into AI tooling and prompt engineering. Trilingual communicator (English, Spanish, ASL) skilled at translating complex systems into intuitive experiences and aligning cross-functional teams on shared goals.",
+            "Professional User Experience Advocate with 18+ years of experience in SQA, Customer Service, and hosting live events in everything from startups to high-stakes government systems. My background is built on three pillars: ensuring product quality as a QA lead, advocating for users in technical support, and reading and energizing live audiences as a host. This triad sharpens my ability to bridge technical teams and end-users, translating complex system needs into deeply intuitive, engaging experiences. A trilingual communicator (English, Spanish, ASL) skilled in aligning cross-functional teams on quality goals.",
         location: {
             address: "16506 Fetching",
             postalCode: "78653",
@@ -29,6 +29,7 @@ var resumeJSON = {
             location: "Austin, TX",
             position: "Karaoke Host",
             website: "https://www.karaokedirectory.com/",
+
             startDate: "2025-07-17",
             summary:
                 "Hosted live karaoke events, managed all aspects of audio equipment, song selection, and audience engagement to create memorable entertainment experiences. Combined technical expertise with interpersonal skills to deliver smooth, high-energy events for diverse audiences.",
@@ -219,25 +220,25 @@ var resumeJSON = {
         {
             name: "Blizzard Entertainment",
             location: "Austin, TX",
-            position: "Game Master | Customer Experience & Trust Specialist",
+            position: "Game Master (Technical Support & Customer Service)",
             website: "https://www.blizzard.com",
             startDate: "2010-07-12",
             endDate: "2011-07-12",
             summary:
-                "Provided empathetic, high-touch customer experience support for the 'World of Warcraft' MMO, helping players through emotionally charged situations involving lost items, compromised accounts, and in-game disputes. Served as a frontline investigator for fraud and exploitation while maintaining player trust in a high-volume, live-service environment.",
+                "Provided advanced technical support and customer service for the 'World of Warcraft' MMO, serving as a frontline investigator for complex in-game issues, fraud, and exploitation. Developed exceptional skills in problem-solving, data analysis, and customer communication within a high-volume, live-service environment.",
             highlights: [
-                "Provided compassionate support during emotionally charged escalations, restoring lost items and accounts that held significant personal value to players.",
-                "De-escalated frustrated and distressed users through patient listening and clear communication, turning negative experiences into moments of trust.",
+                "Resolved high-pressure player escalations by diagnosing complex issues and communicating solutions clearly, maintaining player trust in a live-service environment.",
                 "Restored compromised player accounts and inventories with precision, adhering to strict security and data integrity protocols.",
-                "Investigated and documented cases of fraud and exploitation, providing detailed reports for development teams.",
-                "Delivered high-volume support via live chat and ticket systems, balancing efficiency with genuine care for each player's experience."
+                "Analyzed and documented cases of fraud and exploitation of game mechanics, providing detailed reports for development teams.",
+                "Delivered expert support via live chat and ticket systems, effectively communicating technical solutions to a diverse user base.",
+                "Developed a deep understanding of live service operations and the player support lifecycle for a large-scale, always-on application."
             ],
-            tags: ["gaming", "cx", "trust-safety"]
+            tags: ["gaming", "support"]
         },
         {
             name: "Linden Lab",
             location: "San Francisco, CA (Remote)",
-            position: "QA Analyst | Support Tools Developer | Community Operations",
+            position: "QA Analyst | Customer Support & Tools Specialist",
             website: "https://www.lindenlab.com",
             startDate: "2007-03-26",
             endDate: "2010-06-09",
@@ -250,7 +251,7 @@ var resumeJSON = {
                 "Played a key role in establishing and providing customer support initiatives using the Parature ticket system and live text chat, supporting a seamless user experience.",
                 "Earned three promotions in three years through consistent performance, initiative, and demonstrated ability to take on increasing responsibility."
             ],
-            tags: ["gaming", "support", "automation", "community-ops"]
+            tags: ["gaming", "support", "automation"]
         },
         {
             name: "Super Happy Fun Fun",
@@ -610,6 +611,17 @@ var resumeJSON = {
     ],
     skills: [
         {
+            name: "A/V Production & Coordination",
+            keywords: [
+                "Live Sound Engineering & Mixing",
+                "A/V Equipment Operation & Troubleshooting",
+                "Client & Performer Coordination",
+                "Music Programming & Live Cueing",
+                "Event Atmosphere Management",
+                "Technical Setup & Strike Efficiency"
+            ]
+        },
+        {
             name: "Problem-Solving & Analysis",
             keywords: [
                 "Attention to Detail",
@@ -618,6 +630,17 @@ var resumeJSON = {
                 "Critical Thinking",
                 "Root Cause Analysis",
                 "Troubleshooting"
+            ]
+        },
+        {
+            name: "Interpersonal & Collaboration",
+            keywords: [
+                "Clear Communication",
+                "Curiosity",
+                "Cross-functional Collaboration",
+                "Mentoring",
+                "Agile Coaching",
+                "Public Speaking & MC"
             ]
         },
         {
@@ -654,39 +677,6 @@ var resumeJSON = {
             ]
         },
         {
-            name: "Interpersonal & Collaboration",
-            keywords: [
-                "Clear Communication",
-                "Curiosity",
-                "Cross-functional Collaboration",
-                "Mentoring",
-                "Agile Coaching",
-                "Public Speaking & MC"
-            ]
-        },
-        {
-            name: "Training & Enablement",
-            keywords: [
-                "Curriculum Development",
-                "Adult Learning Facilitation",
-                "Software Instruction",
-                "Onboarding & Knowledge Transfer",
-                "Documentation & SOP Creation",
-                "One-on-One Coaching"
-            ]
-        },
-        {
-            name: "Accessibility & Inclusive Design",
-            keywords: [
-                "508 Compliance Testing",
-                "WCAG Awareness",
-                "Assistive Technology Familiarity",
-                "Inclusive Product Advocacy",
-                "American Sign Language (Conversational)",
-                "Deaf Cultural Competency"
-            ]
-        },
-        {
             name: "Platforms & Environments",
             keywords: [
                 "Web Applications",
@@ -709,17 +699,6 @@ var resumeJSON = {
             ]
         },
         {
-            name: "AI Collaboration & Prompting",
-            keywords: [
-                "Prompt Engineering",
-                "Detailed Specification Writing",
-                "Complex Task Decomposition",
-                "Iterative Refinement",
-                "Output Verification & Validation",
-                "AI Tools (ChatGPT, Claude, Midjourney)"
-            ]
-        },
-        {
             name: "Industry Expertise",
             keywords: [
                 "Healthcare & Telehealth",
@@ -731,6 +710,17 @@ var resumeJSON = {
             ]
         },
         {
+            name: "AI Collaboration & Prompting",
+            keywords: [
+                "Prompt Engineering",
+                "Detailed Specification Writing",
+                "Complex Task Decomposition",
+                "Iterative Refinement",
+                "Output Verification & Validation",
+                "AI Tools (ChatGPT, Claude, Midjourney)"
+            ]
+        },
+        {
             name: "Office and Image Suites",
             keywords: [
                 "Adobe Creative Suite",
@@ -739,17 +729,6 @@ var resumeJSON = {
                 "Canva",
                 "JIRA Confluence",
                 "GIMP"
-            ]
-        },
-        {
-            name: "A/V Production & Coordination",
-            keywords: [
-                "Live Sound Engineering & Mixing",
-                "A/V Equipment Operation & Troubleshooting",
-                "Client & Performer Coordination",
-                "Music Programming & Live Cueing",
-                "Event Atmosphere Management",
-                "Technical Setup & Strike Efficiency"
             ]
         }
     ],
@@ -768,3 +747,5 @@ var resumeJSON = {
         }
     ]
 };
+
+
