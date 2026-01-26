@@ -48,6 +48,7 @@
       justify-content: center;
       gap: 0.75rem;
       margin: 1.5rem 0;
+      flex-wrap: wrap;
     }
 
     .add-search input {
@@ -57,7 +58,6 @@
       border-radius: 8px;
       background: #16213e;
       color: #fff;
-      width: 300px;
     }
 
     .add-search input:focus {
@@ -67,6 +67,8 @@
     }
 
     .add-search input::placeholder { color: #666; }
+
+    .add-search .keyword-input { width: 300px; }
 
     .add-search button {
       padding: 0.75rem 1.5rem;
@@ -83,6 +85,67 @@
     .add-search button:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 15px rgba(0, 217, 255, 0.4);
+    }
+
+    /* Location Section */
+    .location-section {
+      text-align: center;
+      margin: 1rem 0;
+      padding: 1rem;
+      background: #16213e;
+      border-radius: 8px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .location-label {
+      display: block;
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 0.5rem;
+    }
+
+    .location-inputs {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .location-inputs input {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.9rem;
+      border: 2px solid #1f4068;
+      border-radius: 6px;
+      background: #1a1a2e;
+      color: #fff;
+    }
+
+    .location-inputs input:focus {
+      outline: none;
+      border-color: #00d9ff;
+    }
+
+    .location-inputs input::placeholder { color: #666; }
+
+    .city-input { width: 150px; }
+    .state-input { width: 120px; }
+
+    .clear-location {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+      border: 1px solid #1f4068;
+      border-radius: 6px;
+      background: transparent;
+      color: #666;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .clear-location:hover {
+      border-color: #ff6b6b;
+      color: #ff6b6b;
     }
 
     /* Edit Button */
@@ -341,7 +404,7 @@
     /* Search Cards Grid */
     .searches-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
       gap: 1.5rem;
     }
 
@@ -398,20 +461,35 @@
       margin-bottom: 0.4rem;
     }
 
-    .links {
+    /* Site Row */
+    .site-row {
       display: flex;
-      flex-wrap: wrap;
+      align-items: center;
       gap: 0.5rem;
+      margin-bottom: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .site-name {
+      font-size: 0.9rem;
+      color: #aaa;
+      min-width: 120px;
+    }
+
+    .site-links {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
     }
 
     .site-link {
       display: inline-block;
-      padding: 0.4rem 0.75rem;
+      padding: 0.25rem 0.5rem;
       background: #0f3460;
       color: #fff;
       text-decoration: none;
       border-radius: 4px;
-      font-size: 0.8rem;
+      font-size: 0.7rem;
       transition: background 0.2s, transform 0.1s;
     }
 
@@ -420,6 +498,14 @@
       color: #1a1a2e;
       transform: translateY(-1px);
     }
+
+    .site-link.keyword { background: #0f3460; }
+    .site-link.location { background: #2d6a4f; }
+    .site-link.remote { background: #7b2cbf; }
+
+    .site-link.keyword:hover { background: #00d9ff; }
+    .site-link.location:hover { background: #40916c; }
+    .site-link.remote:hover { background: #9d4edd; }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
@@ -432,8 +518,9 @@
       body { padding: 1rem; }
       .stats { gap: 1.5rem; }
       .add-search { flex-direction: column; align-items: center; }
-      .add-search input { width: 100%; }
+      .add-search input { width: 100% !important; }
       .searches-grid { grid-template-columns: 1fr; }
+      .site-name { min-width: 100px; }
     }
   </style>
 </head>
@@ -452,9 +539,17 @@
       </div>
     </div>
     <form class="add-search" onsubmit="addSearch(event)">
-      <input type="text" id="search-input" placeholder="Enter job title (e.g., Software Engineer)" autocomplete="off">
+      <input type="text" id="search-input" class="keyword-input" placeholder="Job title (e.g., Software Engineer)" autocomplete="off">
       <button type="submit">Add Search</button>
     </form>
+    <div class="location-section">
+      <label class="location-label">Location (applies to all searches):</label>
+      <div class="location-inputs">
+        <input type="text" id="city-input" class="city-input" placeholder="City" autocomplete="off" oninput="updateLocation()">
+        <input type="text" id="state-input" class="state-input" placeholder="State" autocomplete="off" oninput="updateLocation()">
+        <button class="clear-location" onclick="clearLocation()">Clear</button>
+      </div>
+    </div>
     <button class="edit-btn" onclick="toggleBoardsPanel()">Customize Job Boards</button>
   </header>
 
@@ -468,11 +563,15 @@
     let searches = [];
     let enabledSites = [];
     let customSites = [];
+    let userLocation = { city: '', state: '' };
 
     // LocalStorage keys
     const SEARCHES_KEY = 'jobfinder_searches';
     const SITES_KEY = 'jobfinder_enabled_sites';
     const CUSTOM_SITES_KEY = 'jobfinder_custom_sites';
+    const LOCATION_KEY = 'jobfinder_location';
+    const VERSION_KEY = 'jobfinder_version';
+    const CURRENT_VERSION = '2'; // Increment to clear old data
 
     // Initialize
     document.addEventListener('DOMContentLoaded', init);
@@ -484,10 +583,21 @@
       });
       document.getElementById('date').textContent = date;
 
+      // Clear old data if version changed
+      const savedVersion = localStorage.getItem(VERSION_KEY);
+      if (savedVersion !== CURRENT_VERSION) {
+        localStorage.removeItem(SEARCHES_KEY);
+        localStorage.removeItem(SITES_KEY);
+        localStorage.removeItem(CUSTOM_SITES_KEY);
+        localStorage.removeItem(LOCATION_KEY);
+        localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
+      }
+
       // Load data from localStorage
       loadSearches();
       loadCustomSites();
       loadEnabledSites();
+      loadLocation();
 
       // Render everything
       renderBoardsPanel();
@@ -514,7 +624,6 @@
         if (saved) {
           enabledSites = JSON.parse(saved);
         } else {
-          // Default: all sites enabled
           enabledSites = getAllSiteNames();
         }
       } catch (e) {
@@ -524,6 +633,31 @@
 
     function saveEnabledSites() {
       localStorage.setItem(SITES_KEY, JSON.stringify(enabledSites));
+    }
+
+    function loadLocation() {
+      try {
+        const saved = localStorage.getItem(LOCATION_KEY);
+        if (saved) {
+          userLocation = JSON.parse(saved);
+          document.getElementById('city-input').value = userLocation.city;
+          document.getElementById('state-input').value = userLocation.state;
+        }
+      } catch (e) {
+        userLocation = { city: '', state: '' };
+      }
+    }
+
+    function saveLocation() {
+      localStorage.setItem(LOCATION_KEY, JSON.stringify(userLocation));
+    }
+
+    function clearLocation() {
+      document.getElementById('city-input').value = '';
+      document.getElementById('state-input').value = '';
+      userLocation = { city: '', state: '' };
+      saveLocation();
+      render();
     }
 
     function getAllSiteNames() {
@@ -570,7 +704,7 @@
         return;
       }
 
-      customSites.push({ name, url });
+      customSites.push({ name, urls: { keyword: url } });
       saveCustomSites();
 
       // Enable the new site
@@ -601,6 +735,15 @@
       const content = document.querySelector('.advanced-content');
       btn.classList.toggle('open');
       content.classList.toggle('open');
+    }
+
+    // Location functions
+    function updateLocation() {
+      const city = document.getElementById('city-input').value.trim();
+      const state = document.getElementById('state-input').value.trim();
+      userLocation = { city, state };
+      saveLocation();
+      render();
     }
 
     // Search functions
@@ -647,6 +790,15 @@
     function toggleBoardsPanel() {
       const panel = document.getElementById('boards-panel');
       panel.classList.toggle('open');
+    }
+
+    // URL building functions
+    function buildUrl(urlTemplate, keyword, city, state) {
+      let url = urlTemplate
+        .replace(/{keyword}/g, encodeURIComponent(keyword))
+        .replace(/{city}/g, encodeURIComponent(city))
+        .replace(/{state}/g, encodeURIComponent(state));
+      return url;
     }
 
     // Render functions
@@ -763,11 +915,14 @@
     }
 
     function buildSearchCard(term) {
+      const hasLocation = userLocation.city && userLocation.state;
+      const safeTerm = escapeHtml(term);
+
       let html = `
         <div class="search-card">
           <div class="search-card-header">
-            <h3>${escapeHtml(term)}</h3>
-            <button class="delete-btn" onclick="deleteSearch('${escapeHtml(term)}')" title="Delete search">&times;</button>
+            <h3>${safeTerm}</h3>
+            <button class="delete-btn" onclick="deleteSearch('${safeTerm}')" title="Delete search">&times;</button>
           </div>
       `;
 
@@ -776,30 +931,57 @@
         if (enabledInCategory.length === 0) return;
 
         html += `<div class="link-category">
-          <div class="link-category-name">${cat.name}</div>
-          <div class="links">`;
+          <div class="link-category-name">${cat.name}</div>`;
 
         enabledInCategory.forEach(site => {
-          const url = site.url.replace('{keyword}', encodeURIComponent(term));
-          html += `<a href="${url}" target="_blank" class="site-link">${site.name}</a>`;
+          html += `<div class="site-row">
+            <span class="site-name">${site.name}</span>
+            <div class="site-links">`;
+
+          // Keyword link (always shown if available)
+          if (site.urls.keyword) {
+            const keywordUrl = buildUrl(site.urls.keyword, term, '', '');
+            html += `<a href="${keywordUrl}" target="_blank" class="site-link keyword">Keyword</a>`;
+          }
+
+          // Location link (only shown if location is set and site supports it)
+          if (hasLocation && site.urls.location) {
+            const locationUrl = buildUrl(site.urls.location, term, userLocation.city, userLocation.state);
+            html += `<a href="${locationUrl}" target="_blank" class="site-link location">Location</a>`;
+          }
+
+          // Remote link (always shown if available)
+          if (site.urls.remote) {
+            const remoteUrl = buildUrl(site.urls.remote, term, '', '');
+            html += `<a href="${remoteUrl}" target="_blank" class="site-link remote">Remote</a>`;
+          }
+
+          html += '</div></div>';
         });
 
-        html += '</div></div>';
+        html += '</div>';
       });
 
       // Custom sites
       const enabledCustom = customSites.filter(s => enabledSites.includes(s.name));
       if (enabledCustom.length > 0) {
         html += `<div class="link-category">
-          <div class="link-category-name">Custom</div>
-          <div class="links">`;
+          <div class="link-category-name">Custom</div>`;
 
         enabledCustom.forEach(site => {
-          const url = site.url.replace('{keyword}', encodeURIComponent(term));
-          html += `<a href="${url}" target="_blank" class="site-link">${escapeHtml(site.name)}</a>`;
+          html += `<div class="site-row">
+            <span class="site-name">${escapeHtml(site.name)}</span>
+            <div class="site-links">`;
+
+          if (site.urls.keyword) {
+            const keywordUrl = buildUrl(site.urls.keyword, term, '', '');
+            html += `<a href="${keywordUrl}" target="_blank" class="site-link keyword">Keyword</a>`;
+          }
+
+          html += '</div></div>';
         });
 
-        html += '</div></div>';
+        html += '</div>';
       }
 
       html += '</div>';
