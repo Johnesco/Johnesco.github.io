@@ -175,6 +175,7 @@ var resumeJSON = {
             summary:
                 "As the sole QA professional and founding member of the quality assurance function, established the entire QA process for the company's HIPAA-compliant messaging app for physicians. Led testing efforts across the entire mobile ecosystem, including iPhones, iPads, and Android devices, ensuring the security and reliability of patient data.",
             highlights: [
+                "Tested in Xcode and iOS simulator."
                 "Founded and single-handedly operated the QA department, introducing and standardizing the first formal QA process for the company's flagship HIPAA-compliant messaging app.",
                 "As the sole tester, performed all functional, regression, and compliance testing on the full range of supported devices: real iPhones, iPads, Android tablets, and the iOS Simulator.",
                 "Developed the initial test strategy, authored comprehensive test suites, and enforced testing protocols to ensure software met rigorous quality standards before release.",
@@ -690,7 +691,7 @@ var resumeJSON = {
             name: "Platforms & Environments",
             keywords: [
                 "Web Applications",
-                "Mobile (iOS/Android)",
+                "Mobile (Xcode, iOS Simulator/Android)",
                 "Desktop (PC, Mac, Linux)",
                 "Cross-browser/Cross-platform",
                 "REST API Testing",
