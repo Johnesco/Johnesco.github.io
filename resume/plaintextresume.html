@@ -63,6 +63,32 @@
             }
         });
 
+        /**
+         * Format date for ATS compatibility (MM/YYYY format)
+         * Workday and most ATS systems parse this format reliably
+         */
+        function formatDateATS(inputDate) {
+            if (!inputDate) return 'Present';
+            const parts = inputDate.split('-');
+            if (parts.length < 2) return inputDate;
+            // Return MM/YYYY format - most ATS-friendly
+            return `${parts[1]}/${parts[0]}`;
+        }
+
+        /**
+         * Normalize job title for ATS
+         * Removes multiple roles (pipes, slashes) - takes first/primary role
+         * Removes problematic characters that confuse field parsing
+         */
+        function normalizeJobTitle(position) {
+            if (!position) return '';
+            // Split on common multi-role separators and take the first (usually most senior) role
+            let title = position.split(/\s*[|\/]\s*/)[0];
+            // Also handle comma-separated roles like "QA Test Lead, QA Analyst"
+            title = title.split(/,\s*/)[0];
+            return title.trim();
+        }
+
         function renderPlainTextResume() {
             const content = document.getElementById('resume-content');
             let html = '';
@@ -70,16 +96,14 @@
             // Get filtered data using shared utility
             const { filteredWork, filteredSkills } = applyFilters(resumeJSON);
 
-            // Header (ATS-friendly format)
+            // Header - ATS-optimized format
+            // Each field on its own line, no pipes or special separators
             html += `${resumeJSON.basics.name.toUpperCase()}\n`;
             html += `${resumeJSON.basics.label}\n`;
-            html += `${resumeJSON.basics.email} | ${resumeJSON.basics.phone}\n`;
+            html += `${resumeJSON.basics.email}\n`;
+            html += `${resumeJSON.basics.phone}\n`;
             html += `${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.region} ${resumeJSON.basics.location.postalCode}\n`;
-            // Add LinkedIn if available
-            const linkedIn = resumeJSON.basics.profiles?.find(p => p.network.toLowerCase() === 'linkedin');
-            if (linkedIn) {
-                html += `${linkedIn.url}\n`;
-            }
+            // Note: LinkedIn URL moved to bottom - URLs in header confuse ATS field parsing
             html += '\n';
 
             // Summary
@@ -92,44 +116,68 @@
                 html += `${skill.name}: ${oxfordComma(skill.keywords)}\n\n`;
             });
 
-            // Work Experience (filtered) - standard format
-            html += 'WORK EXPERIENCE\n\n';
+            // Work Experience - ATS-optimized format
+            // Clear structure: TITLE on line 1, COMPANY on line 2, LOCATION on line 3, DATES on line 4
+            // This prevents field transposition issues
+            html += 'WORK EXPERIENCE\n---\n\n';
             filteredWork.forEach(job => {
-                const startDate = formatDate(job.startDate);
-                const endDate = job.endDate ? formatDate(job.endDate) : 'Present';
+                const startDate = formatDateATS(job.startDate);
+                const endDate = formatDateATS(job.endDate);
+                const title = normalizeJobTitle(job.position);
 
-                html += `${job.position.toUpperCase()}\n`;
-                html += `${job.name} | ${job.location}\n`;
-                html += `${startDate} - ${endDate}\n\n`;
+                // Line 1: Job title only (normalized, no multi-role confusion)
+                html += `${title.toUpperCase()}\n`;
+                // Line 2: Company name only
+                html += `${job.name}\n`;
+                // Line 3: Location only
+                html += `${job.location}\n`;
+                // Line 4: Date range (MM/YYYY format)
+                html += `${startDate} - ${endDate}\n`;
+                // No blank line here - description must immediately follow dates
+                // or Workday thinks the job entry ended
+
+                // Summary with explicit label so ATS doesn't confuse it with job title
                 if (job.summary) {
-                    html += `${job.summary}\n\n`;
+                    html += `Description: ${job.summary}\n`;
                 }
+
+                // Bullet points - simple dash prefix, no special characters
                 if (job.highlights && job.highlights.length > 0) {
                     job.highlights.forEach(highlight => {
-                        html += `- ${highlight.trim()}\n`;
+                        // Strip any URLs from highlights to avoid ATS confusion
+                        const cleanHighlight = highlight.trim().replace(/https?:\/\/[^\s]+/g, '').trim();
+                        if (cleanHighlight) {
+                            html += `- ${cleanHighlight}\n`;
+                        }
                     });
                 }
-                html += '\n\n';
+                html += '\n';
             });
 
-            // Education
+            // Education - simplified format
             html += 'EDUCATION\n\n';
             resumeJSON.education.forEach(school => {
                 html += `${school.institution}\n`;
-                html += `${school.area} | ${school.startDate} - ${school.endDate}\n\n`;
+                html += `${school.area}\n`;
+                html += `${school.startDate} - ${school.endDate}\n\n`;
             });
 
             // Languages
             if (resumeJSON.languages && resumeJSON.languages.length > 0) {
                 html += 'LANGUAGES\n\n';
-                const langList = resumeJSON.languages.map(lang => `${lang.language} (${lang.fluency})`);
-                html += langList.join(', ') + '\n\n';
+                resumeJSON.languages.forEach(lang => {
+                    html += `${lang.language}: ${lang.fluency}\n`;
+                });
+                html += '\n';
             }
 
-            // Footer
-            html += '\n';
-            html += 'For the most recent version of this resume, visit:\n';
-            html += 'https://johnesco.github.io/resume/\n';
+            // LinkedIn and portfolio URL at the very end
+            // This keeps URLs out of the main parsing flow
+            const linkedIn = resumeJSON.basics.profiles?.find(p => p.network.toLowerCase() === 'linkedin');
+            if (linkedIn) {
+                html += '\nLINKEDIN\n';
+                html += `${linkedIn.url}\n`;
+            }
 
             content.textContent = html;
         }

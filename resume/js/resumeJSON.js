@@ -25,7 +25,7 @@ var resumeJSON = {
     },
     work: [
         {
-            name: "Freelance",
+            name: "Self-Employed",
             location: "Austin, TX",
             position: "Karaoke Host",
             website: "https://www.karaokedirectory.com/",
@@ -67,7 +67,7 @@ var resumeJSON = {
             startDate: "2019-03-01",
             endDate: "2025-06-30",
             summary:
-                "Senior contractor providing comprehensive QA testing and test leadership across multiple mission-critical projects for the Veterans Affairs over a 6-year engagement. Subject matter expert in government software testing, 508 accessibility compliance, and modernizing legacy testing processes with Agile methodologies.",
+                "Provided comprehensive QA testing and test leadership across multiple mission-critical projects for the Veterans Affairs over a 6-year engagement. Subject matter expert in government software testing, 508 accessibility compliance, and modernizing legacy testing processes with Agile methodologies.",
             highlights: [
                 "Championed the transition from Waterfall to Agile methodologies for the VA Telehealth Hub, gaining stakeholder buy-in and coaching cross-functional teams through the adoption process.",
                 "Advocated for accessibility as a core quality metric, leading 508 compliance initiatives and educating team members on the importance of inclusive design for veteran users.",
@@ -79,9 +79,9 @@ var resumeJSON = {
             tags: ["government", "healthcare", "lead", "accessibility", "agile"]
         },
         {
-            name: "Freelance",
+            name: "Self-Employed",
             location: "Austin, TX",
-            position: "DJ",
+            position: "Disc Jockey",
             startDate: "2011-01-01",
             endDate: "2012-04-30",
             summary:
@@ -149,7 +149,7 @@ var resumeJSON = {
             tags: ["ecommerce", "automation"]
         },
         {
-            name: "Communication Services for the Deaf",
+            name: "CSD, Inc.",
             location: "Austin, TX",
             position: "QA Test Lead, QA Analyst",
             website: "https://csd.org/",
