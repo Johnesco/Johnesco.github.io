@@ -571,7 +571,7 @@
     const CUSTOM_SITES_KEY = 'jobfinder_custom_sites';
     const LOCATION_KEY = 'jobfinder_location';
     const VERSION_KEY = 'jobfinder_version';
-    const CURRENT_VERSION = '2'; // Increment to clear old data
+    const CURRENT_VERSION = '3'; // Increment to clear old data
 
     // Initialize
     document.addEventListener('DOMContentLoaded', init);
@@ -686,14 +686,21 @@
     function addCustomSite(e) {
       e.preventDefault();
       const nameInput = document.getElementById('custom-site-name');
-      const urlInput = document.getElementById('custom-site-url');
+      const keywordUrlInput = document.getElementById('custom-site-url-keyword');
+      const locationUrlInput = document.getElementById('custom-site-url-location');
+      const remoteUrlInput = document.getElementById('custom-site-url-remote');
 
       const name = nameInput.value.trim();
-      const url = urlInput.value.trim();
+      const keywordUrl = keywordUrlInput.value.trim();
+      const locationUrl = locationUrlInput.value.trim();
+      const remoteUrl = remoteUrlInput.value.trim();
 
-      if (!name || !url) return;
-      if (!url.includes('{keyword}')) {
-        alert('URL must contain {keyword} placeholder');
+      if (!name || !keywordUrl) {
+        alert('Name and Keyword URL are required');
+        return;
+      }
+      if (!keywordUrl.includes('{keyword}')) {
+        alert('Keyword URL must contain {keyword} placeholder');
         return;
       }
 
@@ -704,7 +711,11 @@
         return;
       }
 
-      customSites.push({ name, urls: { keyword: url } });
+      const urls = { keyword: keywordUrl };
+      if (locationUrl) urls.location = locationUrl;
+      if (remoteUrl) urls.remote = remoteUrl;
+
+      customSites.push({ name, urls });
       saveCustomSites();
 
       // Enable the new site
@@ -712,7 +723,9 @@
       saveEnabledSites();
 
       nameInput.value = '';
-      urlInput.value = '';
+      keywordUrlInput.value = '';
+      locationUrlInput.value = '';
+      remoteUrlInput.value = '';
 
       renderBoardsPanel();
       render();
@@ -851,8 +864,8 @@
           </button>
           <div class="advanced-content">
             <div class="advanced-warning">
-              <strong>Warning:</strong> Custom job boards require you to know the site's search URL format.
-              The URL must include <code>{keyword}</code> where your search term will be inserted.
+              <strong>Note:</strong> URLs must include <code>{keyword}</code> placeholder.
+              Location URLs can also use <code>{city}</code> and <code>{state}</code>.
             </div>
             <form class="add-board-form" onsubmit="addCustomSite(event)">
               <div class="field name-field">
@@ -860,8 +873,16 @@
                 <input type="text" id="custom-site-name" placeholder="e.g., MyJobSite" autocomplete="off">
               </div>
               <div class="field url-field">
-                <label>Search URL (must include {keyword})</label>
-                <input type="text" id="custom-site-url" placeholder="e.g., https://example.com/jobs?q={keyword}" autocomplete="off">
+                <label>Keyword URL (required)</label>
+                <input type="text" id="custom-site-url-keyword" placeholder="e.g., https://example.com/jobs?q={keyword}" autocomplete="off">
+              </div>
+              <div class="field url-field">
+                <label>Location URL (optional)</label>
+                <input type="text" id="custom-site-url-location" placeholder="e.g., https://example.com/jobs?q={keyword}&loc={city},{state}" autocomplete="off">
+              </div>
+              <div class="field url-field">
+                <label>Remote URL (optional)</label>
+                <input type="text" id="custom-site-url-remote" placeholder="e.g., https://example.com/jobs?q={keyword}&remote=true" autocomplete="off">
               </div>
               <button type="submit">Add Board</button>
             </form>
@@ -976,6 +997,16 @@
           if (site.urls.keyword) {
             const keywordUrl = buildUrl(site.urls.keyword, term, '', '');
             html += `<a href="${keywordUrl}" target="_blank" class="site-link keyword">Keyword</a>`;
+          }
+
+          if (hasLocation && site.urls.location) {
+            const locationUrl = buildUrl(site.urls.location, term, userLocation.city, userLocation.state);
+            html += `<a href="${locationUrl}" target="_blank" class="site-link location">Location</a>`;
+          }
+
+          if (site.urls.remote) {
+            const remoteUrl = buildUrl(site.urls.remote, term, '', '');
+            html += `<a href="${remoteUrl}" target="_blank" class="site-link remote">Remote</a>`;
           }
 
           html += '</div></div>';
