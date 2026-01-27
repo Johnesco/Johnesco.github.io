@@ -95,33 +95,35 @@
             let html = '';
 
             // Get filtered data using shared utility
-            const { filteredWork, filteredSkills } = applyFilters(resumeJSON);
+            const { filteredSkills, recentJobs, earlierJobs, profile } = applyFilters(resumeJSON);
 
             // Header - ATS-optimized format
             // Each field on its own line, no pipes or special separators
             html += `${resumeJSON.basics.name.toUpperCase()}\n`;
-            html += `${resumeJSON.basics.label}\n`;
+            html += `${getLabel(resumeJSON)}\n`;
             html += `${resumeJSON.basics.email}\n`;
             html += `${resumeJSON.basics.phone}\n`;
             html += `${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.region} ${resumeJSON.basics.location.postalCode}\n`;
             // Note: LinkedIn URL moved to bottom - URLs in header confuse ATS field parsing
             html += '\n';
 
-            // Summary
+            // Summary - use profile-aware getter
             html += `PROFESSIONAL SUMMARY\n\n`;
-            html += `${resumeJSON.basics.summary}\n\n`;
+            html += `${getSummary(resumeJSON)}\n\n`;
 
-            // Skills (filtered) - sentence format for ATS
+            // Skills (filtered) - format depends on profile
             html += 'SKILLS\n\n';
             filteredSkills.forEach(skill => {
-                html += `${skill.name}: ${oxfordComma(skill.keywords)}\n\n`;
+                // When profile is active, limit keywords to ~4 for ATS readability
+                const keywords = profile ? skill.keywords.slice(0, 4) : skill.keywords;
+                html += `${skill.name}: ${oxfordComma(keywords)}\n\n`;
             });
 
             // Work Experience - ATS-optimized format
             // Clear structure: TITLE on line 1, COMPANY on line 2, LOCATION on line 3, DATES on line 4
             // This prevents field transposition issues
             html += 'WORK EXPERIENCE\n---\n\n';
-            filteredWork.forEach(job => {
+            recentJobs.forEach(job => {
                 const startDate = formatDateATS(job.startDate);
                 const endDate = formatDateATS(job.endDate);
                 const title = normalizeJobTitle(job.position);
@@ -154,6 +156,19 @@
                 }
                 html += '\n';
             });
+
+            // Earlier Experience (condensed) - only when profile is active and has earlier jobs
+            if (earlierJobs && earlierJobs.length > 0) {
+                html += 'EARLIER EXPERIENCE\n---\n\n';
+                earlierJobs.forEach(job => {
+                    const startYear = job.startDate ? job.startDate.split('-')[0] : '';
+                    const endYear = job.endDate ? job.endDate.split('-')[0] : 'Present';
+                    const dateRange = startYear ? `(${startYear}-${endYear})` : '';
+                    const title = normalizeJobTitle(job.position);
+                    html += `${job.name} | ${title} ${dateRange}\n`;
+                });
+                html += '\n';
+            }
 
             // Education - simplified format
             html += 'EDUCATION\n\n';

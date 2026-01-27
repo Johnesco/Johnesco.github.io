@@ -22,5 +22,44 @@ const RESUME_CONFIG = {
 
     // Maximum years value before treating as "show all"
     // If a years filter exceeds this, no date filtering is applied
-    maxYearsThreshold: 50
+    maxYearsThreshold: 50,
+
+    // Role profiles for ATS optimization
+    // Activate via ?profile=qa-lead
+    profiles: {
+        "qa-lead": {
+            summaryKey: "qa-lead",
+            labelKey: "qa-lead",
+            // Skill categories to show (in priority order, max 6 recommended)
+            prioritySkills: [
+                "Testing Methodologies & Frameworks",
+                "Test Management & Documentation",
+                "Leadership & Process",
+                "Business Analysis",
+                "Platforms & Environments",
+                "Tools & Technologies"
+            ],
+            // Jobs older than this many years get condensed to one-liners
+            earlierExperienceYears: 10,
+            // "list" = ATS-friendly comma-separated, "tags" = pill boxes (default)
+            skillsFormat: "list",
+            // Tags to exclude when this profile is active
+            excludeTags: ["performer", "admin", "creative"]
+        },
+        "business-analyst": {
+            summaryKey: "business-analyst",
+            labelKey: "business-analyst",
+            prioritySkills: [
+                "Business Analysis",
+                "Problem-Solving & Analysis",
+                "Leadership & Process",
+                "Testing Methodologies & Frameworks",
+                "Interpersonal & Collaboration",
+                "Tools & Technologies"
+            ],
+            earlierExperienceYears: 10,
+            skillsFormat: "list",
+            excludeTags: ["performer", "admin", "creative", "gaming"]
+        }
+    }
 };

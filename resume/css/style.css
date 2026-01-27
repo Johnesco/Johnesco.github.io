@@ -169,6 +169,16 @@ strong {
     font-size: 0.85rem;
 }
 
+/* ATS-friendly skill list format (single column, comma-separated) */
+.skillset-list {
+    margin-bottom: 0.6rem;
+    line-height: 1.5;
+}
+
+.skillset-list strong {
+    display: inline;
+}
+
 /* Work Experience */
 .jobs-list {
     margin-top: var(--spacing-md);
@@ -235,7 +245,7 @@ strong {
 }
 
 .job-summary {
-    background-color: var(--light-bg);
+    background-color: none;
     padding: var(--spacing-sm);
     border-radius: 4px;
     font-size: 0.95rem;
@@ -250,6 +260,40 @@ strong {
 
 .job-highlights li {
     margin-bottom: 0.4rem;
+}
+
+/* Earlier Experience Section (condensed older jobs) */
+.earlier-section {
+    margin-top: var(--spacing-lg);
+}
+
+.earlier-jobs-list {
+    margin-top: var(--spacing-md);
+}
+
+.earlier-job {
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.95rem;
+}
+
+.earlier-job:last-child {
+    border-bottom: none;
+}
+
+.earlier-company {
+    font-weight: 600;
+    color: var(--accent-color);
+}
+
+.earlier-position {
+    font-style: italic;
+}
+
+.earlier-dates {
+    color: var(--light-accent);
+    font-size: 0.9rem;
+    margin-left: 0.5rem;
 }
 
 /* Education Grid */
@@ -420,6 +464,32 @@ strong {
         border: 1px solid #ccc;
         padding: 1pt 4pt;
         font-size: 9pt;
+    }
+
+    /* ATS-friendly skill list for print */
+    .skillset-list {
+        margin-bottom: 4pt;
+        font-size: 10pt;
+    }
+
+    /* Earlier experience for print */
+    .earlier-section h2 {
+        font-size: 12pt;
+        margin-top: 12pt;
+    }
+
+    .earlier-job {
+        font-size: 10pt;
+        padding: 2pt 0;
+        border-bottom: none;
+    }
+
+    .earlier-company {
+        color: black;
+    }
+
+    .earlier-dates {
+        color: #666;
     }
 
     /* Remove link styling for print */

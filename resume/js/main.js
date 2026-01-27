@@ -30,13 +30,13 @@ function updatePlainTextLink() {
  */
 function renderResume() {
     // Get filtered data using shared utility
-    const { filteredWork, filteredSkills } = applyFilters(resumeJSON);
+    const { filteredSkills, recentJobs, earlierJobs, profile } = applyFilters(resumeJSON);
 
-    // Set basic information
+    // Set basic information - use profile-aware getters
     document.querySelector('.resume-name').textContent = resumeJSON.basics.name;
-    document.querySelector('.resume-title').textContent = resumeJSON.basics.label;
+    document.querySelector('.resume-title').textContent = getLabel(resumeJSON);
     document.querySelector('.professional-summary').innerHTML =
-        `<strong>Summary: </strong>${resumeJSON.basics.summary}`;
+        `<strong>Summary: </strong>${getSummary(resumeJSON)}`;
 
     // Update contact info
     const contactHTML = `
@@ -47,11 +47,28 @@ function renderResume() {
     `;
     document.querySelector('.contact-info').innerHTML = contactHTML;
 
-    // Render skill sets (filtered)
-    document.getElementById('skillSets').innerHTML = renderSkills(filteredSkills);
+    // Render skill sets (filtered) - use list format if profile specifies
+    const skillsFormat = profile?.skillsFormat || 'tags';
+    if (skillsFormat === 'list') {
+        document.getElementById('skillSets').innerHTML = renderSkillsList(filteredSkills);
+    } else {
+        document.getElementById('skillSets').innerHTML = renderSkills(filteredSkills);
+    }
 
-    // Render work experience (filtered)
-    document.getElementById('jobs').innerHTML = renderWorkExperience(filteredWork);
+    // Render work experience (recent jobs with full detail)
+    document.getElementById('jobs').innerHTML = renderWorkExperience(recentJobs);
+
+    // Render earlier experience section (condensed) if there are earlier jobs
+    const earlierSection = document.getElementById('earlier-experience-section');
+    if (earlierSection) {
+        if (earlierJobs.length > 0) {
+            earlierSection.innerHTML = renderEarlierExperience(earlierJobs);
+            earlierSection.style.display = 'block';
+        } else {
+            earlierSection.innerHTML = '';
+            earlierSection.style.display = 'none';
+        }
+    }
 
     // Render education
     document.getElementById('schools').innerHTML = renderEducation(resumeJSON.education);
@@ -61,7 +78,7 @@ function renderResume() {
 }
 
 /**
- * Render skills section
+ * Render skills section (pill/tag format - default)
  * @param {Array} skills - Filtered skills array
  * @returns {string} HTML string
  */
@@ -88,6 +105,58 @@ function renderSkills(skills) {
             </div>
         `;
     }).join('');
+}
+
+/**
+ * Render skills section in ATS-friendly list format
+ * Single column, comma-separated keywords, ~4 keywords per category
+ * @param {Array} skills - Filtered skills array
+ * @returns {string} HTML string
+ */
+function renderSkillsList(skills) {
+    if (!skills || skills.length === 0) return '';
+
+    return skills.map(skill => {
+        // Limit to ~4 keywords for ATS readability
+        const limitedKeywords = skill.keywords.slice(0, 4);
+        const keywordList = limitedKeywords.join(', ');
+
+        return `
+            <div class="skillset-list">
+                <strong>${skill.name}:</strong> ${keywordList}
+            </div>
+        `;
+    }).join('');
+}
+
+/**
+ * Render earlier experience section (condensed one-liners)
+ * @param {Array} jobs - Array of earlier job entries
+ * @returns {string} HTML string with section header and job list
+ */
+function renderEarlierExperience(jobs) {
+    if (!jobs || jobs.length === 0) return '';
+
+    const jobLines = jobs.map(job => {
+        const startYear = job.startDate ? job.startDate.split('-')[0] : '';
+        const endYear = job.endDate ? job.endDate.split('-')[0] : 'Present';
+        const dateRange = startYear ? `(${startYear}-${endYear})` : '';
+
+        return `
+            <div class="earlier-job">
+                <span class="earlier-company">${job.name}</span> |
+                <span class="earlier-position">${job.position}</span>
+                <span class="earlier-dates">${dateRange}</span>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <h2>Earlier Experience</h2>
+        <div class="earlier-jobs-list">
+            ${jobLines}
+        </div>
+    `;
 }
 
 /**
@@ -144,9 +213,10 @@ function renderWorkExperience(work) {
                     </div>
                 </div>
                 <div class="job-content">
+                <h4>Responsibilities and Accomplishments:</h4>
                     <p class="job-summary">${job.summary}</p>
                     <div class="job-highlights">
-                        <h4>Responsibilities and Accomplishments</h4>
+                        
                         ${highlightsHTML}
                     </div>
                 </div>

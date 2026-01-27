@@ -1,4 +1,16 @@
 var resumeJSON = {
+    // Role-specific summary variants for ATS optimization
+    summaryVariants: {
+        "default": "Quality and business analysis professional with 18+ years bridging technical teams, stakeholders, and end-users across healthcare, gaming, e-commerce, and government systems. I specialize in requirements documentation, process analysis, UAT leadership, and cross-functional collaboration. I've built QA and documentation frameworks from scratch, led Agile transitions, and served as a subject matter expert translating complex business needs into testable, actionable requirements. Trilingual communicator (English, Spanish, ASL) with a track record of stakeholder influence, change management, and delivering clarity in ambiguous environments.",
+        "qa-lead": "Senior QA Test Lead with 18+ years driving test strategy, UAT execution, and quality process implementation across healthcare, government, and gaming systems. Expert in building QA frameworks from scratch, leading distributed teams through Agile adoption, and serving as the critical bridge between development, stakeholders, and end-users. Deep expertise in accessibility testing (508 compliance), requirements traceability, and translating complex business needs into comprehensive test coverage. Trilingual communicator (English, Spanish, ASL) with proven ability to influence stakeholders and deliver clarity in ambiguous environments.",
+        "business-analyst": "Senior Business Analyst with 18+ years translating complex business needs into actionable requirements across healthcare, government, and enterprise systems. Expert in requirements elicitation, process mapping, and stakeholder management. Proven track record building documentation frameworks from scratch, driving Agile adoption, and serving as the critical bridge between technical teams and business stakeholders. Deep expertise in gap analysis, change management, and delivering clarity in ambiguous environments. Trilingual communicator (English, Spanish, ASL) with ability to influence at all organizational levels."
+    },
+    // Role-specific title/label variants for ATS optimization
+    labelVariants: {
+        "default": "Quality & Business Analyst | Requirements & Process Specialist | UAT Leadership",
+        "qa-lead": "Senior QA Test Lead | UAT & Test Strategy | Healthcare & Government Systems",
+        "business-analyst": "Senior Business Analyst | Requirements & Process Specialist | Healthcare & Government"
+    },
     basics: {
         name: "John Escobedo",
         label: "Quality & Business Analyst | Requirements & Process Specialist | UAT Leadership",
@@ -7,7 +19,7 @@ var resumeJSON = {
         phone: "(512) 299-3269",
         website: "",
         summary:
-            "Quality and business analysis professional with 18+ years bridging technical teams, stakeholders, and end-users across healthcare, gaming, e-commerce, and government systems. I specialize in requirements documentation, process analysis, UAT leadership, and cross-functional collaboration. I've built QA and documentation frameworks from scratch, led Agile transitions, and served as a subject matter expert translating complex business needs into testable, actionable requirements. Trilingual communicator (English, Spanish, ASL) with a track record of stakeholder influence, change management, and delivering clarity in ambiguous environments. Currently expanding into AI tooling and prompt engineering.",
+            "Quality and business analysis professional with 18+ years bridging technical teams, stakeholders, and end-users across healthcare, gaming, e-commerce, and government systems. I specialize in requirements documentation, process analysis, UAT leadership, and cross-functional collaboration. I've built QA and documentation frameworks from scratch, led Agile transitions, and served as a subject matter expert translating complex business needs into testable, actionable requirements. Trilingual communicator (English, Spanish, ASL) with a track record of stakeholder influence, change management, and delivering clarity in ambiguous environments.",
         location: {
             address: "16506 Fetching",
             postalCode: "78653",
@@ -103,7 +115,7 @@ var resumeJSON = {
             summary:
                 "Partnered with engineering and product leadership to establish quality processes and design cross-team workflows for a health tech startup's secure patient portal.",
             highlights: [
-                "Partnered with engineering and product leadership to design a unified JIRA workflow, facilitating smoother cross-team collaboration and visibility into release status.",
+                "Designed a unified JIRA workflow, facilitating smoother cross-team collaboration and visibility into release status.",
                 "Assessed release risks and communicated go/no-go recommendations to stakeholders, balancing speed-to-market with quality requirements.",
                 "Established the initial QA process and documentation standards for the health test service platform, defining how requirements would be validated.",
                 "Mentored team members on effective documentation practices and quality standards to foster a culture of quality across the organization.",
