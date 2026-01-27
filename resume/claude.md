@@ -11,6 +11,16 @@ This is a JavaScript-powered resume website for John Escobedo. Resume data lives
 ### Single Source of Truth
 All resume content is stored in `js/resumeJSON.js`. Never hardcode resume content in HTML files.
 
+### Configuration
+Default view settings are in `js/resume-config.js`:
+- `defaultYears` - Years of work history to show (default: 15)
+- `defaultTags` - Tags to filter by (default: null = show all)
+- `excludeTags` - Tags to hide from default view (default: ['performer'])
+- `defaultSkills` - Skill categories to show (default: null = show all)
+- `maxYearsThreshold` - Years value that means "show all" (default: 50)
+
+Note: `excludeTags` only applies when no `?tags=` URL parameter is provided. Users can still see excluded jobs via `?tags=performer`.
+
 ### Shared Utilities
 Common functions live in `js/resume-utils.js`:
 - `getQueryParams()` - Parse URL query parameters
@@ -20,8 +30,6 @@ Common functions live in `js/resume-utils.js`:
 - `oxfordComma()` - Format arrays as sentences
 - `formatDate()` - Format date strings
 - `applyFilters()` - Apply all filters to resume data
-
-**Important**: The `DEFAULT_YEARS_FILTER` constant in `resume-utils.js` controls how many years of work history to show by default (currently 15).
 
 ### Page-Specific Renderers
 - `js/main.js` - Renders styled resume for `index.html`
@@ -69,8 +77,12 @@ Dates use `YYYY-MM-DD` format. Omit `endDate` for current positions.
 3. Include appropriate `tags` for filtering
 4. Test with `?years=1` to see only recent jobs
 
-### Changing Default Years Filter
-Edit `DEFAULT_YEARS_FILTER` in `js/resume-utils.js` (currently 15)
+### Changing Default View Settings
+Edit `js/resume-config.js` to change what appears by default (no URL params):
+- `defaultYears: 15` - Show last 15 years of work history
+- `defaultTags: null` - Set to `['healthcare', 'lead']` to filter by tags
+- `excludeTags: ['performer']` - Hide jobs with these tags from default view
+- `defaultSkills: null` - Set to `['programming']` to filter skill categories
 
 ### Adding a New Skill Category
 1. Edit `js/resumeJSON.js`
@@ -85,12 +97,14 @@ Edit `DEFAULT_YEARS_FILTER` in `js/resume-utils.js` (currently 15)
 ```
 index.html
 ├── js/resumeJSON.js
+├── js/resume-config.js
 ├── js/resume-utils.js
 ├── js/main.js
 └── css/style.css
 
 plaintextresume.html
 ├── js/resumeJSON.js
+├── js/resume-config.js
 └── js/resume-utils.js
 
 customize.html

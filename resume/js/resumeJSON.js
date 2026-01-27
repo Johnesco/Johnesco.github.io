@@ -38,7 +38,7 @@ var resumeJSON = {
                 "Created inclusive, welcoming atmosphere that encouraged participation from guests of all skill levels.",
                 "Balanced competing priorities (song queue, timing, audience energy) to optimize overall experience."
             ],
-            tags: ["entertainment", "coordination"]
+            tags: ["entertainment", "coordination", "performer"]
         },
         {
             name: "Insight Global",
@@ -91,7 +91,7 @@ var resumeJSON = {
                 "Adapted to various in-house sound systems and venue constraints.",
                 "Coordinated with event organizers to align music selection with event tone and timing."
             ],
-            tags: ["AV", "coordination"]
+            tags: ["AV", "coordination", "performer"]
         },
         {
             name: "EverlyWell",

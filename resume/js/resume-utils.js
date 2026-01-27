@@ -1,10 +1,9 @@
 /**
  * Resume Utilities - Shared functions for resume rendering and filtering
  * Used by: index.html (main.js), plaintextresume.html, customize.html
+ *
+ * Requires: resume-config.js to be loaded first
  */
-
-// Default number of years to show in work history
-const DEFAULT_YEARS_FILTER = 15;
 
 /**
  * Parse URL query parameters for resume filtering
@@ -20,7 +19,7 @@ function getQueryParams() {
 }
 
 /**
- * Filter work entries by tags
+ * Filter work entries by tags (inclusion filter)
  * @param {Array} work - Array of work entries from resumeJSON
  * @param {Array|null} tags - Array of tag strings to filter by (lowercase)
  * @returns {Array} Filtered work entries
@@ -34,13 +33,27 @@ function filterWorkByTags(work, tags) {
 }
 
 /**
+ * Exclude work entries by tags (exclusion filter)
+ * @param {Array} work - Array of work entries from resumeJSON
+ * @param {Array|null} excludeTags - Array of tag strings to exclude (lowercase)
+ * @returns {Array} Filtered work entries (jobs WITHOUT any of the excluded tags)
+ */
+function excludeWorkByTags(work, excludeTags) {
+    if (!excludeTags || excludeTags.length === 0) return work;
+    return work.filter(job => {
+        if (!job.tags || job.tags.length === 0) return true;
+        return !job.tags.some(tag => excludeTags.includes(tag.toLowerCase()));
+    });
+}
+
+/**
  * Filter work entries by years (only show jobs within N years)
  * @param {Array} work - Array of work entries from resumeJSON
- * @param {number} years - Number of years to include (default: DEFAULT_YEARS_FILTER)
+ * @param {number} years - Number of years to include (default from RESUME_CONFIG)
  * @returns {Array} Filtered work entries
  */
-function filterWorkByYears(work, years = DEFAULT_YEARS_FILTER) {
-    if (years <= 0 || years > 50) return work;
+function filterWorkByYears(work, years = RESUME_CONFIG.defaultYears) {
+    if (years <= 0 || years > RESUME_CONFIG.maxYearsThreshold) return work;
     const now = new Date();
     const cutoffDate = new Date(now.getFullYear() - years, now.getMonth(), now.getDate());
 
@@ -123,6 +136,7 @@ function formatDate(inputDate, format = 'long') {
 
 /**
  * Apply default filters to work and skills based on query params
+ * Falls back to RESUME_CONFIG defaults when no query params specified
  * @param {Object} resumeData - The resumeJSON object
  * @returns {Object} Object with filteredWork and filteredSkills arrays
  */
@@ -131,14 +145,22 @@ function applyFilters(resumeData) {
     let filteredWork = resumeData.work;
     let filteredSkills = resumeData.skills;
 
-    // Apply work filters
-    filteredWork = filterWorkByTags(filteredWork, params.tags);
-    // Default to DEFAULT_YEARS_FILTER years if no years parameter specified
-    const yearsFilter = params.years != null ? params.years : DEFAULT_YEARS_FILTER;
+    // Apply work filters - use URL params or fall back to config defaults
+    const tagsFilter = params.tags ?? RESUME_CONFIG.defaultTags;
+    filteredWork = filterWorkByTags(filteredWork, tagsFilter);
+
+    // Apply tag exclusions only when no explicit tags filter is provided
+    // This allows users to see excluded jobs via ?tags=performer
+    if (!params.tags && RESUME_CONFIG.excludeTags) {
+        filteredWork = excludeWorkByTags(filteredWork, RESUME_CONFIG.excludeTags);
+    }
+
+    const yearsFilter = params.years ?? RESUME_CONFIG.defaultYears;
     filteredWork = filterWorkByYears(filteredWork, yearsFilter);
 
-    // Apply skills filter
-    filteredSkills = filterSkills(filteredSkills, params.skills);
+    // Apply skills filter - use URL params or fall back to config defaults
+    const skillsFilter = params.skills ?? RESUME_CONFIG.defaultSkills;
+    filteredSkills = filterSkills(filteredSkills, skillsFilter);
 
     return { filteredWork, filteredSkills, params };
 }
