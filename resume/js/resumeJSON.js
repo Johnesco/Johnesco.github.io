@@ -1,13 +1,13 @@
 var resumeJSON = {
     basics: {
         name: "John Escobedo",
-        label: "Quality & User Experience Leader | Technical Trainer | AI-Curious Problem Solver",
+        label: "Quality & Business Analyst | Requirements & Process Specialist | UAT Leadership",
         picture: "",
         email: "letmeshowyou@gmail.com",
         phone: "(512) 299-3269",
         website: "",
         summary:
-            "Quality and user experience professional with 18+ years bridging technical teams and end-users across healthcare, gaming, e-commerce, and government systems. I've built QA processes from scratch, led testing for mission-critical applications, trained teams on tools and best practices, and advocated for accessibility as a core product value. Currently expanding into AI tooling and prompt engineering. Trilingual communicator (English, Spanish, ASL) skilled at translating complex systems into intuitive experiences and aligning cross-functional teams on shared goals.",
+            "Quality and business analysis professional with 18+ years bridging technical teams, stakeholders, and end-users across healthcare, gaming, e-commerce, and government systems. I specialize in requirements documentation, process analysis, UAT leadership, and cross-functional collaboration. I've built QA and documentation frameworks from scratch, led Agile transitions, and served as a subject matter expert translating complex business needs into testable, actionable requirements. Trilingual communicator (English, Spanish, ASL) with a track record of stakeholder influence, change management, and delivering clarity in ambiguous environments. Currently expanding into AI tooling and prompt engineering.",
         location: {
             address: "16506 Fetching",
             postalCode: "78653",
@@ -25,21 +25,20 @@ var resumeJSON = {
     },
     work: [
         {
-            name: "Self-Employed",
+            name: "Freelance",
             location: "Austin, TX",
             position: "Karaoke Host",
             website: "https://www.karaokedirectory.com/",
             startDate: "2025-07-17",
             summary:
-                "Hosted live karaoke events, managed all aspects of audio equipment, song selection, and audience engagement to create memorable entertainment experiences. Combined technical expertise with interpersonal skills to deliver smooth, high-energy events for diverse audiences.",
+                "Hosted live karaoke events, managing audience engagement, real-time decision-making, and technical operations to create memorable experiences for diverse audiences.",
             highlights: [
-                "Set up and operated sound systems, speakers, and karaoke software for events.",
-                "Created a welcoming, fun atmosphere that encouraged audience participation.",
-                "Troubleshot technical and audio issues in real-time to ensure seamless performances.",
-                "Managed song queues and requests while maintaining event flow and timing.",
-                "Engaged with guests to build rapport and ensure an inclusive experience for all skill levels."
+                "Coordinated event flow and timing while adapting to audience needs and requests in real-time.",
+                "Managed technical setup including sound systems, software, and troubleshooting to ensure seamless delivery.",
+                "Created inclusive, welcoming atmosphere that encouraged participation from guests of all skill levels.",
+                "Balanced competing priorities (song queue, timing, audience energy) to optimize overall experience."
             ],
-            tags: ["entertainment"]
+            tags: ["entertainment", "coordination"]
         },
         {
             name: "Insight Global",
@@ -49,15 +48,15 @@ var resumeJSON = {
             startDate: "2025-07-01",
             endDate: "2025-09-11",
             summary:
-                "Leveraged extensive VR expertise to directly operate humanoid robots for Apptronik, playing a key role in a fast-paced development cycle. Responsibilities included VR-based operation, environmental staging, and rigorous documentation of issues and processes. Demonstrated extreme adaptability to excel in a novel, process-light environment, directly supporting high-priority company initiatives through consistent achievement of data collection goals.",
+                "Served as communication bridge between operations and engineering for Apptronik's humanoid robot development, translating observed behaviors into actionable documentation and establishing process standards in a fast-paced, ambiguous environment.",
             highlights: [
-                "Rapidly adapted to a novel role with minimal onboarding, mastering VR-based robot operation within days to meet aggressive development timelines.",
-                "Prepared and staged physical testing environments to precise specifications, ensuring optimal conditions for robotic performance and data collection.",
-                "Served as a critical communication bridge between operations and engineering, translating observed robot behaviors into actionable bug reports that accelerated issue resolution.",
+                "Translated observed robot behaviors into clear, actionable bug reports that accelerated issue resolution for engineering teams.",
                 "Proactively authored troubleshooting protocols and SOPs in a process-light environment, establishing documentation standards adopted by the broader team.",
-                "Contributed directly to high-visibility initiatives by consistently meeting daily and weekly team goals for data collection and operational testing."
+                "Served as critical communication bridge between operations and engineering, ensuring alignment on priorities and findings.",
+                "Rapidly adapted to novel role with minimal onboarding, demonstrating ability to learn complex domains quickly.",
+                "Prepared and staged physical testing environments to precise specifications, ensuring optimal conditions for data collection."
             ],
-            tags: ["robotics", "vr", "hardware"]
+            tags: ["robotics", "vr", "hardware", "documentation", "process"]
         },
         {
             name: "GeekSI",
@@ -67,32 +66,32 @@ var resumeJSON = {
             startDate: "2019-03-01",
             endDate: "2025-06-30",
             summary:
-                "Provided comprehensive QA testing and test leadership across multiple mission-critical projects for the Veterans Affairs over a 6-year engagement. Subject matter expert in government software testing, 508 accessibility compliance, and modernizing legacy testing processes with Agile methodologies.",
+                "Senior contractor providing requirements analysis, UAT leadership, and quality assurance across multiple mission-critical VA healthcare projects. Subject matter expert for complex clinical modules, facilitating knowledge transfer and driving process standardization across distributed teams.",
             highlights: [
-                "Championed the transition from Waterfall to Agile methodologies for the VA Telehealth Hub, gaining stakeholder buy-in and coaching cross-functional teams through the adoption process.",
-                "Advocated for accessibility as a core quality metric, leading 508 compliance initiatives and educating team members on the importance of inclusive design for veteran users.",
-                "Served as the go-to SME for the Traumatic Brain Injury module, facilitating knowledge transfer sessions and mentoring junior analysts on complex healthcare domain requirements.",
-                "Collaborated with automation engineers to validate Cucumber/Selenium scripts, ensuring alignment between manual test intent and automated execution.",
-                "Drove standardization of testing practices across multiple VA projects, building consensus among distributed teams and reducing onboarding time for new testers.",
-                "Tested a diverse array of platforms including web applications, mainframes, Linux machines, and mobile devices (Android, iOS)."
+                "Served as go-to SME for the Traumatic Brain Injury module, facilitating knowledge transfer sessions and translating complex healthcare domain requirements for cross-functional teams.",
+                "Championed the transition from Waterfall to Agile methodologies, gaining stakeholder buy-in and coaching teams through adoption — a change management initiative that improved delivery predictability.",
+                "Drove standardization of testing practices and documentation across multiple VA projects, building consensus among distributed teams and reducing onboarding time for new analysts.",
+                "Advocated for accessibility as a core quality metric, leading 508 compliance initiatives and educating team members on inclusive design requirements.",
+                "Collaborated with automation engineers to validate Cucumber/Selenium scripts, ensuring alignment between documented requirements and automated execution.",
+                "Created and maintained requirements traceability documentation ensuring business needs mapped to test coverage across web, mainframe, and mobile platforms."
             ],
-            tags: ["government", "healthcare", "lead", "accessibility", "agile"]
+            tags: ["government", "healthcare", "lead", "accessibility", "agile", "requirements", "UAT"]
         },
         {
-            name: "Self-Employed",
+            name: "Freelance",
             location: "Austin, TX",
-            position: "Disc Jockey",
+            position: "DJ",
+            website: "https://wherecanwedance.com/artists/johnescobedo",
             startDate: "2011-01-01",
             endDate: "2012-04-30",
             summary:
-                "DJed at various dances and events around Austin, Tx",
+                "DJed at various dances and events around Austin, TX, coordinating with venues and adapting to diverse audience needs.",
             highlights: [
-                "Created DJ setlists for Danceversity, Dance International, and Synergy Dance Studio.",
-                "Matched tone and vibe for various events need last-minute DJing.",
-                "Updated social media accounts to keep dancers posted on new events.",
-                "Adapted to various in-house sound systems."
+                "Created DJ setlists for Danceversity, Dance International, and Synergy Dance Studio based on event requirements and audience preferences.",
+                "Adapted to various in-house sound systems and venue constraints.",
+                "Coordinated with event organizers to align music selection with event tone and timing."
             ],
-            tags: ["AV"]
+            tags: ["AV", "coordination"]
         },
         {
             name: "EverlyWell",
@@ -102,15 +101,15 @@ var resumeJSON = {
             startDate: "2018-06-05",
             endDate: "2018-10-01",
             summary:
-                "As the primary QA tester, established the initial quality assurance process for EverlyWell's health test services, where customers managed lab results through a secure online portal. Took ownership of JIRA administration, configuring the system to support a new cross-team CI/CD workflow.",
+                "Partnered with engineering and product leadership to establish quality processes and design cross-team workflows for a health tech startup's secure patient portal.",
             highlights: [
-                "As the initial QA resource, integrated the first formal QA process into the software development cycle for the health test service platform.",
                 "Partnered with engineering and product leadership to design a unified JIRA workflow, facilitating smoother cross-team collaboration and visibility into release status.",
-                "Assessed release risks and communicated go/no-go recommendations to stakeholders, balancing speed-to-market with quality assurance.",
-                "Performed all testing for new website features across all major browsers and mobile devices, including Android, iOS, and the iOS Simulator.",
-                "Mentored team members on effective bug writing and QA practices to foster a culture of quality across the organization."
+                "Assessed release risks and communicated go/no-go recommendations to stakeholders, balancing speed-to-market with quality requirements.",
+                "Established the initial QA process and documentation standards for the health test service platform, defining how requirements would be validated.",
+                "Mentored team members on effective documentation practices and quality standards to foster a culture of quality across the organization.",
+                "Performed validation testing across all major browsers and mobile devices to ensure requirements were met before release."
             ],
-            tags: ["healthcare", "lead", "startup", "cicd"]
+            tags: ["healthcare", "lead", "startup", "cicd", "process"]
         },
         {
             name: "YouScience",
@@ -120,15 +119,15 @@ var resumeJSON = {
             startDate: "2017-07-17",
             endDate: "2018-06-01",
             summary:
-                "Served as the sole QA employee, responsible for establishing and managing the quality assurance process for the company's flagship online career and education assessment tool. Worked cross-functionally to integrate QA into the development cycle, ensuring the stability and quality of all weekly releases.",
+                "As the sole QA resource, established comprehensive documentation framework and quality processes for the company's flagship education assessment platform, building credibility with development and product teams.",
             highlights: [
-                "As the sole QA voice, built credibility with development and product teams by demonstrating the value of structured testing, ultimately integrating QA as a respected part of the SDLC.",
-                "Developed the complete QA framework, including test procedures, test case scenarios, and standards for verification, integration, and regression testing.",
-                "Managed all testing for the flagship web application, performing cross-browser testing via BrowserStack and testing on Android and iOS devices.",
-                "Created and maintained test case scenarios and product documentation to support new feature releases and ensure consistent quality.",
-                "Improved developer-QA communication by introducing standardized bug report and user story templates, reducing back-and-forth and accelerating fix turnaround."
+                "Built credibility with development and product teams by demonstrating the value of structured requirements validation, ultimately integrating QA as a respected part of the SDLC.",
+                "Developed complete documentation framework including test procedures, requirements traceability, and verification standards.",
+                "Improved developer-QA communication by introducing standardized user story and acceptance criteria templates, reducing ambiguity and accelerating delivery.",
+                "Created and maintained product documentation to support new feature releases and ensure consistent understanding of requirements.",
+                "Managed all validation activities for the flagship web application across browsers and mobile devices."
             ],
-            tags: ["edtech", "lead", "startup"]
+            tags: ["edtech", "lead", "startup", "documentation"]
         },
         {
             name: "Luna Data Solutions",
@@ -138,32 +137,32 @@ var resumeJSON = {
             startDate: "2015-05-15",
             endDate: "2017-05-19",
             summary:
-                "Contracted as a QA Analyst for RetailMeNot, focusing on the launch of new e-commerce features and ensuring site stability. Enhanced testing efficiency through custom automation tooling, analytics validation, and standardized data suites, while providing direct production support for a high-traffic website.",
+                "Contracted as QA Analyst for RetailMeNot, coordinating cross-team efforts for high-visibility e-commerce feature launches and aligning testing priorities with business objectives.",
             highlights: [
-                "Coordinated QA efforts across multiple teams for the high-visibility gift card feature launch, aligning testing priorities with business objectives.",
-                "Partnered with developers to enhance the internal test automation framework, contributing code improvements that increased team efficiency.",
-                "Engineered custom JavaScript tools to validate and ensure the accuracy of site-wide analytics implementation and data integrity.",
-                "Developed and standardized the smoke testing data suite to guarantee consistency and reliability across all testing environments.",
-                "Responded to live production issues under pressure, triaging problems and communicating status updates to stakeholders during critical outages."
+                "Coordinated QA efforts across multiple teams for the high-visibility gift card feature launch, aligning testing priorities with business objectives and stakeholder expectations.",
+                "Engineered custom JavaScript tools to validate site-wide analytics implementation and data integrity, ensuring business requirements were accurately captured.",
+                "Developed and standardized documentation and data suites to guarantee consistency across all environments.",
+                "Responded to live production issues under pressure, triaging problems and communicating status updates to stakeholders during critical outages.",
+                "Partnered with developers to enhance internal tooling, contributing improvements that increased team efficiency."
             ],
-            tags: ["ecommerce", "automation"]
+            tags: ["ecommerce", "automation", "coordination"]
         },
         {
-            name: "CSD, Inc.",
+            name: "Communication Services for the Deaf",
             location: "Austin, TX",
             position: "QA Test Lead, QA Analyst",
             website: "https://csd.org/",
             startDate: "2013-05-06",
             endDate: "2015-01-16",
             summary:
-                "Developed and implemented the inaugural QA process for the 'Vineya' web-video platform, a critical accessibility solution providing interpreting services for the Deaf and hard-of-hearing community. Acquired conversational American Sign Language (ASL) and cultural competency to effectively collaborate and ensure the product met the needs of its users.",
+                "Developed inaugural QA process for an accessibility-focused video interpreting platform, immersing in user community to ensure product truly met the needs of Deaf and hard-of-hearing users.",
             highlights: [
-                "Pioneered the quality assurance function from the ground up, creating the initial test procedures and automation framework for the GoVineya.com Ruby on Rails web application.",
-                "Invested in learning American Sign Language and Deaf cultural norms to build authentic relationships with colleagues and ensure the product truly served its community.",
-                "Managed the full testing lifecycle for release cycles, including creating test plans, executing test runs, and reporting on results for both web and mobile app versions.",
-                "Problem-solved cross-browser testing limitations on Mac hardware by implementing a VirtualBox-based solution, enabling comprehensive IE testing without additional equipment costs."
+                "Invested in learning American Sign Language and Deaf cultural norms to understand user needs and ensure the product truly served its community — a user research approach that informed requirements validation.",
+                "Pioneered the quality assurance function from the ground up, creating documentation framework and test procedures for the Ruby on Rails web application.",
+                "Managed full validation lifecycle including creating test plans, executing test runs, and reporting results to stakeholders for both web and mobile platforms.",
+                "Problem-solved cross-platform testing limitations by implementing VirtualBox-based solution, demonstrating gap analysis and solution design skills."
             ],
-            tags: ["accessibility", "lead", "startup", "asl"]
+            tags: ["accessibility", "lead", "startup", "asl", "user-research"]
         },
         {
             name: "DocbookMD",
@@ -173,16 +172,14 @@ var resumeJSON = {
             startDate: "2012-07-16",
             endDate: "2013-04-18",
             summary:
-                "As the sole QA professional and founding member of the quality assurance function, established the entire QA process for the company's HIPAA-compliant messaging app for physicians. Led testing efforts across the entire mobile ecosystem, including iPhones, iPads, and Android devices, ensuring the security and reliability of patient data.",
+                "Founded and scaled the QA function for a HIPAA-compliant healthcare messaging app, ensuring regulatory requirements were met while building team and processes from scratch.",
             highlights: [
-                "Tested in Xcode and iOS simulator.",
-                "Founded and single-handedly operated the QA department, introducing and standardizing the first formal QA process for the company's flagship HIPAA-compliant messaging app.",
-                "As the sole tester, performed all functional, regression, and compliance testing on the full range of supported devices: real iPhones, iPads, Android tablets, and the iOS Simulator.",
-                "Developed the initial test strategy, authored comprehensive test suites, and enforced testing protocols to ensure software met rigorous quality standards before release.",
-                "Guaranteed the application's adherence to strict HIPAA compliance regulations for the secure transmission of patient health information.",
-                "Scaled the QA function from a one-person operation to a team, hiring, onboarding, and mentoring new testers while maintaining quality standards during rapid growth."
+                "Analyzed and documented HIPAA compliance requirements, ensuring application met strict regulatory standards for secure transmission of patient health information.",
+                "Founded and scaled the QA department from one-person operation to a team, hiring, onboarding, and mentoring new analysts while establishing documentation standards.",
+                "Developed initial test strategy and comprehensive documentation to ensure software met business and regulatory requirements before release.",
+                "Performed all functional, regression, and compliance validation across mobile devices (iPhones, iPads, Android) and iOS Simulator."
             ],
-            tags: ["healthcare", "lead", "startup", "mobile", "hipaa"]
+            tags: ["healthcare", "lead", "startup", "mobile", "hipaa", "compliance"]
         },
         {
             name: "Luna Data Solutions",
@@ -192,30 +189,30 @@ var resumeJSON = {
             startDate: "2011-08-01",
             endDate: "2012-04-16",
             summary:
-                "Contracted as a QA Tester and rapidly promoted to Test Lead for Heatwave Interactive, assuming responsibility for the quality of multiple game titles. Authored test plans, led a testing team, and executed rigorous testing cycles to improve game stability and user experience.",
+                "Contracted as QA Tester and promoted to Test Lead for Heatwave Interactive, authoring test documentation and leading a team across multiple game titles.",
             highlights: [
-                "Contracted as a QA Tester and promoted to Test Lead for Heatwave Interactive, working on 'Gods and Heroes: Rome Rising' and 'Platinum Life: Country'.",
-                "Executed daily testing of game builds for core functionality, gameplay mechanics, and UI integrity.",
-                "Authored comprehensive test plans for smoke and regression testing cycles, improving test coverage.",
-                "Led and mentored a team of testers, providing guidance on bug reporting and test execution best practices."
+                "Authored comprehensive test plans and documentation for smoke and regression testing cycles, improving coverage and consistency.",
+                "Led and mentored a team of testers, providing guidance on documentation standards and execution best practices.",
+                "Executed daily validation of game builds for core functionality, gameplay mechanics, and UI integrity.",
+                "Promoted to Test Lead based on documentation quality and team leadership skills."
             ],
-            tags: ["gaming", "lead"]
+            tags: ["gaming", "lead", "documentation"]
         },
         {
             name: "Kick Butt Coffee",
             location: "Austin, TX",
             position: "Event Coordinator and Host",
+            website: "https://kickbuttcoffee.com/",
             startDate: "2011-01-01",
             endDate: "2012-04-30",
             summary:
-                "Held the first public dance in a style known as Fusion.",
+                "Organized and coordinated weekly dance events, managing vendors, technical setup, and community engagement.",
             highlights: [
-                "Organized and ran a weekly dance in a local Austin coffee shop Kick Butt Coffee.",
-                "Lead and organized DJs for each event.",
-                "Advertised events on social media.",
-                "Set up an in-house audio system to allow DJ's to plug directly into the house system."
+                "Organized and ran weekly events, coordinating DJs, venue logistics, and audience engagement.",
+                "Set up technical infrastructure to allow seamless integration with house audio systems.",
+                "Managed event promotion and community communication through social media."
             ],
-            tags: ["AV"]
+            tags: ["AV", "coordination", "event-management"]
         },
         {
             name: "Blizzard Entertainment",
@@ -225,15 +222,15 @@ var resumeJSON = {
             startDate: "2010-07-12",
             endDate: "2011-07-12",
             summary:
-                "Provided empathetic, high-touch customer experience support for the 'World of Warcraft' MMO, helping players through emotionally charged situations involving lost items, compromised accounts, and in-game disputes. Served as a frontline investigator for fraud and exploitation while maintaining player trust in a high-volume, live-service environment.",
+                "Provided empathetic, high-touch customer experience support for World of Warcraft, analyzing complex issues and documenting findings for development teams while maintaining user trust in high-volume environment.",
             highlights: [
-                "Provided compassionate support during emotionally charged escalations, restoring lost items and accounts that held significant personal value to players.",
-                "De-escalated frustrated and distressed users through patient listening and clear communication, turning negative experiences into moments of trust.",
-                "Restored compromised player accounts and inventories with precision, adhering to strict security and data integrity protocols.",
-                "Investigated and documented cases of fraud and exploitation, providing detailed reports for development teams.",
-                "Delivered high-volume support via live chat and ticket systems, balancing efficiency with genuine care for each player's experience."
+                "Analyzed and documented cases of fraud and exploitation, providing detailed reports with root cause analysis for development teams.",
+                "Provided compassionate support during emotionally charged escalations, restoring lost items and accounts while maintaining user trust.",
+                "De-escalated frustrated users through patient listening and clear communication, turning negative experiences into moments of trust.",
+                "Delivered high-volume support via live chat and ticket systems, balancing efficiency with genuine care for each user's experience.",
+                "Restored compromised accounts with precision, adhering to strict security and data integrity protocols."
             ],
-            tags: ["gaming", "cx", "trust-safety"]
+            tags: ["gaming", "cx", "trust-safety", "analysis"]
         },
         {
             name: "Linden Lab",
@@ -243,15 +240,15 @@ var resumeJSON = {
             startDate: "2007-03-26",
             endDate: "2010-06-09",
             summary:
-                "Progressed through a series of promotions from frontline support to QA Analyst for the complex virtual world of Second Life. Culminated in a QA role testing daily builds and diagnosing critical issues, building upon a strong foundation in customer support, tool development, and live service management.",
+                "Progressed through three promotions from frontline support to QA Analyst, identifying operational inefficiencies and building solutions while establishing customer support processes.",
             highlights: [
-                "Promoted to QA Analyst after demonstrating exceptional technical and diagnostic skills in prior support roles; responsible for testing daily software builds, tracking bugs, and diagnosing complex in-world issues.",
-                "Identified operational inefficiencies and took initiative to build custom diagnostic tools, improving issue resolution speed for both support and QA teams.",
-                "Served as a frontline First Responder, managing in-world emergencies, enforcing Terms of Service, and resolving user conflicts within a large-scale, live online environment.",
-                "Played a key role in establishing and providing customer support initiatives using the Parature ticket system and live text chat, supporting a seamless user experience.",
+                "Identified operational inefficiencies and took initiative to build custom diagnostic tools, demonstrating gap analysis and solution design capabilities.",
+                "Played key role in establishing customer support processes and documentation using Parature ticket system and live chat.",
+                "Promoted to QA Analyst after demonstrating exceptional analytical and diagnostic skills; responsible for testing daily builds and documenting complex issues.",
+                "Served as frontline First Responder, managing in-world emergencies, enforcing Terms of Service, and resolving user conflicts.",
                 "Earned three promotions in three years through consistent performance, initiative, and demonstrated ability to take on increasing responsibility."
             ],
-            tags: ["gaming", "support", "automation", "community-ops"]
+            tags: ["gaming", "support", "automation", "community-ops", "process"]
         },
         {
             name: "Super Happy Fun Fun",
@@ -261,15 +258,14 @@ var resumeJSON = {
             startDate: "2006-11-01",
             endDate: "2007-02-03",
             summary:
-                "Performed cross-platform compatibility testing for mobile games and applications on a diverse library of hundreds of feature phones, including the popular Motorola Razr. Navigated the complexities of pre-smartphone mobile development by validating software performance across major manufacturers like Nokia, Samsung, Sony Ericsson, and LG Electronics.",
+                "Performed cross-platform compatibility testing for mobile games across 100+ device models, documenting platform-specific issues and developing strategies for fragmented environments.",
             highlights: [
-                "Executed comprehensive functional and compatibility testing for J2ME-based mobile games and applications across a vast inventory of 100+ unique feature phone models.",
-                "Managed testing on a wide array of devices and platforms, including Nokia, Samsung, Sony Ericsson, Motorola (including the Razr), and LG Electronics, to ensure broad market compatibility.",
-                "Identified, documented, and tracked platform-specific bugs using the Mantis bug tracker, providing critical data to developers for issue resolution.",
-                "Supported the full product lifecycle for multiple titles, from initial testing through production and post-release support and troubleshooting.",
-                "Gained early expertise in the challenges of fragmented mobile environments, developing strategies for efficient testing across disparate hardware and software platforms."
+                "Executed comprehensive functional and compatibility testing across 100+ unique device models, documenting platform-specific requirements and constraints.",
+                "Identified, documented, and tracked platform-specific bugs using Mantis, providing detailed analysis for developers.",
+                "Developed strategies for efficient testing across disparate hardware and software platforms.",
+                "Supported full product lifecycle from initial testing through production and post-release support."
             ],
-            tags: ["gaming", "mobile"]
+            tags: ["gaming", "mobile", "documentation"]
         },
         {
             name: "Aspyr Media",
@@ -279,15 +275,15 @@ var resumeJSON = {
             startDate: "2006-02-01",
             endDate: "2006-11-01",
             summary:
-                "Executed rigorous quality assurance testing for high-profile video game titles being ported to the Mac platform. Gained foundational expertise in the software development lifecycle by documenting defects, validating fixes, and ensuring a seamless user experience for a new audience.",
+                "Executed quality assurance for high-profile game ports, authoring test documentation and collaborating with development to isolate platform-specific issues.",
             highlights: [
-                "Performed functional, compatibility, and regression testing on ports of major game titles (including Call of Duty 2, Civilization IV) from Windows to the macOS environment.",
-                "Authored and maintained detailed test plans and test suites to guide a team of testers, establishing organized testing protocols.",
-                "Utilized JIRA and DevTrack to meticulously document, track, and verify software defects, providing developers with clear and actionable bug reports.",
-                "Conducted extensive proofreading of in-game text and UI elements to ensure linguistic accuracy and quality for the final release.",
-                "Collaborated closely with the development team to isolate and reproduce issues specific to the Mac port, contributing to stable product launches."
+                "Authored and maintained detailed test plans and documentation to guide testing team and establish organized protocols.",
+                "Collaborated closely with development team to isolate and document issues specific to Mac platform, contributing to stable launches.",
+                "Utilized JIRA and DevTrack to document, track, and verify defects with clear, actionable reports.",
+                "Conducted extensive proofreading of in-game text and UI elements to ensure accuracy and quality.",
+                "Performed functional, compatibility, and regression testing on major titles (Call of Duty 2, Civilization IV)."
             ],
-            tags: ["gaming", "lead"]
+            tags: ["gaming", "lead", "documentation"]
         },
         {
             name: "LOC Consultants",
@@ -296,14 +292,13 @@ var resumeJSON = {
             startDate: "2005-10-01",
             endDate: "2006-01-31",
             summary:
-                "Provided bilingual administrative support for an architectural firm, serving as the primary point of contact for English and Spanish-speaking clients. Managed executive scheduling, correspondence, and daily office operations.",
+                "Provided bilingual administrative support for an architectural firm, coordinating schedules and serving as primary communication point for diverse client base.",
             highlights: [
-                "Delivered professional customer service in both English and Spanish, ensuring clear communication with a diverse client base.",
-                "Managed and maintained the supervisor's daily calendar, coordinating appointments and prioritizing scheduling conflicts.",
-                "Processed incoming and outgoing mail, ensuring timely distribution and accurate record-keeping.",
-                "Handled high-volume phone calls in both languages, directing inquiries and providing information to clients and vendors."
+                "Delivered professional customer service in English and Spanish, ensuring clear communication with diverse client base.",
+                "Managed and coordinated executive calendar, prioritizing scheduling conflicts.",
+                "Handled high-volume communications in both languages, directing inquiries and providing information."
             ],
-            tags: ["admin", "bilingual"]
+            tags: ["admin", "bilingual", "coordination"]
         },
         {
             name: "GoDance Studios",
@@ -311,11 +306,11 @@ var resumeJSON = {
             position: "Receptionist",
             startDate: "2005-04-28",
             endDate: "2005-09-30",
-            summary: "Served as the front desk point of contact for a ballroom and partner dance studio, managing customer check-ins, new student reservations, and payment processing for classes and events.",
+            summary: "Served as front desk point of contact for dance studio, managing customer interactions and administrative processes.",
             highlights: [
-                "Greeted and checked in students for classes, ensuring a welcoming first impression and smooth class transitions.",
-                "Fielded inquiries from prospective students, answering questions and booking reservations to support new enrollments.",
-                "Processed payments for classes and events, accurately handling cash and card transactions."
+                "Managed customer check-ins and new student reservations, ensuring smooth operations.",
+                "Fielded inquiries from prospective students, communicating program details and booking reservations.",
+                "Processed payments accurately, handling cash and card transactions."
             ],
             tags: ["admin"]
         },
@@ -325,12 +320,12 @@ var resumeJSON = {
             position: "Animator",
             startDate: "2004-11-15",
             endDate: "2005-04-22",
-            summary: "Owned the full animation production pipeline for educational children's content, creating animated book reviews and character-driven lessons using ToonBoom, After Effects, and hand-drawn techniques. Contributed across disciplines including scriptwriting, audio editing, and web design.",
+            summary: "Owned full animation production pipeline for educational children's content, managing projects from script through final delivery.",
             highlights: [
-                "Managed end-to-end animation projects for children's educational content: writing scripts, creating storyboards, building animatics, and delivering final animations.",
-                "Developed animated characters and segments designed to engage young audiences and reinforce learning objectives.",
-                "Edited voice recordings into polished audio tracks, syncing dialogue and sound to animated sequences.",
-                "Supported the company's web presence through light website maintenance and design updates."
+                "Managed end-to-end animation projects: writing scripts, creating storyboards, building animatics, and delivering final animations.",
+                "Developed content designed to engage young audiences and reinforce learning objectives.",
+                "Coordinated audio editing, syncing dialogue and sound to animated sequences.",
+                "Supported web presence through website maintenance and updates."
             ],
             tags: ["creative"]
         },
@@ -340,11 +335,11 @@ var resumeJSON = {
             position: "Building Monitor",
             startDate: "2004-10-01",
             endDate: "2004-11-15",
-            summary: "Provided security and access control for live performances at the UT Performing Arts Center, ensuring artists had unimpeded access while maintaining a safe environment for audiences during operas, concerts, and musicals.",
+            summary: "Provided security and access control for live performances, ensuring safe environment for performers and audiences.",
             highlights: [
-                "Monitored venue access points to ensure performers moved freely while keeping unauthorized individuals from restricted areas.",
-                "Maintained audience safety during performances, preventing disruptions and unauthorized stage access.",
-                "Conducted building safety checks before, during, and after each show to identify and address potential issues."
+                "Monitored venue access points, balancing performer access with security requirements.",
+                "Maintained audience safety during performances, preventing disruptions.",
+                "Conducted building safety checks to identify and address potential issues."
             ],
             tags: ["admin"]
         },
@@ -354,14 +349,13 @@ var resumeJSON = {
             position: "Designer",
             startDate: "2004-05-20",
             endDate: "2004-08-20",
-            summary: "Served as a layout designer for a Spanish-language daily newspaper, working exclusively in Spanish to prepare articles and classifieds for publication. Contributed to the newsroom's transition from QuarkXPress to Adobe InDesign.",
+            summary: "Served as layout designer for Spanish-language daily newspaper, working under deadline pressure to prepare content for publication.",
             highlights: [
-                "Designed and laid out newspaper pages in both QuarkXPress and Adobe InDesign, supporting the team's migration between platforms.",
-                "Edited headlines and adjusted layouts to copyfit articles into designated spaces under daily deadline pressure.",
-                "Prepared and retouched photos for classified advertisements and editorial content.",
-                "Conducted all work and communication in Spanish, collaborating with reporters and editors in a bilingual newsroom environment."
+                "Designed and laid out newspaper pages in QuarkXPress and Adobe InDesign, supporting platform migration.",
+                "Edited headlines and adjusted layouts under daily deadline pressure.",
+                "Conducted all work and communication in Spanish within bilingual newsroom."
             ],
-            tags: ["creative"]
+            tags: ["creative", "bilingual"]
         },
         {
             name: "Computer Discovery Center",
@@ -369,11 +363,11 @@ var resumeJSON = {
             position: "Digital Artist / Webmaster",
             startDate: "2002-07-01",
             endDate: "2004-06-30",
-            summary: "Provided professional photo retouching and restoration services for customers at a computer hardware retailer, combining technical Photoshop expertise with client consultation to deliver high-quality results. Assisted artists with large-format Giclée printing, ensuring their work was reproduced to exacting standards.",
+            summary: "Provided professional photo services and client consultation, translating customer needs into quality deliverables.",
             highlights: [
-                "Consulted with customers to understand their photo restoration and retouching needs, translating requests into polished final products.",
-                "Performed detailed photo editing and repair work in Adobe Photoshop, restoring damaged images and enhancing quality for client satisfaction.",
-                "Assisted artists with Giclée printing workflows, ensuring accurate color reproduction and proper handling of oversized print formats."
+                "Consulted with customers to understand requirements and translate requests into polished final products.",
+                "Performed detailed photo editing and restoration in Adobe Photoshop.",
+                "Assisted artists with Giclée printing workflows, ensuring quality standards were met."
             ],
             tags: ["creative", "web"]
         },
@@ -383,13 +377,13 @@ var resumeJSON = {
             position: "Minister / Web Master",
             startDate: "2002-07-01",
             endDate: "2003-07-31",
-            summary: "Served as an ordained wedding officiant performing bilingual ceremonies in English and Spanish. Additionally provided web design tutoring to the business owner to support their online presence.",
+            summary: "Served as ordained wedding officiant performing bilingual ceremonies, gathering requirements from couples to craft personalized experiences.",
             highlights: [
-                "Officiated wedding ceremonies for diverse couples, delivering personalized services in both English and Spanish.",
-                "Communicated with couples to understand their vision and craft meaningful, customized ceremonies.",
-                "Tutored the business owner on fundamental web design skills, empowering them to maintain their own website."
+                "Communicated with couples to gather requirements and understand their vision for customized ceremonies.",
+                "Officiated ceremonies for diverse couples, delivering personalized services in English and Spanish.",
+                "Tutored business owner on web design skills, enabling them to maintain their own website."
             ],
-            tags: ["web"]
+            tags: ["web", "bilingual", "requirements"]
         },
         {
             name: "Adecco Temp Agency",
@@ -397,11 +391,11 @@ var resumeJSON = {
             position: "Temp Worker",
             startDate: "2002-10-01",
             endDate: "2003-12-31",
-            summary: "Worked as a temp office administrator doing various daily jobs for different clients.",
+            summary: "Worked as temp administrator across various clients, adapting quickly to different environments and requirements.",
             highlights: [
-                "Assisted businesses to modernize or update documents.",
-                "Learned to redline documents for legal review.",
-                "Maintained a good relationship with other workers."
+                "Assisted businesses with document modernization and updates.",
+                "Learned document redlining processes for legal review.",
+                "Adapted quickly to diverse client environments and requirements."
             ],
             tags: ["admin"]
         },
@@ -411,11 +405,11 @@ var resumeJSON = {
             position: "Intern",
             startDate: "2002-01-22",
             endDate: "2002-04-15",
-            summary: "Interned at a professional animation studio, gaining hands-on exposure to the animation production process while supporting daily office operations. Experimented with digital coloring techniques and traditional animation on professional equipment.",
+            summary: "Interned at professional animation studio, gaining exposure to production processes while supporting operations.",
             highlights: [
-                "Supported studio operations through general office assistance and workspace organization.",
+                "Supported studio operations through office assistance and workspace organization.",
                 "Gained hands-on experience with digital coloring workflows for animated productions.",
-                "Developed traditional animation skills using professional animation desks under studio guidance."
+                "Developed traditional animation skills using professional equipment."
             ],
             tags: ["creative"]
         },
@@ -425,13 +419,13 @@ var resumeJSON = {
             position: "Teaching Assistant",
             startDate: "2001-10-01",
             endDate: "2002-05-31",
-            summary: "Served as a teaching assistant in the computer lab, providing one-on-one tutoring and technical support to students working on digital art assignments. Assisted with troubleshooting while also pursuing coursework in video editing.",
+            summary: "Served as teaching assistant providing tutoring and technical support to students, adapting instruction to varied skill levels.",
             highlights: [
-                "Tutored fellow students in Adobe Photoshop, Adobe Illustrator, and other digital art applications, helping them complete assignments and build skills.",
-                "Provided light technical troubleshooting to keep lab workstations functional for student use.",
-                "Balanced TA responsibilities while attending classes in Final Cut Pro video editing."
+                "Tutored students in Adobe Photoshop, Illustrator, and other applications, adapting instruction to individual needs and skill levels.",
+                "Provided technical troubleshooting to keep lab workstations functional.",
+                "Balanced TA responsibilities while pursuing coursework in video editing."
             ],
-            tags: ["education"]
+            tags: ["education", "training"]
         },
         {
             name: "Management Strategies International",
@@ -439,11 +433,11 @@ var resumeJSON = {
             position: "Graphic Designer",
             startDate: "2001-11-01",
             endDate: "2002-02-28",
-            summary: "Created graphics and visual assets for brochures and technical documents, supporting the company's client deliverables using Adobe Photoshop and Illustrator.",
+            summary: "Created graphics and visual assets for client deliverables, collaborating with team to ensure alignment with requirements.",
             highlights: [
-                "Designed graphics and visual elements for client brochures and technical documentation.",
-                "Produced print-ready assets in Adobe Photoshop and Illustrator to meet project specifications.",
-                "Collaborated with team members to ensure designs aligned with document content and client requirements."
+                "Designed graphics for client brochures and technical documentation.",
+                "Produced print-ready assets meeting project specifications.",
+                "Collaborated with team to ensure designs aligned with content and client requirements."
             ],
             tags: ["creative", "design"]
         },
@@ -453,11 +447,11 @@ var resumeJSON = {
             position: "Temporary Administrative Assistant",
             startDate: "2001-02-01",
             endDate: "2001-11-30",
-            summary: "Completed various temporary assignments through Adecco, ranging from administrative document work to hands-on technical projects for clients including Chiron and Leap Frog.",
+            summary: "Completed various temporary assignments, adapting quickly to diverse client environments and project requirements.",
             highlights: [
-                "Assisted Chiron with decommissioning and archiving materials for their HSV research project.",
-                "Supported Leap Frog's product development by working with breadboard prototypes and creating content for educational learning quizzes.",
-                "Adapted quickly to diverse work environments and client needs across multiple short-term assignments."
+                "Assisted Chiron with decommissioning and archiving materials for research project.",
+                "Supported Leap Frog product development, working with prototypes and creating educational quiz content.",
+                "Adapted quickly to diverse work environments and client needs across multiple assignments."
             ],
             tags: ["admin"]
         },
@@ -467,11 +461,11 @@ var resumeJSON = {
             position: "Contract Graphic Designer",
             startDate: "2000-07-01",
             endDate: "2000-10-31",
-            summary: "Created visual assets for an eLearning platform specializing in technical training courses, producing web-optimized graphics to illustrate educational concepts.",
+            summary: "Created visual assets for eLearning platform, collaborating with course developers to communicate technical concepts.",
             highlights: [
-                "Designed instructional graphics and illustrations to support technical eLearning course content.",
-                "Optimized all images for web delivery using web-safe color palettes to ensure consistent display across browsers.",
-                "Collaborated with course developers to visually communicate complex technical concepts for online learners."
+                "Designed instructional graphics to support technical eLearning course content.",
+                "Collaborated with course developers to visually communicate complex concepts for online learners.",
+                "Optimized images for web delivery using appropriate standards."
             ],
             tags: ["creative", "web"]
         },
@@ -482,15 +476,14 @@ var resumeJSON = {
             startDate: "1999-09-01",
             endDate: "2000-06-30",
             summary:
-                "Served as a Rich Media specialist at a leading ad-serving technology company during the rise of interactive online advertising. Researched and documented emerging web technologies to enable the delivery of dynamic, interactive advertisements beyond traditional static banners.",
+                "Served as Rich Media specialist researching emerging technologies and translating technical specifications into actionable insights for product teams.",
             highlights: [
-                "Conducted in-depth technical research on emerging Rich Media technologies, including Macromedia Flash, Shockwave, Java Applets, JavaScript, DHTML, and animated GIFs.",
-                "Translated complex technical specifications into actionable insights, enabling the ad-serving platform to support interactive and multimedia ad formats.",
-                "Collaborated with engineering and product teams to expand ad delivery capabilities beyond static images and text.",
-                "Evaluated browser plugin ecosystems and compatibility requirements to inform cross-platform ad delivery strategies.",
-                "Contributed to the company's competitive positioning during a pivotal era in digital advertising technology."
+                "Conducted technical research on emerging technologies, translating complex specifications into actionable insights for engineering and product teams.",
+                "Collaborated with engineering and product teams to expand platform capabilities based on research findings.",
+                "Evaluated browser ecosystems and compatibility requirements to inform cross-platform strategies.",
+                "Contributed to company positioning during pivotal era in digital advertising technology."
             ],
-            tags: ["adtech", "creative", "web"]
+            tags: ["adtech", "creative", "web", "analysis"]
         },
         {
             name: "Media Alliance",
@@ -500,14 +493,14 @@ var resumeJSON = {
             startDate: "2001-03-01",
             endDate: "2002-02-28",
             summary:
-                "Provided hands-on software instruction and technical support to diverse adult learners in a dynamic, non-profit community technology center. Developed and delivered engaging curriculum for small group workshops, empowering students with essential digital literacy skills for personal and professional development.",
+                "Developed and delivered curriculum for adult learners, adapting teaching methods to accommodate varied skill levels and learning styles.",
             highlights: [
-                "Designed and taught structured workshops on industry-standard desktop software, including Microsoft Office Suite (Word, Excel, PowerPoint), Adobe Photoshop, and fundamental web browsing and email clients.",
-                "Facilitated a positive learning environment by adapting teaching methods to accommodate varied skill levels and learning styles within small adult classrooms.",
-                "Provided one-on-one tutoring and technical assistance to students, troubleshooting software and hardware issues to ensure a seamless learning experience.",
-                "Managed the computer lab facility, ensuring all equipment and software were properly maintained and functional for daily classes and open lab sessions."
+                "Designed and taught structured workshops on Microsoft Office Suite, Adobe Photoshop, and web fundamentals, adapting to learner needs.",
+                "Facilitated positive learning environment by adapting teaching methods to varied skill levels and learning styles.",
+                "Provided one-on-one tutoring and technical assistance, troubleshooting issues to ensure seamless learning experience.",
+                "Managed computer lab facility, ensuring equipment and software maintained for daily classes."
             ],
-            tags: ["education", "instructor"]
+            tags: ["education", "instructor", "training"]
         },
         {
             name: "Tele Atlas (Formerly Etak)",
@@ -516,15 +509,14 @@ var resumeJSON = {
             startDate: "2000-11-01",
             endDate: "2001-01-31",
             summary:
-                "Trained students and contractors on precise methodologies for collecting and recording critical road and geographic data to enhance the accuracy of digital navigation maps. Focused on teaching observational protocols and data entry standards to ensure the integrity and reliability of sourced information.",
+                "Developed and delivered training programs on data collection methodologies, evaluating trainee performance against quality standards.",
             highlights: [
-                "Developed and delivered comprehensive training programs on field data collection techniques, observational best practices, and proprietary software use.",
-                "Instructed individuals on how to accurately identify, categorize, and record geographic features, signage, and road attributes.",
-                "Evaluated trainee performance through practical exercises and graded assessments to ensure comprehension and adherence to strict data quality guidelines.",
-                "Provided constructive feedback and one-on-one coaching to improve trainee accuracy and efficiency in data recording processes.",
-                "Served as a key resource for clarifying mapping protocols, directly contributing to the improvement of data quality at the point of collection."
+                "Developed and delivered comprehensive training programs on data collection techniques, observational best practices, and proprietary software.",
+                "Evaluated trainee performance through practical exercises and assessments to ensure adherence to quality guidelines.",
+                "Provided constructive feedback and one-on-one coaching to improve trainee accuracy and efficiency.",
+                "Served as key resource for clarifying protocols, contributing to data quality improvement."
             ],
-            tags: ["education", "instructor"]
+            tags: ["education", "instructor", "training", "quality"]
         },
         {
             name: "Bay Area Video Coalition",
@@ -534,15 +526,14 @@ var resumeJSON = {
             startDate: "1999-10-01",
             endDate: "2000-05-31",
             summary:
-                "Delivered expert-level instruction in professional digital media software to adult professionals and creatives at a leading Bay Area media arts non-profit. Empowered students to master industry-standard tools for motion graphics and web design, supporting their creative projects and career advancement.",
+                "Delivered expert-level instruction in digital media software, developing curriculum and mentoring students on professional best practices.",
             highlights: [
-                "Developed and taught comprehensive curricula for Adobe After Effects (motion graphics, visual effects, compositing) and Adobe Dreamweaver (website design, HTML, site management).",
-                "Led multi-session workshops for small groups, combining lecture, live demonstration, and hands-on practice to ensure mastery of complex technical concepts.",
-                "Mentored students on best practices for digital media production, from concept through final output, enhancing the professional quality of their portfolios.",
-                "Provided constructive feedback on student projects, fostering a collaborative and creative workshop environment.",
-                "Maintained and troubleshot advanced lab workstations to ensure full functionality of software and hardware for all sessions."
+                "Developed and taught comprehensive curricula for Adobe After Effects and Dreamweaver, adapting to learner needs and skill levels.",
+                "Led multi-session workshops combining lecture, demonstration, and hands-on practice to ensure mastery of complex concepts.",
+                "Mentored students on best practices for digital media production, enhancing portfolio quality.",
+                "Provided constructive feedback on projects, fostering collaborative learning environment."
             ],
-            tags: ["education", "instructor", "creative"]
+            tags: ["education", "instructor", "creative", "training"]
         },
         {
             name: "Houston Multimedia Center",
@@ -551,15 +542,14 @@ var resumeJSON = {
             startDate: "1997-01-01",
             endDate: "1998-04-30",
             summary:
-                "Designed and instructed hands-on courses in foundational and advanced web design and motion graphics software for adult learners and professionals. Fostered a collaborative classroom environment to build student competency in essential digital content creation tools.",
+                "Designed and instructed courses in web design and motion graphics, breaking down complex concepts for diverse adult learners.",
             highlights: [
-                "Developed curriculum and led small-group classes for industry-standard applications, including Adobe PageMill 2, HTML, Adobe Photoshop, and Adobe After Effects.",
-                "Broke down complex technical and design concepts into digestible lessons, catering to a variety of learning styles and skill levels.",
-                "Guided students through hands-on projects from concept to execution, enabling them to build practical skills for professional or personal use.",
-                "Provided individualized support and constructive feedback to help students overcome challenges and master software techniques.",
-                "Managed all aspects of classroom instruction, including lesson planning, live demonstration, and management of training materials and software."
+                "Developed curriculum and led classes for Adobe PageMill, HTML, Photoshop, and After Effects.",
+                "Broke down complex technical concepts into digestible lessons for varied learning styles and skill levels.",
+                "Guided students through hands-on projects from concept to execution, building practical skills.",
+                "Provided individualized support and constructive feedback to help students master techniques."
             ],
-            tags: ["education", "instructor", "creative"]
+            tags: ["education", "instructor", "creative", "training"]
         }
     ],
     education: [
@@ -611,6 +601,18 @@ var resumeJSON = {
     ],
     skills: [
         {
+            name: "Business Analysis",
+            keywords: [
+                "Requirements Elicitation",
+                "User Stories & Acceptance Criteria",
+                "Process Mapping & Documentation",
+                "Gap Analysis",
+                "Stakeholder Management",
+                "Change Management",
+                "Requirements Traceability"
+            ]
+        },
+        {
             name: "Problem-Solving & Analysis",
             keywords: [
                 "Attention to Detail",
@@ -637,7 +639,7 @@ var resumeJSON = {
             keywords: [
                 "Agile Testing",
                 "Regression Testing",
-                "User Acceptance Testing",
+                "User Acceptance Testing (UAT)",
                 "Test Planning",
                 "CI/CD Testing",
                 "Accessibility & 508 Testing"
@@ -655,17 +657,6 @@ var resumeJSON = {
             ]
         },
         {
-            name: "Interpersonal & Collaboration",
-            keywords: [
-                "Clear Communication",
-                "Curiosity",
-                "Cross-functional Collaboration",
-                "Mentoring",
-                "Agile Coaching",
-                "Public Speaking & MC"
-            ]
-        },
-        {
             name: "Training & Enablement",
             keywords: [
                 "Curriculum Development",
@@ -674,6 +665,17 @@ var resumeJSON = {
                 "Onboarding & Knowledge Transfer",
                 "Documentation & SOP Creation",
                 "One-on-One Coaching"
+            ]
+        },
+        {
+            name: "Interpersonal & Collaboration",
+            keywords: [
+                "Clear Communication",
+                "Curiosity",
+                "Cross-functional Collaboration",
+                "Mentoring",
+                "Agile Coaching",
+                "Public Speaking & MC"
             ]
         },
         {
@@ -691,7 +693,7 @@ var resumeJSON = {
             name: "Platforms & Environments",
             keywords: [
                 "Web Applications",
-                "Mobile (Xcode, iOS Simulator/Android)",
+                "Mobile (iOS/Android)",
                 "Desktop (PC, Mac, Linux)",
                 "Cross-browser/Cross-platform",
                 "REST API Testing",
