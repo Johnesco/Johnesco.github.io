@@ -152,7 +152,7 @@ function renderEarlierExperience(jobs) {
     }).join('');
 
     return `
-        <h2>Earlier Experience</h2>
+        <h2>Additional Experience</h2>
         <div class="earlier-jobs-list">
             ${jobLines}
         </div>
@@ -203,20 +203,16 @@ function renderWorkExperience(work) {
             <article class="job">
                 <div class="job-header">
                     <div>
-                        <h3 class="job-company">
+                        <h3 class="job-position">${job.position}</h3>
+                        <span class="job-company">
                             <a href="${job.website}" target="_blank" rel="noopener">${job.name}</a> | ${job.location}
-                        </h3>
-                        <span class="job-position">${job.position}</span>
-                    </div>
-                    <div>
+                        </span>
                         <span class="job-date">${startDate} to ${endDate}</span>
                     </div>
                 </div>
                 <div class="job-content">
-                <h4>Responsibilities and Accomplishments:</h4>
                     <p class="job-summary">${job.summary}</p>
                     <div class="job-highlights">
-                        
                         ${highlightsHTML}
                     </div>
                 </div>
