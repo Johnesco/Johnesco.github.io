@@ -42,8 +42,14 @@ Common functions live in `js/resume-utils.js`:
 The styled resume uses standard section headers for ATS compatibility:
 - **Skills** - Skill categories with keyword tags
 - **Professional Experience** - Recent work history with full details
-- **Additional Experience** - Condensed older jobs (when profile active)
+- **Additional Experience** - Condensed older jobs, expandable on click (when profile active)
 - **Education** - Schools and training
+
+### Additional Experience (Expandable)
+Jobs in the "Additional Experience" section are displayed as condensed one-liners but can be clicked to expand and show full details:
+- Click a job to expand/collapse its summary and highlights
+- Expand icon (`+`/`−`) indicates interactive state
+- Print view keeps jobs condensed (no expand functionality)
 
 ### Job Header Order (ATS-Standard)
 Each job entry displays in this order for optimal ATS parsing:

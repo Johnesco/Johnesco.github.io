@@ -97,10 +97,14 @@
             // Get filtered data using shared utility
             const { filteredSkills, recentJobs, earlierJobs, profile } = applyFilters(resumeJSON);
 
+            // Set page title based on profile
+            const label = getLabel(resumeJSON);
+            document.title = `${resumeJSON.basics.name} - ${label} (Plain Text)`;
+
             // Header - ATS-optimized format
             // Each field on its own line, no pipes or special separators
             html += `${resumeJSON.basics.name.toUpperCase()}\n`;
-            html += `${getLabel(resumeJSON)}\n`;
+            html += `${label}\n`;
             html += `${resumeJSON.basics.email}\n`;
             html += `${resumeJSON.basics.phone}\n`;
             html += `${resumeJSON.basics.location.city}, ${resumeJSON.basics.location.region} ${resumeJSON.basics.location.postalCode}\n`;

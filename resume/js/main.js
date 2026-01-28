@@ -32,9 +32,13 @@ function renderResume() {
     // Get filtered data using shared utility
     const { filteredSkills, recentJobs, earlierJobs, profile } = applyFilters(resumeJSON);
 
+    // Set page title based on profile
+    const label = getLabel(resumeJSON);
+    document.title = `${resumeJSON.basics.name} - ${label}`;
+
     // Set basic information - use profile-aware getters
     document.querySelector('.resume-name').textContent = resumeJSON.basics.name;
-    document.querySelector('.resume-title').textContent = getLabel(resumeJSON);
+    document.querySelector('.resume-title').textContent = label;
     document.querySelector('.professional-summary').innerHTML =
         `<strong>Summary: </strong>${getSummary(resumeJSON)}`;
 
@@ -130,23 +134,40 @@ function renderSkillsList(skills) {
 }
 
 /**
- * Render earlier experience section (condensed one-liners)
+ * Render earlier experience section (condensed one-liners, expandable on click)
  * @param {Array} jobs - Array of earlier job entries
  * @returns {string} HTML string with section header and job list
  */
 function renderEarlierExperience(jobs) {
     if (!jobs || jobs.length === 0) return '';
 
-    const jobLines = jobs.map(job => {
+    const jobLines = jobs.map((job, index) => {
         const startYear = job.startDate ? job.startDate.split('-')[0] : '';
         const endYear = job.endDate ? job.endDate.split('-')[0] : 'Present';
         const dateRange = startYear ? `(${startYear}-${endYear})` : '';
 
+        // Build highlights HTML if available
+        let highlightsHTML = '';
+        if (job.highlights && job.highlights.length > 0) {
+            const items = job.highlights.map(h => {
+                const cleaned = h.charAt(0) === ' ' ? h.substring(1) : h;
+                return `<li>${cleaned}</li>`;
+            }).join('');
+            highlightsHTML = `<ul>${items}</ul>`;
+        }
+
         return `
-            <div class="earlier-job">
-                <span class="earlier-company">${job.name}</span> |
-                <span class="earlier-position">${job.position}</span>
-                <span class="earlier-dates">${dateRange}</span>
+            <div class="earlier-job" onclick="toggleEarlierJob(this)">
+                <div class="earlier-job-header">
+                    <span class="earlier-expand-icon">+</span>
+                    <span class="earlier-company">${job.name}</span> |
+                    <span class="earlier-position">${job.position}</span>
+                    <span class="earlier-dates">${dateRange}</span>
+                </div>
+                <div class="earlier-job-details">
+                    ${job.summary ? `<p class="earlier-summary">${job.summary}</p>` : ''}
+                    ${highlightsHTML ? `<div class="earlier-highlights">${highlightsHTML}</div>` : ''}
+                </div>
             </div>
         `;
     }).join('');
@@ -157,6 +178,18 @@ function renderEarlierExperience(jobs) {
             ${jobLines}
         </div>
     `;
+}
+
+/**
+ * Toggle expanded state of an earlier job entry
+ * @param {HTMLElement} element - The clicked earlier-job element
+ */
+function toggleEarlierJob(element) {
+    element.classList.toggle('expanded');
+    const icon = element.querySelector('.earlier-expand-icon');
+    if (icon) {
+        icon.textContent = element.classList.contains('expanded') ? '−' : '+';
+    }
 }
 
 /**

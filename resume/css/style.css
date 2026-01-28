@@ -256,7 +256,7 @@ strong {
     margin-bottom: 0.2rem;
 }
 
-/* Earlier Experience Section (condensed older jobs) */
+/* Earlier Experience Section (condensed older jobs, expandable) */
 .earlier-section {
     margin-top: 0.5rem;
 }
@@ -266,13 +266,37 @@ strong {
 }
 
 .earlier-job {
-    padding: 0.2rem 0;
+    padding: 0.4rem 0;
     border-bottom: 1px solid var(--border-color);
     font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.earlier-job:hover {
+    background-color: var(--lighter-bg);
 }
 
 .earlier-job:last-child {
     border-bottom: none;
+}
+
+.earlier-job-header {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.earlier-expand-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2rem;
+    height: 1.2rem;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    flex-shrink: 0;
 }
 
 .earlier-company {
@@ -288,6 +312,31 @@ strong {
     color: var(--light-accent);
     font-size: 0.9rem;
     margin-left: 0.5rem;
+}
+
+/* Hidden details by default */
+.earlier-job-details {
+    display: none;
+    padding: 0.5rem 0 0.25rem 1.5rem;
+    font-size: 0.9rem;
+}
+
+.earlier-job.expanded .earlier-job-details {
+    display: block;
+}
+
+.earlier-summary {
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.earlier-highlights ul {
+    margin-left: 1rem;
+    padding: 0;
+}
+
+.earlier-highlights li {
+    margin-bottom: 0.2rem;
 }
 
 /* Education Grid */
@@ -548,6 +597,19 @@ strong {
         font-size: 10pt;
         padding: 1pt 0;
         border-bottom: none;
+        cursor: default;
+    }
+
+    .earlier-job:hover {
+        background-color: transparent;
+    }
+
+    .earlier-expand-icon {
+        display: none;
+    }
+
+    .earlier-job-details {
+        display: none !important;
     }
 
     /* Education */

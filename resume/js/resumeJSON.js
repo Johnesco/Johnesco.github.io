@@ -1,7 +1,6 @@
 var resumeJSON = {
     // Role-specific summary variants for ATS optimization
     summaryVariants: {
-        "default": "Quality and business analysis professional with 18+ years bridging technical teams, stakeholders, and end-users across healthcare, gaming, e-commerce, and government systems. I specialize in requirements documentation, process analysis, UAT leadership, and cross-functional collaboration. I've built QA and documentation frameworks from scratch, led Agile transitions, and served as a subject matter expert translating complex business needs into testable, actionable requirements. Trilingual communicator (English, Spanish, ASL) with a track record of stakeholder influence, change management, and delivering clarity in ambiguous environments.",
         "qa-lead": "Senior QA Test Lead with 18+ years driving test strategy, UAT execution, and quality process implementation across healthcare, government, and gaming systems. Expert in building QA frameworks from scratch, leading distributed teams through Agile adoption, and serving as the critical bridge between development, stakeholders, and end-users. Deep expertise in accessibility testing (508 compliance), requirements traceability, and translating complex business needs into comprehensive test coverage. Trilingual communicator (English, Spanish, ASL) with proven ability to influence stakeholders and deliver clarity in ambiguous environments.",
         "business-analyst": "Quality and Business Analysis professional with 18+ years ensuring what gets built matches what the business needs. Background rooted in QA leadership with extensive BA-adjacent experience: requirements documentation, process analysis, UAT coordination, and stakeholder communication. Built documentation frameworks from scratch, led Agile transitions, and served as subject matter expert translating complex healthcare and government system requirements for cross-functional teams. Experienced in gap analysis, change management, and creating clarity in ambiguous environments. Trilingual communicator (English, Spanish, ASL) skilled at bridging technical and non-technical stakeholders.",
         "instructor": "Instructor summary"
@@ -10,7 +9,7 @@ var resumeJSON = {
     labelVariants: {
         "default": "Quality & Business Analyst | Requirements & Process Specialist | UAT Leadership",
         "qa-lead": "Senior QA Test Lead | UAT & Test Strategy | Healthcare & Government Systems",
-        "business-analyst": "Senior Business Analyst | Requirements & Process Specialist | Healthcare & Government",
+        "business-analyst": "Business Analyst | Requirements & Process Specialist | Healthcare & Government",
         "instructor": "Instructor | Tutor"
     },
     basics: {

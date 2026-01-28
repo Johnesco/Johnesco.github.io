@@ -10,6 +10,7 @@ A dynamic, customizable resume website powered by vanilla JavaScript and JSON da
 - **Tag-Based Filtering** - Filter jobs by industry/role: healthcare, government, gaming, startup, accessibility, automation, and more
 - **Years Filter** - Limit to recent X years of experience (default: 15 years)
 - **Skills Filter** - Show/hide skill categories
+- **Expandable Earlier Jobs** - Condensed jobs in "Additional Experience" can be clicked to reveal full details
 - **Multiple Formats**
   - Styled resume with modern design
   - Plain text (ATS-optimized for applicant tracking systems)
@@ -121,6 +122,18 @@ var resumeJSON = {
 ```
 
 All pages read from this single JSON file, so edits propagate automatically.
+
+---
+
+## Additional Experience Section
+
+When a profile with `earlierExperienceYears` is active, older jobs appear in a condensed "Additional Experience" section:
+
+- Jobs display as one-liners: `+ Company | Position (dates)`
+- Click any job to expand and see its full summary and highlights
+- Click again to collapse
+- The `+`/`−` icon indicates the expanded state
+- Print/PDF keeps all jobs collapsed for a compact, ATS-friendly format
 
 ---
 

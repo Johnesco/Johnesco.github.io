@@ -19,6 +19,13 @@
         .about-container h2 {
             color: var(--secondary-color);
             margin-top: 2rem;
+            text-align: left;
+            font-size: 1.3rem;
+        }
+        .about-container h3 {
+            color: var(--accent-color);
+            margin-top: 1.5rem;
+            font-size: 1.1rem;
         }
         .about-container code {
             background: var(--light-bg);
@@ -66,13 +73,24 @@
             font-size: 0.9rem;
             color: #666;
         }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
     <div class="about-container">
+        <a href="index.html" class="back-link">&larr; Back to Resume</a>
+
         <h1>About This Resume System</h1>
 
-        <p>This is a dynamic, JavaScript-powered resume website. All resume content is stored in a single JSON data file and rendered dynamically, allowing for multiple output formats and URL-based filtering.</p>
+        <p>This is a dynamic, JavaScript-powered resume website. All resume content is stored in a single JSON data file and rendered dynamically, allowing for multiple output formats, URL-based filtering, and ATS-optimized PDF output.</p>
 
         <h2>Key Features</h2>
 
@@ -90,10 +108,51 @@
                 <p>Filter by years, industry tags, or skills using URL query parameters.</p>
             </div>
             <div class="feature-card">
-                <h3>Customization UI</h3>
-                <p>Interactive interface to build custom filtered resume URLs.</p>
+                <h3>ATS-Optimized Output</h3>
+                <p>Print/PDF uses standard headers, single-column layout, and left-aligned content.</p>
             </div>
         </div>
+
+        <h2>Resume Layout</h2>
+
+        <h3>Section Headers</h3>
+        <p>The resume uses ATS-standard section headers for reliable parsing:</p>
+        <ul>
+            <li><strong>Skills</strong> - Skill categories with keyword tags</li>
+            <li><strong>Professional Experience</strong> - Recent work history with full details</li>
+            <li><strong>Additional Experience</strong> - Condensed older jobs (expandable on click)</li>
+            <li><strong>Education</strong> - Schools and training</li>
+        </ul>
+
+        <h3>Job Entry Format</h3>
+        <p>Each job displays in ATS-standard order:</p>
+        <ol>
+            <li><strong>Job Title</strong> - Most prominent (as heading)</li>
+            <li><strong>Company Name | Location</strong></li>
+            <li><strong>Date Range</strong></li>
+            <li>Summary and bullet points</li>
+        </ol>
+
+        <h3>Additional Experience (Expandable)</h3>
+        <p>When a profile with earlier experience years is active, older jobs appear in a condensed "Additional Experience" section:</p>
+        <ul>
+            <li>Jobs display as one-liners with a <code>+</code> icon</li>
+            <li>Click any job to expand and see its full summary and highlights</li>
+            <li>Click again to collapse</li>
+            <li>Print/PDF keeps all jobs collapsed for compact ATS-friendly output</li>
+        </ul>
+
+        <h2>Print/PDF Output</h2>
+
+        <p>When you print or save as PDF, the resume automatically optimizes for ATS parsing:</p>
+        <ul>
+            <li><strong>Single-column layout</strong> - All content flows in correct reading order</li>
+            <li><strong>Left-aligned content</strong> - Contact info and dates align left, not right</li>
+            <li><strong>Skills as text</strong> - Skill pills convert to comma-separated inline text</li>
+            <li><strong>Black text</strong> - All colors forced to black for reliable extraction</li>
+            <li><strong>Compact spacing</strong> - Tighter margins for efficient page use</li>
+            <li><strong>Hidden expand icons</strong> - Additional Experience stays condensed</li>
+        </ul>
 
         <h2>Available Pages</h2>
 
@@ -107,7 +166,7 @@
             <tbody>
                 <tr>
                     <td><code>index.html</code></td>
-                    <td>Main styled resume with modern CSS layout</td>
+                    <td>Main styled resume with modern CSS layout, ATS-optimized print</td>
                 </tr>
                 <tr>
                     <td><code>plaintextresume.html</code></td>
@@ -142,6 +201,11 @@
             </thead>
             <tbody>
                 <tr>
+                    <td><code>profile</code></td>
+                    <td>Select a predefined profile (qa, all, etc.)</td>
+                    <td><code>?profile=qa</code></td>
+                </tr>
+                <tr>
                     <td><code>years</code></td>
                     <td>Show only jobs within the last N years</td>
                     <td><code>?years=10</code></td>
@@ -156,6 +220,16 @@
                     <td>Filter which skill categories to display</td>
                     <td><code>?skills=testing,tools</code></td>
                 </tr>
+                <tr>
+                    <td><code>earlier</code></td>
+                    <td>Years after which jobs are condensed</td>
+                    <td><code>?earlier=10</code></td>
+                </tr>
+                <tr>
+                    <td><code>format</code></td>
+                    <td>Skills display format (tags or list)</td>
+                    <td><code>?format=list</code></td>
+                </tr>
             </tbody>
         </table>
 
@@ -165,6 +239,7 @@
             <li>Healthcare experience: <code>index.html?tags=healthcare</code></li>
             <li>Government and healthcare: <code>index.html?tags=government,healthcare</code></li>
             <li>Combined filters: <code>index.html?years=15&tags=lead</code></li>
+            <li>Condense jobs older than 10 years: <code>index.html?earlier=10</code></li>
         </ul>
 
         <h2>Available Tags</h2>
@@ -191,45 +266,51 @@
         <h3>Data Flow</h3>
         <pre>
 resumeJSON.js (data)
-       │
-       ▼
+       |
+       v
+resume-config.js (profiles & defaults)
+       |
+       v
 resume-utils.js (shared filtering & formatting)
-       │
-       ├──► main.js ──► index.html
-       │
-       └──► plaintextresume.html (inline renderer)
+       |
+       +---> main.js ---> index.html (styled + expandable)
+       |
+       +---> plaintextresume.html (ATS plain text)
+       |
+       +---> customize.html (filter builder)
         </pre>
 
         <h3>File Structure</h3>
         <pre>
 resume/
-├── index.html              # Main styled resume
-├── plaintextresume.html    # Plain text version
-├── customize.html          # Filter builder UI
-├── workhistory.html        # Visual timeline
-├── geeksiresume.html       # Bootstrap version
-├── about.html              # This documentation
-├── css/
-│   ├── style.css           # Main styles
-│   └── resumeboot4.css     # Bootstrap version styles
-├── js/
-│   ├── resumeJSON.js       # Resume data (single source)
-│   ├── resume-utils.js     # Shared utilities
-│   ├── main.js             # Main renderer
-│   └── app-geeksi.js       # Bootstrap renderer
-└── files/
-    ├── EscobedoJohnResume.docx
-    └── EscobedoJohnResume.pdf
++-- index.html              # Main styled resume
++-- plaintextresume.html    # Plain text version
++-- customize.html          # Filter builder UI
++-- workhistory.html        # Visual timeline
++-- geeksiresume.html       # Bootstrap version
++-- about.html              # This documentation
++-- css/
+|   +-- style.css           # Main styles + print styles
+|   +-- resumeboot4.css     # Bootstrap version styles
++-- js/
+|   +-- resumeJSON.js       # Resume data (single source)
+|   +-- resume-config.js    # Profiles and defaults
+|   +-- resume-utils.js     # Shared utilities
+|   +-- main.js             # Main renderer
+|   +-- app-geeksi.js       # Bootstrap renderer
++-- CLAUDE.md               # AI assistant instructions
++-- README.md               # Project documentation
         </pre>
 
         <h2>Technical Details</h2>
 
         <ul>
-            <li><strong>No Build Process</strong>: Static files, edit and refresh</li>
-            <li><strong>Vanilla JavaScript</strong>: No framework dependencies (except Bootstrap version uses jQuery)</li>
-            <li><strong>CSS Custom Properties</strong>: Colors and spacing defined as variables</li>
-            <li><strong>Print Optimized</strong>: Includes print styles for PDF generation</li>
-            <li><strong>Default Years Filter</strong>: Shows last 15 years of work history by default</li>
+            <li><strong>No Build Process</strong> - Static files, edit and refresh</li>
+            <li><strong>Vanilla JavaScript</strong> - No framework dependencies (except Bootstrap version uses jQuery)</li>
+            <li><strong>CSS Custom Properties</strong> - Colors and spacing defined as variables</li>
+            <li><strong>ATS-Optimized Print</strong> - Media queries transform layout for PDF output</li>
+            <li><strong>Expandable UI</strong> - Click-to-expand older jobs without page reload</li>
+            <li><strong>Default Years Filter</strong> - Shows last 15 years of work history by default</li>
         </ul>
 
         <h2>Data Format</h2>
@@ -251,6 +332,12 @@ resume/
             <li>Edit <code>js/resumeJSON.js</code></li>
             <li>All pages automatically reflect changes on next load</li>
             <li>No compilation or build step required</li>
+        </ol>
+
+        <p>To change default settings (years, profiles, etc.):</p>
+        <ol>
+            <li>Edit <code>js/resume-config.js</code></li>
+            <li>Modify <code>defaultProfile</code>, <code>defaultYears</code>, or profile definitions</li>
         </ol>
 
     </div>
