@@ -146,7 +146,7 @@ var resumeJSON = {
         {
             name: "Luna Data Solutions",
             location: "Austin, TX",
-            position: "QA Analyst | QA Engineer",
+            position: "QA Engineer | QA Analyst",
             website: "https://www.lunadatasolutions.com/",
             startDate: "2015-05-15",
             endDate: "2017-05-19",
