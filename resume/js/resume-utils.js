@@ -7,14 +7,12 @@
 
 /**
  * Parse URL query parameters for resume filtering
- * @returns {Object} Object with tags, years, skills, and profile
+ * @returns {Object} Object with years and profile
  */
 function getQueryParams() {
     const params = new URLSearchParams(window.location.search);
     return {
-        tags: params.get('tags') ? params.get('tags').split(',').map(t => t.trim().toLowerCase()) : null,
         years: params.get('years') ? parseInt(params.get('years'), 10) : null,
-        skills: params.get('skills') ? params.get('skills').split(',').map(s => s.trim().toLowerCase()) : null,
         profile: params.get('profile') ? params.get('profile').trim().toLowerCase() : null
     };
 }
@@ -102,55 +100,39 @@ function partitionJobs(work, earlierYears = null) {
 }
 
 /**
- * Get skills filtered and ordered by profile priorities
+ * Filter skills by profile name (using tags, like jobs)
+ * Skills appear if their tags array includes the profile name
+ * Special case: "all" profile shows all skills regardless of tags
  * @param {Array} skills - Array of skill objects from resumeJSON
- * @param {Array|null} prioritySkills - Array of skill names to include (in order)
- * @returns {Array} Filtered and ordered skills
+ * @param {string|null} profileName - Profile name to filter by (e.g., "qa-lead", "all")
+ * @returns {Array} Filtered skills
  */
-function getProfileSkills(skills, prioritySkills = null) {
-    if (!prioritySkills || prioritySkills.length === 0) {
-        return skills;
-    }
-
-    // Map priority names (case-insensitive) to skills, maintaining priority order
-    const priorityLower = prioritySkills.map(s => s.toLowerCase());
-    const orderedSkills = [];
-
-    priorityLower.forEach(priorityName => {
-        const match = skills.find(skill => skill.name.toLowerCase() === priorityName);
-        if (match) {
-            orderedSkills.push(match);
-        }
+function filterSkillsByProfile(skills, profileName) {
+    if (!profileName) return skills;
+    if (profileName.toLowerCase() === 'all') return skills;
+    const profileLower = profileName.toLowerCase();
+    return skills.filter(skill => {
+        if (!skill.tags || skill.tags.length === 0) return false;
+        return skill.tags.some(tag => tag.toLowerCase() === profileLower);
     });
-
-    return orderedSkills;
 }
 
 /**
- * Filter work entries by tags (inclusion filter)
+ * Filter work entries by profile name
+ * Jobs appear if their tags array includes the profile name
+ * Special case: "all" profile shows all jobs regardless of tags
  * @param {Array} work - Array of work entries from resumeJSON
- * @param {Array|null} tags - Array of tag strings to filter by (lowercase)
+ * @param {string|null} profileName - Profile name to filter by (e.g., "qa-lead", "all")
  * @returns {Array} Filtered work entries
  */
-function filterWorkByTags(work, tags) {
-    if (!tags || tags.length === 0) return work;
+function filterWorkByProfile(work, profileName) {
+    if (!profileName) return work;
+    // "all" profile shows everything
+    if (profileName.toLowerCase() === 'all') return work;
+    const profileLower = profileName.toLowerCase();
     return work.filter(job => {
         if (!job.tags || job.tags.length === 0) return false;
-        return job.tags.some(tag => tags.includes(tag.toLowerCase()));
-    });
-}
-
-/**
- * Exclude work entries by tags (exclusion filter)
- * @param {Array} work - Array of work entries from resumeJSON
- * @param {Array|null} excludeTags - Array of tag strings to exclude (lowercase)
- * @returns {Array} Filtered work entries (jobs WITHOUT any of the excluded tags)
- */
-function excludeWorkByTags(work, excludeTags) {
-    if (!excludeTags || excludeTags.length === 0) return work;
-    return work.filter(job => {
-        if (!job.tags || job.tags.length === 0) return true;
-        return !job.tags.some(tag => excludeTags.includes(tag.toLowerCase()));
+        return job.tags.some(tag => tag.toLowerCase() === profileLower);
     });
 }
 
@@ -178,19 +160,6 @@ function filterWorkByYears(work, years = RESUME_CONFIG.defaultYears) {
     });
 }
 
-/**
- * Filter skills by skill name
- * @param {Array} skills - Array of skill objects from resumeJSON
- * @param {Array|null} skillFilter - Array of skill name substrings to filter by (lowercase)
- * @returns {Array} Filtered skills
- */
-function filterSkills(skills, skillFilter) {
-    if (!skillFilter || skillFilter.length === 0) return skills;
-    return skills.filter(skill => {
-        const skillName = skill.name.toLowerCase();
-        return skillFilter.some(filter => skillName.includes(filter));
-    });
-}
 
 /**
  * Convert array to Oxford comma separated string
@@ -246,40 +215,29 @@ function formatDate(inputDate, format = 'long') {
  * Apply default filters to work and skills based on query params and profile
  * Falls back to RESUME_CONFIG defaults when no query params specified
  * @param {Object} resumeData - The resumeJSON object
- * @returns {Object} Object with filteredWork, filteredSkills, recentJobs, earlierJobs, profile, and params
+ * @returns {Object} Object with filteredWork, filteredSkills, recentJobs, earlierJobs, profile, profileName, and params
  */
 function applyFilters(resumeData) {
     const params = getQueryParams();
     const profile = getActiveProfile();
+    // Get the profile name for filtering jobs by their tags
+    const profileName = params.profile ?? RESUME_CONFIG.defaultProfile;
     let filteredWork = resumeData.work;
     let filteredSkills = resumeData.skills;
 
-    // Determine exclude tags - profile overrides default config
-    const excludeTags = profile?.excludeTags || (!params.tags ? RESUME_CONFIG.excludeTags : null);
+    // Filter jobs by profile - jobs appear if their tags include the profile name
+    filteredWork = filterWorkByProfile(filteredWork, profileName);
 
-    // Apply work filters - use URL params or fall back to config defaults
-    const tagsFilter = params.tags ?? RESUME_CONFIG.defaultTags;
-    filteredWork = filterWorkByTags(filteredWork, tagsFilter);
-
-    // Apply tag exclusions
-    if (excludeTags) {
-        filteredWork = excludeWorkByTags(filteredWork, excludeTags);
-    }
-
-    const yearsFilter = params.years ?? RESUME_CONFIG.defaultYears;
+    // Apply years filter: URL param overrides profile's historyYears, which overrides global default
+    const yearsFilter = params.years ?? profile?.historyYears ?? RESUME_CONFIG.defaultYears;
     filteredWork = filterWorkByYears(filteredWork, yearsFilter);
 
     // Partition jobs into recent and earlier based on profile settings
     const earlierYears = profile?.earlierExperienceYears || null;
     const { recentJobs, earlierJobs } = partitionJobs(filteredWork, earlierYears);
 
-    // Apply skills filter - profile priorities override URL params and defaults
-    if (profile?.prioritySkills) {
-        filteredSkills = getProfileSkills(filteredSkills, profile.prioritySkills);
-    } else {
-        const skillsFilter = params.skills ?? RESUME_CONFIG.defaultSkills;
-        filteredSkills = filterSkills(filteredSkills, skillsFilter);
-    }
+    // Filter skills by profile - skills appear if their tags include the profile name
+    filteredSkills = filterSkillsByProfile(filteredSkills, profileName);
 
     return {
         filteredWork,
@@ -287,6 +245,7 @@ function applyFilters(resumeData) {
         recentJobs,
         earlierJobs,
         profile,
+        profileName,
         params
     };
 }

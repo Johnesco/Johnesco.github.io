@@ -16,34 +16,131 @@
             color: var(--primary-color);
         }
 
-        .tag-grid, .skill-grid {
+        .profile-grid {
             display: flex;
             flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .profile-btn {
+            padding: 0.75rem 1.25rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
             gap: 0.5rem;
         }
 
-        .tag-btn, .skill-btn {
-            padding: 0.5rem 1rem;
-            border: 2px solid var(--border-color);
-            border-radius: 20px;
-            background: white;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s;
-        }
-
-        .tag-btn:hover, .skill-btn:hover {
+        .profile-btn:hover {
             border-color: var(--primary-color);
             background: var(--lighter-bg);
         }
 
-        .tag-btn.selected, .skill-btn.selected {
+        .profile-btn.selected {
             background: var(--primary-color);
             color: white;
             border-color: var(--primary-color);
         }
 
-        .years-control {
+        .profile-btn input[type="radio"] {
+            display: none;
+        }
+
+        .profile-btn .default-badge {
+            font-size: 0.7rem;
+            background: var(--accent-color);
+            color: white;
+            padding: 0.15rem 0.4rem;
+            border-radius: 8px;
+            margin-left: 0.25rem;
+            vertical-align: middle;
+        }
+
+        .profile-btn.selected .default-badge {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .profile-info-panel {
+            background: var(--lighter-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: var(--spacing-md);
+            margin-top: var(--spacing-sm);
+        }
+
+        .profile-info-panel h4 {
+            margin: 0 0 0.75rem 0;
+            color: var(--primary-color);
+        }
+
+        .profile-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .profile-info-item {
+            background: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .profile-info-item .label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+
+        .profile-info-item .value {
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+
+        /* Override controls */
+        .override-group {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .override-group.disabled {
+            opacity: 0.6;
+        }
+
+        .override-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .override-header input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .override-header label {
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .override-content {
+            padding-left: 2rem;
+        }
+
+        .override-content.hidden {
+            display: none;
+        }
+
+        .slider-control {
             display: flex;
             align-items: center;
             gap: 1rem;
@@ -77,21 +174,46 @@
             border: none;
         }
 
-        .years-display {
+        .slider-display {
             font-weight: bold;
             min-width: 80px;
         }
 
-        .years-toggle {
+        .profile-default {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        /* Format selector */
+        .format-options {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .format-option {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .years-toggle input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
+        .format-option:hover {
+            border-color: var(--primary-color);
+        }
+
+        .format-option.selected {
+            border-color: var(--primary-color);
+            background: var(--lighter-bg);
+        }
+
+        .format-option input[type="radio"] {
+            display: none;
         }
 
         .output-section {
@@ -156,20 +278,6 @@
             color: white;
         }
 
-        .clear-btn {
-            padding: 0.5rem 1rem;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-
-        .clear-btn:hover {
-            background: #c82333;
-        }
-
         .filter-summary {
             margin-top: var(--spacing-sm);
             padding: var(--spacing-sm);
@@ -194,37 +302,6 @@
             text-decoration: underline;
         }
 
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: var(--spacing-sm);
-        }
-
-        .section-header h3 {
-            margin-bottom: 0;
-        }
-
-        .section-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .section-actions button {
-            padding: 0.25rem 0.6rem;
-            font-size: 0.8rem;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background: white;
-            cursor: pointer;
-        }
-
-        .section-actions button:hover {
-            background: var(--light-bg);
-        }
-
         .preview-count {
             background: var(--primary-color);
             color: white;
@@ -233,6 +310,93 @@
             font-weight: 600;
             text-align: center;
             margin-bottom: var(--spacing-md);
+        }
+
+        .preview-jobs {
+            margin-top: var(--spacing-sm);
+        }
+
+        .preview-jobs summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--primary-color);
+            padding: 0.5rem;
+        }
+
+        .preview-jobs summary:hover {
+            text-decoration: underline;
+        }
+
+        .preview-jobs-list {
+            list-style: none;
+            padding: 0.5rem 1rem;
+            margin: 0;
+            font-size: 0.9rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .preview-jobs-list li {
+            padding: 0.25rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .preview-jobs-list li:last-child {
+            border-bottom: none;
+        }
+
+        .preview-jobs-list .job-company {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .preview-jobs-list .job-dates {
+            color: #999;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+
+        .preview-section-header {
+            font-weight: 600;
+            color: var(--primary-color);
+            padding: 0.5rem 0;
+            margin-top: 0.5rem;
+            border-bottom: 2px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .preview-section-header:first-child {
+            margin-top: 0;
+        }
+
+        .preview-section-header .badge {
+            background: var(--primary-color);
+            color: white;
+            font-size: 0.75rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+        }
+
+        .preview-section-header.condensed {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+        }
+
+        .preview-section-header.condensed .badge {
+            background: var(--accent-color);
+        }
+
+        .preview-jobs-list li.condensed {
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        .no-jobs-message {
+            color: #666;
+            font-style: italic;
+            padding: 0.5rem 0;
         }
 
         .url-row {
@@ -257,75 +421,171 @@
             margin-bottom: 0.25rem;
             font-size: 0.9rem;
         }
+
+        .reset-btn {
+            padding: 0.5rem 1rem;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: var(--spacing-sm);
+        }
+
+        .reset-btn:hover {
+            background: #c82333;
+        }
+
+        /* Side-by-side layout for overrides and preview */
+        .overrides-preview-row {
+            display: flex;
+            gap: var(--spacing-lg);
+            flex-wrap: wrap;
+        }
+
+        .overrides-preview-row .customize-section {
+            flex: 1;
+            min-width: 300px;
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 768px) {
+            .overrides-preview-row {
+                flex-direction: column;
+            }
+
+            .overrides-preview-row .customize-section {
+                min-width: 100%;
+            }
+        }
     </style>
 </head>
 
 <body>
     <div class="resume-container">
-        <a href="index.html" class="back-link">← Back to Resume</a>
+        <a href="index.html" class="back-link">&larr; Back to Resume</a>
 
         <header class="resume-header">
             <div class="header-info">
                 <h1>Customize Resume View</h1>
-                <p class="resume-title">Select filters to create a tailored resume link</p>
+                <p class="resume-title">Select a profile and optionally override settings</p>
             </div>
         </header>
 
-        <!-- Tags Section -->
+        <!-- Profile Selector Section -->
         <section class="customize-section">
-            <div class="section-header">
-                <h3>Filter by Industry/Role Tags</h3>
-                <div class="section-actions">
-                    <button id="selectAllTags">Select All</button>
-                    <button id="clearTags">Clear</button>
+            <h3>Select Profile</h3>
+            <p style="margin-bottom: 0.75rem; color: #666;">Choose a profile optimized for different roles:</p>
+            <div class="profile-grid" id="profileGrid"></div>
+
+            <!-- Profile Info Panel -->
+            <div class="profile-info-panel" id="profileInfoPanel">
+                <h4 id="profileInfoTitle">Profile Settings</h4>
+                <div class="profile-info-grid">
+                    <div class="profile-info-item">
+                        <div class="label">History Years</div>
+                        <div class="value" id="infoHistoryYears">15 years</div>
+                    </div>
+                    <div class="profile-info-item">
+                        <div class="label">Skills Format</div>
+                        <div class="value" id="infoSkillsFormat">Tags</div>
+                    </div>
+                    <div class="profile-info-item">
+                        <div class="label">Earlier Experience</div>
+                        <div class="value" id="infoEarlierExperience">None</div>
+                    </div>
                 </div>
             </div>
-            <p style="margin-bottom: 0.75rem; color: #666;">Select one or more tags to show only matching jobs:</p>
-            <div class="tag-grid" id="tagGrid"></div>
         </section>
 
-        <!-- Years Section -->
+        <!-- Overrides and Preview Row -->
+        <div class="overrides-preview-row">
+
+        <!-- Override Settings Section -->
         <section class="customize-section">
-            <h3>Limit by Years of Experience</h3>
-            <div class="years-control">
-                <label class="years-toggle">
+            <h3>Override Profile Settings</h3>
+            <p style="margin-bottom: 0.75rem; color: #666;">Optionally customize individual settings:</p>
+
+            <!-- History Years Override -->
+            <div class="override-group" id="yearsOverrideGroup">
+                <div class="override-header">
                     <input type="checkbox" id="yearsEnabled">
-                    <span>Enable years filter</span>
-                </label>
-                <input type="range" class="years-slider" id="yearsSlider" min="1" max="50" value="10" disabled>
-                <span class="years-display" id="yearsDisplay">10 years</span>
-            </div>
-        </section>
-
-        <!-- Skills Section -->
-        <section class="customize-section">
-            <div class="section-header">
-                <h3>Filter Skill Categories</h3>
-                <div class="section-actions">
-                    <button id="selectAllSkills">Select All</button>
-                    <button id="clearSkills">Clear</button>
+                    <label for="yearsEnabled">Override History Years</label>
+                </div>
+                <div class="override-content hidden" id="yearsContent">
+                    <div class="slider-control">
+                        <input type="range" class="years-slider" id="yearsSlider" min="1" max="50" value="15">
+                        <span class="slider-display" id="yearsDisplay">15 years</span>
+                    </div>
+                    <div class="profile-default" id="yearsDefault">Profile default: 15 years</div>
                 </div>
             </div>
-            <p style="margin-bottom: 0.75rem; color: #666;">Select which skill sections to display:</p>
-            <div class="skill-grid" id="skillGrid"></div>
+
+            <!-- Earlier Experience Override -->
+            <div class="override-group" id="earlierOverrideGroup">
+                <div class="override-header">
+                    <input type="checkbox" id="earlierEnabled">
+                    <label for="earlierEnabled">Override Earlier Experience (Condensed)</label>
+                </div>
+                <div class="override-content hidden" id="earlierContent">
+                    <div class="slider-control">
+                        <input type="range" class="years-slider" id="earlierSlider" min="0" max="99" value="10">
+                        <span class="slider-display" id="earlierDisplay">10 years</span>
+                    </div>
+                    <p style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">
+                        Jobs older than this will be condensed to one-liners. Set to 0 to disable condensing.
+                    </p>
+                    <div class="profile-default" id="earlierDefault">Profile default: None</div>
+                </div>
+            </div>
+
+            <!-- Skills Format Override -->
+            <div class="override-group" id="formatOverrideGroup">
+                <div class="override-header">
+                    <input type="checkbox" id="formatEnabled">
+                    <label for="formatEnabled">Override Skills Format</label>
+                </div>
+                <div class="override-content hidden" id="formatContent">
+                    <div class="format-options">
+                        <label class="format-option selected" id="formatTagsOption">
+                            <input type="radio" name="skillsFormat" value="tags" checked>
+                            <span>Tags (visual pills)</span>
+                        </label>
+                        <label class="format-option" id="formatListOption">
+                            <input type="radio" name="skillsFormat" value="list">
+                            <span>List (ATS-friendly)</span>
+                        </label>
+                    </div>
+                    <div class="profile-default" id="formatDefault">Profile default: Tags</div>
+                </div>
+            </div>
+
+            <button class="reset-btn" id="resetOverrides">Reset All Overrides</button>
         </section>
 
-        <!-- Actions -->
+        <!-- Preview Section -->
         <section class="customize-section">
-            <button class="clear-btn" id="clearAll">Clear All Filters</button>
+            <h3>Preview</h3>
+            <div class="preview-count" id="previewCount">
+                Will display: X jobs, Y skill categories
+            </div>
+
+            <details class="preview-jobs">
+                <summary>View job titles that will appear</summary>
+                <ul class="preview-jobs-list" id="previewJobsList"></ul>
+            </details>
         </section>
+
+        </div><!-- End overrides-preview-row -->
 
         <!-- Output Section -->
         <section class="output-section">
             <h3>Your Customized Resume</h3>
 
-            <div class="preview-count" id="previewCount">
-                Will display: X jobs, Y skill categories
-            </div>
-
             <div class="filter-summary" id="filterSummary">
-                <strong>Active Filters:</strong>
-                <span id="summaryText">None - showing full resume</span>
+                <strong>Configuration:</strong>
+                <span id="summaryText">Default profile</span>
             </div>
 
             <div class="link-buttons" style="margin-top: 1rem;">
@@ -351,159 +611,369 @@
     </div>
 
     <script src="js/resumeJSON.js"></script>
+    <script src="js/resume-config.js"></script>
     <script>
-        // Extract unique tags from work entries
-        function getUniqueTags() {
-            const tags = new Set();
-            resumeJSON.work.forEach(job => {
-                if (job.tags) {
-                    job.tags.forEach(tag => tags.add(tag));
-                }
-            });
-            return Array.from(tags).sort();
+        // Get profiles from config
+        function getProfiles() {
+            return Object.keys(RESUME_CONFIG.profiles);
         }
 
-        // Get skill category names
-        function getSkillCategories() {
-            return resumeJSON.skills.map(skill => skill.name);
+        // Get the default profile name (used when no ?profile= is specified)
+        function getDefaultProfile() {
+            const configured = RESUME_CONFIG.defaultProfile;
+            if (configured && RESUME_CONFIG.profiles[configured]) {
+                return configured;
+            }
+            // Fallback to first profile
+            return getProfiles()[0] || 'all';
+        }
+
+        // Get profile display info
+        function getProfileInfo(profileName) {
+            const profile = RESUME_CONFIG.profiles[profileName];
+            return {
+                historyYears: profile.historyYears,
+                earlierExperienceYears: profile.earlierExperienceYears,
+                skillsFormat: profile.skillsFormat
+            };
+        }
+
+        // Format profile name for display
+        function formatProfileName(name) {
+            return name.split('-').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+
+        // Format years for display
+        function formatYears(years) {
+            if (years === null || years === undefined) return 'None';
+            if (years === 0) return 'Disabled';
+            if (years >= RESUME_CONFIG.maxYearsThreshold) return 'All';
+            return years + (years === 1 ? ' year' : ' years');
+        }
+
+        // Get jobs matching profile with overrides, categorized by display type
+        function getJobsForProfile(profileName, overrides = {}) {
+            let jobs = resumeJSON.work;
+
+            // Filter by profile tags (unless "all")
+            if (profileName !== 'all') {
+                jobs = jobs.filter(job => job.tags?.includes(profileName));
+            }
+
+            // Apply years filter
+            const years = overrides.years ?? RESUME_CONFIG.profiles[profileName].historyYears;
+            if (years < RESUME_CONFIG.maxYearsThreshold) {
+                const cutoff = new Date();
+                cutoff.setFullYear(cutoff.getFullYear() - years);
+                jobs = jobs.filter(job => {
+                    const dateStr = job.endDate || job.startDate;
+                    if (!dateStr) return true;
+                    return new Date(dateStr) >= cutoff;
+                });
+            }
+
+            return jobs;
+        }
+
+        // Get jobs categorized into full and condensed
+        function getCategorizedJobs(profileName, overrides = {}) {
+            const allJobs = getJobsForProfile(profileName, overrides);
+            const profile = RESUME_CONFIG.profiles[profileName];
+
+            // Get earlier experience years (override or profile default)
+            const earlierYears = overrides.earlierYears ?? profile.earlierExperienceYears;
+
+            // If no earlier experience setting, all jobs are full
+            if (!earlierYears || earlierYears === 0) {
+                return { full: allJobs, condensed: [] };
+            }
+
+            const now = new Date();
+            const earlierCutoff = new Date();
+            earlierCutoff.setFullYear(now.getFullYear() - earlierYears);
+
+            const full = [];
+            const condensed = [];
+
+            allJobs.forEach(job => {
+                const dateStr = job.endDate || job.startDate;
+                if (!dateStr) {
+                    full.push(job);
+                    return;
+                }
+                const jobDate = new Date(dateStr);
+                if (jobDate >= earlierCutoff) {
+                    full.push(job);
+                } else {
+                    condensed.push(job);
+                }
+            });
+
+            return { full, condensed };
+        }
+
+        // Format job date range for display
+        function formatJobDateRange(job) {
+            const start = job.startDate ? job.startDate.substring(0, 4) : '?';
+            const end = job.endDate ? job.endDate.substring(0, 4) : 'Present';
+            return `${start}-${end}`;
+        }
+
+        // Count skills matching profile
+        function countSkillsForProfile(profileName) {
+            if (profileName === 'all') return resumeJSON.skills.length;
+            return resumeJSON.skills.filter(skill =>
+                skill.tags?.includes(profileName)
+            ).length;
         }
 
         // State
         const state = {
-            selectedTags: [],
-            yearsEnabled: false,
-            years: 10,
-            selectedSkills: []
+            selectedProfile: getDefaultProfile(),
+            overrides: {
+                years: null,
+                earlierYears: null,
+                skillsFormat: null
+            }
         };
 
-        // Initialize tag buttons
-        function initTags() {
-            const grid = document.getElementById('tagGrid');
-            const tags = getUniqueTags();
+        // Initialize profile buttons
+        function initProfiles() {
+            const grid = document.getElementById('profileGrid');
+            const profiles = getProfiles();
+            const defaultProfile = getDefaultProfile();
 
-            tags.forEach(tag => {
-                const btn = document.createElement('button');
-                btn.className = 'tag-btn';
-                btn.textContent = tag;
-                btn.dataset.tag = tag;
-                btn.addEventListener('click', () => toggleTag(tag, btn));
+            profiles.forEach(profile => {
+                const btn = document.createElement('label');
+                btn.className = 'profile-btn' + (profile === state.selectedProfile ? ' selected' : '');
+                const isDefault = profile === defaultProfile;
+                btn.innerHTML = `
+                    <input type="radio" name="profile" value="${profile}" ${profile === state.selectedProfile ? 'checked' : ''}>
+                    ${formatProfileName(profile)}${isDefault ? ' <span class="default-badge">Default</span>' : ''}
+                `;
+                btn.addEventListener('click', () => selectProfile(profile));
                 grid.appendChild(btn);
             });
+
+            // Initial info panel update
+            updateProfileInfo(state.selectedProfile);
         }
 
-        // Initialize skill buttons
-        function initSkills() {
-            const grid = document.getElementById('skillGrid');
-            const skills = getSkillCategories();
+        // Select a profile
+        function selectProfile(profileName) {
+            state.selectedProfile = profileName;
 
-            skills.forEach(skill => {
-                const btn = document.createElement('button');
-                btn.className = 'skill-btn';
-                btn.textContent = skill;
-                btn.dataset.skill = skill;
-                btn.addEventListener('click', () => toggleSkill(skill, btn));
-                grid.appendChild(btn);
+            // Update UI
+            document.querySelectorAll('.profile-btn').forEach(btn => {
+                const input = btn.querySelector('input');
+                if (input.value === profileName) {
+                    btn.classList.add('selected');
+                    input.checked = true;
+                } else {
+                    btn.classList.remove('selected');
+                    input.checked = false;
+                }
             });
-        }
 
-        // Toggle tag selection
-        function toggleTag(tag, btn) {
-            const index = state.selectedTags.indexOf(tag);
-            if (index === -1) {
-                state.selectedTags.push(tag);
-                btn.classList.add('selected');
-            } else {
-                state.selectedTags.splice(index, 1);
-                btn.classList.remove('selected');
-            }
+            updateProfileInfo(profileName);
             updateOutput();
         }
 
-        // Toggle skill selection
-        function toggleSkill(skill, btn) {
-            const index = state.selectedSkills.indexOf(skill);
-            if (index === -1) {
-                state.selectedSkills.push(skill);
-                btn.classList.add('selected');
-            } else {
-                state.selectedSkills.splice(index, 1);
-                btn.classList.remove('selected');
+        // Update profile info panel
+        function updateProfileInfo(profileName) {
+            const info = getProfileInfo(profileName);
+
+            document.getElementById('profileInfoTitle').textContent =
+                formatProfileName(profileName) + ' Profile Settings';
+
+            document.getElementById('infoHistoryYears').textContent = formatYears(info.historyYears);
+            document.getElementById('infoSkillsFormat').textContent =
+                info.skillsFormat === 'list' ? 'List (ATS-friendly)' : 'Tags (visual)';
+            document.getElementById('infoEarlierExperience').textContent =
+                info.earlierExperienceYears ? formatYears(info.earlierExperienceYears) + ' (condensed)' : 'None';
+
+            // Update default displays in override sections
+            document.getElementById('yearsDefault').textContent = 'Profile default: ' + formatYears(info.historyYears);
+            document.getElementById('earlierDefault').textContent = 'Profile default: ' +
+                (info.earlierExperienceYears ? formatYears(info.earlierExperienceYears) : 'None (no condensing)');
+            document.getElementById('formatDefault').textContent = 'Profile default: ' +
+                (info.skillsFormat === 'list' ? 'List' : 'Tags');
+
+            // Update slider values to profile defaults when not overriding
+            if (state.overrides.years === null) {
+                const yearsVal = info.historyYears >= RESUME_CONFIG.maxYearsThreshold ? 50 : info.historyYears;
+                document.getElementById('yearsSlider').value = yearsVal;
+                document.getElementById('yearsDisplay').textContent = formatYears(info.historyYears);
             }
-            updateOutput();
+
+            if (state.overrides.earlierYears === null) {
+                const earlierVal = info.earlierExperienceYears || 10;
+                document.getElementById('earlierSlider').value = earlierVal;
+                document.getElementById('earlierDisplay').textContent =
+                    info.earlierExperienceYears ? formatYears(info.earlierExperienceYears) : '10 years';
+            }
+
+            if (state.overrides.skillsFormat === null) {
+                updateFormatSelection(info.skillsFormat);
+            }
         }
 
-        // Years slider handling
-        function initYearsControl() {
-            const checkbox = document.getElementById('yearsEnabled');
-            const slider = document.getElementById('yearsSlider');
-            const display = document.getElementById('yearsDisplay');
+        // Update format option selection
+        function updateFormatSelection(format) {
+            const tagsOption = document.getElementById('formatTagsOption');
+            const listOption = document.getElementById('formatListOption');
 
-            checkbox.addEventListener('change', () => {
-                state.yearsEnabled = checkbox.checked;
-                slider.disabled = !checkbox.checked;
+            if (format === 'list') {
+                tagsOption.classList.remove('selected');
+                listOption.classList.add('selected');
+                listOption.querySelector('input').checked = true;
+            } else {
+                listOption.classList.remove('selected');
+                tagsOption.classList.add('selected');
+                tagsOption.querySelector('input').checked = true;
+            }
+        }
+
+        // Initialize override controls
+        function initOverrideControls() {
+            // Years override
+            const yearsCheckbox = document.getElementById('yearsEnabled');
+            const yearsContent = document.getElementById('yearsContent');
+            const yearsSlider = document.getElementById('yearsSlider');
+            const yearsDisplay = document.getElementById('yearsDisplay');
+
+            yearsCheckbox.addEventListener('change', () => {
+                yearsContent.classList.toggle('hidden', !yearsCheckbox.checked);
+                if (yearsCheckbox.checked) {
+                    state.overrides.years = parseInt(yearsSlider.value);
+                } else {
+                    state.overrides.years = null;
+                    // Reset to profile default
+                    const info = getProfileInfo(state.selectedProfile);
+                    yearsSlider.value = info.historyYears >= RESUME_CONFIG.maxYearsThreshold ? 50 : info.historyYears;
+                    yearsDisplay.textContent = formatYears(info.historyYears);
+                }
                 updateOutput();
             });
 
-            slider.addEventListener('input', () => {
-                state.years = parseInt(slider.value);
-                display.textContent = state.years + (state.years === 1 ? ' year' : ' years');
+            yearsSlider.addEventListener('input', () => {
+                const years = parseInt(yearsSlider.value);
+                state.overrides.years = years;
+                yearsDisplay.textContent = formatYears(years);
                 updateOutput();
             });
+
+            // Earlier experience override
+            const earlierCheckbox = document.getElementById('earlierEnabled');
+            const earlierContent = document.getElementById('earlierContent');
+            const earlierSlider = document.getElementById('earlierSlider');
+            const earlierDisplay = document.getElementById('earlierDisplay');
+
+            earlierCheckbox.addEventListener('change', () => {
+                earlierContent.classList.toggle('hidden', !earlierCheckbox.checked);
+                if (earlierCheckbox.checked) {
+                    state.overrides.earlierYears = parseInt(earlierSlider.value);
+                } else {
+                    state.overrides.earlierYears = null;
+                    // Reset to profile default
+                    const info = getProfileInfo(state.selectedProfile);
+                    earlierSlider.value = info.earlierExperienceYears || 10;
+                    earlierDisplay.textContent = info.earlierExperienceYears
+                        ? formatYears(info.earlierExperienceYears)
+                        : '10 years';
+                }
+                updateOutput();
+            });
+
+            earlierSlider.addEventListener('input', () => {
+                const years = parseInt(earlierSlider.value);
+                state.overrides.earlierYears = years;
+                earlierDisplay.textContent = years === 0 ? 'Disabled' : formatYears(years);
+                updateOutput();
+            });
+
+            // Skills format override
+            const formatCheckbox = document.getElementById('formatEnabled');
+            const formatContent = document.getElementById('formatContent');
+            const formatOptions = document.querySelectorAll('.format-option');
+
+            formatCheckbox.addEventListener('change', () => {
+                formatContent.classList.toggle('hidden', !formatCheckbox.checked);
+                if (formatCheckbox.checked) {
+                    const selected = document.querySelector('input[name="skillsFormat"]:checked');
+                    state.overrides.skillsFormat = selected.value;
+                } else {
+                    state.overrides.skillsFormat = null;
+                    // Reset to profile default
+                    const info = getProfileInfo(state.selectedProfile);
+                    updateFormatSelection(info.skillsFormat);
+                }
+                updateOutput();
+            });
+
+            formatOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    formatOptions.forEach(o => o.classList.remove('selected'));
+                    option.classList.add('selected');
+                    option.querySelector('input').checked = true;
+                    state.overrides.skillsFormat = option.querySelector('input').value;
+                    updateOutput();
+                });
+            });
+
+            // Reset button
+            document.getElementById('resetOverrides').addEventListener('click', resetOverrides);
+        }
+
+        // Reset all overrides
+        function resetOverrides() {
+            state.overrides = {
+                years: null,
+                earlierYears: null,
+                skillsFormat: null
+            };
+
+            // Reset checkboxes
+            document.getElementById('yearsEnabled').checked = false;
+            document.getElementById('earlierEnabled').checked = false;
+            document.getElementById('formatEnabled').checked = false;
+
+            // Hide content
+            document.getElementById('yearsContent').classList.add('hidden');
+            document.getElementById('earlierContent').classList.add('hidden');
+            document.getElementById('formatContent').classList.add('hidden');
+
+            // Reset to profile defaults
+            updateProfileInfo(state.selectedProfile);
+            updateOutput();
         }
 
         // Build query string
         function buildQueryString() {
             const params = new URLSearchParams();
 
-            if (state.selectedTags.length > 0) {
-                params.set('tags', state.selectedTags.join(','));
+            // Only add profile param if not the default profile
+            if (state.selectedProfile !== getDefaultProfile()) {
+                params.set('profile', state.selectedProfile);
             }
 
-            if (state.yearsEnabled && state.years > 0) {
-                params.set('years', state.years);
+            // Add overrides if enabled
+            if (state.overrides.years !== null) {
+                params.set('years', state.overrides.years);
             }
 
-            if (state.selectedSkills.length > 0) {
-                // Use simplified skill names for URL (first word, lowercase)
-                const skillParams = state.selectedSkills.map(s => {
-                    // Extract first meaningful word for matching
-                    const words = s.split(' ');
-                    return words[0].toLowerCase();
-                });
-                params.set('skills', skillParams.join(','));
+            if (state.overrides.earlierYears !== null) {
+                // Use 0 to explicitly disable condensing
+                params.set('earlier', state.overrides.earlierYears);
+            }
+
+            if (state.overrides.skillsFormat !== null) {
+                params.set('format', state.overrides.skillsFormat);
             }
 
             return params.toString();
-        }
-
-        // Calculate preview counts
-        function getPreviewCounts() {
-            let jobs = resumeJSON.work;
-
-            // Filter by tags
-            if (state.selectedTags.length > 0) {
-                jobs = jobs.filter(job => {
-                    if (!job.tags) return false;
-                    return state.selectedTags.some(tag => job.tags.includes(tag));
-                });
-            }
-
-            // Filter by years
-            if (state.yearsEnabled && state.years > 0) {
-                const cutoffDate = new Date();
-                cutoffDate.setFullYear(cutoffDate.getFullYear() - state.years);
-                jobs = jobs.filter(job => {
-                    if (!job.startDate) return true;
-                    return new Date(job.startDate) >= cutoffDate;
-                });
-            }
-
-            // Count skills (if none selected, show all)
-            const skillCount = state.selectedSkills.length > 0
-                ? state.selectedSkills.length
-                : resumeJSON.skills.length;
-
-            return { jobs: jobs.length, skills: skillCount };
         }
 
         // Update output links and display
@@ -517,41 +987,72 @@
             document.getElementById('styledUrl').textContent = styledUrl;
             document.getElementById('plaintextUrl').textContent = plaintextUrl;
 
+            // Get categorized jobs
+            const { full, condensed } = getCategorizedJobs(state.selectedProfile, {
+                years: state.overrides.years,
+                earlierYears: state.overrides.earlierYears
+            });
+            const totalJobs = full.length + condensed.length;
+            const skillCount = countSkillsForProfile(state.selectedProfile);
+
             // Update preview count
-            const counts = getPreviewCounts();
-            document.getElementById('previewCount').textContent =
-                `Will display: ${counts.jobs} job${counts.jobs !== 1 ? 's' : ''}, ${counts.skills} skill categor${counts.skills !== 1 ? 'ies' : 'y'}`;
+            let countText = `Will display: ${totalJobs} job${totalJobs !== 1 ? 's' : ''}`;
+            if (condensed.length > 0) {
+                countText += ` (${full.length} full, ${condensed.length} condensed)`;
+            }
+            countText += `, ${skillCount} skill categor${skillCount !== 1 ? 'ies' : 'y'}`;
+            document.getElementById('previewCount').textContent = countText;
+
+            // Update preview job list with sections
+            const jobsList = document.getElementById('previewJobsList');
+            let html = '';
+
+            // Full jobs section
+            if (full.length > 0) {
+                html += `<div class="preview-section-header">
+                    <span>Full Details</span>
+                    <span class="badge">${full.length}</span>
+                </div>`;
+                html += full.map(job =>
+                    `<li><strong>${job.position}</strong> <span class="job-company">at ${job.name}</span><span class="job-dates">${formatJobDateRange(job)}</span></li>`
+                ).join('');
+            } else {
+                html += `<div class="no-jobs-message">No jobs with full details</div>`;
+            }
+
+            // Condensed jobs section
+            if (condensed.length > 0) {
+                html += `<div class="preview-section-header condensed">
+                    <span>Earlier Experience (Condensed)</span>
+                    <span class="badge">${condensed.length}</span>
+                </div>`;
+                html += condensed.map(job =>
+                    `<li class="condensed"><strong>${job.position}</strong> <span class="job-company">at ${job.name}</span><span class="job-dates">${formatJobDateRange(job)}</span></li>`
+                ).join('');
+            }
+
+            jobsList.innerHTML = html;
 
             // Update summary
             const summaryParts = [];
-            if (state.selectedTags.length > 0) {
-                summaryParts.push('Tags: ' + state.selectedTags.join(', '));
-            }
-            if (state.yearsEnabled) {
-                summaryParts.push('Years: ' + state.years);
-            }
-            if (state.selectedSkills.length > 0) {
-                summaryParts.push('Skills: ' + state.selectedSkills.length + ' selected');
+            summaryParts.push('Profile: ' + formatProfileName(state.selectedProfile));
+
+            if (state.overrides.years !== null) {
+                summaryParts.push('Years: ' + formatYears(state.overrides.years));
             }
 
-            document.getElementById('summaryText').textContent =
-                summaryParts.length > 0 ? summaryParts.join(' | ') : 'None - showing full resume';
-        }
+            if (state.overrides.earlierYears !== null) {
+                const earlierText = state.overrides.earlierYears === 0
+                    ? 'No condensing'
+                    : 'Condense after ' + formatYears(state.overrides.earlierYears);
+                summaryParts.push(earlierText);
+            }
 
-        // Clear all filters
-        function initClearButton() {
-            document.getElementById('clearAll').addEventListener('click', () => {
-                state.selectedTags = [];
-                state.selectedSkills = [];
-                state.yearsEnabled = false;
+            if (state.overrides.skillsFormat !== null) {
+                summaryParts.push('Format: ' + (state.overrides.skillsFormat === 'list' ? 'List' : 'Tags'));
+            }
 
-                document.querySelectorAll('.tag-btn.selected').forEach(btn => btn.classList.remove('selected'));
-                document.querySelectorAll('.skill-btn.selected').forEach(btn => btn.classList.remove('selected'));
-                document.getElementById('yearsEnabled').checked = false;
-                document.getElementById('yearsSlider').disabled = true;
-
-                updateOutput();
-            });
+            document.getElementById('summaryText').textContent = summaryParts.join(' | ');
         }
 
         // Copy URL buttons
@@ -577,47 +1078,11 @@
             });
         }
 
-        // Select All / Clear buttons for tags
-        function initTagActions() {
-            document.getElementById('selectAllTags').addEventListener('click', () => {
-                const allTags = getUniqueTags();
-                state.selectedTags = [...allTags];
-                document.querySelectorAll('.tag-btn').forEach(btn => btn.classList.add('selected'));
-                updateOutput();
-            });
-
-            document.getElementById('clearTags').addEventListener('click', () => {
-                state.selectedTags = [];
-                document.querySelectorAll('.tag-btn').forEach(btn => btn.classList.remove('selected'));
-                updateOutput();
-            });
-        }
-
-        // Select All / Clear buttons for skills
-        function initSkillActions() {
-            document.getElementById('selectAllSkills').addEventListener('click', () => {
-                const allSkills = getSkillCategories();
-                state.selectedSkills = [...allSkills];
-                document.querySelectorAll('.skill-btn').forEach(btn => btn.classList.add('selected'));
-                updateOutput();
-            });
-
-            document.getElementById('clearSkills').addEventListener('click', () => {
-                state.selectedSkills = [];
-                document.querySelectorAll('.skill-btn').forEach(btn => btn.classList.remove('selected'));
-                updateOutput();
-            });
-        }
-
         // Initialize on load
         document.addEventListener('DOMContentLoaded', () => {
-            initTags();
-            initSkills();
-            initYearsControl();
-            initClearButton();
+            initProfiles();
+            initOverrideControls();
             initCopyButtons();
-            initTagActions();
-            initSkillActions();
             updateOutput();
         });
     </script>

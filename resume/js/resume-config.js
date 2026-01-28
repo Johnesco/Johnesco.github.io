@@ -8,71 +8,49 @@ const RESUME_CONFIG = {
     // Set to 0 or a high number (e.g., 99) to show all jobs
     defaultYears: 15,
 
-    // Default tags to filter by (array of strings, or null to show all)
-    // Example: ['healthcare', 'lead'] would only show jobs with those tags
-    defaultTags: null,
-
-    // Tags to exclude from default view (array of strings, or null to exclude none)
-    // Jobs with ANY of these tags will be hidden unless explicitly requested via URL
-    excludeTags: ['performer'],
-
-    // Default skill categories to show (array of strings, or null to show all)
-    // Example: ['programming', 'cloud'] would only show matching skill categories
-    defaultSkills: null,
-
     // Maximum years value before treating as "show all"
     // If a years filter exceeds this, no date filtering is applied
     maxYearsThreshold: 50,
 
     // Default profile to use when no ?profile= parameter is specified
-    // Set to null for no profile (shows all skills, no condensing)
+    // This should be one of the real profiles (not "default")
     defaultProfile: "qa-lead",
 
-    // Role profiles for ATS optimization
-    // Activate via ?profile=qa-lead or ?profile=all
+    // Role profiles - everything is profile-driven
+    // Jobs and skills appear in a profile if their tags array includes the profile name
+    // "all" profile shows everything regardless of tags
+    // The defaultProfile setting above determines which profile is used when no ?profile= is specified
     profiles: {
         "all": {
-            // Shows all skills in pill/tag format, no condensing, default summary/label
+            // Shows everything - all jobs, all skills, no date limits, no condensing
             summaryKey: "default",
             labelKey: "default",
-            prioritySkills: null,
+            historyYears: 99,
             earlierExperienceYears: null,
-            skillsFormat: "tags",
-            excludeTags: ["performer"]
+            skillsFormat: "tags"
         },
         "qa-lead": {
             summaryKey: "qa-lead",
             labelKey: "qa-lead",
-            // Skill categories to show (in priority order, max 6 recommended)
-            prioritySkills: [
-                "Testing Methodologies & Frameworks",
-                "Test Management & Documentation",
-                "Leadership & Process",
-                "Business Analysis",
-                "Platforms & Environments",
-                "Tools & Technologies"
-            ],
+            historyYears: 20,
             // Jobs older than this many years get condensed to one-liners
             earlierExperienceYears: 10,
             // "list" = ATS-friendly comma-separated, "tags" = pill boxes (default)
-            skillsFormat: "list",
-            // Tags to exclude when this profile is active
-            excludeTags: ["performer", "admin", "creative"]
+            skillsFormat: "list"
         },
         "business-analyst": {
             summaryKey: "business-analyst",
             labelKey: "business-analyst",
-            prioritySkills: [
-                "Business Analysis",
-                "Problem-Solving & Analysis",
-                "Leadership & Process",
-                "Testing Methodologies & Frameworks",
-                "Interpersonal & Collaboration",
-                "Tools & Technologies"
-            ],
-            earlierExperienceYears: 10,
-            skillsFormat: "list",
-            excludeTags: ["performer", "admin", "creative", "gaming"]
+            historyYears: 30,
+            earlierExperienceYears: null,
+            skillsFormat: "list"
+        },
+        "instructor": {
+            summaryKey: "instructor",
+            labelKey: "instructor",
+            historyYears: 99,
+            earlierExperienceYears: null,
+            skillsFormat: "list"
         }
     }
 };

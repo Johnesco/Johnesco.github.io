@@ -3,13 +3,15 @@ var resumeJSON = {
     summaryVariants: {
         "default": "Quality and business analysis professional with 18+ years bridging technical teams, stakeholders, and end-users across healthcare, gaming, e-commerce, and government systems. I specialize in requirements documentation, process analysis, UAT leadership, and cross-functional collaboration. I've built QA and documentation frameworks from scratch, led Agile transitions, and served as a subject matter expert translating complex business needs into testable, actionable requirements. Trilingual communicator (English, Spanish, ASL) with a track record of stakeholder influence, change management, and delivering clarity in ambiguous environments.",
         "qa-lead": "Senior QA Test Lead with 18+ years driving test strategy, UAT execution, and quality process implementation across healthcare, government, and gaming systems. Expert in building QA frameworks from scratch, leading distributed teams through Agile adoption, and serving as the critical bridge between development, stakeholders, and end-users. Deep expertise in accessibility testing (508 compliance), requirements traceability, and translating complex business needs into comprehensive test coverage. Trilingual communicator (English, Spanish, ASL) with proven ability to influence stakeholders and deliver clarity in ambiguous environments.",
-        "business-analyst": "Quality and Business Analysis professional with 18+ years ensuring what gets built matches what the business needs. Background rooted in QA leadership with extensive BA-adjacent experience: requirements documentation, process analysis, UAT coordination, and stakeholder communication. Built documentation frameworks from scratch, led Agile transitions, and served as subject matter expert translating complex healthcare and government system requirements for cross-functional teams. Experienced in gap analysis, change management, and creating clarity in ambiguous environments. Trilingual communicator (English, Spanish, ASL) skilled at bridging technical and non-technical stakeholders."
+        "business-analyst": "Quality and Business Analysis professional with 18+ years ensuring what gets built matches what the business needs. Background rooted in QA leadership with extensive BA-adjacent experience: requirements documentation, process analysis, UAT coordination, and stakeholder communication. Built documentation frameworks from scratch, led Agile transitions, and served as subject matter expert translating complex healthcare and government system requirements for cross-functional teams. Experienced in gap analysis, change management, and creating clarity in ambiguous environments. Trilingual communicator (English, Spanish, ASL) skilled at bridging technical and non-technical stakeholders.",
+        "instructor": "Instructor summary"
     },
     // Role-specific title/label variants for ATS optimization
     labelVariants: {
         "default": "Quality & Business Analyst | Requirements & Process Specialist | UAT Leadership",
         "qa-lead": "Senior QA Test Lead | UAT & Test Strategy | Healthcare & Government Systems",
-        "business-analyst": "Senior Business Analyst | Requirements & Process Specialist | Healthcare & Government"
+        "business-analyst": "Senior Business Analyst | Requirements & Process Specialist | Healthcare & Government",
+        "instructor": "Instructor | Tutor"
     },
     basics: {
         name: "John Escobedo",
@@ -50,7 +52,7 @@ var resumeJSON = {
                 "Created inclusive, welcoming atmosphere that encouraged participation from guests of all skill levels.",
                 "Balanced competing priorities (song queue, timing, audience energy) to optimize overall experience."
             ],
-            tags: ["entertainment", "coordination", "performer"]
+            tags: ["default", "event-host"]
         },
         {
             name: "Insight Global",
@@ -68,7 +70,7 @@ var resumeJSON = {
                 "Rapidly adapted to novel role with minimal onboarding, demonstrating ability to learn complex domains quickly.",
                 "Prepared and staged physical testing environments to precise specifications, ensuring optimal conditions for data collection."
             ],
-            tags: ["robotics", "vr", "hardware", "documentation", "process"]
+            tags: ["default", "qa-lead"]
         },
         {
             name: "GeekSI",
@@ -87,7 +89,7 @@ var resumeJSON = {
                 "Collaborated with automation engineers to validate Cucumber/Selenium scripts, ensuring alignment between documented requirements and automated execution.",
                 "Created and maintained requirements traceability documentation ensuring business needs mapped to test coverage across web, mainframe, and mobile platforms."
             ],
-            tags: ["government", "healthcare", "lead", "accessibility", "agile", "requirements", "UAT"]
+            tags: ["default", "qa-lead", "business-analyst"]
         },
         {
             name: "Freelance",
@@ -103,7 +105,7 @@ var resumeJSON = {
                 "Adapted to various in-house sound systems and venue constraints.",
                 "Coordinated with event organizers to align music selection with event tone and timing."
             ],
-            tags: ["AV", "coordination", "performer"]
+            tags: ["default", "event-host"]
         },
         {
             name: "EverlyWell",
@@ -121,7 +123,7 @@ var resumeJSON = {
                 "Mentored team members on effective documentation practices and quality standards to foster a culture of quality across the organization.",
                 "Performed validation testing across all major browsers and mobile devices to ensure requirements were met before release."
             ],
-            tags: ["healthcare", "lead", "startup", "cicd", "process"]
+            tags: ["default", "qa-lead", "business-analyst"]
         },
         {
             name: "YouScience",
@@ -139,7 +141,7 @@ var resumeJSON = {
                 "Created and maintained product documentation to support new feature releases and ensure consistent understanding of requirements.",
                 "Managed all validation activities for the flagship web application across browsers and mobile devices."
             ],
-            tags: ["edtech", "lead", "startup", "documentation"]
+            tags: ["default", "qa-lead", "business-analyst"]
         },
         {
             name: "Luna Data Solutions",
@@ -157,7 +159,7 @@ var resumeJSON = {
                 "Responded to live production issues under pressure, triaging problems and communicating status updates to stakeholders during critical outages.",
                 "Partnered with developers to enhance internal tooling, contributing improvements that increased team efficiency."
             ],
-            tags: ["ecommerce", "automation", "coordination"]
+            tags: ["default", "qa-lead"]
         },
         {
             name: "Communication Services for the Deaf",
@@ -174,7 +176,7 @@ var resumeJSON = {
                 "Managed full validation lifecycle including creating test plans, executing test runs, and reporting results to stakeholders for both web and mobile platforms.",
                 "Problem-solved cross-platform testing limitations by implementing VirtualBox-based solution, demonstrating gap analysis and solution design skills."
             ],
-            tags: ["accessibility", "lead", "startup", "asl", "user-research"]
+            tags: ["default", "qa-lead", "business-analyst"]
         },
         {
             name: "DocbookMD",
@@ -191,7 +193,7 @@ var resumeJSON = {
                 "Developed initial test strategy and comprehensive documentation to ensure software met business and regulatory requirements before release.",
                 "Performed all functional, regression, and compliance validation across mobile devices (iPhones, iPads, Android) and iOS Simulator."
             ],
-            tags: ["healthcare", "lead", "startup", "mobile", "hipaa", "compliance"]
+            tags: ["default", "qa-lead"]
         },
         {
             name: "Luna Data Solutions",
@@ -208,7 +210,7 @@ var resumeJSON = {
                 "Executed daily validation of game builds for core functionality, gameplay mechanics, and UI integrity.",
                 "Promoted to Test Lead based on documentation quality and team leadership skills."
             ],
-            tags: ["gaming", "lead", "documentation"]
+            tags: ["default", "qa-lead"]
         },
         {
             name: "Kick Butt Coffee",
@@ -224,7 +226,7 @@ var resumeJSON = {
                 "Set up technical infrastructure to allow seamless integration with house audio systems.",
                 "Managed event promotion and community communication through social media."
             ],
-            tags: ["AV", "coordination", "event-management"]
+            tags: ["default", "event-host"]
         },
         {
             name: "Blizzard Entertainment",
@@ -242,7 +244,7 @@ var resumeJSON = {
                 "Delivered high-volume support via live chat and ticket systems, balancing efficiency with genuine care for each user's experience.",
                 "Restored compromised accounts with precision, adhering to strict security and data integrity protocols."
             ],
-            tags: ["gaming", "cx", "trust-safety", "analysis"]
+            tags: ["default"]
         },
         {
             name: "Linden Lab",
@@ -260,7 +262,7 @@ var resumeJSON = {
                 "Served as frontline First Responder, managing in-world emergencies, enforcing Terms of Service, and resolving user conflicts.",
                 "Earned three promotions in three years through consistent performance, initiative, and demonstrated ability to take on increasing responsibility."
             ],
-            tags: ["gaming", "support", "automation", "community-ops", "process"]
+            tags: ["default", "qa-lead"]
         },
         {
             name: "Super Happy Fun Fun",
@@ -277,7 +279,7 @@ var resumeJSON = {
                 "Developed strategies for efficient testing across disparate hardware and software platforms.",
                 "Supported full product lifecycle from initial testing through production and post-release support."
             ],
-            tags: ["gaming", "mobile", "documentation"]
+            tags: ["default", "qa-lead"]
         },
         {
             name: "Aspyr Media",
@@ -295,7 +297,7 @@ var resumeJSON = {
                 "Conducted extensive proofreading of in-game text and UI elements to ensure accuracy and quality.",
                 "Performed functional, compatibility, and regression testing on major titles (Call of Duty 2, Civilization IV)."
             ],
-            tags: ["gaming", "lead", "documentation"]
+            tags: ["default", "qa-lead"]
         },
         {
             name: "LOC Consultants",
@@ -310,7 +312,7 @@ var resumeJSON = {
                 "Managed and coordinated executive calendar, prioritizing scheduling conflicts.",
                 "Handled high-volume communications in both languages, directing inquiries and providing information."
             ],
-            tags: ["admin", "bilingual", "coordination"]
+            tags: ["default"]
         },
         {
             name: "GoDance Studios",
@@ -324,7 +326,7 @@ var resumeJSON = {
                 "Fielded inquiries from prospective students, communicating program details and booking reservations.",
                 "Processed payments accurately, handling cash and card transactions."
             ],
-            tags: ["admin"]
+            tags: ["default"]
         },
         {
             name: "Diva Productions",
@@ -339,7 +341,7 @@ var resumeJSON = {
                 "Coordinated audio editing, syncing dialogue and sound to animated sequences.",
                 "Supported web presence through website maintenance and updates."
             ],
-            tags: ["creative"]
+            tags: ["default", "design"]
         },
         {
             name: "UT Performing Arts Center",
@@ -353,7 +355,7 @@ var resumeJSON = {
                 "Maintained audience safety during performances, preventing disruptions.",
                 "Conducted building safety checks to identify and address potential issues."
             ],
-            tags: ["admin"]
+            tags: ["default", "security"]
         },
         {
             name: "El Dia Daily Newspaper (Cuatro Communications)",
@@ -367,7 +369,7 @@ var resumeJSON = {
                 "Edited headlines and adjusted layouts under daily deadline pressure.",
                 "Conducted all work and communication in Spanish within bilingual newsroom."
             ],
-            tags: ["creative", "bilingual"]
+            tags: ["default"]
         },
         {
             name: "Computer Discovery Center",
@@ -381,7 +383,7 @@ var resumeJSON = {
                 "Performed detailed photo editing and restoration in Adobe Photoshop.",
                 "Assisted artists with Giclée printing workflows, ensuring quality standards were met."
             ],
-            tags: ["creative", "web"]
+            tags: ["default"]
         },
         {
             name: "Weddings Performed",
@@ -395,7 +397,7 @@ var resumeJSON = {
                 "Officiated ceremonies for diverse couples, delivering personalized services in English and Spanish.",
                 "Tutored business owner on web design skills, enabling them to maintain their own website."
             ],
-            tags: ["web", "bilingual", "requirements"]
+            tags: ["default"]
         },
         {
             name: "Adecco Temp Agency",
@@ -409,7 +411,7 @@ var resumeJSON = {
                 "Learned document redlining processes for legal review.",
                 "Adapted quickly to diverse client environments and requirements."
             ],
-            tags: ["admin"]
+            tags: ["default"]
         },
         {
             name: "Wild Brain",
@@ -423,7 +425,7 @@ var resumeJSON = {
                 "Gained hands-on experience with digital coloring workflows for animated productions.",
                 "Developed traditional animation skills using professional equipment."
             ],
-            tags: ["creative"]
+            tags: ["default"]
         },
         {
             name: "Vista College",
@@ -437,7 +439,7 @@ var resumeJSON = {
                 "Provided technical troubleshooting to keep lab workstations functional.",
                 "Balanced TA responsibilities while pursuing coursework in video editing."
             ],
-            tags: ["education", "training"]
+            tags: ["default", "instructor"]
         },
         {
             name: "Management Strategies International",
@@ -451,7 +453,7 @@ var resumeJSON = {
                 "Produced print-ready assets meeting project specifications.",
                 "Collaborated with team to ensure designs aligned with content and client requirements."
             ],
-            tags: ["creative", "design"]
+            tags: ["default", "design"]
         },
         {
             name: "Adecco Northwest Division",
@@ -465,7 +467,7 @@ var resumeJSON = {
                 "Supported Leap Frog product development, working with prototypes and creating educational quiz content.",
                 "Adapted quickly to diverse work environments and client needs across multiple assignments."
             ],
-            tags: ["admin"]
+            tags: ["default"]
         },
         {
             name: "DigitalThink.com",
@@ -479,7 +481,7 @@ var resumeJSON = {
                 "Collaborated with course developers to visually communicate complex concepts for online learners.",
                 "Optimized images for web delivery using appropriate standards."
             ],
-            tags: ["creative", "web"]
+            tags: ["default", "design"]
         },
         {
             name: "Mediaplex",
@@ -495,7 +497,7 @@ var resumeJSON = {
                 "Evaluated browser ecosystems and compatibility requirements to inform cross-platform strategies.",
                 "Contributed to company positioning during pivotal era in digital advertising technology."
             ],
-            tags: ["adtech", "creative", "web", "analysis"]
+            tags: ["default", "design"]
         },
         {
             name: "Media Alliance",
@@ -512,7 +514,7 @@ var resumeJSON = {
                 "Provided one-on-one tutoring and technical assistance, troubleshooting issues to ensure seamless learning experience.",
                 "Managed computer lab facility, ensuring equipment and software maintained for daily classes."
             ],
-            tags: ["education", "instructor", "training"]
+            tags: ["default", "instructor"]
         },
         {
             name: "Tele Atlas (Formerly Etak)",
@@ -528,7 +530,7 @@ var resumeJSON = {
                 "Provided constructive feedback and one-on-one coaching to improve trainee accuracy and efficiency.",
                 "Served as key resource for clarifying protocols, contributing to data quality improvement."
             ],
-            tags: ["education", "instructor", "training", "quality"]
+            tags: ["default", "instructor"]
         },
         {
             name: "Bay Area Video Coalition",
@@ -545,7 +547,7 @@ var resumeJSON = {
                 "Mentored students on best practices for digital media production, enhancing portfolio quality.",
                 "Provided constructive feedback on projects, fostering collaborative learning environment."
             ],
-            tags: ["education", "instructor", "creative", "training"]
+            tags: ["default", "instructor"]
         },
         {
             name: "Houston Multimedia Center",
@@ -561,7 +563,7 @@ var resumeJSON = {
                 "Guided students through hands-on projects from concept to execution, building practical skills.",
                 "Provided individualized support and constructive feedback to help students master techniques."
             ],
-            tags: ["education", "instructor", "creative", "training"]
+            tags: ["default", "instructor"]
         }
     ],
     education: [
@@ -614,6 +616,7 @@ var resumeJSON = {
     skills: [
         {
             name: "Business Analysis",
+            tags: ["default", "qa-lead", "business-analyst"],
             keywords: [
                 "Requirements Elicitation",
                 "User Stories & Acceptance Criteria",
@@ -626,6 +629,7 @@ var resumeJSON = {
         },
         {
             name: "Problem-Solving & Analysis",
+            tags: ["default", "business-analyst"],
             keywords: [
                 "Attention to Detail",
                 "Analytical Thinking",
@@ -637,6 +641,7 @@ var resumeJSON = {
         },
         {
             name: "Leadership & Process",
+            tags: ["default", "qa-lead", "business-analyst"],
             keywords: [
                 "QA Process Implementation",
                 "Team Leadership",
@@ -648,6 +653,7 @@ var resumeJSON = {
         },
         {
             name: "Testing Methodologies & Frameworks",
+            tags: ["default", "qa-lead", "business-analyst"],
             keywords: [
                 "Agile Testing",
                 "Regression Testing",
@@ -659,6 +665,7 @@ var resumeJSON = {
         },
         {
             name: "Test Management & Documentation",
+            tags: ["default", "qa-lead"],
             keywords: [
                 "JIRA/Xray",
                 "TestRail",
@@ -670,6 +677,7 @@ var resumeJSON = {
         },
         {
             name: "Training & Enablement",
+            tags: ["default", "instructor"],
             keywords: [
                 "Curriculum Development",
                 "Adult Learning Facilitation",
@@ -681,6 +689,7 @@ var resumeJSON = {
         },
         {
             name: "Interpersonal & Collaboration",
+            tags: ["default", "business-analyst"],
             keywords: [
                 "Clear Communication",
                 "Curiosity",
@@ -692,6 +701,7 @@ var resumeJSON = {
         },
         {
             name: "Accessibility & Inclusive Design",
+            tags: ["default"],
             keywords: [
                 "508 Compliance Testing",
                 "WCAG Awareness",
@@ -703,6 +713,7 @@ var resumeJSON = {
         },
         {
             name: "Platforms & Environments",
+            tags: ["default", "qa-lead"],
             keywords: [
                 "Web Applications",
                 "Mobile (iOS/Android)",
@@ -714,6 +725,7 @@ var resumeJSON = {
         },
         {
             name: "Tools & Technologies",
+            tags: ["default", "qa-lead", "business-analyst"],
             keywords: [
                 "GitHub",
                 "Chrome Developer Tools",
@@ -725,6 +737,7 @@ var resumeJSON = {
         },
         {
             name: "AI Collaboration & Prompting",
+            tags: ["default"],
             keywords: [
                 "Prompt Engineering",
                 "Detailed Specification Writing",
@@ -736,6 +749,7 @@ var resumeJSON = {
         },
         {
             name: "Industry Expertise",
+            tags: ["default"],
             keywords: [
                 "Healthcare & Telehealth",
                 "Gaming & Entertainment",
@@ -747,6 +761,7 @@ var resumeJSON = {
         },
         {
             name: "Office and Image Suites",
+            tags: ["default"],
             keywords: [
                 "Adobe Creative Suite",
                 "Office 365: Teams, Word, Excel, PowerPoint, Outlook",
@@ -758,6 +773,7 @@ var resumeJSON = {
         },
         {
             name: "A/V Production & Coordination",
+            tags: ["default"],
             keywords: [
                 "Live Sound Engineering & Mixing",
                 "A/V Equipment Operation & Troubleshooting",
