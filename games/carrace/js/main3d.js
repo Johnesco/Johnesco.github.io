@@ -139,15 +139,24 @@ const Game = {
         // Check collisions with traffic
         const collidedCar = Traffic3D.checkCollisions(Car3D.trackProgress, Car3D.laneOffset);
         if (collidedCar) {
-            // Realistic collision response
-            Car3D.speed *= 0.6;
+            // Realistic collision response - reduce velocity
+            Car3D.velocity.x *= 0.6;
+            Car3D.velocity.z *= 0.6;
 
             // Push player away from traffic car
             const pushDirection = Math.sign(Car3D.laneOffset - collidedCar.laneOffset) || 1;
-            Car3D.laneOffset += pushDirection * 0.5;
+            const rightDir = {
+                x: Math.cos(Car3D.rotation.yaw),
+                z: -Math.sin(Car3D.rotation.yaw)
+            };
+            Car3D.velocity.x += rightDir.x * pushDirection * 5;
+            Car3D.velocity.z += rightDir.z * pushDirection * 5;
 
-            // Add some body roll from impact
-            Car3D.bodyRoll += pushDirection * 0.1;
+            // Add some angular velocity from impact
+            Car3D.angularVelocity.yaw += pushDirection * 0.3;
+
+            // Add body roll from impact
+            Car3D.rotation.roll += pushDirection * 0.05;
         }
 
         // Update camera to follow player
@@ -173,17 +182,24 @@ const Game = {
 
     updateCamera() {
         const carPos = Car3D.getPosition();
-        const tangent = Track.getTangentAt(Car3D.trackProgress);
+
+        // Use car's actual facing direction instead of track tangent
+        const carForward = new THREE.Vector3(
+            Math.sin(Car3D.rotation.yaw),
+            0,
+            Math.cos(Car3D.rotation.yaw)
+        );
         const up = new THREE.Vector3(0, 1, 0);
-        const right = new THREE.Vector3().crossVectors(tangent, up).normalize();
+        const right = new THREE.Vector3().crossVectors(carForward, up).normalize();
 
         // Speed-based camera distance (closer when slow, further when fast)
-        const speedRatio = Math.abs(Car3D.speed) / Car3D.maxSpeed;
+        const speed = Car3D.getSpeed();
+        const speedRatio = Math.min(speed / Car3D.maxSpeed, 1);
         const dynamicDistance = this.cameraDistance + speedRatio * 3;
         const dynamicHeight = this.cameraHeight + speedRatio * 1.5;
 
-        // Camera position behind and above car
-        const cameraOffset = tangent.clone().multiplyScalar(-dynamicDistance);
+        // Camera position behind and above car (follows car orientation)
+        const cameraOffset = carForward.clone().multiplyScalar(-dynamicDistance);
         cameraOffset.y = dynamicHeight;
 
         // Add lateral offset based on steering (camera swings outward in turns)
@@ -206,18 +222,18 @@ const Game = {
 
         // Look target - ahead of car, adjusted for speed
         const lookAheadDist = this.cameraLookAhead + speedRatio * 8;
-        const targetLookAt = carPos.clone().add(tangent.clone().multiplyScalar(lookAheadDist));
+        const targetLookAt = carPos.clone().add(carForward.clone().multiplyScalar(lookAheadDist));
         targetLookAt.y = carPos.y + 1.5;
 
         // Smooth look-at transition
         this.cameraLookAt.lerp(targetLookAt, this.cameraLookSmoothness);
         this.camera.lookAt(this.cameraLookAt);
 
-        // Subtle camera shake at high speed
-        if (speedRatio > 0.7) {
-            const shake = (speedRatio - 0.7) * 0.1;
-            this.camera.position.x += (Math.random() - 0.5) * shake;
-            this.camera.position.y += (Math.random() - 0.5) * shake * 0.5;
+        // Subtle camera shake at high speed or off-road
+        if (speedRatio > 0.7 || !Car3D.isOnTrack) {
+            const shakeIntensity = Car3D.isOnTrack ? (speedRatio - 0.7) * 0.1 : 0.15;
+            this.camera.position.x += (Math.random() - 0.5) * shakeIntensity;
+            this.camera.position.y += (Math.random() - 0.5) * shakeIntensity * 0.5;
         }
     },
 
@@ -235,7 +251,9 @@ const Game = {
     },
 
     updateHUD() {
-        document.getElementById('speed').textContent = Car3D.getSpeedMPH() + ' MPH';
+        const speedText = Car3D.getSpeedMPH() + ' MPH';
+        const offTrackIndicator = Car3D.isOffTrack() ? ' [OFF TRACK]' : '';
+        document.getElementById('speed').textContent = speedText + offTrackIndicator;
         document.getElementById('lap').textContent =
             'LAP ' + Math.min(this.currentLap, this.totalLaps) + '/' + this.totalLaps;
         document.getElementById('time').textContent = 'TIME ' + this.formatTime(this.raceTime);

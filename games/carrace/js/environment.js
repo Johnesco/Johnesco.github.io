@@ -1,8 +1,12 @@
-// 3D Environment module - sky, terrain, scenery
+// 3D Environment module - unified ground with painted track
 const Environment = {
+    groundMesh: null,
+    groundSize: 2000,
+    groundY: 0,  // Ground plane height
+
     init(scene) {
         this.createSky(scene);
-        this.createGround(scene);
+        this.createUnifiedGround(scene);
         this.createTrees(scene);
         this.createLighting(scene);
     },
@@ -60,142 +64,221 @@ const Environment = {
         scene.add(glow);
     },
 
-    createGround(scene) {
-        // Create grass texture
-        const grassCanvas = document.createElement('canvas');
-        grassCanvas.width = 256;
-        grassCanvas.height = 256;
-        const gCtx = grassCanvas.getContext('2d');
+    createUnifiedGround(scene) {
+        // Create a large canvas texture with grass and track painted on it
+        const textureSize = 2048;
+        const canvas = document.createElement('canvas');
+        canvas.width = textureSize;
+        canvas.height = textureSize;
+        const ctx = canvas.getContext('2d');
 
-        // Base grass color
-        gCtx.fillStyle = '#2d7a2d';
-        gCtx.fillRect(0, 0, 256, 256);
+        // Fill with grass base color
+        ctx.fillStyle = '#2d7a2d';
+        ctx.fillRect(0, 0, textureSize, textureSize);
 
-        // Add grass blade details
-        for (let i = 0; i < 3000; i++) {
-            const x = Math.random() * 256;
-            const y = Math.random() * 256;
+        // Add grass texture noise
+        for (let i = 0; i < 50000; i++) {
+            const x = Math.random() * textureSize;
+            const y = Math.random() * textureSize;
             const green = Math.floor(Math.random() * 60 + 80);
             const brightness = Math.random() * 0.4 + 0.6;
-            gCtx.fillStyle = `rgb(${Math.floor(30 * brightness)}, ${Math.floor(green * brightness)}, ${Math.floor(20 * brightness)})`;
-            gCtx.fillRect(x, y, 1, 2);
+            ctx.fillStyle = `rgb(${Math.floor(30 * brightness)}, ${Math.floor(green * brightness)}, ${Math.floor(20 * brightness)})`;
+            ctx.fillRect(x, y, 2, 3);
         }
 
-        const grassTexture = new THREE.CanvasTexture(grassCanvas);
-        grassTexture.wrapS = THREE.RepeatWrapping;
-        grassTexture.wrapT = THREE.RepeatWrapping;
-        grassTexture.repeat.set(80, 80);
+        // Paint the track onto the texture
+        this.paintTrackOnTexture(ctx, textureSize);
 
-        // Large ground plane
-        const groundGeometry = new THREE.PlaneGeometry(4000, 4000, 80, 80);
+        // Create texture from canvas
+        const groundTexture = new THREE.CanvasTexture(canvas);
+        groundTexture.wrapS = THREE.ClampToEdgeWrapping;
+        groundTexture.wrapT = THREE.ClampToEdgeWrapping;
 
-        // Add some vertex displacement for terrain
-        const positions = groundGeometry.attributes.position;
-        for (let i = 0; i < positions.count; i++) {
-            const x = positions.getX(i);
-            const z = positions.getZ(i);
-
-            // Gentle rolling hills
-            let y = Math.sin(x * 0.008) * 8 + Math.cos(z * 0.008) * 8;
-            y += Math.sin(x * 0.003 + z * 0.003) * 15;
-
-            // Keep area near track flatter
-            const distFromCenter = Math.sqrt(x * x + z * z);
-            if (distFromCenter < 650) {
-                y *= Math.pow(distFromCenter / 650, 2);
-            }
-
-            positions.setY(i, y - 1);
-        }
-        groundGeometry.computeVertexNormals();
+        // Create flat ground plane
+        const groundGeometry = new THREE.PlaneGeometry(this.groundSize, this.groundSize, 1, 1);
 
         const groundMaterial = new THREE.MeshPhongMaterial({
-            map: grassTexture,
+            map: groundTexture,
             shininess: 5
         });
 
-        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-        ground.rotation.x = -Math.PI / 2;
-        ground.receiveShadow = true;
-        scene.add(ground);
+        this.groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+        this.groundMesh.rotation.x = -Math.PI / 2;
+        this.groundMesh.position.y = this.groundY;
+        this.groundMesh.receiveShadow = true;
+        scene.add(this.groundMesh);
 
-        // Add gravel/dirt areas near track
-        this.createTrackside(scene);
+        // Add start/finish line
+        this.createStartLine(scene);
 
-        // Distant mountains
+        // Distant mountains for atmosphere
         this.createMountains(scene);
     },
 
-    createTrackside(scene) {
-        // Create dirt/gravel texture for track edges
-        const dirtCanvas = document.createElement('canvas');
-        dirtCanvas.width = 128;
-        dirtCanvas.height = 128;
-        const dCtx = dirtCanvas.getContext('2d');
+    paintTrackOnTexture(ctx, textureSize) {
+        const halfSize = this.groundSize / 2;
+        const scale = textureSize / this.groundSize;
 
-        dCtx.fillStyle = '#8b7355';
-        dCtx.fillRect(0, 0, 128, 128);
+        // Convert world coordinates to texture coordinates
+        const toTexCoord = (x, z) => {
+            return {
+                x: (x + halfSize) * scale,
+                y: (z + halfSize) * scale
+            };
+        };
 
-        for (let i = 0; i < 1000; i++) {
-            const x = Math.random() * 128;
-            const y = Math.random() * 128;
-            const shade = Math.random() * 40 + 100;
-            dCtx.fillStyle = `rgb(${shade}, ${shade * 0.8}, ${shade * 0.6})`;
-            dCtx.fillRect(x, y, 2, 2);
+        // Sample track points
+        const numSamples = 500;
+        const trackWidth = Track.trackWidth;
+
+        // Draw track surface (asphalt)
+        ctx.strokeStyle = '#3a3a3a';
+        ctx.lineWidth = trackWidth * scale;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        ctx.beginPath();
+        for (let i = 0; i <= numSamples; i++) {
+            const t = i / numSamples;
+            const point = Track.getPointAt(t);
+            const tc = toTexCoord(point.x, point.z);
+
+            if (i === 0) {
+                ctx.moveTo(tc.x, tc.y);
+            } else {
+                ctx.lineTo(tc.x, tc.y);
+            }
         }
+        ctx.closePath();
+        ctx.stroke();
 
-        const dirtTexture = new THREE.CanvasTexture(dirtCanvas);
-        dirtTexture.wrapS = THREE.RepeatWrapping;
-        dirtTexture.wrapT = THREE.RepeatWrapping;
-        dirtTexture.repeat.set(2, 50);
+        // Add asphalt texture noise
+        ctx.globalCompositeOperation = 'source-atop';
+        for (let i = 0; i < 30000; i++) {
+            const t = Math.random();
+            const point = Track.getPointAt(t);
+            const tangent = Track.getTangentAt(t);
+            const right = { x: tangent.z, z: -tangent.x };
 
-        // Create dirt strips along track edges
-        const numSegments = 200;
+            const laneOffset = (Math.random() - 0.5) * trackWidth * 0.9;
+            const worldX = point.x + right.x * laneOffset;
+            const worldZ = point.z + right.z * laneOffset;
+
+            const tc = toTexCoord(worldX, worldZ);
+            const brightness = Math.random() * 30 + 45;
+            ctx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
+            ctx.fillRect(tc.x, tc.y, 2, 2);
+        }
+        ctx.globalCompositeOperation = 'source-over';
+
+        // Draw track edge lines (white)
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 0.8 * scale;
+
         for (let side = -1; side <= 1; side += 2) {
-            const vertices = [];
-            const uvs = [];
-
-            for (let i = 0; i <= numSegments; i++) {
-                const t = i / numSegments;
+            ctx.beginPath();
+            for (let i = 0; i <= numSamples; i++) {
+                const t = i / numSamples;
                 const point = Track.getPointAt(t);
                 const tangent = Track.getTangentAt(t);
-                const up = new THREE.Vector3(0, 1, 0);
-                const right = new THREE.Vector3().crossVectors(tangent, up).normalize();
+                const right = { x: tangent.z, z: -tangent.x };
 
-                const innerOffset = 12;
-                const outerOffset = 18;
+                const edgeX = point.x + right.x * side * (trackWidth / 2 - 1);
+                const edgeZ = point.z + right.z * side * (trackWidth / 2 - 1);
+                const tc = toTexCoord(edgeX, edgeZ);
 
-                const inner = point.clone().add(right.clone().multiplyScalar(side * innerOffset));
-                const outer = point.clone().add(right.clone().multiplyScalar(side * outerOffset));
-
-                vertices.push(inner.x, inner.y - 0.05, inner.z);
-                vertices.push(outer.x, outer.y - 0.05, outer.z);
-
-                uvs.push(0, t * 50);
-                uvs.push(1, t * 50);
+                if (i === 0) {
+                    ctx.moveTo(tc.x, tc.y);
+                } else {
+                    ctx.lineTo(tc.x, tc.y);
+                }
             }
-
-            const indices = [];
-            for (let i = 0; i < numSegments; i++) {
-                const base = i * 2;
-                indices.push(base, base + 1, base + 2);
-                indices.push(base + 1, base + 3, base + 2);
-            }
-
-            const geometry = new THREE.BufferGeometry();
-            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-            geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-            geometry.setIndex(indices);
-            geometry.computeVertexNormals();
-
-            const material = new THREE.MeshPhongMaterial({
-                map: dirtTexture,
-                shininess: 2
-            });
-
-            const dirtStrip = new THREE.Mesh(geometry, material);
-            scene.add(dirtStrip);
+            ctx.closePath();
+            ctx.stroke();
         }
+
+        // Draw center dashed line
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 0.5 * scale;
+        ctx.setLineDash([8 * scale, 8 * scale]);
+
+        ctx.beginPath();
+        for (let i = 0; i <= numSamples; i++) {
+            const t = i / numSamples;
+            const point = Track.getPointAt(t);
+            const tc = toTexCoord(point.x, point.z);
+
+            if (i === 0) {
+                ctx.moveTo(tc.x, tc.y);
+            } else {
+                ctx.lineTo(tc.x, tc.y);
+            }
+        }
+        ctx.closePath();
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw rumble strips (red/white alternating on edges)
+        const rumbleWidth = 2 * scale;
+        for (let side = -1; side <= 1; side += 2) {
+            for (let i = 0; i < numSamples; i++) {
+                const t = i / numSamples;
+                const point = Track.getPointAt(t);
+                const tangent = Track.getTangentAt(t);
+                const right = { x: tangent.z, z: -tangent.x };
+
+                const rumbleX = point.x + right.x * side * (trackWidth / 2 + 1.5);
+                const rumbleZ = point.z + right.z * side * (trackWidth / 2 + 1.5);
+                const tc = toTexCoord(rumbleX, rumbleZ);
+
+                ctx.fillStyle = (i % 4 < 2) ? '#cc0000' : '#ffffff';
+                ctx.beginPath();
+                ctx.arc(tc.x, tc.y, rumbleWidth, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    },
+
+    createStartLine(scene) {
+        // Create checkered start/finish line
+        const startT = 0;
+        const point = Track.getPointAt(startT);
+        const tangent = Track.getTangentAt(startT);
+        const right = new THREE.Vector3(tangent.z, 0, -tangent.x);
+
+        const lineWidth = Track.trackWidth;
+        const lineDepth = 3;
+
+        // Checkered pattern texture
+        const checkerCanvas = document.createElement('canvas');
+        checkerCanvas.width = 64;
+        checkerCanvas.height = 16;
+        const cCtx = checkerCanvas.getContext('2d');
+
+        for (let x = 0; x < 8; x++) {
+            for (let y = 0; y < 2; y++) {
+                cCtx.fillStyle = (x + y) % 2 === 0 ? '#ffffff' : '#000000';
+                cCtx.fillRect(x * 8, y * 8, 8, 8);
+            }
+        }
+
+        const checkerTexture = new THREE.CanvasTexture(checkerCanvas);
+
+        const lineGeom = new THREE.PlaneGeometry(lineWidth, lineDepth);
+        const lineMat = new THREE.MeshPhongMaterial({
+            map: checkerTexture,
+            shininess: 10
+        });
+
+        const startLine = new THREE.Mesh(lineGeom, lineMat);
+        startLine.rotation.x = -Math.PI / 2;
+        startLine.position.set(point.x, this.groundY + 0.01, point.z);
+
+        // Rotate to align with track direction
+        const angle = Math.atan2(tangent.x, tangent.z);
+        startLine.rotation.z = -angle;
+
+        scene.add(startLine);
     },
 
     createMountains(scene) {
@@ -204,10 +287,9 @@ const Environment = {
             flatShading: true
         });
 
-        // Create several mountain ranges
         for (let i = 0; i < 20; i++) {
             const angle = (i / 20) * Math.PI * 2;
-            const distance = 1500 + Math.random() * 300;
+            const distance = 1200 + Math.random() * 300;
             const x = Math.cos(angle) * distance;
             const z = Math.sin(angle) * distance;
 
@@ -223,7 +305,6 @@ const Environment = {
     },
 
     createTrees(scene) {
-        // Create tree geometries once
         const trunkGeom = new THREE.CylinderGeometry(0.5, 0.8, 8, 6);
         const trunkMat = new THREE.MeshLambertMaterial({ color: 0x4a2c0a });
 
@@ -231,28 +312,24 @@ const Environment = {
         const foliageMat = new THREE.MeshLambertMaterial({ color: 0x0a5f0a });
 
         // Place trees around the track
-        const numTrees = 200;
+        const numTrees = 150;
 
         for (let i = 0; i < numTrees; i++) {
             const t = i / numTrees;
             const point = Track.getPointAt(t);
             const tangent = Track.getTangentAt(t);
-            const up = new THREE.Vector3(0, 1, 0);
-            const right = new THREE.Vector3().crossVectors(tangent, up).normalize();
+            const right = { x: tangent.z, z: -tangent.x };
 
-            // Place trees on both sides of track
             const sides = [-1, 1];
             sides.forEach(side => {
-                if (Math.random() > 0.6) return; // Skip some trees
+                if (Math.random() > 0.5) return;
 
-                const distance = 20 + Math.random() * 40;
-                const offset = right.clone().multiplyScalar(side * distance);
-                const position = point.clone().add(offset);
+                const distance = 25 + Math.random() * 50;
+                const offsetX = right.x * side * distance;
+                const offsetZ = right.z * side * distance;
 
-                // Random tree scale
                 const scale = 0.8 + Math.random() * 0.8;
 
-                // Create tree group
                 const tree = new THREE.Group();
 
                 const trunk = new THREE.Mesh(trunkGeom, trunkMat);
@@ -267,15 +344,15 @@ const Environment = {
                 foliage.castShadow = true;
                 tree.add(foliage);
 
-                tree.position.copy(position);
+                tree.position.set(point.x + offsetX, this.groundY, point.z + offsetZ);
                 scene.add(tree);
             });
         }
 
-        // Add some random trees in the distance
-        for (let i = 0; i < 100; i++) {
+        // Random distant trees
+        for (let i = 0; i < 80; i++) {
             const angle = Math.random() * Math.PI * 2;
-            const distance = 200 + Math.random() * 800;
+            const distance = 300 + Math.random() * 600;
             const x = Math.cos(angle) * distance;
             const z = Math.sin(angle) * distance;
 
@@ -293,17 +370,15 @@ const Environment = {
             foliage.position.y = 12 * scale;
             tree.add(foliage);
 
-            tree.position.set(x, 0, z);
+            tree.position.set(x, this.groundY, z);
             scene.add(tree);
         }
     },
 
     createLighting(scene) {
-        // Ambient light
         const ambient = new THREE.AmbientLight(0x666666);
         scene.add(ambient);
 
-        // Directional light (sun)
         const directional = new THREE.DirectionalLight(0xffddaa, 1);
         directional.position.set(800, 400, -500);
         directional.castShadow = true;
@@ -317,8 +392,12 @@ const Environment = {
         directional.shadow.camera.bottom = -500;
         scene.add(directional);
 
-        // Hemisphere light for more natural outdoor lighting
         const hemisphere = new THREE.HemisphereLight(0x88aaff, 0x445522, 0.5);
         scene.add(hemisphere);
+    },
+
+    // Get ground height at any position (flat ground)
+    getGroundHeight(x, z) {
+        return this.groundY;
     }
 };

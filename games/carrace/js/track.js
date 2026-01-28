@@ -16,14 +16,12 @@ const Track = {
     init(scene) {
         this.generateTrackPoints();
         this.createCurve();
-        this.createRoadMesh(scene);
-        this.createRoadMarkings(scene);
-        this.createBarriers(scene);
+        // Road is now painted on the unified ground mesh in Environment
         this.buildSegmentData();
     },
 
     generateTrackPoints() {
-        // Create a varied racing circuit with interesting terrain
+        // Create a varied racing circuit on flat ground
         this.points = [];
 
         const numPoints = 50;
@@ -46,32 +44,8 @@ const Track = {
                 x += Math.sin((t - 0.2) * Math.PI * 6) * 60;
             }
 
-            // Elevation profile - more pronounced hills
-            let y = 2; // Base height above ground
-
-            // Main hill climb and descent
-            if (t > 0.05 && t < 0.25) {
-                // Climbing section
-                const hillT = (t - 0.05) / 0.2;
-                y += Math.sin(hillT * Math.PI) * 25;
-            }
-
-            // Dip/valley section
-            if (t > 0.4 && t < 0.55) {
-                const dipT = (t - 0.4) / 0.15;
-                y -= Math.sin(dipT * Math.PI) * 8;
-            }
-
-            // Rolling hills section
-            if (t > 0.6 && t < 0.85) {
-                y += Math.sin((t - 0.6) * Math.PI * 4) * 12;
-            }
-
-            // Gentle undulation throughout
-            y += Math.sin(angle * 6) * 3;
-
-            // Ensure track doesn't go below ground level
-            y = Math.max(y, 1);
+            // Flat track - all points at y = 0 (ground level)
+            let y = 0;
 
             this.points.push(new THREE.Vector3(x, y, z));
         }
@@ -338,57 +312,30 @@ const Track = {
         return surface.position;
     },
 
-    // Get road surface data including height and tilt at exact position
+    // Get road surface data - flat ground version
     getRoadSurface(trackT, laneOffset) {
         const point = this.getPointAt(trackT);
         const tangent = this.getTangentAt(trackT);
         const up = new THREE.Vector3(0, 1, 0);
         const right = new THREE.Vector3().crossVectors(tangent, up).normalize();
 
-        // Calculate banking angle
-        const banking = this.getBankingAt(trackT);
-
-        // Position on road - horizontal offset
+        // Position on road - horizontal offset only (flat ground)
         const position = point.clone().add(right.clone().multiplyScalar(laneOffset));
-
-        // Adjust height based on banking
-        // tan(banking) * laneOffset gives the height change
-        // Normalized by road width for proper scaling
-        const bankHeightOffset = Math.tan(banking) * laneOffset * 0.15;
-        position.y += bankHeightOffset;
-
-        // Calculate road pitch (slope going up/down hill)
-        const pitch = this.getPitchAt(trackT);
+        position.y = 0; // Flat ground
 
         return {
             position: position,
             tangent: tangent,
             right: right,
-            banking: banking,
-            pitch: pitch,
-            normal: this.getRoadNormal(tangent, right, banking)
+            banking: 0,
+            pitch: 0,
+            normal: up
         };
     },
 
-    // Calculate banking angle at a point on the track
+    // Calculate banking angle at a point on the track (flat = 0)
     getBankingAt(trackT) {
-        trackT = ((trackT % 1) + 1) % 1;
-
-        const nextT = (trackT + 0.008) % 1;
-
-        const tangent = this.curve.getTangentAt(trackT);
-        const nextTangent = this.curve.getTangentAt(nextT);
-
-        // Calculate curvature (how much the road is turning)
-        const curvature = tangent.angleTo(nextTangent);
-
-        // Determine turn direction
-        const cross = tangent.clone().cross(nextTangent);
-        const turnDirection = Math.sign(cross.y);
-
-        // Banking angle proportional to curvature - matches road mesh banking
-        // Positive = tilted right (left turn), Negative = tilted left (right turn)
-        return -turnDirection * curvature * 15;
+        return 0; // Flat ground, no banking
     },
 
     // Calculate pitch (uphill/downhill) at a point

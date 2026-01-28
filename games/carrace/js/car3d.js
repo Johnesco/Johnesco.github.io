@@ -1,47 +1,102 @@
-// 3D Player Car module with realistic physics
+// 3D Player Car module with realistic 6DOF physics
 const Car3D = {
-    // Track position (0-1 around the track)
+    // World position (true 3D coordinates)
+    position: { x: 0, y: 0, z: 0 },
+
+    // 6DOF rotation (Euler angles in radians)
+    rotation: { pitch: 0, yaw: 0, roll: 0 },
+
+    // Linear velocity in world space
+    velocity: { x: 0, y: 0, z: 0 },
+
+    // Angular velocity (rotation rates)
+    angularVelocity: { pitch: 0, yaw: 0, roll: 0 },
+
+    // Track progress (for lap counting and AI reference)
     trackProgress: 0,
-
-    // Lane position (-1 to 1, where 0 is center)
     laneOffset: 0,
-
-    // Speed and velocity
-    speed: 0,
-    targetSpeed: 0,
 
     // 3D objects
     mesh: null,
     bodyMesh: null,
     wheelMeshes: [],
     brakeLights: [],
+    chassisGroup: null,
 
-    // Physics constants
-    maxSpeed: 0.08,
-    acceleration: 0.025,
-    braking: 0.08,
-    deceleration: 0.008,
-    steeringSpeed: 10,
-    maxLaneOffset: 9,
+    // Engine/drivetrain
+    engineRPM: 800,
+    throttle: 0,
+    brake: 0,
 
-    // Realistic physics state
-    velocity: { x: 0, z: 0 },
-    angularVelocity: 0,
-    bodyRoll: 0,
-    bodyPitch: 0,
-    suspensionOffset: [0, 0, 0, 0], // FL, FR, RL, RR
+    // Steering
     steerAngle: 0,
+    steerInput: 0,
     wheelRotation: 0,
     isBraking: false,
 
-    // Physics tuning
-    mass: 1200,
-    grip: 0.85,
-    suspensionStiffness: 0.15,
-    suspensionDamping: 0.85,
-    bodyRollFactor: 0.12,
-    bodyPitchFactor: 0.05,
-    inertiaDamping: 0.92,
+    // Physics constants - tuned for realistic 4-wheel feel
+    mass: 1400,                    // kg
+    wheelBase: 2.8,                // Distance between front and rear axles (m)
+    trackWidth: 1.6,               // Distance between left and right wheels (m)
+    cgHeight: 0.4,                 // Center of gravity height (m)
+    frontAxleFromCG: 1.3,          // Front axle distance from CG
+    rearAxleFromCG: 1.5,           // Rear axle distance from CG (slightly rear-biased)
+
+    // Engine/Drivetrain
+    maxDriveForce: 8000,           // N - max force at wheels
+    maxSpeed: 50,                  // m/s (~112 mph)
+    engineBraking: 1500,           // N of engine braking when coasting
+
+    // Braking
+    maxBrakeForce: 20000,          // N total brake force
+    brakeBalance: 0.6,             // 60% front brake bias
+
+    // Steering
+    maxSteerAngle: 0.5,            // ~28 degrees in radians
+    steerSpeed: 4.0,               // How fast steering responds
+    steerReturnSpeed: 6.0,         // How fast steering centers
+
+    // Tire physics (Pacejka-simplified)
+    tireGripFront: 1.1,            // Front tire grip coefficient
+    tireGripRear: 1.15,            // Rear tire grip (slightly higher for stability)
+    tireGripOffroad: 0.5,          // Reduced grip off track
+    peakSlipAngle: 0.14,           // Slip angle at peak grip (~8 degrees)
+    peakSlipRatio: 0.1,            // Slip ratio at peak traction (10%)
+
+    // Cornering stiffness (force per radian of slip before saturation)
+    corneringStiffnessFront: 45000,
+    corneringStiffnessRear: 50000,
+
+    // Suspension
+    suspensionStiffness: 35000,    // N/m spring rate
+    suspensionDamping: 3500,       // Ns/m damping coefficient
+    suspensionTravel: 0.12,        // m max travel
+    antiRollStiffness: 8000,       // Anti-roll bar stiffness
+    suspensionOffset: [0, 0, 0, 0],
+    suspensionVelocity: [0, 0, 0, 0],
+
+    // Aerodynamics
+    dragCoefficient: 0.35,
+    frontalArea: 2.0,              // m^2
+
+    // Dynamic state
+    wheelAngularVel: [0, 0, 0, 0], // Wheel rotation speed (rad/s)
+    wheelLoad: [0, 0, 0, 0],       // Normal force on each wheel
+    slipAngle: [0, 0, 0, 0],       // Current slip angle per wheel
+    slipRatio: [0, 0, 0, 0],       // Current slip ratio per wheel
+
+    // Wheel positions relative to CG (local coordinates) - set in createCarMesh
+    wheelPositions: [
+        { x: -1.2, z: 1.5 },   // FL
+        { x: 1.2, z: 1.5 },    // FR
+        { x: -1.2, z: -1.5 },  // RL
+        { x: 1.2, z: -1.5 }    // RR
+    ],
+
+    // Terrain state
+    isOnTrack: true,
+    groundHeight: 0,
+    terrainNormal: { x: 0, y: 1, z: 0 },
 
     init(scene) {
         this.createCarMesh(scene);
@@ -56,108 +111,36 @@ const Car3D = {
         const chassisGroup = new THREE.Group();
         this.chassisGroup = chassisGroup;
 
-        // --- CAR BODY ---
-        // Main body shape - more realistic sports car proportions
-        const bodyShape = new THREE.Shape();
-        bodyShape.moveTo(-1.1, 0);
-        bodyShape.lineTo(-1.1, 0.6);
-        bodyShape.lineTo(-0.9, 0.9);
-        bodyShape.lineTo(0.8, 0.9);
-        bodyShape.lineTo(1.1, 0.6);
-        bodyShape.lineTo(1.1, 0);
-        bodyShape.lineTo(-1.1, 0);
+        // --- SIMPLE BOX CAR BODY ---
+        const bodyWidth = 2.0;
+        const bodyHeight = 0.8;
+        const bodyLength = 3.6;
 
-        const bodyExtrudeSettings = { depth: 4.2, bevelEnabled: false };
-        const bodyGeometry = new THREE.ExtrudeGeometry(bodyShape, bodyExtrudeSettings);
-        bodyGeometry.rotateX(Math.PI / 2);
-        bodyGeometry.translate(0, 0, 2.1);
-
+        const bodyGeometry = new THREE.BoxGeometry(bodyWidth, bodyHeight, bodyLength);
         const bodyMaterial = new THREE.MeshPhongMaterial({
             color: 0xcc0000,
-            shininess: 100,
+            shininess: 80,
             specular: 0x444444
         });
         this.bodyMesh = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        this.bodyMesh.position.y = 0.45;
+        this.bodyMesh.position.y = 0.4 + bodyHeight / 2;
         this.bodyMesh.castShadow = true;
         chassisGroup.add(this.bodyMesh);
 
-        // Hood (sloped)
-        const hoodGeometry = new THREE.BoxGeometry(2.0, 0.15, 1.8);
-        const hood = new THREE.Mesh(hoodGeometry, bodyMaterial);
-        hood.position.set(0, 1.0, 1.4);
-        hood.rotation.x = -0.1;
-        hood.castShadow = true;
-        chassisGroup.add(hood);
-
-        // Roof
-        const roofGeometry = new THREE.BoxGeometry(1.8, 0.12, 1.4);
-        const roof = new THREE.Mesh(roofGeometry, bodyMaterial);
-        roof.position.set(0, 1.45, -0.3);
-        roof.castShadow = true;
-        chassisGroup.add(roof);
-
-        // Windshield
-        const windshieldGeometry = new THREE.PlaneGeometry(1.7, 0.8);
-        const windshieldMaterial = new THREE.MeshPhongMaterial({
-            color: 0x88aacc,
-            transparent: true,
-            opacity: 0.6,
-            shininess: 200,
-            side: THREE.DoubleSide
-        });
-        const windshield = new THREE.Mesh(windshieldGeometry, windshieldMaterial);
-        windshield.position.set(0, 1.25, 0.55);
-        windshield.rotation.x = -0.45;
-        chassisGroup.add(windshield);
-
-        // Rear windshield
-        const rearWindshield = new THREE.Mesh(windshieldGeometry, windshieldMaterial);
-        rearWindshield.position.set(0, 1.25, -1.1);
-        rearWindshield.rotation.x = 0.45;
-        chassisGroup.add(rearWindshield);
-
-        // Side windows
-        const sideWindowGeom = new THREE.PlaneGeometry(1.2, 0.5);
-        const leftWindow = new THREE.Mesh(sideWindowGeom, windshieldMaterial);
-        leftWindow.position.set(-1.05, 1.2, -0.3);
-        leftWindow.rotation.y = Math.PI / 2;
-        chassisGroup.add(leftWindow);
-        const rightWindow = new THREE.Mesh(sideWindowGeom, windshieldMaterial);
-        rightWindow.position.set(1.05, 1.2, -0.3);
-        rightWindow.rotation.y = -Math.PI / 2;
-        chassisGroup.add(rightWindow);
-
-        // Spoiler
-        const spoilerWingGeom = new THREE.BoxGeometry(2.2, 0.08, 0.4);
-        const spoilerMat = new THREE.MeshPhongMaterial({ color: 0x111111, shininess: 80 });
-        const spoilerWing = new THREE.Mesh(spoilerWingGeom, spoilerMat);
-        spoilerWing.position.set(0, 1.55, -2.0);
-        chassisGroup.add(spoilerWing);
-
-        // Spoiler supports
-        const supportGeom = new THREE.BoxGeometry(0.08, 0.35, 0.08);
-        [-0.8, 0.8].forEach(x => {
-            const support = new THREE.Mesh(supportGeom, spoilerMat);
-            support.position.set(x, 1.35, -2.0);
-            chassisGroup.add(support);
-        });
-
-        // --- HEADLIGHTS ---
-        const headlightGeom = new THREE.CircleGeometry(0.15, 16);
+        // --- HEADLIGHTS (front face) ---
+        const headlightGeom = new THREE.BoxGeometry(0.3, 0.15, 0.05);
         const headlightMat = new THREE.MeshPhongMaterial({
             color: 0xffffee,
-            emissive: 0x666644,
-            shininess: 100
+            emissive: 0xaaaa66
         });
         [-0.6, 0.6].forEach(x => {
             const light = new THREE.Mesh(headlightGeom, headlightMat);
-            light.position.set(x, 0.7, 2.11);
+            light.position.set(x, 0.7, bodyLength / 2 + 0.03);
             chassisGroup.add(light);
         });
 
-        // --- BRAKE LIGHTS ---
-        const brakeLightGeom = new THREE.BoxGeometry(0.3, 0.1, 0.05);
+        // --- BRAKE LIGHTS (rear face) ---
+        const brakeLightGeom = new THREE.BoxGeometry(0.3, 0.15, 0.05);
         const brakeLightOffMat = new THREE.MeshPhongMaterial({
             color: 0x660000,
             emissive: 0x220000
@@ -169,56 +152,71 @@ const Car3D = {
         });
         this.brakeLightMaterials = { off: brakeLightOffMat, on: brakeLightOnMat };
 
-        [-0.7, 0.7].forEach(x => {
+        [-0.6, 0.6].forEach(x => {
             const brakeLight = new THREE.Mesh(brakeLightGeom, brakeLightOffMat);
-            brakeLight.position.set(x, 0.85, -2.11);
+            brakeLight.position.set(x, 0.7, -bodyLength / 2 - 0.03);
             chassisGroup.add(brakeLight);
             this.brakeLights.push(brakeLight);
         });
 
-        // --- WHEELS ---
+        // --- WHEELS AT CORNERS ---
         this.wheelMeshes = [];
+        const wheelRadius = 0.35;
+        const wheelWidth = 0.25;
+
+        // Wheel positions at corners of the box
+        const wheelX = bodyWidth / 2 + wheelWidth / 2 + 0.05;
+        const wheelZ = bodyLength / 2 - 0.3;
+
         const wheelPositions = [
-            { x: -1.0, z: 1.4, name: 'FL' },
-            { x: 1.0, z: 1.4, name: 'FR' },
-            { x: -1.0, z: -1.5, name: 'RL' },
-            { x: 1.0, z: -1.5, name: 'RR' }
+            { x: -wheelX, z: wheelZ, name: 'FL' },
+            { x: wheelX, z: wheelZ, name: 'FR' },
+            { x: -wheelX, z: -wheelZ, name: 'RL' },
+            { x: wheelX, z: -wheelZ, name: 'RR' }
+        ];
+
+        // Update physics wheel positions to match visual
+        this.wheelPositions = [
+            { x: -wheelX, z: wheelZ },
+            { x: wheelX, z: wheelZ },
+            { x: -wheelX, z: -wheelZ },
+            { x: wheelX, z: -wheelZ }
         ];
 
         wheelPositions.forEach((pos, i) => {
             const wheelGroup = new THREE.Group();
 
-            // Tire
-            const tireGeometry = new THREE.TorusGeometry(0.32, 0.12, 8, 24);
+            // Tire (cylinder)
+            const tireGeometry = new THREE.CylinderGeometry(wheelRadius, wheelRadius, wheelWidth, 16);
             const tireMaterial = new THREE.MeshPhongMaterial({
                 color: 0x1a1a1a,
                 shininess: 30
             });
             const tire = new THREE.Mesh(tireGeometry, tireMaterial);
-            tire.rotation.y = Math.PI / 2;
+            tire.rotation.z = Math.PI / 2;
             wheelGroup.add(tire);
 
-            // Rim
-            const rimGeometry = new THREE.CylinderGeometry(0.22, 0.22, 0.15, 6);
+            // Rim (visible on outside)
+            const rimGeometry = new THREE.CylinderGeometry(wheelRadius * 0.6, wheelRadius * 0.6, wheelWidth + 0.02, 8);
             const rimMaterial = new THREE.MeshPhongMaterial({
-                color: 0xcccccc,
+                color: 0xaaaaaa,
                 shininess: 100
             });
             const rim = new THREE.Mesh(rimGeometry, rimMaterial);
             rim.rotation.z = Math.PI / 2;
             wheelGroup.add(rim);
 
-            // Hub cap
-            const hubGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.18, 8);
+            // Hub
+            const hubGeometry = new THREE.CylinderGeometry(wheelRadius * 0.2, wheelRadius * 0.2, wheelWidth + 0.04, 6);
             const hubMaterial = new THREE.MeshPhongMaterial({
-                color: 0x888888,
-                shininess: 80
+                color: 0x666666,
+                shininess: 60
             });
             const hub = new THREE.Mesh(hubGeometry, hubMaterial);
             hub.rotation.z = Math.PI / 2;
             wheelGroup.add(hub);
 
-            wheelGroup.position.set(pos.x, 0.32, pos.z);
+            wheelGroup.position.set(pos.x, wheelRadius, pos.z);
             wheelGroup.castShadow = true;
 
             this.mesh.add(wheelGroup);
@@ -231,178 +229,489 @@ const Car3D = {
     },
 
     reset() {
+        // Get starting position from track
+        const startPos = Track.getPointAt(0);
+        const startTangent = Track.getTangentAt(0);
+
+        // Start on flat ground (Environment.groundY) with wheel clearance
+        const groundY = (typeof Environment !== 'undefined') ? Environment.groundY : 0;
+        const startHeight = groundY + 0.5;
+
+        this.position = { x: startPos.x, y: startHeight, z: startPos.z };
+        this.rotation = { pitch: 0, yaw: Math.atan2(startTangent.x, startTangent.z), roll: 0 };
+
+        this.velocity = { x: 0, y: 0, z: 0 };
+        this.angularVelocity = { pitch: 0, yaw: 0, roll: 0 };
+
         this.trackProgress = 0;
         this.laneOffset = 0;
-        this.speed = 0;
-        this.targetSpeed = 0;
-        this.velocity = { x: 0, z: 0 };
-        this.angularVelocity = 0;
-        this.bodyRoll = 0;
-        this.bodyPitch = 0;
+
+        this.engineRPM = 800;
+        this.throttle = 0;
+        this.brake = 0;
+
         this.steerAngle = 0;
+        this.steerInput = 0;
         this.wheelRotation = 0;
-        this.suspensionOffset = [0, 0, 0, 0];
         this.isBraking = false;
+
+        this.suspensionOffset = [0, 0, 0, 0];
+        this.suspensionVelocity = [0, 0, 0, 0];
+
+        this.wheelAngularVel = [0, 0, 0, 0];
+        this.wheelLoad = [this.mass * 9.81 / 4, this.mass * 9.81 / 4, this.mass * 9.81 / 4, this.mass * 9.81 / 4];
+        this.slipAngle = [0, 0, 0, 0];
+        this.slipRatio = [0, 0, 0, 0];
+
+        this.isOnTrack = true;
+        this.groundHeight = groundY;
+        this.terrainNormal = { x: 0, y: 1, z: 0 };
     },
 
     update(dt, input) {
+        // Clamp dt to prevent physics explosion
+        dt = Math.min(dt, 0.033);
+
         // --- INPUT PROCESSING ---
-        const wasAccelerating = this.targetSpeed > this.speed;
-        this.isBraking = input.keys.down;
+        this.throttle = input.keys.up ? 1.0 : 0;
+        this.brake = input.keys.down ? 1.0 : 0;
+        this.isBraking = this.brake > 0;
+        this.steerInput = (input.keys.left ? -1 : 0) + (input.keys.right ? 1 : 0);
 
-        // Target speed based on input
-        if (input.keys.up) {
-            this.targetSpeed = this.maxSpeed;
-        } else if (input.keys.down) {
-            this.targetSpeed = -this.maxSpeed * 0.3;
+        // --- STEERING ---
+        // Speed-sensitive steering (less responsive at high speed)
+        const speed = Math.sqrt(this.velocity.x ** 2 + this.velocity.z ** 2);
+        const speedFactor = Math.max(0.3, 1 - speed / this.maxSpeed * 0.5);
+        const targetSteer = this.steerInput * this.maxSteerAngle * speedFactor;
+
+        // Steering with different rates for turning vs centering
+        if (this.steerInput !== 0) {
+            const steerDelta = targetSteer - this.steerAngle;
+            this.steerAngle += steerDelta * Math.min(1, this.steerSpeed * dt);
         } else {
-            this.targetSpeed = 0;
+            // Self-centering steering
+            this.steerAngle *= Math.max(0, 1 - this.steerReturnSpeed * dt);
         }
 
-        // --- ACCELERATION WITH INERTIA ---
-        const speedDiff = this.targetSpeed - this.speed;
-        let accelRate;
+        // --- CAR COORDINATE SYSTEM ---
+        const cosYaw = Math.cos(this.rotation.yaw);
+        const sinYaw = Math.sin(this.rotation.yaw);
+        const forwardDir = { x: sinYaw, z: cosYaw };
+        const rightDir = { x: cosYaw, z: -sinYaw };
 
-        if (input.keys.up && this.speed >= 0) {
-            // Accelerating forward - slower as we approach max speed
-            const speedRatio = this.speed / this.maxSpeed;
-            accelRate = this.acceleration * (1 - speedRatio * 0.7);
-        } else if (input.keys.down) {
-            accelRate = this.braking;
-        } else {
-            // Coasting - gradual slowdown
-            accelRate = this.deceleration;
+        // Local velocity (car's reference frame)
+        const localVelX = this.velocity.x * rightDir.x + this.velocity.z * rightDir.z;  // Lateral (+ = right)
+        const localVelZ = this.velocity.x * forwardDir.x + this.velocity.z * forwardDir.z;  // Longitudinal (+ = forward)
+
+        // --- TERRAIN/GROUND DETECTION ---
+        this.updateTerrainContact();
+        const gripMultiplier = this.isOnTrack ? 1.0 : (this.tireGripOffroad / this.tireGripFront);
+
+        // --- CALCULATE WHEEL LOADS (weight transfer) ---
+        const gravity = 9.81;
+        const totalWeight = this.mass * gravity;
+
+        // Static weight distribution (slightly rear-biased)
+        const frontStaticLoad = totalWeight * this.rearAxleFromCG / this.wheelBase;
+        const rearStaticLoad = totalWeight * this.frontAxleFromCG / this.wheelBase;
+
+        // Longitudinal weight transfer from acceleration
+        const longAccel = (this.throttle * this.maxDriveForce - this.brake * this.maxBrakeForce) / this.mass;
+        const longTransfer = this.mass * longAccel * this.cgHeight / this.wheelBase;
+
+        // Lateral weight transfer from cornering
+        const lateralAccel = localVelZ * this.angularVelocity.yaw;
+        const latTransfer = this.mass * lateralAccel * this.cgHeight / this.trackWidth;
+
+        // Calculate individual wheel loads
+        this.wheelLoad[0] = Math.max(100, (frontStaticLoad / 2) - longTransfer / 2 + latTransfer / 2);  // FL
+        this.wheelLoad[1] = Math.max(100, (frontStaticLoad / 2) - longTransfer / 2 - latTransfer / 2);  // FR
+        this.wheelLoad[2] = Math.max(100, (rearStaticLoad / 2) + longTransfer / 2 + latTransfer / 2);   // RL
+        this.wheelLoad[3] = Math.max(100, (rearStaticLoad / 2) + longTransfer / 2 - latTransfer / 2);   // RR
+
+        // --- TIRE FORCES ---
+        let totalForceX = 0;
+        let totalForceZ = 0;
+        let yawTorque = 0;
+
+        for (let i = 0; i < 4; i++) {
+            const wheelPos = this.wheelPositions[i];
+            const isFront = i < 2;
+            const isLeft = i % 2 === 0;
+
+            // Wheel position relative to CG in world coords
+            const wheelWorldX = wheelPos.x * rightDir.x + wheelPos.z * forwardDir.x;
+            const wheelWorldZ = wheelPos.x * rightDir.z + wheelPos.z * forwardDir.z;
+
+            // Wheel velocity (including rotation around CG)
+            const wheelVelX = this.velocity.x - this.angularVelocity.yaw * wheelPos.z * cosYaw - this.angularVelocity.yaw * wheelPos.x * sinYaw;
+            const wheelVelZ = this.velocity.z + this.angularVelocity.yaw * wheelPos.z * sinYaw - this.angularVelocity.yaw * wheelPos.x * cosYaw;
+
+            // Wheel direction (steered for front wheels)
+            let wheelYaw = this.rotation.yaw;
+            if (isFront) {
+                // Ackermann-ish steering (inner wheel turns more)
+                const ackermann = isLeft ? 1.05 : 0.95;
+                wheelYaw += this.steerAngle * ackermann;
+            }
+
+            const wheelForward = { x: Math.sin(wheelYaw), z: Math.cos(wheelYaw) };
+            const wheelRight = { x: Math.cos(wheelYaw), z: -Math.sin(wheelYaw) };
+
+            // Local wheel velocity
+            const wheelLocalVelX = wheelVelX * wheelRight.x + wheelVelZ * wheelRight.z;  // Lateral
+            const wheelLocalVelZ = wheelVelX * wheelForward.x + wheelVelZ * wheelForward.z;  // Longitudinal
+
+            const wheelSpeed = Math.sqrt(wheelLocalVelX ** 2 + wheelLocalVelZ ** 2);
+
+            // --- SLIP ANGLE (lateral slip) ---
+            let slipAngle = 0;
+            if (wheelSpeed > 0.5) {
+                slipAngle = Math.atan2(-wheelLocalVelX, Math.abs(wheelLocalVelZ));
+            } else if (speed < 0.5 && Math.abs(this.steerAngle) > 0.01) {
+                // Low speed steering - use geometric slip
+                slipAngle = isFront ? -this.steerAngle * 0.5 : 0;
+            }
+            this.slipAngle[i] = slipAngle;
+
+            // --- SLIP RATIO (longitudinal slip) ---
+            const wheelRadius = 0.35;
+            const wheelAngularSpeed = this.wheelAngularVel[i] * wheelRadius;
+            let slipRatio = 0;
+            if (wheelSpeed > 0.5) {
+                slipRatio = (wheelAngularSpeed - wheelLocalVelZ) / Math.max(Math.abs(wheelLocalVelZ), 0.5);
+                slipRatio = Math.max(-1, Math.min(1, slipRatio));
+            }
+            this.slipRatio[i] = slipRatio;
+
+            // --- TIRE FORCE MODEL (simplified Pacejka-like) ---
+            const load = this.wheelLoad[i];
+            const grip = isFront ? this.tireGripFront : this.tireGripRear;
+            const maxForce = load * grip * gripMultiplier;
+
+            // Lateral force (cornering)
+            const corneringStiffness = isFront ? this.corneringStiffnessFront : this.corneringStiffnessRear;
+            const normalizedSlip = slipAngle / this.peakSlipAngle;
+            // Magic formula approximation: rises linearly then saturates
+            const lateralForceFactor = Math.sin(Math.atan(normalizedSlip * 1.9)) * 1.05;
+            let lateralForce = corneringStiffness * this.peakSlipAngle * lateralForceFactor * (load / (this.mass * gravity / 4));
+            lateralForce = Math.max(-maxForce, Math.min(maxForce, lateralForce));
+
+            // Longitudinal force (traction/braking)
+            let longitudinalForce = 0;
+
+            // Drive force (rear wheels only - RWD)
+            if (!isFront && this.throttle > 0) {
+                const driveForce = this.throttle * this.maxDriveForce * 0.5;  // Split between two rear wheels
+                // Traction limit based on slip ratio
+                const tractionFactor = 1 - Math.abs(slipRatio) * 0.5;
+                longitudinalForce += driveForce * tractionFactor;
+            }
+
+            // Brake force (all wheels with bias)
+            if (this.brake > 0 && speed > 0.3) {
+                const brakeBias = isFront ? this.brakeBalance : (1 - this.brakeBalance);
+                const brakeForce = this.brake * this.maxBrakeForce * brakeBias * 0.5;
+                longitudinalForce -= brakeForce * Math.sign(wheelLocalVelZ);
+            }
+
+            // Engine braking (rear wheels)
+            if (!isFront && this.throttle === 0 && this.brake === 0 && speed > 1) {
+                longitudinalForce -= this.engineBraking * 0.5 * Math.sign(wheelLocalVelZ);
+            }
+
+            // --- FRICTION CIRCLE (combined slip) ---
+            const combinedForce = Math.sqrt(lateralForce ** 2 + longitudinalForce ** 2);
+            if (combinedForce > maxForce) {
+                const scale = maxForce / combinedForce;
+                lateralForce *= scale;
+                longitudinalForce *= scale;
+            }
+
+            // --- UPDATE WHEEL ANGULAR VELOCITY ---
+            const wheelInertia = 10;  // kg*m^2
+            const wheelTorque = -longitudinalForce * wheelRadius;
+            this.wheelAngularVel[i] += (wheelTorque / wheelInertia) * dt;
+            // Sync wheel speed with ground speed when not slipping much
+            const targetAngularVel = wheelLocalVelZ / wheelRadius;
+            this.wheelAngularVel[i] += (targetAngularVel - this.wheelAngularVel[i]) * 0.1;
+
+            // --- CONVERT TO WORLD FORCES ---
+            const forceWorldX = wheelForward.x * longitudinalForce + wheelRight.x * lateralForce;
+            const forceWorldZ = wheelForward.z * longitudinalForce + wheelRight.z * lateralForce;
+
+            totalForceX += forceWorldX;
+            totalForceZ += forceWorldZ;
+
+            // Yaw torque from this wheel (moment arm from CG)
+            yawTorque += wheelWorldX * forceWorldZ - wheelWorldZ * forceWorldX;
         }
 
-        // Apply acceleration with smoothing
-        if (Math.abs(speedDiff) > 0.0001) {
-            this.speed += Math.sign(speedDiff) * Math.min(Math.abs(speedDiff), accelRate * dt);
+        // --- AERODYNAMIC DRAG ---
+        const airDensity = 1.225;
+        const dragForce = 0.5 * airDensity * this.dragCoefficient * this.frontalArea * speed * speed;
+        if (speed > 0.1) {
+            totalForceX -= dragForce * (this.velocity.x / speed);
+            totalForceZ -= dragForce * (this.velocity.z / speed);
         }
 
-        // Clamp speed
-        this.speed = Math.max(-this.maxSpeed * 0.3, Math.min(this.speed, this.maxSpeed));
-
-        // --- STEERING WITH INERTIA ---
-        const speedFactor = Math.min(Math.abs(this.speed) / this.maxSpeed, 1);
-        const steerInput = (input.keys.left ? -1 : 0) + (input.keys.right ? 1 : 0);
-
-        // Steering is less responsive at high speed
-        const steerResponse = 1 - speedFactor * 0.4;
-        const targetSteer = steerInput * 0.4 * steerResponse;
-
-        // Smooth steering transition
-        this.steerAngle += (targetSteer - this.steerAngle) * (1 - Math.pow(0.05, dt));
-
-        // Apply steering to lane offset with grip consideration
-        const lateralForce = this.steerAngle * this.steeringSpeed * speedFactor;
-        this.laneOffset += lateralForce * dt;
-
-        // --- BODY PHYSICS ---
-        // Body roll (lean into turns)
-        const targetRoll = -this.steerAngle * speedFactor * this.bodyRollFactor * 15;
-        this.bodyRoll += (targetRoll - this.bodyRoll) * (1 - Math.pow(0.1, dt));
-
-        // Body pitch (nose down on accel, up on brake)
-        let targetPitch = 0;
-        if (input.keys.up && this.speed > 0) {
-            targetPitch = -this.bodyPitchFactor * (this.speed / this.maxSpeed);
-        } else if (input.keys.down && this.speed > 0.01) {
-            targetPitch = this.bodyPitchFactor * 1.5;
-        }
-        this.bodyPitch += (targetPitch - this.bodyPitch) * (1 - Math.pow(0.15, dt));
-
-        // --- ROAD BOUNDARIES ---
-        // Soft boundary at road edge
-        const edgeDistance = Math.abs(this.laneOffset) - this.maxLaneOffset * 0.9;
-        if (edgeDistance > 0) {
-            // Progressive resistance at edge
-            const pushBack = edgeDistance * 0.5 * Math.sign(this.laneOffset);
-            this.laneOffset -= pushBack * dt * 10;
-            this.speed *= (1 - edgeDistance * 0.1);
+        // --- ROLLING RESISTANCE ---
+        const rollingResistance = 0.012 * this.mass * gravity;
+        if (speed > 0.1) {
+            totalForceX -= rollingResistance * (this.velocity.x / speed);
+            totalForceZ -= rollingResistance * (this.velocity.z / speed);
         }
 
-        // Hard clamp
-        this.laneOffset = Math.max(-this.maxLaneOffset, Math.min(this.maxLaneOffset, this.laneOffset));
+        // --- LOW SPEED DAMPING (prevents jitter) ---
+        if (speed < 0.5 && this.throttle === 0) {
+            this.velocity.x *= 0.95;
+            this.velocity.z *= 0.95;
+            this.angularVelocity.yaw *= 0.9;
+        }
 
-        // --- TRACK PROGRESS ---
-        this.trackProgress += this.speed * dt;
-        if (this.trackProgress >= 1) this.trackProgress -= 1;
-        if (this.trackProgress < 0) this.trackProgress += 1;
+        // --- APPLY FORCES ---
+        this.velocity.x += (totalForceX / this.mass) * dt;
+        this.velocity.z += (totalForceZ / this.mass) * dt;
+
+        // --- YAW DYNAMICS ---
+        // Moment of inertia for yaw rotation
+        const yawInertia = this.mass * (this.wheelBase * this.wheelBase + this.trackWidth * this.trackWidth) / 12;
+        this.angularVelocity.yaw += (yawTorque / yawInertia) * dt;
+
+        // Yaw damping (simulates tire scrub and mechanical friction)
+        this.angularVelocity.yaw *= 0.985;
+
+        // --- UPDATE POSITION ---
+        this.position.x += this.velocity.x * dt;
+        this.position.z += this.velocity.z * dt;
+        this.rotation.yaw += this.angularVelocity.yaw * dt;
+
+        // --- VERTICAL PHYSICS (SUSPENSION) ---
+        this.updateSuspension(dt);
+
+        // --- BODY ROLL/PITCH ---
+        // Roll from suspension difference (left vs right)
+        const leftSuspAvg = (this.suspensionOffset[0] + this.suspensionOffset[2]) / 2;
+        const rightSuspAvg = (this.suspensionOffset[1] + this.suspensionOffset[3]) / 2;
+        const rollFromSusp = (leftSuspAvg - rightSuspAvg) * 0.8;
+
+        // Pitch from suspension difference (front vs rear)
+        const frontSuspAvg = (this.suspensionOffset[0] + this.suspensionOffset[1]) / 2;
+        const rearSuspAvg = (this.suspensionOffset[2] + this.suspensionOffset[3]) / 2;
+        const pitchFromSusp = (frontSuspAvg - rearSuspAvg) * 0.5;
+
+        // Add acceleration-based body movement
+        const targetRoll = rollFromSusp - lateralAccel * 0.012;
+        const targetPitch = pitchFromSusp + longAccel * 0.006;
+
+        // Smooth body movement
+        this.rotation.roll += (targetRoll - this.rotation.roll) * Math.min(1, 12 * dt);
+        this.rotation.pitch += (targetPitch - this.rotation.pitch) * Math.min(1, 12 * dt);
+
+        // Clamp body angles
+        this.rotation.roll = Math.max(-0.15, Math.min(0.15, this.rotation.roll));
+        this.rotation.pitch = Math.max(-0.1, Math.min(0.1, this.rotation.pitch));
+
+        // --- UPDATE TRACK PROGRESS ---
+        this.updateTrackProgress();
+
+        // --- CHECK FOR FALL BELOW GROUND - RESET ---
+        if (this.position.y < Environment.groundY - 5) {
+            this.reset();
+            return;
+        }
 
         // --- UPDATE VISUALS ---
         this.updateMeshPosition(dt);
-        this.updateWheels(dt);
+        this.updateWheels(dt, speed);
         this.updateBrakeLights();
     },
 
-    updateMeshPosition(dt) {
-        // Sample road at front and rear axle positions for accurate ground following
-        const wheelBase = 3.0; // Distance between front and rear axles
-        const trackProgressPerUnit = 1 / Track.trackLength;
-        const frontOffset = wheelBase * 0.5 * trackProgressPerUnit * 50;
-        const rearOffset = -wheelBase * 0.5 * trackProgressPerUnit * 50;
+    updateTerrainContact() {
+        // Ground is now a flat plane from Environment
+        this.groundHeight = Environment.groundY;
+        this.terrainNormal = { x: 0, y: 1, z: 0 };
 
-        // Get road surface at front, center, and rear
-        const frontSurface = Track.getRoadSurface(this.trackProgress + frontOffset, this.laneOffset);
-        const centerSurface = Track.getRoadSurface(this.trackProgress, this.laneOffset);
-        const rearSurface = Track.getRoadSurface(this.trackProgress + rearOffset, this.laneOffset);
+        // Check if car is on track or off-road
+        const halfTrackWidth = Track.trackWidth / 2;
 
-        // Car position is at center
-        this.mesh.position.copy(centerSurface.position);
-        this.mesh.position.y += 0.32; // Wheel radius offset
+        // Find closest point on track
+        let closestT = 0;
+        let closestDist = Infinity;
 
-        // Calculate pitch from front/rear height difference
-        const heightDiff = frontSurface.position.y - rearSurface.position.y;
-        const calculatedPitch = Math.atan2(heightDiff, wheelBase);
+        for (let t = 0; t < 1; t += 0.01) {
+            const trackPoint = Track.getPointAt(t);
+            const dx = this.position.x - trackPoint.x;
+            const dz = this.position.z - trackPoint.z;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestT = t;
+            }
+        }
 
-        // Orient car along track direction
-        const lookTarget = centerSurface.position.clone().add(centerSurface.tangent.clone().multiplyScalar(5));
-        lookTarget.y = this.mesh.position.y;
-        this.mesh.lookAt(lookTarget);
+        // Refine search
+        for (let t = closestT - 0.01; t <= closestT + 0.01; t += 0.001) {
+            const trackPoint = Track.getPointAt(t);
+            const dx = this.position.x - trackPoint.x;
+            const dz = this.position.z - trackPoint.z;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestT = t;
+            }
+        }
 
-        // Apply road banking (roll from banked road surface)
-        this.mesh.rotation.z = centerSurface.banking * 0.8;
+        // Determine if on track (within track width)
+        this.isOnTrack = closestDist < halfTrackWidth;
 
-        // Apply calculated pitch (from actual road slope)
-        this.mesh.rotation.x = -calculatedPitch;
+        // Calculate lane offset for track progress
+        const trackPoint = Track.getPointAt(closestT);
+        const tangent = Track.getTangentAt(closestT);
+        const right = { x: tangent.z, z: -tangent.x };
+        const toCarX = this.position.x - trackPoint.x;
+        const toCarZ = this.position.z - trackPoint.z;
+        this.laneOffset = toCarX * right.x + toCarZ * right.z;
 
-        // Apply additional body roll and pitch FROM DRIVING dynamics
-        this.chassisGroup.rotation.z = this.bodyRoll;
-        this.chassisGroup.rotation.x = this.bodyPitch;
+        this.trackProgress = closestT;
+    },
 
-        // Subtle vibration at speed
-        if (this.speed > 0.01) {
-            const vibration = (Math.random() - 0.5) * 0.002 * (this.speed / this.maxSpeed);
-            this.chassisGroup.position.y = vibration;
+    updateSuspension(dt) {
+        const wheelRadius = 0.35;
+        const gravity = 9.81;
+        const groundY = this.groundHeight;
+
+        // Target ride height
+        const rideHeight = wheelRadius + 0.25;
+
+        for (let i = 0; i < 4; i++) {
+            const wheelPos = this.wheelPositions[i];
+
+            // Body height at wheel position (accounting for roll/pitch)
+            const rollOffset = wheelPos.x * Math.sin(this.rotation.roll);
+            const pitchOffset = wheelPos.z * Math.sin(this.rotation.pitch);
+            const bodyHeightAtWheel = this.position.y + rollOffset + pitchOffset;
+
+            // Desired wheel contact point
+            const wheelContactY = groundY;
+
+            // Current suspension compression
+            const currentLength = bodyHeightAtWheel - wheelContactY;
+            const restLength = rideHeight;
+            const compression = restLength - currentLength;
+
+            // Spring force (progressive spring rate)
+            const normalizedComp = compression / this.suspensionTravel;
+            const progressiveFactor = 1 + Math.abs(normalizedComp) * 0.5;
+            const springForce = compression * this.suspensionStiffness * progressiveFactor;
+
+            // Damping force (higher compression damping)
+            const dampingMultiplier = this.suspensionVelocity[i] > 0 ? 1.2 : 1.0;
+            const dampingForce = -this.suspensionVelocity[i] * this.suspensionDamping * dampingMultiplier;
+
+            // Anti-roll bar effect (reduces body roll)
+            const isLeft = i % 2 === 0;
+            const pairIndex = isLeft ? i + 1 : i - 1;
+            const rollDiff = this.suspensionOffset[i] - this.suspensionOffset[pairIndex];
+            const antiRollForce = -rollDiff * this.antiRollStiffness;
+
+            // Total force on this corner
+            const totalForce = springForce + dampingForce + antiRollForce;
+
+            // Update suspension velocity and position
+            const cornerMass = this.mass / 4;
+            const suspAccel = totalForce / cornerMass;
+            this.suspensionVelocity[i] += suspAccel * dt;
+            this.suspensionVelocity[i] *= 0.98;  // Damping
+            this.suspensionOffset[i] += this.suspensionVelocity[i] * dt;
+
+            // Clamp suspension travel
+            this.suspensionOffset[i] = Math.max(-this.suspensionTravel, Math.min(this.suspensionTravel, this.suspensionOffset[i]));
+        }
+
+        // Keep car at proper ride height
+        const avgSuspension = (this.suspensionOffset[0] + this.suspensionOffset[1] +
+                               this.suspensionOffset[2] + this.suspensionOffset[3]) / 4;
+        const targetHeight = groundY + rideHeight - avgSuspension * 0.3;
+
+        // Smoothly adjust height
+        const heightError = targetHeight - this.position.y;
+        this.position.y += heightError * Math.min(1, 15 * dt);
+
+        // Hard floor constraint
+        const minHeight = groundY + wheelRadius + 0.05;
+        if (this.position.y < minHeight) {
+            this.position.y = minHeight;
+            if (this.velocity.y < 0) {
+                this.velocity.y = 0;
+            }
         }
     },
 
-    updateWheels(dt) {
-        // Rotate wheels based on speed
-        const wheelRotationSpeed = this.speed * 80;
-        this.wheelRotation += wheelRotationSpeed * dt;
+    updateTrackProgress() {
+        // Track progress is updated in updateTerrainContact
+        // Wrap around
+        if (this.trackProgress >= 1) this.trackProgress -= 1;
+        if (this.trackProgress < 0) this.trackProgress += 1;
+    },
+
+    updateMeshPosition(dt) {
+        // Set mesh position directly from physics state
+        this.mesh.position.set(this.position.x, this.position.y, this.position.z);
+
+        // Set rotation from physics state (yaw, pitch, roll)
+        this.mesh.rotation.order = 'YXZ';
+        this.mesh.rotation.y = this.rotation.yaw;
+        this.mesh.rotation.x = -this.rotation.pitch;
+        this.mesh.rotation.z = this.rotation.roll;
+
+        // Apply additional body dynamics to chassis group
+        const speed = Math.sqrt(this.velocity.x ** 2 + this.velocity.z ** 2);
+
+        // Subtle vibration at speed
+        if (speed > 2) {
+            const vibrationIntensity = Math.min(speed / this.maxSpeed, 1) * 0.003;
+            const vibration = (Math.random() - 0.5) * vibrationIntensity;
+            this.chassisGroup.position.y = vibration;
+
+            // Off-road produces more vibration
+            if (!this.isOnTrack) {
+                this.chassisGroup.position.y += (Math.random() - 0.5) * 0.02;
+                this.chassisGroup.position.x = (Math.random() - 0.5) * 0.01;
+            }
+        } else {
+            this.chassisGroup.position.y = 0;
+        }
+    },
+
+    updateWheels(dt, speed) {
+        const wheelRadius = 0.35;
 
         this.wheelMeshes.forEach((wheel, i) => {
-            // Wheel spin
-            wheel.children[0].rotation.x = this.wheelRotation;
-            wheel.children[1].rotation.x = this.wheelRotation;
-            wheel.children[2].rotation.x = this.wheelRotation;
+            // Update wheel rotation based on individual wheel angular velocity
+            this.wheelRotation = (this.wheelRotation || 0) + this.wheelAngularVel[i] * dt;
 
-            // Front wheel steering
+            // Wheel spin (rotate around the axle axis)
+            const rotation = this.wheelAngularVel[i] * dt;
+            wheel.children[0].rotation.x += rotation;
+            wheel.children[1].rotation.x += rotation;
+            wheel.children[2].rotation.x += rotation;
+
+            // Front wheel steering with Ackermann
             if (i < 2) {
-                wheel.rotation.y = this.steerAngle * 1.2;
+                const isLeft = i % 2 === 0;
+                const ackermann = isLeft ? 1.05 : 0.95;
+                wheel.rotation.y = this.steerAngle * ackermann;
             }
 
-            // Suspension compression
-            const baseY = 0.32;
-            const suspOffset = this.suspensionOffset[i];
-            wheel.position.y = baseY + suspOffset;
+            // Wheel position based on suspension
+            const baseY = wheelRadius;
+            wheel.position.y = baseY - this.suspensionOffset[i] * 0.3;
 
-            // Simple suspension simulation based on body movement
-            const targetOffset = -this.bodyPitch * (i < 2 ? 1 : -1) * 0.1
-                               - this.bodyRoll * (i % 2 === 0 ? 1 : -1) * 0.05;
-            this.suspensionOffset[i] += (targetOffset - suspOffset) * this.suspensionStiffness;
-            this.suspensionOffset[i] *= this.suspensionDamping;
+            // Wheel positions
+            const wheelPos = this.wheelPositions[i];
+            wheel.position.x = wheelPos.x;
+            wheel.position.z = wheelPos.z;
         });
     },
 
@@ -414,11 +723,22 @@ const Car3D = {
     },
 
     getSpeedMPH() {
-        return Math.round(Math.abs(this.speed) * 1875);
+        const speed = Math.sqrt(this.velocity.x ** 2 + this.velocity.z ** 2);
+        // Convert m/s to MPH (1 m/s = 2.237 mph)
+        return Math.round(speed * 2.237);
+    },
+
+    getSpeed() {
+        return Math.sqrt(this.velocity.x ** 2 + this.velocity.z ** 2);
     },
 
     getPosition() {
         return this.mesh.position.clone();
+    },
+
+    // Check if car is off the track (for UI feedback)
+    isOffTrack() {
+        return !this.isOnTrack;
     }
 };
 
