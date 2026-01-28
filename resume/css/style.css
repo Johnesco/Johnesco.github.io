@@ -81,7 +81,11 @@ strong {
     display: grid;
     grid-template-columns: 1fr;
     gap: 0.5rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.resume-name {
+    margin-bottom: 0.25rem;
 }
 
 @media (min-width: 768px) {
@@ -95,6 +99,7 @@ strong {
     color: var(--secondary-color);
     font-size: 1.2rem;
     font-weight: 500;
+    margin-top: 0.25rem;
 }
 
 .contact-info {
@@ -111,7 +116,8 @@ strong {
 
 /* Professional Summary */
 .summary-section {
-    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.75rem;
 }
 
 .professional-summary {
@@ -282,29 +288,34 @@ strong {
 }
 
 .earlier-job-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.5rem;
+}
+
+@media (max-width: 500px) {
+    .earlier-job-header {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.1rem;
+    }
 }
 
 .earlier-expand-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.2rem;
-    height: 1.2rem;
-    font-size: 0.9rem;
+    display: inline;
     font-weight: bold;
     color: var(--primary-color);
-    flex-shrink: 0;
+    margin-right: 0.25rem;
 }
 
-.earlier-company {
+.earlier-position {
     font-weight: 600;
     color: var(--accent-color);
 }
 
-.earlier-position {
+.earlier-company {
     font-style: italic;
 }
 
@@ -314,15 +325,20 @@ strong {
     margin-left: 0.5rem;
 }
 
-/* Hidden details by default */
+/* Hidden details by default - with slide animation */
 .earlier-job-details {
-    display: none;
-    padding: 0.5rem 0 0.25rem 1.5rem;
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 0 0 1.5rem;
     font-size: 0.9rem;
+    opacity: 0;
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
 }
 
 .earlier-job.expanded .earlier-job-details {
-    display: block;
+    max-height: 500px;
+    opacity: 1;
+    padding: 0.5rem 0 0.25rem 1.5rem;
 }
 
 .earlier-summary {
@@ -359,12 +375,18 @@ strong {
 
 .school-title {
     font-weight: bold;
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.1rem;
 }
 
 .institution dd {
     margin-left: 1rem;
     color: #555;
+}
+
+.school-dates {
+    white-space: nowrap;
+    color: var(--light-accent);
+    font-size: 0.9rem;
 }
 
 /* Downloads */

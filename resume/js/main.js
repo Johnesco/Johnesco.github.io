@@ -159,9 +159,8 @@ function renderEarlierExperience(jobs) {
         return `
             <div class="earlier-job" onclick="toggleEarlierJob(this)">
                 <div class="earlier-job-header">
-                    <span class="earlier-expand-icon">+</span>
-                    <span class="earlier-company">${job.name}</span> |
-                    <span class="earlier-position">${job.position}</span>
+                    <span class="earlier-position"><span class="earlier-expand-icon">+</span> ${job.position}</span>
+                    <span class="earlier-company">${job.name}</span>
                     <span class="earlier-dates">${dateRange}</span>
                 </div>
                 <div class="earlier-job-details">
@@ -265,12 +264,14 @@ function renderEducation(education) {
     return education.map(school => {
         const startDate = school.startDate || '';
         const endDate = school.endDate || '';
+        const dateRange = startDate || endDate ? `<span class="school-dates">${startDate} - ${endDate}</span>` : '';
 
         return `
             <div class="institution">
                 <dl>
-                    <dt class="school-title">${school.institution}: ${startDate} - ${endDate}</dt>
+                    <dt class="school-title">${school.institution}</dt>
                     <dd>${school.area}</dd>
+                    ${dateRange ? `<dd>${dateRange}</dd>` : ''}
                 </dl>
             </div>
         `;

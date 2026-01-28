@@ -6,19 +6,31 @@
     <title>John Escobedo - Plain Text Resume</title>
     <style>
         body {
-            font-family: monospace;
-            line-height: 1.4;
-            max-width: 800px;
+            font-family: "SF Mono", "Cascadia Code", "JetBrains Mono", "Fira Code", "Source Code Pro", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 15px;
+            line-height: 1.6;
+            max-width: 850px;
             margin: 2rem auto;
-            padding: 0 1rem;
+            padding: 0 1.5rem;
             white-space: pre-line;
+            color: #2d2d2d;
+            background-color: #fafafa;
         }
-        h1, h2 {
-            border-bottom: 1px solid #ccc;
+        h1 {
+            font-size: 1.5em;
+            border-bottom: 2px solid #333;
             padding-bottom: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #999;
+            padding-bottom: 0.3rem;
+            margin-top: 1.5rem;
+            color: #444;
         }
         .section {
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
         .job {
             margin-bottom: 1.5rem;
@@ -27,8 +39,20 @@
         .highlight {
             margin-left: 2rem;
         }
+        a {
+            color: #0066cc;
+        }
         @media print {
-            body { margin: 0; padding: 0; }
+            body {
+                font-size: 11px;
+                line-height: 1.3;
+                margin: 0;
+                padding: 0;
+                background-color: white;
+                color: black;
+            }
+            h1 { font-size: 14px; }
+            h2 { font-size: 12px; }
             .no-print { display: none; }
         }
     </style>
@@ -167,11 +191,12 @@
                 earlierJobs.forEach(job => {
                     const startYear = job.startDate ? job.startDate.split('-')[0] : '';
                     const endYear = job.endDate ? job.endDate.split('-')[0] : 'Present';
-                    const dateRange = startYear ? `(${startYear}-${endYear})` : '';
+                    const dateRange = startYear ? `${startYear}-${endYear}` : '';
                     const title = normalizeJobTitle(job.position);
-                    html += `${job.name} | ${title} ${dateRange}\n`;
+                    html += `${title}\n`;
+                    html += `${job.name}\n`;
+                    html += `${dateRange}\n\n`;
                 });
-                html += '\n';
             }
 
             // Education - simplified format
