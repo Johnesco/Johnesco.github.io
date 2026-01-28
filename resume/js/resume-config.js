@@ -24,9 +24,22 @@ const RESUME_CONFIG = {
     // If a years filter exceeds this, no date filtering is applied
     maxYearsThreshold: 50,
 
+    // Default profile to use when no ?profile= parameter is specified
+    // Set to null for no profile (shows all skills, no condensing)
+    defaultProfile: "qa-lead",
+
     // Role profiles for ATS optimization
-    // Activate via ?profile=qa-lead
+    // Activate via ?profile=qa-lead or ?profile=all
     profiles: {
+        "all": {
+            // Shows all skills in pill/tag format, no condensing, default summary/label
+            summaryKey: "default",
+            labelKey: "default",
+            prioritySkills: null,
+            earlierExperienceYears: null,
+            skillsFormat: "tags",
+            excludeTags: ["performer"]
+        },
         "qa-lead": {
             summaryKey: "qa-lead",
             labelKey: "qa-lead",

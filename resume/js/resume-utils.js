@@ -21,12 +21,15 @@ function getQueryParams() {
 
 /**
  * Get the active profile configuration based on URL parameter
+ * Falls back to RESUME_CONFIG.defaultProfile if no profile param specified
  * @returns {Object|null} Profile config object or null if no profile active
  */
 function getActiveProfile() {
     const params = getQueryParams();
-    if (!params.profile) return null;
-    return RESUME_CONFIG.profiles?.[params.profile] || null;
+    // Use URL param if provided, otherwise fall back to default profile
+    const profileName = params.profile ?? RESUME_CONFIG.defaultProfile;
+    if (!profileName) return null;
+    return RESUME_CONFIG.profiles?.[profileName] || null;
 }
 
 /**
