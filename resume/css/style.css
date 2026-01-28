@@ -272,7 +272,7 @@ strong {
 }
 
 .earlier-job {
-    padding: 0.4rem 0;
+    padding: 0.4rem 0 0.4rem 1.25rem;
     border-bottom: 1px solid var(--border-color);
     font-size: 0.95rem;
     cursor: pointer;
@@ -296,18 +296,23 @@ strong {
 
 @media (max-width: 500px) {
     .earlier-job-header {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.1rem;
+        display: block;
+    }
+
+    .earlier-position,
+    .earlier-company,
+    .earlier-dates {
+        display: block;
     }
 }
 
 .earlier-expand-icon {
-    display: inline;
+    display: inline-block;
+    width: 1.25rem;
+    margin-left: -1.25rem;
     font-weight: bold;
     color: var(--primary-color);
-    margin-right: 0.25rem;
+    text-align: center;
 }
 
 .earlier-position {
@@ -322,14 +327,13 @@ strong {
 .earlier-dates {
     color: var(--light-accent);
     font-size: 0.9rem;
-    margin-left: 0.5rem;
 }
 
 /* Hidden details by default - with slide animation */
 .earlier-job-details {
     max-height: 0;
     overflow: hidden;
-    padding: 0 0 0 1.5rem;
+    padding: 0;
     font-size: 0.9rem;
     opacity: 0;
     transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
@@ -338,7 +342,7 @@ strong {
 .earlier-job.expanded .earlier-job-details {
     max-height: 500px;
     opacity: 1;
-    padding: 0.5rem 0 0.25rem 1.5rem;
+    padding: 0.5rem 0 0.25rem 0;
 }
 
 .earlier-summary {
