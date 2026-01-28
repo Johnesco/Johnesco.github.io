@@ -50,9 +50,9 @@ h1, h2, h3, h4 {
 }
 
 h1 {
-    font-size: 2.2rem;
+    font-size: 2rem;
     color: var(--primary-color);
-    margin-bottom: var(--spacing-xs);
+    margin-bottom: 0.1rem;
 }
 
 h2 {
@@ -64,11 +64,11 @@ h2 {
 }
 
 h3 {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
 }
 
 h4 {
-    font-size: 1rem;
+    font-size: 0.95rem;
 }
 
 strong {
@@ -155,8 +155,8 @@ strong {
 .skill-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
-    margin-top: 0.4rem;
+    gap: 0.25rem;
+    margin-top: 0.2rem;
 }
 
 /* Individual keyword pill */
@@ -164,7 +164,7 @@ strong {
     display: inline-block;
     background: #f0f4f8;
     border: 1px solid #d0d7de;
-    padding: 0.2rem 0.6rem;
+    padding: 0.1rem 0.5rem;
     border-radius: 12px;
     font-size: 0.85rem;
 }
@@ -212,13 +212,13 @@ strong {
 .job-position {
     color: var(--accent-color);
     margin: 0;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
 }
 
 .job-company {
     display: block;
-    font-size: 1.05rem;
-    margin-top: 0.2rem;
+    font-size: 0.95rem;
+    margin-top: 0.1rem;
 }
 
 .job-company a {
@@ -233,9 +233,9 @@ strong {
 .job-date {
     color: var(--light-accent);
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     display: block;
-    margin-top: 0.2rem;
+    margin-top: 0.1rem;
 }
 
 .job-summary {

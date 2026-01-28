@@ -75,7 +75,7 @@ var resumeJSON = {
         {
             name: "GeekSI",
             location: "Tallahassee, FL",
-            position: "Senior QA Test Lead | QA Analyst",
+            position: "Senior QA Test Lead | Quality Assurance Tester | Scrum Master",
             website: "https://www.geeksi.tech/",
             startDate: "2019-03-01",
             endDate: "2025-06-30",
@@ -110,7 +110,7 @@ var resumeJSON = {
         {
             name: "EverlyWell",
             location: "Austin, TX",
-            position: "Senior QA Engineer",
+            position: "Senior QA Engineer | Quality Assurance Tester",
             website: "https://www.everlywell.com/",
             startDate: "2018-06-05",
             endDate: "2018-10-01",
@@ -180,7 +180,7 @@ var resumeJSON = {
         },
         {
             name: "DocbookMD",
-            position: "Lead QA Tester",
+            position: "Lead QA Tester | Quality Assurance Tester",
             location: "Austin, TX",
             website: "https://www.docbookmd.com",
             startDate: "2012-07-16",
