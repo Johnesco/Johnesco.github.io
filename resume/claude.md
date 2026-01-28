@@ -51,6 +51,12 @@ Jobs in the "Additional Experience" section are displayed as condensed one-liner
 - Expand icon (`+`/`−`) indicates interactive state
 - Print view keeps jobs condensed (no expand functionality)
 
+### Dynamic Page Title
+The browser tab title (`<title>`) is set dynamically based on the active profile:
+- Format: `Name - Label` (e.g., "John Escobedo - QA Lead")
+- Plain text page adds "(Plain Text)" suffix
+- Label comes from `labelVariants` in resumeJSON based on profile's `labelKey`
+
 ### Job Header Order (ATS-Standard)
 Each job entry displays in this order for optimal ATS parsing:
 1. **Job Title** (most prominent, as `<h3>`)
