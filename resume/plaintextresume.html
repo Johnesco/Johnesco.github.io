@@ -122,7 +122,7 @@
             // Work Experience - ATS-optimized format
             // Clear structure: TITLE on line 1, COMPANY on line 2, LOCATION on line 3, DATES on line 4
             // This prevents field transposition issues
-            html += 'WORK EXPERIENCE\n---\n\n';
+            html += 'PROFESSIONAL EXPERIENCE\n---\n\n';
             recentJobs.forEach(job => {
                 const startDate = formatDateATS(job.startDate);
                 const endDate = formatDateATS(job.endDate);
@@ -157,9 +157,9 @@
                 html += '\n';
             });
 
-            // Earlier Experience (condensed) - only when profile is active and has earlier jobs
+            // Additional Experience (condensed) - only when profile is active and has earlier jobs
             if (earlierJobs && earlierJobs.length > 0) {
-                html += 'EARLIER EXPERIENCE\n---\n\n';
+                html += 'ADDITIONAL EXPERIENCE\n---\n\n';
                 earlierJobs.forEach(job => {
                     const startYear = job.startDate ? job.startDate.split('-')[0] : '';
                     const endYear = job.endDate ? job.endDate.split('-')[0] : 'Present';

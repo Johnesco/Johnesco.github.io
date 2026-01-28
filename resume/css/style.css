@@ -239,7 +239,7 @@ strong {
 }
 
 .job-summary {
-    background-color: none;
+    background-color: transparent;
     padding: 0.25rem 0;
     border-radius: 4px;
     font-size: 0.95rem;

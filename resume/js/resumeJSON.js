@@ -157,7 +157,7 @@ var resumeJSON = {
                 "Engineered custom JavaScript tools to validate site-wide analytics implementation and data integrity, ensuring business requirements were accurately captured.",
                 "Developed and standardized documentation and data suites to guarantee consistency across all environments.",
                 "Responded to live production issues under pressure, triaging problems and communicating status updates to stakeholders during critical outages.",
-                "Partnered with developers to enhance internal tooling, contributing improvements that increased team efficiency."
+                "Partnered with developers to enhance internal tooling, ensure a CI/CD workflow, and contribute improvements that increased team efficiency."
             ],
             tags: ["default", "qa-lead"]
         },

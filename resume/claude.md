@@ -38,6 +38,19 @@ Common functions live in `js/resume-utils.js`:
 
 ## Key Conventions
 
+### Section Headers (ATS-Standard)
+The styled resume uses standard section headers for ATS compatibility:
+- **Skills** - Skill categories with keyword tags
+- **Professional Experience** - Recent work history with full details
+- **Additional Experience** - Condensed older jobs (when profile active)
+- **Education** - Schools and training
+
+### Job Header Order (ATS-Standard)
+Each job entry displays in this order for optimal ATS parsing:
+1. **Job Title** (most prominent, as `<h3>`)
+2. **Company Name | Location**
+3. **Date Range**
+
 ### Resume Data Format
 The `resumeJSON` object follows a modified JSON Resume schema:
 - `basics` - Name, contact info, summary
@@ -125,10 +138,20 @@ geeksiresume.html
 2. Test filters with query params: `?years=5`, `?tags=healthcare`
 3. Check `plaintextresume.html` renders correctly
 4. Verify `customize.html` shows all tags and skills
+5. Use Print Preview (Ctrl+P) to verify ATS-friendly PDF output
+
+## Print/PDF Output (ATS-Optimized)
+
+The `@media print` styles in `css/style.css` optimize PDF output for ATS parsing:
+- **Single-column layout** - Forces all grids to single column for correct reading order
+- **Left-aligned content** - Contact info and dates align left, not right
+- **Skills as text** - Converts skill pills to comma-separated inline text
+- **Black text** - All colors forced to black for reliable extraction
+- **Compact spacing** - Tighter margins for efficient page use
 
 ## Notes
 
 - No build process - edit and refresh
 - Plain vanilla JavaScript (no framework) except `geeksiresume.html` which uses jQuery
 - CSS uses custom properties (variables) defined in `:root`
-- Print styles are included for PDF generation
+- Print styles are ATS-optimized for PDF generation

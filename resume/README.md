@@ -16,7 +16,7 @@ A dynamic, customizable resume website powered by vanilla JavaScript and JSON da
   - Work history timeline visualization
   - Bootstrap-styled alternative
 - **Shareable URLs** - Customized filters saved in URL parameters
-- **Print Optimized** - Clean PDF generation via browser print
+- **ATS-Optimized Print** - PDF output uses single-column layout, standard section headers, and left-aligned content for reliable ATS parsing
 
 ---
 
@@ -74,7 +74,7 @@ resume/
 │   └── app-geeksi.js       # Bootstrap version renderer
 ├── files/                  # PDF/DOCX downloads
 ├── README.md               # This file
-└── claude.md               # AI assistant instructions
+└── CLAUDE.md               # AI assistant instructions
 ```
 
 ---
@@ -134,4 +134,4 @@ All pages read from this single JSON file, so edits propagate automatically.
 
 ## AI Assistance
 
-See `claude.md` for instructions on how AI assistants (like Claude Code) should interact with this codebase.
+See `CLAUDE.md` for instructions on how AI assistants (like Claude Code) should interact with this codebase.

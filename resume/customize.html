@@ -492,7 +492,7 @@
                         <div class="value" id="infoSkillsFormat">Tags</div>
                     </div>
                     <div class="profile-info-item">
-                        <div class="label">Earlier Experience</div>
+                        <div class="label">Additional Experience</div>
                         <div class="value" id="infoEarlierExperience">None</div>
                     </div>
                 </div>
@@ -522,11 +522,11 @@
                 </div>
             </div>
 
-            <!-- Earlier Experience Override -->
+            <!-- Additional Experience Override -->
             <div class="override-group" id="earlierOverrideGroup">
                 <div class="override-header">
                     <input type="checkbox" id="earlierEnabled">
-                    <label for="earlierEnabled">Override Earlier Experience (Condensed)</label>
+                    <label for="earlierEnabled">Override Additional Experience (Condensed)</label>
                 </div>
                 <div class="override-content hidden" id="earlierContent">
                     <div class="slider-control">
@@ -1023,7 +1023,7 @@
             // Condensed jobs section
             if (condensed.length > 0) {
                 html += `<div class="preview-section-header condensed">
-                    <span>Earlier Experience (Condensed)</span>
+                    <span>Additional Experience (Condensed)</span>
                     <span class="badge">${condensed.length}</span>
                 </div>`;
                 html += condensed.map(job =>
