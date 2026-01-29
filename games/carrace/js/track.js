@@ -70,6 +70,9 @@ export function createTrack(scene, world) {
     // ── Guard rails (visual uses fine, physics uses own sampling) ────
     buildGuardRails(scene, world, trackCurve, smoothed);
 
+    // ── Start line visual ────────────────────────────────────────────
+    buildStartLine(scene, trackCurve);
+
     // ── Start transform ──────────────────────────────────────────────
     computeStartTransform(trackCurve);
 
@@ -394,4 +397,94 @@ function computeStartTransform(curve) {
     m.lookAt(new THREE.Vector3(), tangent, new THREE.Vector3(0, 1, 0));
     const q = new THREE.Quaternion().setFromRotationMatrix(m);
     startQuat = new CANNON.Quaternion(q.x, q.y, q.z, q.w);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Start-line visual — checkered pattern at t=0
+// ═══════════════════════════════════════════════════════════════════════
+
+function buildStartLine(scene, curve) {
+    const center  = curve.getPointAt(0);
+    const tangent = curve.getTangentAt(0).normalize();
+
+    // Checkered texture (8x2 grid)
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+    const cols = 8, rows = 2;
+    const cw = canvas.width / cols, ch = canvas.height / rows;
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            ctx.fillStyle = (r + c) % 2 === 0 ? '#ffffff' : '#111111';
+            ctx.fillRect(c * cw, r * ch, cw, ch);
+        }
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+
+    const geo = new THREE.PlaneGeometry(HALF_WIDTH * 2, 2);
+    const mat = new THREE.MeshPhongMaterial({
+        map: tex,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+
+    // Position on road surface
+    mesh.position.set(center.x, center.y + 0.05, center.z);
+
+    // Orient: plane normal = world up, long axis = right (perpendicular to tangent)
+    const m4 = new THREE.Matrix4();
+    const up = new THREE.Vector3(0, 1, 0);
+    const right = new THREE.Vector3().crossVectors(tangent, up).normalize();
+    const fwd = tangent.clone();
+    m4.makeBasis(right, up, fwd);
+    mesh.quaternion.setFromRotationMatrix(m4);
+    mesh.rotateX(-Math.PI / 2);
+
+    scene.add(mesh);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Grid positions — 2-wide starting grid at t=0
+// ═══════════════════════════════════════════════════════════════════════
+
+export function getTrackCurve() {
+    return trackCurve;
+}
+
+export function getGridPositions(count) {
+    if (!trackCurve) return [];
+
+    const center  = trackCurve.getPointAt(0);
+    const tangent = trackCurve.getTangentAt(0).normalize();
+    const up      = new THREE.Vector3(0, 1, 0);
+    const right   = new THREE.Vector3().crossVectors(tangent, up).normalize();
+
+    // Orientation quaternion (facing along tangent)
+    const m4 = new THREE.Matrix4();
+    m4.lookAt(new THREE.Vector3(), tangent, up);
+    const q3 = new THREE.Quaternion().setFromRotationMatrix(m4);
+    const quat = new CANNON.Quaternion(q3.x, q3.y, q3.z, q3.w);
+
+    const ROW_SPACING = 8;   // metres along -tangent (behind)
+    const COL_SPACING = 5;   // metres along right axis
+
+    const positions = [];
+    for (let i = 0; i < count; i++) {
+        const row = Math.floor(i / 2);
+        const col = (i % 2 === 0) ? -1 : 1; // left, right
+
+        const pos = new CANNON.Vec3(
+            center.x - tangent.x * row * ROW_SPACING + right.x * col * COL_SPACING * 0.5,
+            center.y + 2,
+            center.z - tangent.z * row * ROW_SPACING + right.z * col * COL_SPACING * 0.5,
+        );
+
+        positions.push({ position: pos, quaternion: quat });
+    }
+
+    return positions;
 }

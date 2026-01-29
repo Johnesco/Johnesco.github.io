@@ -5,8 +5,9 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { initInput, getInput } from './input.js';
 import { createEnvironment } from './environment.js';
-import { createCar, applyCarControls, syncCarVisuals, resetCar, getChassisBody, getSpeedMPH, setDrivingPreset } from './car3d.js';
-import { createTrack, getTrackStart } from './track.js';
+import { createCar, getChassisBody, getSpeedMPH, setDrivingPreset } from './car3d.js';
+import { createTrack } from './track.js';
+import { initRace, updateRace, syncAllRaceCars, restartRace, getRaceHUD } from './race.js';
 
 // ── Three.js setup ───────────────────────────────────────────────────
 const scene = new THREE.Scene();
@@ -39,12 +40,11 @@ world.defaultContactMaterial.friction = 0.3;
 // ── Build scene ──────────────────────────────────────────────────────
 const env = createEnvironment(scene, world);
 createTrack(scene, world);
-createCar(scene, world);
+const playerCar = createCar(scene, world);
 initInput();
 
-// Spawn car on track start
-const trackStart = getTrackStart();
-resetCar(trackStart.position, trackStart.quaternion);
+// ── Initialize race (positions all cars on grid) ─────────────────────
+initRace(playerCar, scene, world);
 
 // ── Chase camera state ───────────────────────────────────────────────
 const camPos = new THREE.Vector3(0, 5, -12);
@@ -59,6 +59,8 @@ const CAM_LOOK_SMOOTH = 0.10;
 // ── HUD elements ─────────────────────────────────────────────────────
 const speedEl = document.getElementById('speed');
 const debugEl = document.getElementById('debug');
+const raceInfoEl = document.getElementById('race-info');
+const overlayEl = document.getElementById('race-overlay');
 
 // ── Driving preset selector ─────────────────────────────────────────
 const presetSelect = document.getElementById('driving-preset');
@@ -76,21 +78,20 @@ function animate() {
     // Input
     const input = getInput();
 
-    // Reset
+    // Reset = restart race
     if (input.reset) {
-        const start = getTrackStart();
-        resetCar(start.position, start.quaternion);
-        input.reset = false; // consume
+        restartRace();
+        input.reset = false;
     }
 
-    // 1. Apply controls (steering / engine / brake)
-    applyCarControls(input);
+    // Race update handles controls + AI (BEFORE physics step)
+    updateRace(dt, input);
 
-    // 2. Physics step (fixed 1/60 s, up to 3 sub-steps)
+    // Physics step (fixed 1/60 s, up to 3 sub-steps)
     world.step(1 / 60, dt, 3);
 
-    // 3. Sync visuals from physics
-    syncCarVisuals();
+    // Sync ALL car visuals (player + AI) — AFTER physics step
+    syncAllRaceCars();
 
     // Camera
     updateCamera();
@@ -108,14 +109,7 @@ function animate() {
     }
 
     // HUD
-    speedEl.textContent = getSpeedMPH() + ' MPH';
-    if (chassis) {
-        const p = chassis.position;
-        const v = chassis.velocity;
-        debugEl.textContent =
-            `pos  ${p.x.toFixed(1)} ${p.y.toFixed(1)} ${p.z.toFixed(1)}\n` +
-            `vel  ${v.length().toFixed(1)} m/s`;
-    }
+    updateRaceHUD();
 
     renderer.render(scene, camera);
 }
@@ -163,6 +157,31 @@ function updateCamera() {
 
     camera.position.copy(camPos);
     camera.lookAt(camLookAt);
+}
+
+function updateRaceHUD() {
+    const hud = getRaceHUD();
+    speedEl.textContent = getSpeedMPH() + ' MPH';
+    raceInfoEl.textContent = `Lap ${Math.min(hud.playerLap + 1, hud.totalLaps)}/${hud.totalLaps} | P${hud.playerPosition}`;
+
+    if (hud.state === 0) { // COUNTDOWN
+        overlayEl.textContent = hud.countdown > 0 ? Math.ceil(hud.countdown) : 'GO!';
+        overlayEl.style.display = 'flex';
+    } else if (hud.state === 2) { // FINISHED
+        overlayEl.textContent = hud.playerPosition === 1 ? 'YOU WIN!' : `P${hud.playerPosition} — Race Over`;
+        overlayEl.style.display = 'flex';
+    } else {
+        overlayEl.style.display = 'none';
+    }
+
+    const chassis = getChassisBody();
+    if (chassis) {
+        const p = chassis.position;
+        const v = chassis.velocity;
+        debugEl.textContent =
+            `pos  ${p.x.toFixed(1)} ${p.y.toFixed(1)} ${p.z.toFixed(1)}\n` +
+            `vel  ${v.length().toFixed(1)} m/s`;
+    }
 }
 
 // Go
