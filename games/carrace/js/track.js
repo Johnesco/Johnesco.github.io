@@ -1,23 +1,28 @@
 // Track — ES module
-// Stadium-oval closed-loop track with banked turns, hills,
-// CANNON.Trimesh physics and procedural asphalt texture.
+// Diverse closed-loop circuit with banked turns, hills, guard rails,
+// CANNON.Trimesh road physics, CANNON.Box rail physics, procedural asphalt texture.
 
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 
 // ── Track constants ────────────────────────────────────────────────────
-const HALF_WIDTH    = 6;          // 12 m total road width
-const N_SAMPLES     = 400;        // cross-sections around the loop
+const HALF_WIDTH    = 9;          // 18 m total road width
+const N_SAMPLES     = 200;        // cross-sections around the loop (lower = smoother physics)
 const BANK_MAX_DEG  = 18;         // max banking angle in degrees
 const K_MAX         = 0.025;      // curvature at which banking saturates
-const SMOOTH_RADIUS = 3;          // triangle-kernel smoothing radius
+const SMOOTH_RADIUS = 8;          // triangle-kernel smoothing radius (wider = gentler transitions)
+
+// Guard rail constants
+const RAIL_HEIGHT    = 1.2;       // metres
+const RAIL_THICKNESS = 0.5;
+const RAIL_INTERVAL  = 2;         // physics box every Nth sample
 
 // ── Module state ───────────────────────────────────────────────────────
-let trackCurve   = null;   // THREE.CatmullRomCurve3
-let trackMesh    = null;   // THREE.Mesh
-let trackBody    = null;   // CANNON.Body (Trimesh)
-let startPos     = null;   // CANNON.Vec3
-let startQuat    = null;   // CANNON.Quaternion
+let trackCurve = null;
+let trackMesh  = null;
+let trackBody  = null;
+let startPos   = null;
+let startQuat  = null;
 
 // ═══════════════════════════════════════════════════════════════════════
 // Public API
@@ -31,19 +36,19 @@ export function createTrack(scene, world) {
 
     const { positions, uvs, indices, normals } = buildTrackGeometry(trackCurve, smoothed, N_SAMPLES);
 
-    // ── Physics trimesh ────────────────────────────────────────────────
+    // ── Road physics trimesh ─────────────────────────────────────────
     const trimesh = new CANNON.Trimesh(positions, indices);
     trackBody = new CANNON.Body({ mass: 0 });
     trackBody.addShape(trimesh);
     world.addBody(trackBody);
 
-    // ── Visual mesh ────────────────────────────────────────────────────
+    // ── Road visual mesh ─────────────────────────────────────────────
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geo.setAttribute('uv',       new THREE.BufferAttribute(uvs, 2));
     geo.setAttribute('normal',   new THREE.BufferAttribute(normals, 3));
     geo.setIndex(new THREE.BufferAttribute(indices, 1));
-    geo.computeVertexNormals();                       // override with smooth normals
+    geo.computeVertexNormals();
 
     const mat = new THREE.MeshPhongMaterial({
         map: createTrackTexture(),
@@ -54,7 +59,10 @@ export function createTrack(scene, world) {
     trackMesh.receiveShadow = true;
     scene.add(trackMesh);
 
-    // ── Compute start transform ────────────────────────────────────────
+    // ── Guard rails ──────────────────────────────────────────────────
+    buildGuardRails(scene, world, trackCurve, smoothed);
+
+    // ── Start transform ──────────────────────────────────────────────
     computeStartTransform(trackCurve);
 
     return { mesh: trackMesh, body: trackBody, curve: trackCurve };
@@ -65,61 +73,57 @@ export function getTrackStart() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// Internal helpers
+// Track path — diverse circuit
 // ═══════════════════════════════════════════════════════════════════════
 
-// ── Track path (stadium oval with hills) ───────────────────────────────
 function buildCurve() {
-    // Stadium oval: two straights + two semicircles
-    // Bottom straight along +X, top straight along -X
-    // Semicircles at ±X ends
-    const R = 65;           // semicircle radius
-    const L = 120;          // half-length of each straight (total straight ≈ 240 m)
-
-    // Control points traced counter-clockwise when viewed from above
     const pts = [
-        // Bottom straight (Z = -R) — gentle hill peaking at Y≈3
-        new THREE.Vector3(-L,   0.5, -R),
-        new THREE.Vector3(-L/2, 2.0, -R),
-        new THREE.Vector3( 0,   3.0, -R),     // gentle hill peak
-        new THREE.Vector3( L/2, 2.0, -R),
-        new THREE.Vector3( L,   0.5, -R),
+        // ── Main straight (heading +X, Z ≈ -80, Y = 4) ──────────────
+        new THREE.Vector3(-130, 4, -80),     // 0  start / finish
+        new THREE.Vector3( -40, 4, -80),     // 1
+        new THREE.Vector3(  50, 4, -80),     // 2
+        new THREE.Vector3(  95, 4, -80),     // 3  end of straight
 
-        // Right semicircle (center at X=L, Z=0)
-        new THREE.Vector3( L + R * 0.7,  0.5, -R * 0.7),
-        new THREE.Vector3( L + R,        0.5,  0),
-        new THREE.Vector3( L + R * 0.7,  0.5,  R * 0.7),
+        // ── Sweeping right turn (slight climb) ───────────────────────
+        new THREE.Vector3( 130, 4,  -55),    // 4
+        new THREE.Vector3( 150, 5,   -5),    // 5  apex
+        new THREE.Vector3( 130, 6,   35),    // 6  exit, climbing
 
-        // Top straight (Z = +R) — big hill peaking at Y≈10 for jumps
-        new THREE.Vector3( L,   0.5,  R),
-        new THREE.Vector3( L/2, 5.0,  R),
-        new THREE.Vector3( 0,  10.0,  R),     // big hill peak
-        new THREE.Vector3(-L/2, 5.0,  R),
-        new THREE.Vector3(-L,   0.5,  R),
+        // ── Uphill left curve ────────────────────────────────────────
+        new THREE.Vector3(  95, 9,   60),    // 7
+        new THREE.Vector3(  50, 13,  78),    // 8
 
-        // Left semicircle (center at X=-L, Z=0)
-        new THREE.Vector3(-L - R * 0.7,  0.5,  R * 0.7),
-        new THREE.Vector3(-L - R,        0.5,  0),
-        new THREE.Vector3(-L - R * 0.7,  0.5, -R * 0.7),
+        // ── Hilltop crest — jump zone ────────────────────────────────
+        new THREE.Vector3(   0, 16,  85),    // 9  peak
+        new THREE.Vector3( -55, 13,  75),    // 10
+
+        // ── Downhill chicane (S-curve) ───────────────────────────────
+        new THREE.Vector3( -90,  9,  50),    // 11
+        new THREE.Vector3(-110,  7,  25),    // 12
+        new THREE.Vector3(-100,  5,   0),    // 13
+
+        // ── Hairpin left ─────────────────────────────────────────────
+        new THREE.Vector3(-120,  4, -25),    // 14
+        new THREE.Vector3(-155,  4, -45),    // 15  apex
+        new THREE.Vector3(-155,  4, -65),    // 16  exit → loops to 0
     ];
 
     return new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.5);
 }
 
-// ── Stable Frenet-like frame ───────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// Frame / curvature / banking helpers
+// ═══════════════════════════════════════════════════════════════════════
+
 function getFrame(curve, t) {
     const T = curve.getTangentAt(t).normalize();
     const worldUp = new THREE.Vector3(0, 1, 0);
     const R = new THREE.Vector3().crossVectors(T, worldUp).normalize();
-    // If tangent is near-vertical, fallback
-    if (R.lengthSq() < 0.001) {
-        R.set(1, 0, 0);
-    }
+    if (R.lengthSq() < 0.001) R.set(1, 0, 0);
     const U = new THREE.Vector3().crossVectors(R, T).normalize();
     return { T, R, U };
 }
 
-// ── Signed curvature in XZ plane ───────────────────────────────────────
 function getCurvature(curve, t) {
     const dt = 0.005;
     const t0 = ((t - dt) % 1 + 1) % 1;
@@ -127,41 +131,32 @@ function getCurvature(curve, t) {
     const T0 = curve.getTangentAt(t0);
     const T1 = curve.getTangentAt(t1);
 
-    // Angle change in XZ
     const a0 = Math.atan2(T0.x, T0.z);
     const a1 = Math.atan2(T1.x, T1.z);
     let da = a1 - a0;
-    // Wrap to [-PI, PI]
     if (da >  Math.PI) da -= 2 * Math.PI;
     if (da < -Math.PI) da += 2 * Math.PI;
 
-    // Arc-length between the two samples
     const arcLen = curve.getLength() * 2 * dt;
-    return da / arcLen;   // signed curvature (positive = left turn)
+    return da / arcLen;
 }
 
-// ── Banking angle from curvature ───────────────────────────────────────
 function bankingAngle(curvature) {
     const absK = Math.abs(curvature);
     const ratio = Math.min(absK / K_MAX, 1);
-    // Smoothstep
     const ss = ratio * ratio * (3 - 2 * ratio);
     const angle = ss * (BANK_MAX_DEG * Math.PI / 180);
-    // Sign: positive curvature (left turn) → tilt right edge up → negative angle
     return -Math.sign(curvature) * angle;
 }
 
-// ── Compute banking for all samples ────────────────────────────────────
 function computeBankingArray(curve, n) {
     const arr = new Float32Array(n);
     for (let i = 0; i < n; i++) {
-        const t = i / n;
-        arr[i] = bankingAngle(getCurvature(curve, t));
+        arr[i] = bankingAngle(getCurvature(curve, i / n));
     }
     return arr;
 }
 
-// ── Triangle-kernel smoothing ──────────────────────────────────────────
 function smoothArray(arr, radius) {
     const n = arr.length;
     const out = new Float32Array(n);
@@ -178,90 +173,68 @@ function smoothArray(arr, radius) {
     return out;
 }
 
-// ── Apply banking rotation to right/up vectors ─────────────────────────
 function applyBanking(T, R, U, angle) {
-    // Rotate R and U around T by `angle`
     const quat = new THREE.Quaternion().setFromAxisAngle(T, angle);
-    const bR = R.clone().applyQuaternion(quat);
-    const bU = U.clone().applyQuaternion(quat);
-    return { R: bR, U: bU };
+    return {
+        R: R.clone().applyQuaternion(quat),
+        U: U.clone().applyQuaternion(quat),
+    };
 }
 
-// ── Build track geometry arrays ────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// Road surface geometry
+// ═══════════════════════════════════════════════════════════════════════
+
 function buildTrackGeometry(curve, bankAngles, n) {
-    // n samples + 1 seam sample (at t=1 = t=0 for UV continuity)
     const vCount = (n + 1) * 2;
     const positions = new Float32Array(vCount * 3);
     const uvs       = new Float32Array(vCount * 2);
     const normals   = new Float32Array(vCount * 3);
 
-    const totalLen = curve.getLength();
-    const lengths  = curve.getLengths(n);   // n+1 entries (0 .. totalLen)
+    const lengths = curve.getLengths(n);
 
     for (let i = 0; i <= n; i++) {
-        const t = (i % n) / n;             // wraps last sample to 0
+        const t = (i % n) / n;
         const { T, R, U } = getFrame(curve, t);
         const bAngle = bankAngles[i % n];
         const { R: bR, U: bU } = applyBanking(T, R, U, bAngle);
 
         const center = curve.getPointAt(t);
-        const leftOff  = bR.clone().multiplyScalar(-HALF_WIDTH);
-        const rightOff = bR.clone().multiplyScalar( HALF_WIDTH);
-
-        const left  = center.clone().add(leftOff);
-        const right = center.clone().add(rightOff);
+        const left   = center.clone().add(bR.clone().multiplyScalar(-HALF_WIDTH));
+        const right  = center.clone().add(bR.clone().multiplyScalar( HALF_WIDTH));
 
         const vi = i * 2;
-        // Left vertex
         positions[vi * 3]     = left.x;
         positions[vi * 3 + 1] = left.y;
         positions[vi * 3 + 2] = left.z;
-        // Right vertex
         positions[(vi + 1) * 3]     = right.x;
         positions[(vi + 1) * 3 + 1] = right.y;
         positions[(vi + 1) * 3 + 2] = right.z;
 
-        // UVs: U = 0 (left) .. 1 (right), V = arcLength / 20
-        const arcLen = lengths[i];
-        const v = arcLen / 20;
-        uvs[vi * 2]         = 0;
-        uvs[vi * 2 + 1]     = v;
-        uvs[(vi + 1) * 2]   = 1;
-        uvs[(vi + 1) * 2 + 1] = v;
+        const v = lengths[i] / 20;
+        uvs[vi * 2]         = 0;    uvs[vi * 2 + 1]     = v;
+        uvs[(vi + 1) * 2]   = 1;    uvs[(vi + 1) * 2 + 1] = v;
 
-        // Normal = banked up
-        normals[vi * 3]     = bU.x;
-        normals[vi * 3 + 1] = bU.y;
-        normals[vi * 3 + 2] = bU.z;
-        normals[(vi + 1) * 3]     = bU.x;
-        normals[(vi + 1) * 3 + 1] = bU.y;
-        normals[(vi + 1) * 3 + 2] = bU.z;
+        normals[vi * 3]     = bU.x;  normals[vi * 3 + 1] = bU.y;  normals[vi * 3 + 2] = bU.z;
+        normals[(vi + 1) * 3] = bU.x; normals[(vi + 1) * 3 + 1] = bU.y; normals[(vi + 1) * 3 + 2] = bU.z;
     }
 
-    // ── Indices (triangle strip → two tris per quad) ───────────────────
     const triCount = n * 2;
     const indices  = new Uint32Array(triCount * 3);
     for (let i = 0; i < n; i++) {
-        const a = i * 2;
-        const b = a + 1;
-        const c = a + 2;
-        const d = a + 3;
-
+        const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
         const idx = i * 6;
-        // Triangle 1 (CCW from above — normals face +Y)
-        indices[idx]     = a;
-        indices[idx + 1] = b;
-        indices[idx + 2] = c;
-        // Triangle 2
-        indices[idx + 3] = b;
-        indices[idx + 4] = d;
-        indices[idx + 5] = c;
+        indices[idx]     = a;  indices[idx + 1] = b;  indices[idx + 2] = c;
+        indices[idx + 3] = b;  indices[idx + 4] = d;  indices[idx + 5] = c;
     }
 
     return { positions, uvs, indices, normals };
 }
 
-// ── Procedural asphalt canvas texture ──────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// Procedural asphalt texture
+// ═══════════════════════════════════════════════════════════════════════
+
 function createTrackTexture() {
     const size = 512;
     const canvas = document.createElement('canvas');
@@ -269,11 +242,9 @@ function createTrackTexture() {
     canvas.height = size;
     const ctx = canvas.getContext('2d');
 
-    // Base dark gray
     ctx.fillStyle = '#3a3a3a';
     ctx.fillRect(0, 0, size, size);
 
-    // Noise grain
     for (let i = 0; i < 12000; i++) {
         const x = Math.random() * size;
         const y = Math.random() * size;
@@ -282,23 +253,16 @@ function createTrackTexture() {
         ctx.fillRect(x, y, 1, 1);
     }
 
-    // Edge lines (white) — left edge U ≈ 0.03–0.06, right edge U ≈ 0.94–0.97
+    // Edge lines (white)
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    const leftX0  = Math.round(0.03 * size);
-    const leftX1  = Math.round(0.06 * size);
-    const rightX0 = Math.round(0.94 * size);
-    const rightX1 = Math.round(0.97 * size);
-    ctx.fillRect(leftX0,  0, leftX1 - leftX0,   size);
-    ctx.fillRect(rightX0, 0, rightX1 - rightX0, size);
+    ctx.fillRect(Math.round(0.03 * size), 0, Math.round(0.03 * size), size);
+    ctx.fillRect(Math.round(0.94 * size), 0, Math.round(0.03 * size), size);
 
-    // Dashed center line (white) — U ≈ 0.49–0.51
+    // Dashed center line
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    const cx0 = Math.round(0.49 * size);
-    const cx1 = Math.round(0.51 * size);
-    const dashLen = 30;
-    const gapLen  = 30;
-    for (let y = 0; y < size; y += dashLen + gapLen) {
-        ctx.fillRect(cx0, y, cx1 - cx0, dashLen);
+    const cx0 = Math.round(0.49 * size), cw = Math.round(0.02 * size);
+    for (let y = 0; y < size; y += 60) {
+        ctx.fillRect(cx0, y, cw, 30);
     }
 
     const tex = new THREE.CanvasTexture(canvas);
@@ -307,22 +271,119 @@ function createTrackTexture() {
     return tex;
 }
 
-// ── Compute start position & quaternion ────────────────────────────────
-function computeStartTransform(curve) {
-    const t = 0;
-    const center = curve.getPointAt(t);
-    const tangent = curve.getTangentAt(t).normalize();
+// ═══════════════════════════════════════════════════════════════════════
+// Guard rails — visual wall strips + physics box bodies
+// ═══════════════════════════════════════════════════════════════════════
 
-    // Position: 2 m above surface center at t=0
+function buildGuardRails(scene, world, curve, bankAngles) {
+    // Visual: smooth wall mesh on each edge
+    const wallMat = new THREE.MeshPhongMaterial({
+        color: 0xbbbbbb,
+        side: THREE.DoubleSide,
+        shininess: 15,
+    });
+    buildWallMesh(scene, curve, bankAngles, -1, wallMat);
+    buildWallMesh(scene, curve, bankAngles, +1, wallMat);
+
+    // Physics: box bodies at intervals on each edge
+    buildWallBodies(world, curve, bankAngles);
+}
+
+function buildWallMesh(scene, curve, bankAngles, side, material) {
+    const n = N_SAMPLES;
+    const vCount = (n + 1) * 2;
+    const positions = new Float32Array(vCount * 3);
+
+    for (let i = 0; i <= n; i++) {
+        const t = (i % n) / n;
+        const { T, R, U } = getFrame(curve, t);
+        const bAngle = bankAngles[i % n];
+        const { R: bR } = applyBanking(T, R, U, bAngle);
+
+        const center = curve.getPointAt(t);
+        const edge   = center.clone().add(bR.clone().multiplyScalar(side * HALF_WIDTH));
+
+        const vi = i * 2;
+        // Bottom vertex — at road edge
+        positions[vi * 3]     = edge.x;
+        positions[vi * 3 + 1] = edge.y;
+        positions[vi * 3 + 2] = edge.z;
+        // Top vertex — RAIL_HEIGHT above edge
+        positions[(vi + 1) * 3]     = edge.x;
+        positions[(vi + 1) * 3 + 1] = edge.y + RAIL_HEIGHT;
+        positions[(vi + 1) * 3 + 2] = edge.z;
+    }
+
+    const triCount = n * 2;
+    const indices  = new Uint32Array(triCount * 3);
+    for (let i = 0; i < n; i++) {
+        const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
+        const idx = i * 6;
+        indices[idx]     = a;  indices[idx + 1] = b;  indices[idx + 2] = c;
+        indices[idx + 3] = b;  indices[idx + 4] = d;  indices[idx + 5] = c;
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setIndex(new THREE.BufferAttribute(indices, 1));
+    geo.computeVertexNormals();
+
+    const mesh = new THREE.Mesh(geo, material);
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+}
+
+function buildWallBodies(world, curve, bankAngles) {
+    const railCount = Math.floor(N_SAMPLES / RAIL_INTERVAL);
+    const totalLen  = curve.getLength();
+    const railLen   = (totalLen / railCount) * 1.15;   // 15 % overlap
+    const railHalf  = new CANNON.Vec3(RAIL_THICKNESS / 2, RAIL_HEIGHT / 2, railLen / 2);
+    const railShape = new CANNON.Box(railHalf);         // shared shape
+
+    for (let i = 0; i < railCount; i++) {
+        const sampleIdx = i * RAIL_INTERVAL;
+        const t = sampleIdx / N_SAMPLES;
+
+        const { T, R, U } = getFrame(curve, t);
+        const bAngle = bankAngles[sampleIdx];
+        const { R: bR } = applyBanking(T, R, U, bAngle);
+
+        const center = curve.getPointAt(t);
+
+        // Box orientation: z-axis = tangent, y-axis ≈ world up
+        const m4 = new THREE.Matrix4();
+        m4.lookAt(new THREE.Vector3(), T, new THREE.Vector3(0, 1, 0));
+        const q3 = new THREE.Quaternion().setFromRotationMatrix(m4);
+        const cq = new CANNON.Quaternion(q3.x, q3.y, q3.z, q3.w);
+
+        for (const side of [-1, 1]) {
+            const edge = center.clone().add(bR.clone().multiplyScalar(side * HALF_WIDTH));
+
+            const body = new CANNON.Body({ mass: 0 });
+            body.addShape(railShape);
+            body.position.set(
+                edge.x + R.x * side * RAIL_THICKNESS / 2,
+                edge.y + RAIL_HEIGHT / 2,
+                edge.z + R.z * side * RAIL_THICKNESS / 2,
+            );
+            body.quaternion.copy(cq);
+            world.addBody(body);
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Start position / quaternion
+// ═══════════════════════════════════════════════════════════════════════
+
+function computeStartTransform(curve) {
+    const center  = curve.getPointAt(0);
+    const tangent = curve.getTangentAt(0).normalize();
+
     startPos = new CANNON.Vec3(center.x, center.y + 2, center.z);
 
-    // Quaternion: car Z-forward aligned with tangent
-    const forward = new THREE.Vector3(tangent.x, tangent.y, tangent.z);
     const m = new THREE.Matrix4();
-    const eye = new THREE.Vector3(0, 0, 0);
-    const up  = new THREE.Vector3(0, 1, 0);
-    m.lookAt(eye, forward, up);
+    m.lookAt(new THREE.Vector3(), tangent, new THREE.Vector3(0, 1, 0));
     const q = new THREE.Quaternion().setFromRotationMatrix(m);
-
     startQuat = new CANNON.Quaternion(q.x, q.y, q.z, q.w);
 }

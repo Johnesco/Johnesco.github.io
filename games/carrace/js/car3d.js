@@ -15,9 +15,9 @@ let brakeLightMats;
 // ── Fixed geometry constants ─────────────────────────────────────────
 const CHASSIS_HALF = { x: 1.0, y: 0.4, z: 1.8 };       // half-extents (m)
 const MASS = 150;
-const WHEEL_RADIUS = 0.35;
-const SUSP_REST_LENGTH = 0.3;
-const SUSP_TRAVEL = 0.3;
+const WHEEL_RADIUS = 0.4;
+const SUSP_REST_LENGTH = 0.4;
+const SUSP_TRAVEL = 0.5;
 
 // ── Driving presets ─────────────────────────────────────────────────
 //  Each preset tunes: power, braking, steering, grip, stability
