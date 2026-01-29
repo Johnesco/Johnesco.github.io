@@ -159,8 +159,8 @@ export function createCar(scene, world) {
     return { chassisBody, vehicle };
 }
 
-// ── Per-frame update ─────────────────────────────────────────────────
-export function updateCar(input) {
+// ── Apply controls (call BEFORE world.step) ─────────────────────────
+export function applyCarControls(input) {
     if (!vehicle) return;
 
     const speed = chassisBody.velocity.length();
@@ -187,6 +187,11 @@ export function updateCar(input) {
     // Brake lights
     const blMat = braking ? brakeLightMats.on : brakeLightMats.off;
     brakeLights.forEach(bl => { bl.material = blMat; });
+}
+
+// ── Sync visuals (call AFTER world.step) ─────────────────────────────
+export function syncCarVisuals() {
+    if (!vehicle) return;
 
     // ── Sync chassis visual ──────────────────────────────────────────
     carMesh.position.copy(chassisBody.position);

@@ -10,7 +10,7 @@ export function createEnvironment(scene, world) {
     const groundShape = new CANNON.Plane();
     groundBody.addShape(groundShape);
     // CANNON.Plane default normal is +Z; rotate -PI/2 around X so it faces +Y
-    groundBody.quaternion.setFromEulerAngles(-Math.PI / 2, 0, 0);
+    groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
     world.addBody(groundBody);
 
     // ── Visual ground plane ───────────────────────────────────────────
@@ -74,7 +74,7 @@ export function createEnvironment(scene, world) {
     skyCtx.fillStyle = grad;
     skyCtx.fillRect(0, 0, 1, 256);
     const skyTex = new THREE.CanvasTexture(skyCanvas);
-    const skyMat = new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide });
+    const skyMat = new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false });
     scene.add(new THREE.Mesh(skyGeo, skyMat));
 
     // ── Lighting ──────────────────────────────────────────────────────
@@ -116,7 +116,7 @@ function addRamp(scene, world, pos, angle) {
     const rampBody = new CANNON.Body({ mass: 0 });
     rampBody.addShape(new CANNON.Box(new CANNON.Vec3(w / 2, h / 2, d / 2)));
     rampBody.position.set(pos.x, h / 2 + Math.sin(rampAngle) * d * 0.25, pos.z);
-    rampBody.quaternion.setFromEulerAngles(-rampAngle, 0, 0);
+    rampBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -rampAngle);
     world.addBody(rampBody);
 
     // Visual

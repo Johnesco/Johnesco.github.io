@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { initInput, getInput } from './input.js';
 import { createEnvironment } from './environment.js';
-import { createCar, updateCar, resetCar, getChassisBody, getSpeedMPH } from './car3d.js';
+import { createCar, applyCarControls, syncCarVisuals, resetCar, getChassisBody, getSpeedMPH } from './car3d.js';
 
 // ── Three.js setup ───────────────────────────────────────────────────
 const scene = new THREE.Scene();
@@ -20,6 +20,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setClearColor(0x88aadd);
 document.getElementById('game-canvas').appendChild(renderer.domElement);
 
 window.addEventListener('resize', () => {
@@ -29,15 +30,14 @@ window.addEventListener('resize', () => {
 });
 
 // ── cannon-es physics world ──────────────────────────────────────────
-const world = new CANNON.World({
-    gravity: new CANNON.Vec3(0, -9.82, 0),
-});
+const world = new CANNON.World();
+world.gravity.set(0, -9.82, 0);
 world.broadphase = new CANNON.SAPBroadphase(world);
 world.defaultContactMaterial.friction = 0.3;
 
 // ── Build scene ──────────────────────────────────────────────────────
 const env = createEnvironment(scene, world);
-const car = createCar(scene, world);
+createCar(scene, world);
 initInput();
 
 // ── Chase camera state ───────────────────────────────────────────────
@@ -72,14 +72,17 @@ function animate() {
         input.reset = false; // consume
     }
 
-    // Physics step (fixed timestep, up to 3 sub-steps)
-    world.fixedStep(1 / 60, dt, 3);
+    // 1. Apply controls (steering / engine / brake)
+    applyCarControls(input);
 
-    // Car controls + visual sync
-    updateCar(input);
+    // 2. Physics step (fixed 1/60 s, up to 3 sub-steps)
+    world.step(1 / 60, dt, 3);
+
+    // 3. Sync visuals from physics
+    syncCarVisuals();
 
     // Camera
-    updateCamera(dt);
+    updateCamera();
 
     // Move shadow camera to follow car
     const chassis = getChassisBody();
@@ -106,13 +109,12 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-function updateCamera(dt) {
+function updateCamera() {
     const chassis = getChassisBody();
     if (!chassis) return;
 
     const pos = chassis.position;
-    const vel = chassis.velocity;
-    const speed = vel.length();
+    const speed = chassis.velocity.length();
     const speedRatio = Math.min(speed / 40, 1);
 
     // Car forward direction from chassis quaternion
