@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobFinder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      padding: 2rem;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid #333;
+    }
+
+    header h1 {
+      color: #00d9ff;
+      margin-bottom: 0.5rem;
+      font-size: 2rem;
+    }
+
+    header .date { color: #888; margin-bottom: 1rem; }
+
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      margin: 1.5rem 0;
+    }
+
+    .stat { text-align: center; }
+    .stat-value { font-size: 1.8rem; color: #00d9ff; font-weight: bold; }
+    .stat-label { font-size: 0.85rem; color: #666; text-transform: uppercase; }
+
+    /* Add Search Form */
+    .add-search {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin: 1.5rem 0;
+      flex-wrap: wrap;
+    }
+
+    .add-search input {
+      padding: 0.75rem 1.25rem;
+      font-size: 1rem;
+      border: 2px solid #1f4068;
+      border-radius: 8px;
+      background: #16213e;
+      color: #fff;
+    }
+
+    .add-search input:focus {
+      outline: none;
+      border-color: #00d9ff;
+      box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.2);
+    }
+
+    .add-search input::placeholder { color: #666; }
+
+    .add-search .keyword-input { width: 300px; }
+
+    .add-search button {
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      background: #00d9ff;
+      color: #1a1a2e;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.2s;
+    }
+
+    .add-search button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 217, 255, 0.4);
+    }
+
+    /* Location Section */
+    .location-section {
+      text-align: center;
+      margin: 1rem 0;
+      padding: 1rem;
+      background: #16213e;
+      border-radius: 8px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .location-label {
+      display: block;
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 0.5rem;
+    }
+
+    .location-inputs {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .location-inputs input {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.9rem;
+      border: 2px solid #1f4068;
+      border-radius: 6px;
+      background: #1a1a2e;
+      color: #fff;
+    }
+
+    .location-inputs input:focus {
+      outline: none;
+      border-color: #00d9ff;
+    }
+
+    .location-inputs input::placeholder { color: #666; }
+
+    .city-input { width: 150px; }
+    .state-input { width: 120px; }
+
+    .clear-location {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+      border: 1px solid #1f4068;
+      border-radius: 6px;
+      background: transparent;
+      color: #666;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .clear-location:hover {
+      border-color: #ff6b6b;
+      color: #ff6b6b;
+    }
+
+    /* Edit Button */
+    .edit-btn {
+      display: block;
+      margin: 1rem auto;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.9rem;
+      border: 1px solid #1f4068;
+      border-radius: 6px;
+      background: transparent;
+      color: #888;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .edit-btn:hover {
+      border-color: #00d9ff;
+      color: #00d9ff;
+    }
+
+    .edit-panel {
+      max-width: 900px;
+      margin: 1.5rem auto;
+      padding: 1.5rem;
+      background: #16213e;
+      border: 1px solid #1f4068;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .edit-panel.open { display: block; }
+
+    .edit-panel h3 {
+      color: #00d9ff;
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+    }
+
+    .category-settings {
+      margin-bottom: 1.25rem;
+    }
+
+    .category-settings h4 {
+      color: #aaa;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .site-checkboxes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .site-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      cursor: pointer;
+    }
+
+    .site-checkbox input {
+      width: 16px;
+      height: 16px;
+      accent-color: #00d9ff;
+      cursor: pointer;
+    }
+
+    .site-checkbox span {
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+
+    .site-checkbox:hover span { color: #fff; }
+
+    .custom-site-row {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .delete-custom {
+      color: #666;
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 0.2rem;
+    }
+
+    .delete-custom:hover { color: #ff6b6b; }
+
+    .settings-footer {
+      display: flex;
+      justify-content: center;
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #1f4068;
+    }
+
+    .back-btn {
+      padding: 0.6rem 1.5rem;
+      font-size: 0.9rem;
+      border: none;
+      border-radius: 6px;
+      background: #00d9ff;
+      color: #1a1a2e;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.2s;
+    }
+
+    .back-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 217, 255, 0.4);
+    }
+
+    /* Advanced Section */
+    .advanced-section {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #1f4068;
+    }
+
+    .advanced-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 0.85rem;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .advanced-toggle:hover { color: #aaa; }
+
+    .advanced-toggle .arrow {
+      transition: transform 0.2s;
+      font-size: 0.7rem;
+    }
+
+    .advanced-toggle.open .arrow { transform: rotate(90deg); }
+
+    .advanced-content {
+      display: none;
+      margin-top: 1rem;
+    }
+
+    .advanced-content.open { display: block; }
+
+    .advanced-warning {
+      background: rgba(255, 180, 50, 0.1);
+      border: 1px solid rgba(255, 180, 50, 0.3);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+      color: #ccc;
+    }
+
+    .advanced-warning strong { color: #ffb432; }
+
+    .add-board-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .add-board-form .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .add-board-form .field-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .add-board-form label {
+      font-size: 0.8rem;
+      color: #aaa;
+    }
+
+    .add-board-form .example {
+      font-size: 0.7rem;
+      color: #666;
+      font-style: italic;
+      margin-top: 0.2rem;
+      word-break: break-all;
+    }
+
+    .add-board-form .label-row {
+      font-size: 0.75rem;
+      color: #888;
+      text-transform: uppercase;
+    }
+
+    .add-board-form input {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.9rem;
+      border: 1px solid #1f4068;
+      border-radius: 6px;
+      background: #1a1a2e;
+      color: #fff;
+    }
+
+    .add-board-form input:focus {
+      outline: none;
+      border-color: #00d9ff;
+    }
+
+    .add-board-form input::placeholder { color: #555; }
+
+    .add-board-form .name-field input { width: 200px; }
+    .add-board-form .url-field input { width: 100%; }
+
+    .add-board-form button {
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      border: 1px solid #1f4068;
+      border-radius: 6px;
+      background: transparent;
+      color: #888;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .add-board-form button.primary {
+      background: #00d9ff;
+      color: #1a1a2e;
+      border: none;
+      font-weight: bold;
+    }
+
+    .add-board-form .button-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .edit-custom {
+      color: #666;
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 0.2rem 0.4rem;
+      margin-left: 0.25rem;
+    }
+
+    .edit-custom:hover { color: #00d9ff; }
+
+    /* Import/Export Section */
+    .import-export-section {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #1f4068;
+    }
+
+    .import-export-section h4 {
+      color: #aaa;
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .import-export-buttons {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .import-export-buttons button {
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      border: 1px solid #1f4068;
+      border-radius: 6px;
+      background: transparent;
+      color: #888;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .import-export-buttons button:hover {
+      border-color: #00d9ff;
+      color: #00d9ff;
+    }
+
+    .import-export-info {
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: #666;
+    }
+
+    #import-file-input {
+      display: none;
+    }
+
+    .add-board-form button:hover {
+      border-color: #00d9ff;
+      color: #00d9ff;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #666;
+    }
+
+    .empty-state h2 {
+      color: #888;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+
+    .empty-state p { margin-bottom: 0.5rem; }
+
+    .empty-state .suggestions {
+      margin-top: 1.5rem;
+      color: #555;
+      font-size: 0.9rem;
+    }
+
+    .empty-state .suggestions span {
+      display: inline-block;
+      margin: 0.25rem;
+      padding: 0.3rem 0.6rem;
+      background: #16213e;
+      border-radius: 4px;
+      color: #888;
+    }
+
+    /* Search Cards Grid */
+    .searches-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* Search Card */
+    .search-card {
+      background: #16213e;
+      border-radius: 8px;
+      padding: 1.25rem;
+      border: 1px solid #1f4068;
+      transition: border-color 0.2s;
+    }
+
+    .search-card:hover { border-color: #00d9ff; }
+
+    .search-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #1f4068;
+    }
+
+    .search-card-header h3 {
+      color: #fff;
+      font-size: 1.15rem;
+    }
+
+    .delete-btn {
+      background: transparent;
+      border: none;
+      color: #666;
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .delete-btn:hover {
+      color: #ff6b6b;
+      background: rgba(255, 107, 107, 0.1);
+    }
+
+    .link-category {
+      margin-bottom: 0.75rem;
+    }
+
+    .link-category-name {
+      font-size: 0.75rem;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.4rem;
+    }
+
+    /* Site Row */
+    .site-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .site-name {
+      font-size: 0.9rem;
+      color: #aaa;
+      min-width: 120px;
+    }
+
+    .site-links {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+
+    .site-link {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      background: #0f3460;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .site-link:hover {
+      background: #00d9ff;
+      color: #1a1a2e;
+      transform: translateY(-1px);
+    }
+
+    .site-link.keyword { background: #0f3460; }
+    .site-link.location { background: #2d6a4f; }
+    .site-link.remote { background: #7b2cbf; }
+
+    .site-link:visited { color: #aaa; }
+    .site-link.keyword:visited { background: #0a2240; }
+    .site-link.location:visited { background: #1e4835; }
+    .site-link.remote:visited { background: #4a1a73; }
+
+    .site-link.keyword:hover { background: #00d9ff; }
+    .site-link.location:hover { background: #40916c; }
+    .site-link.remote:hover { background: #9d4edd; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .search-card { animation: fadeIn 0.3s ease; }
+
+    @media (max-width: 600px) {
+      body { padding: 1rem; }
+      .stats { gap: 1.5rem; }
+      .add-search { flex-direction: column; align-items: center; }
+      .add-search input { width: 100% !important; }
+      .searches-grid { grid-template-columns: 1fr; }
+      .site-name { min-width: 100px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>JobFinder</h1>
+    <p class="date" id="date"></p>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value" id="search-count">0</div>
+        <div class="stat-label">Saved Searches</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="board-count">0</div>
+        <div class="stat-label">Active Boards</div>
+      </div>
+    </div>
+    <form class="add-search" onsubmit="addSearch(event)">
+      <input type="text" id="search-input" class="keyword-input" placeholder="Job title (e.g., Software Engineer)" autocomplete="off">
+      <button type="submit">Add Search</button>
+    </form>
+    <div class="location-section">
+      <label class="location-label">Location (applies to all searches):</label>
+      <div class="location-inputs">
+        <input type="text" id="city-input" class="city-input" placeholder="City" autocomplete="off" oninput="updateLocation()">
+        <input type="text" id="state-input" class="state-input" placeholder="State" autocomplete="off" oninput="updateLocation()">
+        <button class="clear-location" onclick="clearLocation()">Clear</button>
+      </div>
+    </div>
+    <button class="edit-btn" onclick="toggleBoardsPanel()">Customize Job Boards</button>
+  </header>
+
+  <div class="edit-panel" id="boards-panel"></div>
+
+  <div class="container" id="container"></div>
+
+  <script src="config.js"></script>
+  <script>
+    // State
+    let searches = [];
+    let enabledSites = [];
+    let customSites = [];
+    let userLocation = { city: '', state: '' };
+
+    // LocalStorage keys
+    const SEARCHES_KEY = 'jobfinder_searches';
+    const SITES_KEY = 'jobfinder_enabled_sites';
+    const CUSTOM_SITES_KEY = 'jobfinder_custom_sites';
+    const LOCATION_KEY = 'jobfinder_location';
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', init);
+
+    function init() {
+      // Set date
+      const date = new Date().toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      });
+      document.getElementById('date').textContent = date;
+
+      // Load data from localStorage (with migrations)
+      loadSearches();
+      loadCustomSites();
+      loadEnabledSites();
+      loadLocation();
+
+      // Render everything
+      renderBoardsPanel();
+      render();
+    }
+
+    // LocalStorage functions
+    function loadSearches() {
+      try {
+        const saved = localStorage.getItem(SEARCHES_KEY);
+        searches = saved ? JSON.parse(saved) : [];
+      } catch (e) {
+        searches = [];
+      }
+    }
+
+    function saveSearches() {
+      localStorage.setItem(SEARCHES_KEY, JSON.stringify(searches));
+    }
+
+    function loadEnabledSites() {
+      try {
+        const saved = localStorage.getItem(SITES_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          const allCurrentSites = getAllSiteNames();
+
+          // Keep only sites that still exist
+          enabledSites = parsed.filter(name => allCurrentSites.includes(name));
+
+          // Add any new sites that weren't in the saved list (default to enabled)
+          const newSites = allCurrentSites.filter(name => !parsed.includes(name));
+          enabledSites = enabledSites.concat(newSites);
+
+          // Save if we made changes
+          if (enabledSites.length !== parsed.length || newSites.length > 0) {
+            saveEnabledSites();
+          }
+        } else {
+          enabledSites = getAllSiteNames();
+        }
+      } catch (e) {
+        enabledSites = getAllSiteNames();
+      }
+    }
+
+    function saveEnabledSites() {
+      localStorage.setItem(SITES_KEY, JSON.stringify(enabledSites));
+    }
+
+    function loadLocation() {
+      try {
+        const saved = localStorage.getItem(LOCATION_KEY);
+        if (saved) {
+          userLocation = JSON.parse(saved);
+          document.getElementById('city-input').value = userLocation.city;
+          document.getElementById('state-input').value = userLocation.state;
+        }
+      } catch (e) {
+        userLocation = { city: '', state: '' };
+      }
+    }
+
+    function saveLocation() {
+      localStorage.setItem(LOCATION_KEY, JSON.stringify(userLocation));
+    }
+
+    function clearLocation() {
+      document.getElementById('city-input').value = '';
+      document.getElementById('state-input').value = '';
+      userLocation = { city: '', state: '' };
+      saveLocation();
+      render();
+    }
+
+    function getAllSiteNames() {
+      const names = [];
+      CONFIG.categories.forEach(cat => {
+        cat.sites.forEach(site => names.push(site.name));
+      });
+      customSites.forEach(site => names.push(site.name));
+      return names;
+    }
+
+    // Custom sites functions
+    function loadCustomSites() {
+      try {
+        const saved = localStorage.getItem(CUSTOM_SITES_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          let needsMigration = false;
+
+          // Migrate from v1 format (url) to v2 format (urls)
+          customSites = parsed.map(site => {
+            if (site.url && !site.urls) {
+              needsMigration = true;
+              return {
+                name: site.name,
+                urls: {
+                  keyword: site.url,
+                  location: null,
+                  remote: null
+                }
+              };
+            }
+            return site;
+          });
+
+          // Save migrated data
+          if (needsMigration) {
+            saveCustomSites();
+          }
+        } else {
+          customSites = [];
+        }
+      } catch (e) {
+        customSites = [];
+      }
+    }
+
+    function saveCustomSites() {
+      localStorage.setItem(CUSTOM_SITES_KEY, JSON.stringify(customSites));
+    }
+
+    function saveCustomSiteForm(e) {
+      e.preventDefault();
+      const editIndex = parseInt(document.getElementById('custom-site-edit-index').value);
+      const nameInput = document.getElementById('custom-site-name');
+      const keywordUrlInput = document.getElementById('custom-site-url-keyword');
+      const locationUrlInput = document.getElementById('custom-site-url-location');
+      const remoteUrlInput = document.getElementById('custom-site-url-remote');
+
+      const name = nameInput.value.trim();
+      const keywordUrl = keywordUrlInput.value.trim();
+      const locationUrl = locationUrlInput.value.trim();
+      const remoteUrl = remoteUrlInput.value.trim();
+
+      if (!name || !keywordUrl) {
+        alert('Name and Keyword URL are required');
+        return;
+      }
+      if (!keywordUrl.includes('{keyword}')) {
+        alert('Keyword URL must contain {keyword} placeholder');
+        return;
+      }
+
+      // Check for duplicate names (excluding current site if editing)
+      const allNames = getAllSiteNames().map(n => n.toLowerCase());
+      const isEditing = editIndex >= 0;
+      const oldName = isEditing ? customSites[editIndex].name : null;
+
+      if (!isEditing && allNames.includes(name.toLowerCase())) {
+        alert('A job board with this name already exists');
+        return;
+      }
+      if (isEditing && name.toLowerCase() !== oldName.toLowerCase() && allNames.includes(name.toLowerCase())) {
+        alert('A job board with this name already exists');
+        return;
+      }
+
+      const urls = { keyword: keywordUrl };
+      if (locationUrl) urls.location = locationUrl;
+      if (remoteUrl) urls.remote = remoteUrl;
+
+      if (isEditing) {
+        // Update existing site
+        const oldName = customSites[editIndex].name;
+        customSites[editIndex] = { name, urls };
+        // Update enabled sites if name changed
+        if (oldName !== name) {
+          const enabledIdx = enabledSites.indexOf(oldName);
+          if (enabledIdx !== -1) {
+            enabledSites[enabledIdx] = name;
+            saveEnabledSites();
+          }
+        }
+      } else {
+        // Add new site
+        customSites.push({ name, urls });
+        enabledSites.push(name);
+        saveEnabledSites();
+      }
+
+      saveCustomSites();
+      clearCustomSiteForm();
+      renderBoardsPanel();
+      render();
+    }
+
+    function editCustomSite(index) {
+      const site = customSites[index];
+      document.getElementById('custom-site-edit-index').value = index;
+      document.getElementById('custom-site-name').value = site.name;
+      document.getElementById('custom-site-url-keyword').value = site.urls.keyword || '';
+      document.getElementById('custom-site-url-location').value = site.urls.location || '';
+      document.getElementById('custom-site-url-remote').value = site.urls.remote || '';
+      document.getElementById('custom-site-submit-btn').textContent = 'Save Changes';
+
+      // Open the advanced section
+      const btn = document.querySelector('.advanced-toggle');
+      const content = document.querySelector('.advanced-content');
+      if (!content.classList.contains('open')) {
+        btn.classList.add('open');
+        content.classList.add('open');
+      }
+
+      // Scroll to form
+      document.getElementById('custom-site-name').focus();
+    }
+
+    function cancelEditCustomSite() {
+      clearCustomSiteForm();
+    }
+
+    function clearCustomSiteForm() {
+      document.getElementById('custom-site-edit-index').value = '-1';
+      document.getElementById('custom-site-name').value = '';
+      document.getElementById('custom-site-url-keyword').value = '';
+      document.getElementById('custom-site-url-location').value = '';
+      document.getElementById('custom-site-url-remote').value = '';
+      document.getElementById('custom-site-submit-btn').textContent = 'Add Board';
+    }
+
+    function deleteCustomSite(name) {
+      customSites = customSites.filter(s => s.name !== name);
+      saveCustomSites();
+
+      // Remove from enabled sites
+      enabledSites = enabledSites.filter(s => s !== name);
+      saveEnabledSites();
+
+      renderBoardsPanel();
+      render();
+    }
+
+    function toggleAdvanced() {
+      const btn = document.querySelector('.advanced-toggle');
+      const content = document.querySelector('.advanced-content');
+      btn.classList.toggle('open');
+      content.classList.toggle('open');
+    }
+
+    // Location functions
+    function updateLocation() {
+      const city = document.getElementById('city-input').value.trim();
+      const state = document.getElementById('state-input').value.trim();
+      userLocation = { city, state };
+      saveLocation();
+      render();
+    }
+
+    // Search functions
+    function addSearch(e) {
+      e.preventDefault();
+      const input = document.getElementById('search-input');
+      const term = input.value.trim();
+
+      if (!term) return;
+
+      // Prevent duplicates (case-insensitive)
+      if (searches.some(s => s.toLowerCase() === term.toLowerCase())) {
+        input.value = '';
+        input.focus();
+        return;
+      }
+
+      searches.unshift(term);
+      saveSearches();
+      input.value = '';
+      input.focus();
+      render();
+    }
+
+    function deleteSearch(term) {
+      searches = searches.filter(s => s !== term);
+      saveSearches();
+      render();
+    }
+
+    // Site toggle
+    function toggleSite(siteName) {
+      const idx = enabledSites.indexOf(siteName);
+      if (idx === -1) {
+        enabledSites.push(siteName);
+      } else {
+        enabledSites.splice(idx, 1);
+      }
+      saveEnabledSites();
+      render();
+    }
+
+    // Panel toggle
+    function toggleBoardsPanel() {
+      const panel = document.getElementById('boards-panel');
+      panel.classList.toggle('open');
+    }
+
+    // Import/Export functions
+    function exportData() {
+      const data = {
+        version: 2,
+        exportDate: new Date().toISOString(),
+        searches: searches,
+        enabledSites: enabledSites,
+        customSites: customSites,
+        location: userLocation
+      };
+
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'jobfinder-settings.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+
+          // Validate basic structure
+          if (typeof data !== 'object') {
+            throw new Error('Invalid file format');
+          }
+
+          // Import searches
+          if (Array.isArray(data.searches)) {
+            searches = data.searches.filter(s => typeof s === 'string');
+            saveSearches();
+          }
+
+          // Import enabled sites
+          if (Array.isArray(data.enabledSites)) {
+            enabledSites = data.enabledSites.filter(s => typeof s === 'string');
+            saveEnabledSites();
+          }
+
+          // Import custom sites (with migration support)
+          if (Array.isArray(data.customSites)) {
+            customSites = data.customSites.map(site => {
+              // Migrate v1 format if needed
+              if (site.url && !site.urls) {
+                return {
+                  name: site.name,
+                  urls: { keyword: site.url, location: null, remote: null }
+                };
+              }
+              return site;
+            }).filter(s => s.name && s.urls);
+            saveCustomSites();
+          }
+
+          // Import location
+          if (data.location && typeof data.location === 'object') {
+            userLocation = {
+              city: data.location.city || '',
+              state: data.location.state || ''
+            };
+            saveLocation();
+            document.getElementById('city-input').value = userLocation.city;
+            document.getElementById('state-input').value = userLocation.state;
+          }
+
+          // Re-run enabled sites loading to handle new custom sites
+          loadEnabledSites();
+
+          // Re-render
+          renderBoardsPanel();
+          render();
+
+          alert('Settings imported successfully!');
+        } catch (err) {
+          alert('Error importing file: ' + err.message);
+        }
+      };
+
+      reader.readAsText(file);
+      // Reset file input so same file can be imported again
+      event.target.value = '';
+    }
+
+    // URL building functions
+    function buildUrl(urlTemplate, keyword, city, state) {
+      let url = urlTemplate
+        .replace(/{keyword}/g, encodeURIComponent(keyword))
+        .replace(/{city}/g, encodeURIComponent(city))
+        .replace(/{state}/g, encodeURIComponent(state));
+      return url;
+    }
+
+    // Render functions
+    function renderBoardsPanel() {
+      const panel = document.getElementById('boards-panel');
+      let html = '<h3>Customize Job Boards</h3>';
+
+      CONFIG.categories.forEach(cat => {
+        html += `<div class="category-settings">
+          <h4>${cat.name}</h4>
+          <div class="site-checkboxes">`;
+
+        cat.sites.forEach(site => {
+          const checked = enabledSites.includes(site.name) ? 'checked' : '';
+          html += `<label class="site-checkbox">
+            <input type="checkbox" ${checked} onchange="toggleSite('${site.name}')">
+            <span>${site.name}</span>
+          </label>`;
+        });
+
+        html += '</div></div>';
+      });
+
+      // Custom sites section
+      if (customSites.length > 0) {
+        html += `<div class="category-settings">
+          <h4>Custom</h4>
+          <div class="site-checkboxes">`;
+
+        customSites.forEach((site, index) => {
+          const checked = enabledSites.includes(site.name) ? 'checked' : '';
+          const safeName = escapeHtml(site.name);
+          html += `<div class="custom-site-row">
+            <label class="site-checkbox">
+              <input type="checkbox" ${checked} onchange="toggleSite('${safeName}')">
+              <span>${safeName}</span>
+            </label>
+            <span class="edit-custom" onclick="editCustomSite(${index})" title="Edit custom board">edit</span>
+            <span class="delete-custom" onclick="deleteCustomSite('${safeName}')" title="Remove custom board">&times;</span>
+          </div>`;
+        });
+
+        html += '</div></div>';
+      }
+
+      // Advanced section
+      html += `
+        <div class="advanced-section">
+          <button type="button" class="advanced-toggle" onclick="toggleAdvanced()">
+            <span class="arrow">&#9654;</span> Advanced: Add/Edit Custom Job Board
+          </button>
+          <div class="advanced-content">
+            <div class="advanced-warning">
+              <strong>How to find URLs:</strong> Go to the company's careers page, perform a search, then copy the URL.
+              Replace your search term with <code>{keyword}</code>. For location URLs, also replace city with <code>{city}</code> and state with <code>{state}</code>.
+            </div>
+            <form class="add-board-form" onsubmit="saveCustomSiteForm(event)">
+              <input type="hidden" id="custom-site-edit-index" value="-1">
+              <div class="field name-field">
+                <label>Board Name</label>
+                <input type="text" id="custom-site-name" autocomplete="off">
+                <div class="example">Example: FedEx Careers</div>
+              </div>
+              <div class="field url-field">
+                <label>Keyword URL (required)</label>
+                <input type="text" id="custom-site-url-keyword" autocomplete="off">
+                <div class="example">Example: https://careers.fedex.com/jobs?keyword={keyword}</div>
+              </div>
+              <div class="field url-field">
+                <label>Location URL (optional) - use {keyword}, {city}, {state}</label>
+                <input type="text" id="custom-site-url-location" autocomplete="off">
+                <div class="example">Example: https://careers.fedex.com/jobs?keyword={keyword}&location_name={city}%2C%20{state}&location_type=1</div>
+              </div>
+              <div class="field url-field">
+                <label>Remote URL (optional)</label>
+                <input type="text" id="custom-site-url-remote" autocomplete="off">
+                <div class="example">Example: https://careers.fedex.com/jobs?keyword={keyword}&location_name=Remote%2C%20OR%2C%20USA&location_type=2</div>
+              </div>
+              <div class="button-row">
+                <button type="submit" class="primary" id="custom-site-submit-btn">Add Board</button>
+                <button type="button" onclick="cancelEditCustomSite()">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+
+      // Import/Export section
+      html += `
+        <div class="import-export-section">
+          <h4>Import / Export Settings</h4>
+          <div class="import-export-buttons">
+            <button onclick="exportData()">Export to File</button>
+            <button onclick="document.getElementById('import-file-input').click()">Import from File</button>
+            <input type="file" id="import-file-input" accept=".json" onchange="importData(event)">
+          </div>
+          <div class="import-export-info">
+            Export your searches, location, custom boards, and preferences to transfer to another browser.
+          </div>
+        </div>
+      `;
+
+      // Back button footer
+      html += `
+        <div class="settings-footer">
+          <button class="back-btn" onclick="toggleBoardsPanel()">Back to Main</button>
+        </div>
+      `;
+
+      panel.innerHTML = html;
+    }
+
+    function render() {
+      // Update stats
+      document.getElementById('search-count').textContent = searches.length;
+      document.getElementById('board-count').textContent = enabledSites.length;
+
+      // Re-render boards panel
+      renderBoardsPanel();
+
+      const container = document.getElementById('container');
+
+      if (searches.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <h2>No Searches Yet</h2>
+            <p>Add a job title above to start searching across multiple job boards.</p>
+            <div class="suggestions">
+              Try:
+              <span>Software Engineer</span>
+              <span>Product Manager</span>
+              <span>Data Analyst</span>
+              <span>UX Designer</span>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '<div class="searches-grid">';
+      searches.forEach(term => {
+        html += buildSearchCard(term);
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function buildSearchCard(term) {
+      const hasLocation = userLocation.city && userLocation.state;
+      const safeTerm = escapeHtml(term);
+
+      let html = `
+        <div class="search-card">
+          <div class="search-card-header">
+            <h3>${safeTerm}</h3>
+            <button class="delete-btn" onclick="deleteSearch('${safeTerm}')" title="Delete search">&times;</button>
+          </div>
+      `;
+
+      CONFIG.categories.forEach(cat => {
+        const enabledInCategory = cat.sites.filter(s => enabledSites.includes(s.name));
+        if (enabledInCategory.length === 0) return;
+
+        html += `<div class="link-category">
+          <div class="link-category-name">${cat.name}</div>`;
+
+        enabledInCategory.forEach(site => {
+          html += `<div class="site-row">
+            <span class="site-name">${site.name}</span>
+            <div class="site-links">`;
+
+          // Keyword link (always shown if available)
+          if (site.urls.keyword) {
+            const keywordUrl = buildUrl(site.urls.keyword, term, '', '');
+            html += `<a href="${keywordUrl}" target="_blank" class="site-link keyword">Keyword</a>`;
+          }
+
+          // Location link (only shown if location is set and site supports it)
+          if (hasLocation && site.urls.location) {
+            const locationUrl = buildUrl(site.urls.location, term, userLocation.city, userLocation.state);
+            html += `<a href="${locationUrl}" target="_blank" class="site-link location">Location</a>`;
+          }
+
+          // Remote link (always shown if available)
+          if (site.urls.remote) {
+            const remoteUrl = buildUrl(site.urls.remote, term, '', '');
+            html += `<a href="${remoteUrl}" target="_blank" class="site-link remote">Remote</a>`;
+          }
+
+          html += '</div></div>';
+        });
+
+        html += '</div>';
+      });
+
+      // Custom sites
+      const enabledCustom = customSites.filter(s => enabledSites.includes(s.name));
+      if (enabledCustom.length > 0) {
+        html += `<div class="link-category">
+          <div class="link-category-name">Custom</div>`;
+
+        enabledCustom.forEach(site => {
+          html += `<div class="site-row">
+            <span class="site-name">${escapeHtml(site.name)}</span>
+            <div class="site-links">`;
+
+          if (site.urls.keyword) {
+            const keywordUrl = buildUrl(site.urls.keyword, term, '', '');
+            html += `<a href="${keywordUrl}" target="_blank" class="site-link keyword">Keyword</a>`;
+          }
+
+          if (hasLocation && site.urls.location) {
+            const locationUrl = buildUrl(site.urls.location, term, userLocation.city, userLocation.state);
+            html += `<a href="${locationUrl}" target="_blank" class="site-link location">Location</a>`;
+          }
+
+          if (site.urls.remote) {
+            const remoteUrl = buildUrl(site.urls.remote, term, '', '');
+            html += `<a href="${remoteUrl}" target="_blank" class="site-link remote">Remote</a>`;
+          }
+
+          html += '</div></div>';
+        });
+
+        html += '</div>';
+      }
+
+      html += '</div>';
+
+      return html;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML.replace(/'/g, "\\'");
+    }
+  </script>
+</body>
+</html>
