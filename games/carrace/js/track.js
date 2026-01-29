@@ -248,14 +248,14 @@ function buildTrackGeometry(curve, bankAngles, n) {
         const d = a + 3;
 
         const idx = i * 6;
-        // Triangle 1 (CCW from above)
+        // Triangle 1 (CCW from above — normals face +Y)
         indices[idx]     = a;
-        indices[idx + 1] = c;
-        indices[idx + 2] = b;
+        indices[idx + 1] = b;
+        indices[idx + 2] = c;
         // Triangle 2
         indices[idx + 3] = b;
-        indices[idx + 4] = c;
-        indices[idx + 5] = d;
+        indices[idx + 4] = d;
+        indices[idx + 5] = c;
     }
 
     return { positions, uvs, indices, normals };
