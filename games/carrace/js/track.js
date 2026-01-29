@@ -7,10 +7,12 @@ import * as CANNON from 'cannon-es';
 
 // ── Track constants ────────────────────────────────────────────────────
 const HALF_WIDTH    = 9;          // 18 m total road width
-const N_SAMPLES     = 200;        // cross-sections around the loop (lower = smoother physics)
+const N_SAMPLES     = 200;        // visual cross-sections (smooth rendering)
+const N_PHYSICS     = 50;         // physics cross-sections (fewer edges = no jitter)
 const BANK_MAX_DEG  = 18;         // max banking angle in degrees
 const K_MAX         = 0.025;      // curvature at which banking saturates
-const SMOOTH_RADIUS = 8;          // triangle-kernel smoothing radius (wider = gentler transitions)
+const SMOOTH_RADIUS = 8;          // visual banking smoothing radius
+const PHYS_SMOOTH   = 2;          // physics banking smoothing radius (proportional)
 
 // Guard rail constants
 const RAIL_HEIGHT    = 1.2;       // metres
@@ -31,23 +33,29 @@ let startQuat  = null;
 export function createTrack(scene, world) {
     trackCurve = buildCurve();
 
+    // ── Fine banking (visual + guard rails) ──────────────────────────
     const bankAngles = computeBankingArray(trackCurve, N_SAMPLES);
     const smoothed   = smoothArray(bankAngles, SMOOTH_RADIUS);
 
-    const { positions, uvs, indices, normals } = buildTrackGeometry(trackCurve, smoothed, N_SAMPLES);
+    // ── Coarse banking (physics — large flat quads, no jitter) ───────
+    const bankPhys    = computeBankingArray(trackCurve, N_PHYSICS);
+    const smoothPhys  = smoothArray(bankPhys, PHYS_SMOOTH);
 
-    // ── Road physics trimesh ─────────────────────────────────────────
-    const trimesh = new CANNON.Trimesh(positions, indices);
+    const visual = buildTrackGeometry(trackCurve, smoothed, N_SAMPLES);
+    const phys   = buildTrackGeometry(trackCurve, smoothPhys, N_PHYSICS);
+
+    // ── Road physics trimesh (coarse — ~18 m quads) ──────────────────
+    const trimesh = new CANNON.Trimesh(phys.positions, phys.indices);
     trackBody = new CANNON.Body({ mass: 0 });
     trackBody.addShape(trimesh);
     world.addBody(trackBody);
 
-    // ── Road visual mesh ─────────────────────────────────────────────
+    // ── Road visual mesh (fine — detailed rendering) ─────────────────
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geo.setAttribute('uv',       new THREE.BufferAttribute(uvs, 2));
-    geo.setAttribute('normal',   new THREE.BufferAttribute(normals, 3));
-    geo.setIndex(new THREE.BufferAttribute(indices, 1));
+    geo.setAttribute('position', new THREE.BufferAttribute(visual.positions, 3));
+    geo.setAttribute('uv',       new THREE.BufferAttribute(visual.uvs, 2));
+    geo.setAttribute('normal',   new THREE.BufferAttribute(visual.normals, 3));
+    geo.setIndex(new THREE.BufferAttribute(visual.indices, 1));
     geo.computeVertexNormals();
 
     const mat = new THREE.MeshPhongMaterial({
@@ -59,7 +67,7 @@ export function createTrack(scene, world) {
     trackMesh.receiveShadow = true;
     scene.add(trackMesh);
 
-    // ── Guard rails ──────────────────────────────────────────────────
+    // ── Guard rails (visual uses fine, physics uses own sampling) ────
     buildGuardRails(scene, world, trackCurve, smoothed);
 
     // ── Start transform ──────────────────────────────────────────────
