@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Racer 3D</title>
+    <title>Car Physics Sandbox</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -11,31 +11,18 @@
         <div id="game-canvas"></div>
         <div id="hud">
             <div id="speed">0 MPH</div>
-            <div id="lap">LAP 1/3</div>
-            <div id="time">TIME 0:00.00</div>
-        </div>
-        <div id="title-screen">
-            <h1>RETRO RACER 3D</h1>
-            <p>Press ENTER to Start</p>
-            <div class="controls-info">
-                <p>ARROWS or WASD to drive</p>
-                <p>Hold UP to accelerate</p>
-            </div>
-        </div>
-        <div id="game-over" class="hidden">
-            <h1>FINISH!</h1>
-            <p id="final-time">Time: 0:00.00</p>
-            <p>Press ENTER to play again</p>
+            <div id="debug"></div>
         </div>
     </div>
 
-    <!-- Three.js from CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-    <script src="js/input.js"></script>
-    <script src="js/track.js"></script>
-    <script src="js/car3d.js"></script>
-    <script src="js/environment.js"></script>
-    <script src="js/main3d.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+            "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
+        }
+    }
+    </script>
+    <script type="module" src="js/main3d.js"></script>
 </body>
 </html>

@@ -243,7 +243,7 @@ var resumeJSON = {
                 "Delivered high-volume support via live chat and ticket systems, balancing efficiency with genuine care for each user's experience.",
                 "Restored compromised accounts with precision, adhering to strict security and data integrity protocols."
             ],
-            tags: ["default"]
+            tags: ["default", "qa-lead"]
         },
         {
             name: "Linden Lab",
