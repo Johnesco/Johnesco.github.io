@@ -64,10 +64,10 @@ var resumeJSON = {
                 "Served as communication bridge between operations and engineering for Apptronik's humanoid robot development, translating observed behaviors into actionable documentation and establishing process standards in a fast-paced, ambiguous environment.",
             highlights: [
                 "Translated observed robot behaviors into clear, actionable bug reports that accelerated issue resolution for engineering teams.",
-                "Proactively authored troubleshooting protocols and SOPs in a process-light environment, establishing documentation standards adopted by the broader team.",
-                "Served as critical communication bridge between operations and engineering, ensuring alignment on priorities and findings.",
-                "Rapidly adapted to novel role with minimal onboarding, demonstrating ability to learn complex domains quickly.",
-                "Prepared and staged physical testing environments to precise specifications, ensuring optimal conditions for data collection."
+                "Proactively authored troubleshooting protocols and SOPs where none existed, producing reference materials the broader team adopted as standard practice.",
+                "Bridged operations and engineering communication, keeping both teams aligned on priorities and findings.",
+                "Reached full productivity in a novel role with minimal onboarding, independently navigating a complex robotics domain.",
+                "Prepared and staged physical testing environments to precise specifications, enabling consistent and repeatable data collection across test runs."
             ],
             tags: ["default", "qa-lead"]
         },
@@ -81,12 +81,12 @@ var resumeJSON = {
             summary:
                 "Senior contractor providing requirements analysis, UAT leadership, and quality assurance across multiple mission-critical VA healthcare projects. Subject matter expert for complex clinical modules, facilitating knowledge transfer and driving process standardization across distributed teams.",
             highlights: [
-                "Served as go-to SME for the Traumatic Brain Injury module, facilitating knowledge transfer sessions and translating complex healthcare domain requirements for cross-functional teams.",
-                "Championed the transition from Waterfall to Agile methodologies, gaining stakeholder buy-in and coaching teams through adoption — a change management initiative that improved delivery predictability.",
+                "Became the go-to SME for the Traumatic Brain Injury module, running knowledge transfer sessions that enabled cross-functional teams to navigate complex healthcare domain requirements.",
+                "Championed the transition from Waterfall to Agile, coaching distributed teams through adoption and gaining leadership buy-in, improving delivery predictability across projects.",
                 "Drove standardization of testing practices and documentation across multiple VA projects, building consensus among distributed teams and reducing onboarding time for new analysts.",
                 "Advocated for accessibility as a core quality metric, leading 508 compliance initiatives and educating team members on inclusive design requirements.",
-                "Collaborated with automation engineers to validate Cucumber/Selenium scripts, ensuring alignment between documented requirements and automated execution.",
-                "Created and maintained requirements traceability documentation ensuring business needs mapped to test coverage across web, mainframe, and mobile platforms."
+                "Collaborated with automation engineers to validate Cucumber/Selenium scripts, catching requirement-execution gaps before automated tests went into rotation.",
+                "Built requirements traceability documentation that mapped every business need to test coverage across web, mainframe, and mobile platforms."
             ],
             tags: ["default", "qa-lead", "business-analyst"]
         },
@@ -117,10 +117,10 @@ var resumeJSON = {
                 "Partnered with engineering and product leadership to establish quality processes and design cross-team workflows for a health tech startup's secure patient portal.",
             highlights: [
                 "Designed a unified JIRA workflow, facilitating smoother cross-team collaboration and visibility into release status.",
-                "Assessed release risks and communicated go/no-go recommendations to stakeholders, balancing speed-to-market with quality requirements.",
-                "Established the initial QA process and documentation standards for the health test service platform, defining how requirements would be validated.",
+                "Assessed release risks and communicated go/no-go recommendations to product and engineering leadership, balancing speed-to-market with quality.",
+                "Defined the initial QA process and validation criteria for the health test service platform, setting the standard for how requirements would be verified.",
                 "Mentored team members on effective documentation practices and quality standards to foster a culture of quality across the organization.",
-                "Performed validation testing across all major browsers and mobile devices to ensure requirements were met before release."
+                "Validated releases across all major browsers and mobile devices, catching requirement gaps before production deployment."
             ],
             tags: ["default", "qa-lead", "business-analyst"]
         },
@@ -132,13 +132,13 @@ var resumeJSON = {
             startDate: "2017-07-17",
             endDate: "2018-06-01",
             summary:
-                "As the sole QA resource, established comprehensive documentation framework and quality processes for the company's flagship education assessment platform, building credibility with development and product teams.",
+                "As the sole QA resource, built comprehensive quality processes and test infrastructure for the company's flagship education assessment platform, earning credibility with development and product teams.",
             highlights: [
                 "Built credibility with development and product teams by demonstrating the value of structured requirements validation, ultimately integrating QA as a respected part of the SDLC.",
-                "Developed complete documentation framework including test procedures, requirements traceability, and verification standards.",
+                "Created end-to-end test documentation spanning procedures, requirements traceability, and verification standards.",
                 "Improved developer-QA communication by introducing standardized user story and acceptance criteria templates, reducing ambiguity and accelerating delivery.",
                 "Created and maintained product documentation to support new feature releases and ensure consistent understanding of requirements.",
-                "Managed all validation activities for the flagship web application across browsers and mobile devices."
+                "Owned end-to-end validation for the flagship web application, gating every release across browsers and mobile platforms."
             ],
             tags: ["default", "qa-lead", "business-analyst"]
         },
@@ -152,10 +152,10 @@ var resumeJSON = {
             summary:
                 "Contracted as QA Analyst for RetailMeNot, coordinating cross-team efforts for high-visibility e-commerce feature launches and aligning testing priorities with business objectives.",
             highlights: [
-                "Coordinated QA efforts across multiple teams for the high-visibility gift card feature launch, aligning testing priorities with business objectives and stakeholder expectations.",
+                "Coordinated QA efforts across multiple teams for the high-visibility gift card feature launch, aligning testing priorities with business objectives and leadership expectations.",
                 "Engineered custom JavaScript tools to validate site-wide analytics implementation and data integrity, ensuring business requirements were accurately captured.",
-                "Developed and standardized documentation and data suites to guarantee consistency across all environments.",
-                "Responded to live production issues under pressure, triaging problems and communicating status updates to stakeholders during critical outages.",
+                "Created standardized test documentation and data suites that eliminated inconsistencies across testing environments.",
+                "Responded to live production issues under pressure, triaging problems and communicating status updates to leadership during critical outages.",
                 "Partnered with developers to enhance internal tooling, ensure a CI/CD workflow, and contribute improvements that increased team efficiency."
             ],
             tags: ["default", "qa-lead"]
@@ -171,9 +171,9 @@ var resumeJSON = {
                 "Developed inaugural QA process for an accessibility-focused video interpreting platform, immersing in user community to ensure product truly met the needs of Deaf and hard-of-hearing users.",
             highlights: [
                 "Invested in learning American Sign Language and Deaf cultural norms to understand user needs and ensure the product truly served its community — a user research approach that informed requirements validation.",
-                "Pioneered the quality assurance function from the ground up, creating documentation framework and test procedures for the Ruby on Rails web application.",
+                "Established the company's first quality assurance function, defining test procedures and quality benchmarks for the Ruby on Rails web application.",
                 "Managed full validation lifecycle including creating test plans, executing test runs, and reporting results to stakeholders for both web and mobile platforms.",
-                "Problem-solved cross-platform testing limitations by implementing VirtualBox-based solution, demonstrating gap analysis and solution design skills."
+                "Solved cross-platform testing limitations by implementing a VirtualBox-based solution, expanding test coverage to previously unreachable environments."
             ],
             tags: ["default", "qa-lead", "business-analyst"]
         },
@@ -185,12 +185,12 @@ var resumeJSON = {
             startDate: "2012-07-16",
             endDate: "2013-04-18",
             summary:
-                "Founded and scaled the QA function for a HIPAA-compliant healthcare messaging app, ensuring regulatory requirements were met while building team and processes from scratch.",
+                "Founded and scaled the QA function for a HIPAA-compliant healthcare messaging app, ensuring regulatory requirements were met while building the team and processes where none existed.",
             highlights: [
                 "Analyzed and documented HIPAA compliance requirements, ensuring application met strict regulatory standards for secure transmission of patient health information.",
-                "Founded and scaled the QA department from one-person operation to a team, hiring, onboarding, and mentoring new analysts while establishing documentation standards.",
+                "Grew the QA department from a solo operation to a full team, hiring, onboarding, and mentoring new analysts while codifying repeatable quality processes.",
                 "Developed initial test strategy and comprehensive documentation to ensure software met business and regulatory requirements before release.",
-                "Performed all functional, regression, and compliance validation across mobile devices (iPhones, iPads, Android) and iOS Simulator."
+                "Executed functional, regression, and HIPAA compliance validation across all supported mobile devices, ensuring every release met regulatory standards before deployment."
             ],
             tags: ["default", "qa-lead"]
         },
@@ -205,7 +205,7 @@ var resumeJSON = {
                 "Contracted as QA Tester and promoted to Test Lead for Heatwave Interactive, authoring test documentation and leading a team across multiple game titles.",
             highlights: [
                 "Authored comprehensive test plans and documentation for smoke and regression testing cycles, improving coverage and consistency.",
-                "Led and mentored a team of testers, providing guidance on documentation standards and execution best practices.",
+                "Led and mentored a team of testers, raising the bar on documentation quality and execution consistency.",
                 "Executed daily validation of game builds for core functionality, gameplay mechanics, and UI integrity.",
                 "Promoted to Test Lead based on documentation quality and team leadership skills."
             ],
@@ -276,7 +276,7 @@ var resumeJSON = {
                 "Executed comprehensive functional and compatibility testing across 100+ unique device models, documenting platform-specific requirements and constraints.",
                 "Identified, documented, and tracked platform-specific bugs using Mantis, providing detailed analysis for developers.",
                 "Developed strategies for efficient testing across disparate hardware and software platforms.",
-                "Supported full product lifecycle from initial testing through production and post-release support."
+                "Maintained quality oversight across the full product lifecycle, from initial builds through production and post-release patches."
             ],
             tags: ["default", "qa-lead"]
         },
@@ -293,8 +293,8 @@ var resumeJSON = {
                 "Authored and maintained detailed test plans and documentation to guide testing team and establish organized protocols.",
                 "Collaborated closely with development team to isolate and document issues specific to Mac platform, contributing to stable launches.",
                 "Utilized JIRA and DevTrack to document, track, and verify defects with clear, actionable reports.",
-                "Conducted extensive proofreading of in-game text and UI elements to ensure accuracy and quality.",
-                "Performed functional, compatibility, and regression testing on major titles (Call of Duty 2, Civilization IV)."
+                "Caught localization and UI text errors through exhaustive proofreading, improving the polish of shipped titles.",
+                "Validated major titles including Call of Duty 2 and Civilization IV through functional, compatibility, and regression testing, contributing to stable Mac launches."
             ],
             tags: ["default", "qa-lead"]
         },
