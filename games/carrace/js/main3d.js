@@ -6,6 +6,7 @@ import * as CANNON from 'cannon-es';
 import { initInput, getInput } from './input.js';
 import { createEnvironment } from './environment.js';
 import { createCar, applyCarControls, syncCarVisuals, resetCar, getChassisBody, getSpeedMPH } from './car3d.js';
+import { createTrack, getTrackStart } from './track.js';
 
 // ── Three.js setup ───────────────────────────────────────────────────
 const scene = new THREE.Scene();
@@ -37,8 +38,13 @@ world.defaultContactMaterial.friction = 0.3;
 
 // ── Build scene ──────────────────────────────────────────────────────
 const env = createEnvironment(scene, world);
+createTrack(scene, world);
 createCar(scene, world);
 initInput();
+
+// Spawn car on track start
+const trackStart = getTrackStart();
+resetCar(trackStart.position, trackStart.quaternion);
 
 // ── Chase camera state ───────────────────────────────────────────────
 const camPos = new THREE.Vector3(0, 5, -12);
@@ -68,7 +74,8 @@ function animate() {
 
     // Reset
     if (input.reset) {
-        resetCar();
+        const start = getTrackStart();
+        resetCar(start.position, start.quaternion);
         input.reset = false; // consume
     }
 

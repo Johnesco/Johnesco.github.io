@@ -206,13 +206,21 @@ export function syncCarVisuals() {
     }
 }
 
-// ── Reset car to origin ──────────────────────────────────────────────
-export function resetCar() {
+// ── Reset car (optional spawn position / quaternion) ────────────────
+export function resetCar(position, quaternion) {
     if (!chassisBody) return;
-    chassisBody.position.set(0, 2, 0);
+    if (position) {
+        chassisBody.position.copy(position);
+    } else {
+        chassisBody.position.set(0, 2, 0);
+    }
     chassisBody.velocity.setZero();
     chassisBody.angularVelocity.setZero();
-    chassisBody.quaternion.set(0, 0, 0, 1);
+    if (quaternion) {
+        chassisBody.quaternion.copy(quaternion);
+    } else {
+        chassisBody.quaternion.set(0, 0, 0, 1);
+    }
 }
 
 // ── Accessors for camera / HUD ───────────────────────────────────────

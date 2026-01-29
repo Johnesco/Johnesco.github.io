@@ -97,35 +97,5 @@ export function createEnvironment(scene, world) {
     // ── Fog (hides ground edges) ──────────────────────────────────────
     scene.fog = new THREE.Fog(0x88aadd, 200, 2000);
 
-    // ── Ramp for testing 6DOF airborne physics ────────────────────────
-    addRamp(scene, world, { x: 0, z: 60 });
-    addRamp(scene, world, { x: 30, z: 120 }, Math.PI / 6);
-
     return { groundBody, dirLight: dir };
-}
-
-/**
- * Helper — static box ramp.
- * Default: 6m wide, 0.4m tall at peak, 8m long, angled 12 deg.
- */
-function addRamp(scene, world, pos, angle) {
-    const w = 6, h = 0.4, d = 8;
-    const rampAngle = angle ?? 0.2; // ~12 degrees
-
-    // Physics
-    const rampBody = new CANNON.Body({ mass: 0 });
-    rampBody.addShape(new CANNON.Box(new CANNON.Vec3(w / 2, h / 2, d / 2)));
-    rampBody.position.set(pos.x, h / 2 + Math.sin(rampAngle) * d * 0.25, pos.z);
-    rampBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -rampAngle);
-    world.addBody(rampBody);
-
-    // Visual
-    const geo = new THREE.BoxGeometry(w, h, d);
-    const mat = new THREE.MeshPhongMaterial({ color: 0x888888 });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    mesh.position.copy(rampBody.position);
-    mesh.quaternion.copy(rampBody.quaternion);
-    scene.add(mesh);
 }
