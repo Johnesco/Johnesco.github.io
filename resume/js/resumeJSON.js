@@ -67,7 +67,7 @@ var resumeJSON = {
                 "Proactively authored troubleshooting protocols and SOPs where none existed, producing reference materials the broader team adopted as standard practice.",
                 "Bridged operations and engineering communication, keeping both teams aligned on priorities and findings.",
                 "Reached full productivity in a novel role with minimal onboarding, independently navigating a complex robotics domain.",
-                "Prepared and staged physical testing environments to precise specifications, enabling consistent and repeatable data collection across test runs."
+                "Reduced physical testing environment setup time by 75% by standardizing the preparation pattern, ensuring consistent and repeatable conditions for data collection."
             ],
             tags: ["default", "qa-lead"]
         },
