@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { initInput, getInput } from './input.js';
 import { createEnvironment } from './environment.js';
-import { createCar, applyCarControls, syncCarVisuals, resetCar, getChassisBody, getSpeedMPH } from './car3d.js';
+import { createCar, applyCarControls, syncCarVisuals, resetCar, getChassisBody, getSpeedMPH, setDrivingPreset } from './car3d.js';
 import { createTrack, getTrackStart } from './track.js';
 
 // ── Three.js setup ───────────────────────────────────────────────────
@@ -59,6 +59,10 @@ const CAM_LOOK_SMOOTH = 0.10;
 // ── HUD elements ─────────────────────────────────────────────────────
 const speedEl = document.getElementById('speed');
 const debugEl = document.getElementById('debug');
+
+// ── Driving preset selector ─────────────────────────────────────────
+const presetSelect = document.getElementById('driving-preset');
+presetSelect.addEventListener('change', () => setDrivingPreset(presetSelect.value));
 
 // ── Clock ────────────────────────────────────────────────────────────
 const clock = new THREE.Clock();

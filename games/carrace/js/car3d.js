@@ -12,22 +12,85 @@ let wheelMeshes = []; // THREE.Group[] for each wheel visual
 let brakeLights = [];
 let brakeLightMats;
 
-// ── Tuning constants ─────────────────────────────────────────────────
+// ── Fixed geometry constants ─────────────────────────────────────────
 const CHASSIS_HALF = { x: 1.0, y: 0.4, z: 1.8 };       // half-extents (m)
 const MASS = 150;
 const WHEEL_RADIUS = 0.35;
-const MAX_ENGINE_FORCE = 1500;
-const MAX_BRAKE_FORCE = 50;
-const MAX_STEER = 0.5;       // ~28 deg
-
-// Suspension
-const SUSP_STIFFNESS = 55;
-const SUSP_DAMPING_COMP = 4.4;
-const SUSP_DAMPING_REL = 2.3;
 const SUSP_REST_LENGTH = 0.3;
 const SUSP_TRAVEL = 0.3;
-const ROLL_INFLUENCE = 0.05;
-const FRICTION_SLIP = 1.5;
+
+// ── Driving presets ─────────────────────────────────────────────────
+//  Each preset tunes: power, braking, steering, grip, stability
+const PRESETS = {
+    casual: {
+        label: 'Casual',
+        engineForce:    600,
+        brakeForce:     40,
+        maxSteer:       0.50,
+        topSpeed:       25,      // m/s (~56 mph) — power fades toward this
+        suspStiffness:  45,
+        dampComp:       5.0,
+        dampRel:        3.0,
+        frictionSlip:   2.5,
+        rollInfluence:  0.01,
+        angularDamping: 0.6,
+    },
+    touring: {
+        label: 'Touring',
+        engineForce:    900,
+        brakeForce:     45,
+        maxSteer:       0.48,
+        topSpeed:       35,
+        suspStiffness:  50,
+        dampComp:       4.5,
+        dampRel:        2.5,
+        frictionSlip:   2.0,
+        rollInfluence:  0.02,
+        angularDamping: 0.5,
+    },
+    sport: {
+        label: 'Sport',
+        engineForce:    1200,
+        brakeForce:     50,
+        maxSteer:       0.45,
+        topSpeed:       45,
+        suspStiffness:  60,
+        dampComp:       4.4,
+        dampRel:        2.3,
+        frictionSlip:   1.8,
+        rollInfluence:  0.04,
+        angularDamping: 0.45,
+    },
+    race: {
+        label: 'Race',
+        engineForce:    1500,
+        brakeForce:     55,
+        maxSteer:       0.40,
+        topSpeed:       55,
+        suspStiffness:  65,
+        dampComp:       4.2,
+        dampRel:        2.2,
+        frictionSlip:   1.5,
+        rollInfluence:  0.05,
+        angularDamping: 0.4,
+    },
+    drift: {
+        label: 'Drift',
+        engineForce:    1300,
+        brakeForce:     35,
+        maxSteer:       0.55,
+        topSpeed:       40,
+        suspStiffness:  40,
+        dampComp:       3.5,
+        dampRel:        2.0,
+        frictionSlip:   1.0,
+        rollInfluence:  0.08,
+        angularDamping: 0.3,
+    },
+};
+
+// Active tuning — starts as Touring, changed via setDrivingPreset()
+const tuning = { ...PRESETS.touring };
 
 // Wheel placement (local to chassis)
 //   front axle z = +1.3   rear axle z = -1.3
@@ -48,7 +111,7 @@ export function createCar(scene, world) {
     chassisBody = new CANNON.Body({ mass: MASS });
     // Offset shape y+0.1 to lower CG relative to shape center
     chassisBody.addShape(chassisShape, new CANNON.Vec3(0, 0.1, 0));
-    chassisBody.angularDamping = 0.4;
+    chassisBody.angularDamping = tuning.angularDamping;
     chassisBody.position.set(0, 2, 0);
     // Don't add chassisBody to world directly — RaycastVehicle does that
 
@@ -63,13 +126,13 @@ export function createCar(scene, world) {
     const wheelOptions = {
         radius: WHEEL_RADIUS,
         directionLocal: new CANNON.Vec3(0, -1, 0),
-        suspensionStiffness: SUSP_STIFFNESS,
+        suspensionStiffness: tuning.suspStiffness,
         suspensionRestLength: SUSP_REST_LENGTH,
         maxSuspensionTravel: SUSP_TRAVEL,
-        frictionSlip: FRICTION_SLIP,
-        dampingCompression: SUSP_DAMPING_COMP,
-        dampingRelaxation: SUSP_DAMPING_REL,
-        rollInfluence: ROLL_INFLUENCE,
+        frictionSlip: tuning.frictionSlip,
+        dampingCompression: tuning.dampComp,
+        dampingRelaxation: tuning.dampRel,
+        rollInfluence: tuning.rollInfluence,
         axleLocal: new CANNON.Vec3(-1, 0, 0),
         chassisConnectionPointLocal: new CANNON.Vec3(), // overwritten per wheel
         maxSuspensionForce: 100000,
@@ -168,20 +231,22 @@ export function applyCarControls(input) {
     // ── Steering (speed-sensitive) ───────────────────────────────────
     const steerDir = (input.left ? 1 : 0) + (input.right ? -1 : 0);
     const speedFactor = Math.max(0.3, 1 - Math.min(speed / 40, 1) * 0.6);
-    const steer = steerDir * MAX_STEER * speedFactor;
+    const steer = steerDir * tuning.maxSteer * speedFactor;
     vehicle.setSteeringValue(steer, 0);
     vehicle.setSteeringValue(steer, 1);
 
-    // ── Engine (rear-wheel drive) ────────────────────────────────────
+    // ── Engine (rear-wheel drive) with speed-based power fade ────────
+    const speedRatio = Math.min(speed / tuning.topSpeed, 1);
+    const powerFade  = 1 - speedRatio * 0.9;   // 100% at rest → 10% at top speed
     let engineForce = 0;
-    if (input.up)   engineForce = -MAX_ENGINE_FORCE; // negative = forward in cannon-es z convention
-    if (input.down)  engineForce =  MAX_ENGINE_FORCE * 0.6; // reverse is weaker
+    if (input.up)   engineForce = -tuning.engineForce * powerFade;     // negative = forward
+    if (input.down)  engineForce =  tuning.engineForce * 0.6 * powerFade; // reverse weaker
     vehicle.applyEngineForce(engineForce, 2);
     vehicle.applyEngineForce(engineForce, 3);
 
     // ── Brakes ───────────────────────────────────────────────────────
     const braking = input.brake;
-    const brakeVal = braking ? MAX_BRAKE_FORCE : 0;
+    const brakeVal = braking ? tuning.brakeForce : 0;
     for (let i = 0; i < 4; i++) vehicle.setBrake(brakeVal, i);
 
     // Brake lights
@@ -220,6 +285,29 @@ export function resetCar(position, quaternion) {
         chassisBody.quaternion.copy(quaternion);
     } else {
         chassisBody.quaternion.set(0, 0, 0, 1);
+    }
+}
+
+// ── Driving preset switcher ──────────────────────────────────────────
+export function setDrivingPreset(name) {
+    const preset = PRESETS[name];
+    if (!preset) return;
+    Object.assign(tuning, preset);
+
+    // Apply to live chassis
+    if (chassisBody) {
+        chassisBody.angularDamping = tuning.angularDamping;
+    }
+    // Apply to live wheel infos
+    if (vehicle) {
+        for (let i = 0; i < vehicle.wheelInfos.length; i++) {
+            const w = vehicle.wheelInfos[i];
+            w.suspensionStiffness  = tuning.suspStiffness;
+            w.dampingCompression   = tuning.dampComp;
+            w.dampingRelaxation    = tuning.dampRel;
+            w.frictionSlip         = tuning.frictionSlip;
+            w.rollInfluence        = tuning.rollInfluence;
+        }
     }
 }
 
