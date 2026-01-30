@@ -13,13 +13,14 @@ All resume content is stored in `js/resumeJSON.js`. Never hardcode resume conten
 
 ### Configuration
 Default view settings are in `js/resume-config.js`:
-- `defaultYears` - Years of work history to show (default: 15)
-- `defaultTags` - Tags to filter by (default: null = show all)
-- `excludeTags` - Tags to hide from default view (default: ['performer'])
-- `defaultSkills` - Skill categories to show (default: null = show all)
+- `defaultWorkHistoryYears` - Years of full-detail work history to show (default: 15)
 - `maxYearsThreshold` - Years value that means "show all" (default: 50)
 
-Note: `excludeTags` only applies when no `?tags=` URL parameter is provided. Users can still see excluded jobs via `?tags=performer`.
+Each profile uses the **additive history model**:
+- `workHistoryYears` - X years of full-detail Professional Experience
+- `additionalHistoryYears` - Y MORE years beyond X as condensed Additional Experience
+- Total visible history = X + Y
+- Set `additionalHistoryYears` to `null` to disable condensing (all jobs shown full)
 
 ### Shared Utilities
 Common functions live in `js/resume-utils.js`:
@@ -104,10 +105,14 @@ Dates use `YYYY-MM-DD` format. Omit `endDate` for current positions.
 
 ### Changing Default View Settings
 Edit `js/resume-config.js` to change what appears by default (no URL params):
-- `defaultYears: 15` - Show last 15 years of work history
-- `defaultTags: null` - Set to `['healthcare', 'lead']` to filter by tags
-- `excludeTags: ['performer']` - Hide jobs with these tags from default view
-- `defaultSkills: null` - Set to `['programming']` to filter skill categories
+- `defaultWorkHistoryYears: 15` - Years of full-detail work history
+- Profile `workHistoryYears` - Override per profile (Professional Experience section)
+- Profile `additionalHistoryYears` - Additional condensed years beyond work history (Additional Experience section)
+
+URL parameters:
+- `?years=10` - Override work history years (full-detail window)
+- `?additional=5` - Override additional condensed years beyond work history
+- Total visible = years + additional
 
 ### Adding a New Skill Category
 1. Edit `js/resumeJSON.js`

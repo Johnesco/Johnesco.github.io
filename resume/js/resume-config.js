@@ -1,12 +1,17 @@
 /**
  * Resume Configuration - Default view settings
  * Edit these values to change what appears by default (when no URL query params are specified)
+ *
+ * Additive History Model:
+ *   workHistoryYears = X years of full-detail Professional Experience
+ *   additionalHistoryYears = Y MORE years beyond X as condensed Additional Experience
+ *   Total visible history = X + Y
  */
 
 const RESUME_CONFIG = {
-    // Number of years of work history to show by default
-    // Set to 0 or a high number (e.g., 99) to show all jobs
-    defaultYears: 15,
+    // Years of full-detail work history to show by default
+    // This is the "Professional Experience" section
+    defaultWorkHistoryYears: 15,
 
     // Maximum years value before treating as "show all"
     // If a years filter exceeds this, no date filtering is applied
@@ -20,36 +25,42 @@ const RESUME_CONFIG = {
     // Jobs and skills appear in a profile if their tags array includes the profile name
     // "all" profile shows everything regardless of tags
     // The defaultProfile setting above determines which profile is used when no ?profile= is specified
+    //
+    // Additive model:
+    //   workHistoryYears: X years shown with full details (Professional Experience)
+    //   additionalHistoryYears: Y MORE years shown condensed (Additional Experience)
+    //   Total visible = workHistoryYears + additionalHistoryYears
+    //   Set additionalHistoryYears to null to disable condensing (all jobs shown full)
     profiles: {
         "all": {
             // Shows everything - all jobs, all skills, no date limits, no condensing
             summaryKey: "default",
             labelKey: "default",
-            historyYears: 99,
-            earlierExperienceYears: null,
+            workHistoryYears: 99,
+            additionalHistoryYears: null,
             skillsFormat: "tags"
         },
         "qa-lead": {
             summaryKey: "qa-lead",
             labelKey: "qa-lead",
-            historyYears: 20,
-            // Jobs older than this many years get condensed to one-liners
-            earlierExperienceYears: 10,
+            // 10 years full detail + 10 more years condensed = 20 total
+            workHistoryYears: 10,
+            additionalHistoryYears: 10,
             // "list" = ATS-friendly comma-separated, "tags" = pill boxes (default)
             skillsFormat: "list"
         },
         "business-analyst": {
             summaryKey: "business-analyst",
             labelKey: "business-analyst",
-            historyYears: 30,
-            earlierExperienceYears: null,
+            workHistoryYears: 30,
+            additionalHistoryYears: null,
             skillsFormat: "list"
         },
         "instructor": {
             summaryKey: "instructor",
             labelKey: "instructor",
-            historyYears: 99,
-            earlierExperienceYears: null,
+            workHistoryYears: 99,
+            additionalHistoryYears: null,
             skillsFormat: "list"
         }
     }

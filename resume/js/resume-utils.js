@@ -7,12 +7,13 @@
 
 /**
  * Parse URL query parameters for resume filtering
- * @returns {Object} Object with years and profile
+ * @returns {Object} Object with years (work history), additional (extra condensed years), and profile
  */
 function getQueryParams() {
     const params = new URLSearchParams(window.location.search);
     return {
         years: params.get('years') ? parseInt(params.get('years'), 10) : null,
+        additional: params.get('additional') ? parseInt(params.get('additional'), 10) : null,
         profile: params.get('profile') ? params.get('profile').trim().toLowerCase() : null
     };
 }
@@ -59,18 +60,18 @@ function getLabel(resumeData) {
 }
 
 /**
- * Partition jobs into recent (full display) and earlier (condensed) based on profile settings
+ * Partition jobs into recent (full display) and earlier (condensed) based on a cutoff
  * @param {Array} work - Array of work entries (already filtered)
- * @param {number} earlierYears - Jobs older than this get condensed (default: no partition)
+ * @param {number} detailedYears - Jobs within this many years get full details; older ones are condensed
  * @returns {Object} { recentJobs: Array, earlierJobs: Array }
  */
-function partitionJobs(work, earlierYears = null) {
-    if (!earlierYears || earlierYears <= 0) {
+function partitionJobs(work, detailedYears = null) {
+    if (!detailedYears || detailedYears <= 0) {
         return { recentJobs: work, earlierJobs: [] };
     }
 
     const now = new Date();
-    const cutoffDate = new Date(now.getFullYear() - earlierYears, now.getMonth(), now.getDate());
+    const cutoffDate = new Date(now.getFullYear() - detailedYears, now.getMonth(), now.getDate());
 
     const recentJobs = [];
     const earlierJobs = [];
@@ -142,7 +143,7 @@ function filterWorkByProfile(work, profileName) {
  * @param {number} years - Number of years to include (default from RESUME_CONFIG)
  * @returns {Array} Filtered work entries
  */
-function filterWorkByYears(work, years = RESUME_CONFIG.defaultYears) {
+function filterWorkByYears(work, years = RESUME_CONFIG.defaultWorkHistoryYears) {
     if (years <= 0 || years > RESUME_CONFIG.maxYearsThreshold) return work;
     const now = new Date();
     const cutoffDate = new Date(now.getFullYear() - years, now.getMonth(), now.getDate());
@@ -214,6 +215,12 @@ function formatDate(inputDate, format = 'long') {
 /**
  * Apply default filters to work and skills based on query params and profile
  * Falls back to RESUME_CONFIG defaults when no query params specified
+ *
+ * Uses the additive history model:
+ *   workHistoryYears (X) = years of full-detail Professional Experience
+ *   additionalHistoryYears (Y) = MORE years beyond X as condensed Additional Experience
+ *   Total visible history = X + Y
+ *
  * @param {Object} resumeData - The resumeJSON object
  * @returns {Object} Object with filteredWork, filteredSkills, recentJobs, earlierJobs, profile, profileName, and params
  */
@@ -228,13 +235,20 @@ function applyFilters(resumeData) {
     // Filter jobs by profile - jobs appear if their tags include the profile name
     filteredWork = filterWorkByProfile(filteredWork, profileName);
 
-    // Apply years filter: URL param overrides profile's historyYears, which overrides global default
-    const yearsFilter = params.years ?? profile?.historyYears ?? RESUME_CONFIG.defaultYears;
-    filteredWork = filterWorkByYears(filteredWork, yearsFilter);
+    // Additive model: work history years (detailed) + additional history years (condensed)
+    const workYears = params.years ?? profile?.workHistoryYears ?? RESUME_CONFIG.defaultWorkHistoryYears;
+    const additionalYears = params.additional ?? profile?.additionalHistoryYears ?? null;
 
-    // Partition jobs into recent and earlier based on profile settings
-    const earlierYears = profile?.earlierExperienceYears || null;
-    const { recentJobs, earlierJobs } = partitionJobs(filteredWork, earlierYears);
+    // Total visible years = workYears + additionalYears (if set)
+    const totalYears = (additionalYears != null && additionalYears > 0)
+        ? workYears + additionalYears
+        : workYears;
+    filteredWork = filterWorkByYears(filteredWork, totalYears);
+
+    // Partition: jobs within workYears get full detail, the rest are condensed
+    // Only partition when additionalHistoryYears is set and > 0
+    const partitionCutoff = (additionalYears != null && additionalYears > 0) ? workYears : null;
+    const { recentJobs, earlierJobs } = partitionJobs(filteredWork, partitionCutoff);
 
     // Filter skills by profile - skills appear if their tags include the profile name
     filteredSkills = filterSkillsByProfile(filteredSkills, profileName);

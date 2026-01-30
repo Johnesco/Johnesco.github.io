@@ -484,16 +484,16 @@
                 <h4 id="profileInfoTitle">Profile Settings</h4>
                 <div class="profile-info-grid">
                     <div class="profile-info-item">
-                        <div class="label">History Years</div>
-                        <div class="value" id="infoHistoryYears">15 years</div>
+                        <div class="label">Work History Years</div>
+                        <div class="value" id="infoWorkHistoryYears">15 years</div>
                     </div>
                     <div class="profile-info-item">
                         <div class="label">Skills Format</div>
                         <div class="value" id="infoSkillsFormat">Tags</div>
                     </div>
                     <div class="profile-info-item">
-                        <div class="label">Additional Experience</div>
-                        <div class="value" id="infoEarlierExperience">None</div>
+                        <div class="label">Additional History Years</div>
+                        <div class="value" id="infoAdditionalYears">None</div>
                     </div>
                 </div>
             </div>
@@ -511,7 +511,7 @@
             <div class="override-group" id="yearsOverrideGroup">
                 <div class="override-header">
                     <input type="checkbox" id="yearsEnabled">
-                    <label for="yearsEnabled">Override History Years</label>
+                    <label for="yearsEnabled">Override Work History Years</label>
                 </div>
                 <div class="override-content hidden" id="yearsContent">
                     <div class="slider-control">
@@ -526,7 +526,7 @@
             <div class="override-group" id="earlierOverrideGroup">
                 <div class="override-header">
                     <input type="checkbox" id="earlierEnabled">
-                    <label for="earlierEnabled">Override Additional Experience (Condensed)</label>
+                    <label for="earlierEnabled">Override Additional History Years</label>
                 </div>
                 <div class="override-content hidden" id="earlierContent">
                     <div class="slider-control">
@@ -534,7 +534,7 @@
                         <span class="slider-display" id="earlierDisplay">10 years</span>
                     </div>
                     <p style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">
-                        Jobs older than this will be condensed to one-liners. Set to 0 to disable condensing.
+                        Years of additional condensed history beyond the work history window. Set to 0 to disable.
                     </p>
                     <div class="profile-default" id="earlierDefault">Profile default: None</div>
                 </div>
@@ -632,8 +632,8 @@
         function getProfileInfo(profileName) {
             const profile = RESUME_CONFIG.profiles[profileName];
             return {
-                historyYears: profile.historyYears,
-                earlierExperienceYears: profile.earlierExperienceYears,
+                workHistoryYears: profile.workHistoryYears,
+                additionalHistoryYears: profile.additionalHistoryYears,
                 skillsFormat: profile.skillsFormat
             };
         }
@@ -662,11 +662,17 @@
                 jobs = jobs.filter(job => job.tags?.includes(profileName));
             }
 
-            // Apply years filter
-            const years = overrides.years ?? RESUME_CONFIG.profiles[profileName].historyYears;
-            if (years < RESUME_CONFIG.maxYearsThreshold) {
+            // Additive model: total visible = workYears + additionalYears
+            const profile = RESUME_CONFIG.profiles[profileName];
+            const workYears = overrides.workYears ?? profile.workHistoryYears;
+            const additionalYears = overrides.additionalYears ?? profile.additionalHistoryYears;
+            const totalYears = (additionalYears != null && additionalYears > 0)
+                ? workYears + additionalYears
+                : workYears;
+
+            if (totalYears < RESUME_CONFIG.maxYearsThreshold) {
                 const cutoff = new Date();
-                cutoff.setFullYear(cutoff.getFullYear() - years);
+                cutoff.setFullYear(cutoff.getFullYear() - totalYears);
                 jobs = jobs.filter(job => {
                     const dateStr = job.endDate || job.startDate;
                     if (!dateStr) return true;
@@ -682,17 +688,19 @@
             const allJobs = getJobsForProfile(profileName, overrides);
             const profile = RESUME_CONFIG.profiles[profileName];
 
-            // Get earlier experience years (override or profile default)
-            const earlierYears = overrides.earlierYears ?? profile.earlierExperienceYears;
+            // Get additional history years (override or profile default)
+            const additionalYears = overrides.additionalYears ?? profile.additionalHistoryYears;
 
-            // If no earlier experience setting, all jobs are full
-            if (!earlierYears || earlierYears === 0) {
+            // If no additional years, all jobs are shown with full details
+            if (!additionalYears || additionalYears === 0) {
                 return { full: allJobs, condensed: [] };
             }
 
+            // Partition cutoff: jobs within workHistoryYears get full detail
+            const workYears = overrides.workYears ?? profile.workHistoryYears;
             const now = new Date();
-            const earlierCutoff = new Date();
-            earlierCutoff.setFullYear(now.getFullYear() - earlierYears);
+            const detailCutoff = new Date();
+            detailCutoff.setFullYear(now.getFullYear() - workYears);
 
             const full = [];
             const condensed = [];
@@ -704,7 +712,7 @@
                     return;
                 }
                 const jobDate = new Date(dateStr);
-                if (jobDate >= earlierCutoff) {
+                if (jobDate >= detailCutoff) {
                     full.push(job);
                 } else {
                     condensed.push(job);
@@ -733,8 +741,8 @@
         const state = {
             selectedProfile: getDefaultProfile(),
             overrides: {
-                years: null,
-                earlierYears: null,
+                workYears: null,
+                additionalYears: null,
                 skillsFormat: null
             }
         };
@@ -788,31 +796,31 @@
             document.getElementById('profileInfoTitle').textContent =
                 formatProfileName(profileName) + ' Profile Settings';
 
-            document.getElementById('infoHistoryYears').textContent = formatYears(info.historyYears);
+            document.getElementById('infoWorkHistoryYears').textContent = formatYears(info.workHistoryYears);
             document.getElementById('infoSkillsFormat').textContent =
                 info.skillsFormat === 'list' ? 'List (ATS-friendly)' : 'Tags (visual)';
-            document.getElementById('infoEarlierExperience').textContent =
-                info.earlierExperienceYears ? formatYears(info.earlierExperienceYears) + ' (condensed)' : 'None';
+            document.getElementById('infoAdditionalYears').textContent =
+                info.additionalHistoryYears ? formatYears(info.additionalHistoryYears) : 'None';
 
             // Update default displays in override sections
-            document.getElementById('yearsDefault').textContent = 'Profile default: ' + formatYears(info.historyYears);
+            document.getElementById('yearsDefault').textContent = 'Profile default: ' + formatYears(info.workHistoryYears);
             document.getElementById('earlierDefault').textContent = 'Profile default: ' +
-                (info.earlierExperienceYears ? formatYears(info.earlierExperienceYears) : 'None (no condensing)');
+                (info.additionalHistoryYears ? formatYears(info.additionalHistoryYears) : 'None (no condensing)');
             document.getElementById('formatDefault').textContent = 'Profile default: ' +
                 (info.skillsFormat === 'list' ? 'List' : 'Tags');
 
             // Update slider values to profile defaults when not overriding
-            if (state.overrides.years === null) {
-                const yearsVal = info.historyYears >= RESUME_CONFIG.maxYearsThreshold ? 50 : info.historyYears;
+            if (state.overrides.workYears === null) {
+                const yearsVal = info.workHistoryYears >= RESUME_CONFIG.maxYearsThreshold ? 50 : info.workHistoryYears;
                 document.getElementById('yearsSlider').value = yearsVal;
-                document.getElementById('yearsDisplay').textContent = formatYears(info.historyYears);
+                document.getElementById('yearsDisplay').textContent = formatYears(info.workHistoryYears);
             }
 
-            if (state.overrides.earlierYears === null) {
-                const earlierVal = info.earlierExperienceYears || 10;
-                document.getElementById('earlierSlider').value = earlierVal;
+            if (state.overrides.additionalYears === null) {
+                const additionalVal = info.additionalHistoryYears || 10;
+                document.getElementById('earlierSlider').value = additionalVal;
                 document.getElementById('earlierDisplay').textContent =
-                    info.earlierExperienceYears ? formatYears(info.earlierExperienceYears) : '10 years';
+                    info.additionalHistoryYears ? formatYears(info.additionalHistoryYears) : '10 years';
             }
 
             if (state.overrides.skillsFormat === null) {
@@ -847,20 +855,20 @@
             yearsCheckbox.addEventListener('change', () => {
                 yearsContent.classList.toggle('hidden', !yearsCheckbox.checked);
                 if (yearsCheckbox.checked) {
-                    state.overrides.years = parseInt(yearsSlider.value);
+                    state.overrides.workYears = parseInt(yearsSlider.value);
                 } else {
-                    state.overrides.years = null;
+                    state.overrides.workYears = null;
                     // Reset to profile default
                     const info = getProfileInfo(state.selectedProfile);
-                    yearsSlider.value = info.historyYears >= RESUME_CONFIG.maxYearsThreshold ? 50 : info.historyYears;
-                    yearsDisplay.textContent = formatYears(info.historyYears);
+                    yearsSlider.value = info.workHistoryYears >= RESUME_CONFIG.maxYearsThreshold ? 50 : info.workHistoryYears;
+                    yearsDisplay.textContent = formatYears(info.workHistoryYears);
                 }
                 updateOutput();
             });
 
             yearsSlider.addEventListener('input', () => {
                 const years = parseInt(yearsSlider.value);
-                state.overrides.years = years;
+                state.overrides.workYears = years;
                 yearsDisplay.textContent = formatYears(years);
                 updateOutput();
             });
@@ -874,14 +882,14 @@
             earlierCheckbox.addEventListener('change', () => {
                 earlierContent.classList.toggle('hidden', !earlierCheckbox.checked);
                 if (earlierCheckbox.checked) {
-                    state.overrides.earlierYears = parseInt(earlierSlider.value);
+                    state.overrides.additionalYears = parseInt(earlierSlider.value);
                 } else {
-                    state.overrides.earlierYears = null;
+                    state.overrides.additionalYears = null;
                     // Reset to profile default
                     const info = getProfileInfo(state.selectedProfile);
-                    earlierSlider.value = info.earlierExperienceYears || 10;
-                    earlierDisplay.textContent = info.earlierExperienceYears
-                        ? formatYears(info.earlierExperienceYears)
+                    earlierSlider.value = info.additionalHistoryYears || 10;
+                    earlierDisplay.textContent = info.additionalHistoryYears
+                        ? formatYears(info.additionalHistoryYears)
                         : '10 years';
                 }
                 updateOutput();
@@ -889,7 +897,7 @@
 
             earlierSlider.addEventListener('input', () => {
                 const years = parseInt(earlierSlider.value);
-                state.overrides.earlierYears = years;
+                state.overrides.additionalYears = years;
                 earlierDisplay.textContent = years === 0 ? 'Disabled' : formatYears(years);
                 updateOutput();
             });
@@ -930,8 +938,8 @@
         // Reset all overrides
         function resetOverrides() {
             state.overrides = {
-                years: null,
-                earlierYears: null,
+                workYears: null,
+                additionalYears: null,
                 skillsFormat: null
             };
 
@@ -960,13 +968,13 @@
             }
 
             // Add overrides if enabled
-            if (state.overrides.years !== null) {
-                params.set('years', state.overrides.years);
+            if (state.overrides.workYears !== null) {
+                params.set('years', state.overrides.workYears);
             }
 
-            if (state.overrides.earlierYears !== null) {
+            if (state.overrides.additionalYears !== null) {
                 // Use 0 to explicitly disable condensing
-                params.set('earlier', state.overrides.earlierYears);
+                params.set('additional', state.overrides.additionalYears);
             }
 
             if (state.overrides.skillsFormat !== null) {
@@ -989,8 +997,8 @@
 
             // Get categorized jobs
             const { full, condensed } = getCategorizedJobs(state.selectedProfile, {
-                years: state.overrides.years,
-                earlierYears: state.overrides.earlierYears
+                workYears: state.overrides.workYears,
+                additionalYears: state.overrides.additionalYears
             });
             const totalJobs = full.length + condensed.length;
             const skillCount = countSkillsForProfile(state.selectedProfile);
@@ -1037,15 +1045,15 @@
             const summaryParts = [];
             summaryParts.push('Profile: ' + formatProfileName(state.selectedProfile));
 
-            if (state.overrides.years !== null) {
-                summaryParts.push('Years: ' + formatYears(state.overrides.years));
+            if (state.overrides.workYears !== null) {
+                summaryParts.push('Work History: ' + formatYears(state.overrides.workYears));
             }
 
-            if (state.overrides.earlierYears !== null) {
-                const earlierText = state.overrides.earlierYears === 0
+            if (state.overrides.additionalYears !== null) {
+                const additionalText = state.overrides.additionalYears === 0
                     ? 'No condensing'
-                    : 'Condense after ' + formatYears(state.overrides.earlierYears);
-                summaryParts.push(earlierText);
+                    : 'Additional: +' + formatYears(state.overrides.additionalYears) + ' condensed';
+                summaryParts.push(additionalText);
             }
 
             if (state.overrides.skillsFormat !== null) {
