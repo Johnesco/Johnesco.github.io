@@ -84,12 +84,12 @@ const PRESETS = {
 // Active tuning — starts as Touring, changed via setDrivingPreset()
 const tuning = { ...PRESETS.touring };
 
-// Wheel placement (local to chassis)
+// Wheel placement (local to chassis, -Z = front of car)
 const WHEEL_POSITIONS = [
-    new CANNON.Vec3(-0.9, 0, 1.3),   // 0 FL
-    new CANNON.Vec3( 0.9, 0, 1.3),   // 1 FR
-    new CANNON.Vec3(-0.9, 0, -1.3),  // 2 RL
-    new CANNON.Vec3( 0.9, 0, -1.3),  // 3 RR
+    new CANNON.Vec3(-0.9, 0, -1.3),  // 0 FL
+    new CANNON.Vec3( 0.9, 0, -1.3),  // 1 FR
+    new CANNON.Vec3(-0.9, 0,  1.3),  // 2 RL
+    new CANNON.Vec3( 0.9, 0,  1.3),  // 3 RR
 ];
 
 // ── Generic car factory ─────────────────────────────────────────────
@@ -149,16 +149,16 @@ export function createCarInstance(scene, world, color = 0xcc0000) {
     body.castShadow = true;
     carMesh.add(body);
 
-    // Headlights
+    // Headlights (at -Z = physics forward)
     const hlGeo = new THREE.BoxGeometry(0.3, 0.15, 0.05);
     const hlMat = new THREE.MeshPhongMaterial({ color: 0xffffee, emissive: 0xaaaa66 });
     [-0.55, 0.55].forEach(x => {
         const hl = new THREE.Mesh(hlGeo, hlMat);
-        hl.position.set(x, -0.05, bodyL / 2 + 0.03);
+        hl.position.set(x, -0.05, -bodyL / 2 - 0.03);
         carMesh.add(hl);
     });
 
-    // Brake lights
+    // Brake lights (at +Z = physics rear)
     const blGeo = new THREE.BoxGeometry(0.3, 0.15, 0.05);
     const blOffMat = new THREE.MeshPhongMaterial({ color: 0x660000, emissive: 0x220000 });
     const blOnMat = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.8 });
@@ -166,7 +166,7 @@ export function createCarInstance(scene, world, color = 0xcc0000) {
     const brakeLights = [];
     [-0.55, 0.55].forEach(x => {
         const bl = new THREE.Mesh(blGeo, blOffMat);
-        bl.position.set(x, -0.05, -bodyL / 2 - 0.03);
+        bl.position.set(x, -0.05, bodyL / 2 + 0.03);
         carMesh.add(bl);
         brakeLights.push(bl);
     });
@@ -232,18 +232,16 @@ export function applyCarControlsTo(car, input, tuningOverride) {
     const speedRatio = Math.min(speed / t.topSpeed, 1);
     const powerFade  = 1 - speedRatio * 0.9;
     let engineForce = 0;
-    if (input.up)    engineForce = -t.engineForce * powerFade;
-    if (input.down)  engineForce =  t.engineForce * 0.6 * powerFade;
+    if (input.up)    engineForce =  t.engineForce * powerFade;
+    if (input.down)  engineForce = -t.engineForce * 0.6 * powerFade;
     car.vehicle.applyEngineForce(engineForce, 2);
     car.vehicle.applyEngineForce(engineForce, 3);
 
     // ── Brakes ───────────────────────────────────────────────────────
-    const braking = input.brake;
-    const brakeVal = braking ? t.brakeForce : 0;
-    for (let i = 0; i < 4; i++) car.vehicle.setBrake(brakeVal, i);
+    for (let i = 0; i < 4; i++) car.vehicle.setBrake(0, i);
 
-    // Brake lights
-    const blMat = braking ? car.brakeLightMats.on : car.brakeLightMats.off;
+    // Brake lights (on when reversing)
+    const blMat = input.down ? car.brakeLightMats.on : car.brakeLightMats.off;
     car.brakeLights.forEach(bl => { bl.material = blMat; });
 }
 

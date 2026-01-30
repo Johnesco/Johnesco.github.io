@@ -6,7 +6,7 @@ const keys = {
     down: false,
     left: false,
     right: false,
-    brake: false,
+    recover: false,
     reset: false,
 };
 
@@ -33,7 +33,7 @@ function handleKey(e, pressed) {
             e.preventDefault();
             break;
         case 'Space':
-            keys.brake = pressed;
+            keys.recover = pressed;
             e.preventDefault();
             break;
         case 'KeyR':

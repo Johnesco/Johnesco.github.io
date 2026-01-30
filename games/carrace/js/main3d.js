@@ -7,7 +7,7 @@ import { initInput, getInput } from './input.js';
 import { createEnvironment } from './environment.js';
 import { createCar, getChassisBody, getSpeedMPH, setDrivingPreset } from './car3d.js';
 import { createTrack } from './track.js';
-import { initRace, updateRace, syncAllRaceCars, restartRace, getRaceHUD } from './race.js';
+import { initRace, updateRace, syncAllRaceCars, restartRace, recoverPlayerCar, getRaceHUD } from './race.js';
 
 // ── Three.js setup ───────────────────────────────────────────────────
 const scene = new THREE.Scene();
@@ -78,7 +78,13 @@ function animate() {
     // Input
     const input = getInput();
 
-    // Reset = restart race
+    // Space = recover car upright on track
+    if (input.recover) {
+        recoverPlayerCar();
+        input.recover = false;
+    }
+
+    // R = restart race
     if (input.reset) {
         restartRace();
         input.reset = false;
@@ -122,8 +128,8 @@ function updateCamera() {
     const speed = chassis.velocity.length();
     const speedRatio = Math.min(speed / 40, 1);
 
-    // Car forward direction from chassis quaternion
-    const forward = new THREE.Vector3(0, 0, 1);
+    // Car forward direction from chassis quaternion (-Z = travel direction)
+    const forward = new THREE.Vector3(0, 0, -1);
     const q = new THREE.Quaternion(
         chassis.quaternion.x,
         chassis.quaternion.y,

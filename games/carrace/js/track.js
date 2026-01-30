@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 
 // ── Track constants ────────────────────────────────────────────────────
-const HALF_WIDTH    = 9;          // 18 m total road width
+const HALF_WIDTH    = 12;         // 24 m total road width (8 cars × 3 m)
 const N_SAMPLES     = 200;        // visual cross-sections (smooth rendering)
 const N_PHYSICS     = 50;         // physics cross-sections (fewer edges = no jitter)
 const BANK_MAX_DEG  = 18;         // max banking angle in degrees
@@ -89,34 +89,28 @@ export function getTrackStart() {
 
 function buildCurve() {
     const pts = [
-        // ── Main straight (heading +X, Z ≈ -80, Y = 4) ──────────────
-        new THREE.Vector3(-130, 4, -80),     // 0  start / finish
-        new THREE.Vector3( -40, 4, -80),     // 1
-        new THREE.Vector3(  50, 4, -80),     // 2
-        new THREE.Vector3(  95, 4, -80),     // 3  end of straight
+        // Oval: counter-clockwise, start/finish on flat straight (+X direction)
+        new THREE.Vector3(-80, 4, -50),     // t=0, start/finish
 
-        // ── Sweeping right turn (slight climb) ───────────────────────
-        new THREE.Vector3( 130, 4,  -55),    // 4
-        new THREE.Vector3( 150, 5,   -5),    // 5  apex
-        new THREE.Vector3( 130, 6,   35),    // 6  exit, climbing
+        new THREE.Vector3( 80, 4, -50),     // end of start straight
 
-        // ── Uphill left curve ────────────────────────────────────────
-        new THREE.Vector3(  95, 9,   60),    // 7
-        new THREE.Vector3(  50, 13,  78),    // 8
+        // Right turn (east end)
+        new THREE.Vector3( 130, 4, -25),
+        new THREE.Vector3( 140, 4,   0),    // apex
+        new THREE.Vector3( 130, 4,  25),
 
-        // ── Hilltop crest — jump zone ────────────────────────────────
-        new THREE.Vector3(   0, 16,  85),    // 9  peak
-        new THREE.Vector3( -55, 13,  75),    // 10
+        // Hill straight (traveling -X)
+        new THREE.Vector3( 40, 4,  50),     // approaching hill
+        new THREE.Vector3(  0, 10, 50),     // hill peak
+        new THREE.Vector3(-40, 4,  50),     // past hill
 
-        // ── Downhill chicane (S-curve) ───────────────────────────────
-        new THREE.Vector3( -90,  9,  50),    // 11
-        new THREE.Vector3(-110,  7,  25),    // 12
-        new THREE.Vector3(-100,  5,   0),    // 13
+        // Left turn (west end)
+        new THREE.Vector3(-130, 4,  25),
+        new THREE.Vector3(-140, 4,   0),    // apex
+        new THREE.Vector3(-130, 4, -25),
 
-        // ── Hairpin left ─────────────────────────────────────────────
-        new THREE.Vector3(-120,  4, -25),    // 14
-        new THREE.Vector3(-155,  4, -45),    // 15  apex
-        new THREE.Vector3(-155,  4, -65),    // 16  exit → loops to 0
+        // Transition back to start straight
+        new THREE.Vector3(-100, 4, -50),
     ];
 
     return new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.5);
@@ -435,14 +429,8 @@ function buildStartLine(scene, curve) {
     // Position on road surface
     mesh.position.set(center.x, center.y + 0.05, center.z);
 
-    // Orient: plane normal = world up, long axis = right (perpendicular to tangent)
-    const m4 = new THREE.Matrix4();
-    const up = new THREE.Vector3(0, 1, 0);
-    const right = new THREE.Vector3().crossVectors(tangent, up).normalize();
-    const fwd = tangent.clone();
-    m4.makeBasis(right, up, fwd);
-    mesh.quaternion.setFromRotationMatrix(m4);
-    mesh.rotateX(-Math.PI / 2);
+    // Orient: lay flat on road, long axis perpendicular to tangent
+    mesh.rotation.set(-Math.PI / 2, Math.atan2(tangent.x, tangent.z), 0);
 
     scene.add(mesh);
 }

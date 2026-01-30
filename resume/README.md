@@ -127,7 +127,7 @@ All pages read from this single JSON file, so edits propagate automatically.
 
 ## Additional Experience Section
 
-When a profile with `earlierExperienceYears` is active, older jobs appear in a condensed "Additional Experience" section:
+When a profile with `additionalHistoryYears` is active, older jobs appear in a condensed "Additional Experience" section:
 
 - Jobs display as one-liners: `+ Company | Position (dates)`
 - Click any job to expand and see its full summary and highlights
