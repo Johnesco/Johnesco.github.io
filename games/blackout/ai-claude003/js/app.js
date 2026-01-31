@@ -1,7 +1,27 @@
 // Default story text
-const defaultStory = `I had scarcely thought of the theater for some years, when Kean arrived in this country; and it was more from curiosity than from any other motive, that I went to see, for the first time, the great actor of the age. I was soon lost to the recollection of being in a theater, or looking upon a great display of the "mimic art." The simplicity, earnestness, and sincerity of his acting made me forgetful of the fiction, and bore me away with the power of reality and truth. If this be acting, said I, as I returned home, I may as well make the theater my school, and henceforward study nature at second hand.
-How can I describe one who is almost as full of beauties as nature itself,\u2014who grows upon us the more we become acquainted with him, and makes us sensible that the first time we saw him in any part, however much he may have moved us, we had but a partial apprehension of the many excellences of his acting? We cease to consider it as a mere amusement. It is an intellectual feast; and he who goes to it with a disposition and capacity to relish it, will receive from it more nourishment for his mind, than he would be likely to do in many other ways in twice the time. Our faculties are opened and enlivened by it; our reflections and recollections are of an elevated kind; and the voice which is sounding in our ears, long after we have left him, creates an inward harmony which is for our good.
-Kean, in truth, stands very much in that relation to other players whom we have seen, that Shakspeare does to other dramatists. One player is called classical; another makes fine points here, and another there; Kean makes more fine points than all of them together; but in him these are only little prominences, showing their bright heads above a beautifully undulated surface. A continual change is going on in him, partaking of the nature of the varying scenes he is passing through, and the many thoughts and feelings which are shifting within him.`;
+const defaultStory = `Whether I shall turn out to be the hero of my own life, or whether that
+station will be held by anybody else, these pages must show. To begin my
+life with the beginning of my life, I record that I was born (as I have
+been informed and believe) on a Friday, at twelve o’clock at night.
+It was remarked that the clock began to strike, and I began to cry,
+simultaneously.
+
+In consideration of the day and hour of my birth, it was declared by
+the nurse, and by some sage women in the neighbourhood who had taken a
+lively interest in me several months before there was any possibility
+of our becoming personally acquainted, first, that I was destined to be
+unlucky in life; and secondly, that I was privileged to see ghosts and
+spirits; both these gifts inevitably attaching, as they believed, to
+all unlucky infants of either gender, born towards the small hours on a
+Friday night.
+
+I need say nothing here, on the first head, because nothing can show
+better than my history whether that prediction was verified or falsified
+by the result. On the second branch of the question, I will only remark,
+that unless I ran through that part of my inheritance while I was still
+a baby, I have not come into it yet. But I do not at all complain of
+having been kept out of this property; and if anybody else should be in
+the present enjoyment of it, he is heartily welcome to keep it.`;
 
 // State
 let blockedOut = false;
