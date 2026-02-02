@@ -13,7 +13,8 @@ All resume content is stored in `js/resumeJSON.js`. Never hardcode resume conten
 
 ### Configuration
 Default view settings are in `js/resume-config.js`:
-- `defaultWorkHistoryYears` - Years of full-detail work history to show (default: 15)
+- `defaultProfile` - Which profile to use when no `?profile=` param is specified (default: `"qa-lead"`)
+- `defaultWorkHistoryYears` - Fallback years of full-detail work history (default: 15, but overridden by profile)
 - `maxYearsThreshold` - Years value that means "show all" (default: 50)
 
 Each profile uses the **additive history model**:
@@ -24,10 +25,14 @@ Each profile uses the **additive history model**:
 
 ### Shared Utilities
 Common functions live in `js/resume-utils.js`:
-- `getQueryParams()` - Parse URL query parameters
-- `filterWorkByTags()` - Filter jobs by tag array
+- `getQueryParams()` - Parse URL query parameters (`years`, `additional`, `profile`, `format`)
+- `getActiveProfile()` - Get active profile config from URL or default
+- `getSummary()` - Get profile-specific summary text
+- `getLabel()` - Get profile-specific label/title text
+- `filterWorkByProfile()` - Filter jobs by profile name (matches job tags)
 - `filterWorkByYears()` - Filter jobs by date range
-- `filterSkills()` - Filter skill categories
+- `filterSkillsByProfile()` - Filter skill categories by profile name (matches skill tags)
+- `partitionJobs()` - Split jobs into recent (full detail) and earlier (condensed)
 - `oxfordComma()` - Format arrays as sentences
 - `formatDate()` - Format date strings
 - `applyFilters()` - Apply all filters to resume data
@@ -110,6 +115,7 @@ Edit `js/resume-config.js` to change what appears by default (no URL params):
 - Profile `additionalHistoryYears` - Additional condensed years beyond work history (Additional Experience section)
 
 URL parameters:
+- `?profile=qa-lead` - Select a predefined profile
 - `?years=10` - Override work history years (full-detail window)
 - `?additional=5` - Override additional condensed years beyond work history
 - Total visible = years + additional
@@ -138,10 +144,14 @@ plaintextresume.html
 └── js/resume-utils.js
 
 customize.html
-└── js/resumeJSON.js
+├── js/resumeJSON.js
+└── js/resume-config.js
 
 workhistory.html
 └── js/resumeJSON.js
+
+about.html
+└── css/style.css
 
 geeksiresume.html
 ├── js/resumeJSON.js
@@ -152,7 +162,7 @@ geeksiresume.html
 ## Testing Changes
 
 1. Open `index.html` in browser
-2. Test filters with query params: `?years=5`, `?tags=healthcare`
+2. Test filters with query params: `?years=5`, `?profile=all`
 3. Check `plaintextresume.html` renders correctly
 4. Verify `customize.html` shows all tags and skills
 5. Use Print Preview (Ctrl+P) to verify ATS-friendly PDF output

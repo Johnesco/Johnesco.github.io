@@ -45,12 +45,14 @@ function jobList(work){
   work.forEach(function(job) {
 
     var jobHighlights = '';
-    // Loop through each highlight, creating new UL if blank found
+    // Loop through each highlight, creating new UL if leading space found
     for(let highlight of job.highlights){
     	if (highlight.charAt(0) == " "){
     	jobHighlights += `</ul><ul>`;
-    	}else
+    	jobHighlights += `<li>${highlight.substring(1)}</li>`;
+    	}else{
         jobHighlights += `<li>${highlight}</li>`;
+        }
     }
   
 workString +=

@@ -7,14 +7,15 @@
 
 /**
  * Parse URL query parameters for resume filtering
- * @returns {Object} Object with years (work history), additional (extra condensed years), and profile
+ * @returns {Object} Object with years (work history), additional (extra condensed years), profile, and format
  */
 function getQueryParams() {
     const params = new URLSearchParams(window.location.search);
     return {
         years: params.get('years') ? parseInt(params.get('years'), 10) : null,
         additional: params.get('additional') ? parseInt(params.get('additional'), 10) : null,
-        profile: params.get('profile') ? params.get('profile').trim().toLowerCase() : null
+        profile: params.get('profile') ? params.get('profile').trim().toLowerCase() : null,
+        format: params.get('format') ? params.get('format').trim().toLowerCase() : null
     };
 }
 
@@ -253,6 +254,9 @@ function applyFilters(resumeData) {
     // Filter skills by profile - skills appear if their tags include the profile name
     filteredSkills = filterSkillsByProfile(filteredSkills, profileName);
 
+    // Skills format: URL param overrides profile setting
+    const skillsFormat = params.format || profile?.skillsFormat || 'tags';
+
     return {
         filteredWork,
         filteredSkills,
@@ -260,6 +264,7 @@ function applyFilters(resumeData) {
         earlierJobs,
         profile,
         profileName,
+        skillsFormat,
         params
     };
 }

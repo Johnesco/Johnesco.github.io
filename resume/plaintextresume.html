@@ -119,7 +119,7 @@
             let html = '';
 
             // Get filtered data using shared utility
-            const { filteredSkills, recentJobs, earlierJobs, profile } = applyFilters(resumeJSON);
+            const { filteredSkills, recentJobs, earlierJobs, profile, skillsFormat } = applyFilters(resumeJSON);
 
             // Set page title based on profile
             const label = getLabel(resumeJSON);

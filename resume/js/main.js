@@ -30,7 +30,7 @@ function updatePlainTextLink() {
  */
 function renderResume() {
     // Get filtered data using shared utility
-    const { filteredSkills, recentJobs, earlierJobs, profile } = applyFilters(resumeJSON);
+    const { filteredSkills, recentJobs, earlierJobs, skillsFormat } = applyFilters(resumeJSON);
 
     // Set page title based on profile
     const label = getLabel(resumeJSON);
@@ -51,8 +51,7 @@ function renderResume() {
     `;
     document.querySelector('.contact-info').innerHTML = contactHTML;
 
-    // Render skill sets (filtered) - use list format if profile specifies
-    const skillsFormat = profile?.skillsFormat || 'tags';
+    // Render skill sets (filtered) - format from URL param or profile
     if (skillsFormat === 'list') {
         document.getElementById('skillSets').innerHTML = renderSkillsList(filteredSkills);
     } else {

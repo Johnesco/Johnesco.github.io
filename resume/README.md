@@ -7,9 +7,9 @@ A dynamic, customizable resume website powered by vanilla JavaScript and JSON da
 ## Features
 
 - **Dynamic Rendering** - Resume generated from structured JSON data
-- **Tag-Based Filtering** - Filter jobs by industry/role: healthcare, government, gaming, startup, accessibility, automation, and more
-- **Years Filter** - Limit to recent X years of experience (default: 15 years)
-- **Skills Filter** - Show/hide skill categories
+- **Profile-Based Filtering** - Predefined profiles (qa-lead, business-analyst, instructor, all) filter jobs and skills by matching tags
+- **Years Filter** - Limit to recent X years of experience (default driven by active profile)
+- **Additive History** - Show recent jobs with full detail, plus older jobs in a condensed section
 - **Expandable Earlier Jobs** - Condensed jobs in "Additional Experience" can be clicked to reveal full details
 - **Multiple Formats**
   - Styled resume with modern design
@@ -40,18 +40,22 @@ Customize the resume by adding query parameters:
 
 | Parameter | Example | Description |
 |-----------|---------|-------------|
-| `tags` | `?tags=healthcare,government` | Filter by job tags (comma-separated) |
-| `years` | `?years=10` | Show only last N years |
-| `skills` | `?skills=testing,leadership` | Filter skill categories |
+| `profile` | `?profile=qa-lead` | Select a predefined profile (qa-lead, business-analyst, instructor, all) |
+| `years` | `?years=10` | Override work history years (full-detail window) |
+| `additional` | `?additional=5` | Override additional condensed years beyond work history |
 
 **Example:**
 ```
-index.html?tags=healthcare,lead&years=10
+index.html?profile=all&years=10
 ```
 
 ### Available Tags
 
-`government` `healthcare` `lead` `accessibility` `agile` `startup` `robotics` `vr` `hardware` `entertainment` `ecommerce` `automation` `edtech` `gaming` `support` `mobile` `hipaa` `creative` `bilingual` `admin` `asl` `web` `adtech` `education` `instructor`
+Tags are used both for profile-based filtering and for job categorization:
+
+**Profile tags** (match profile names): `qa-lead` `business-analyst` `instructor`
+
+**Other tags**: `default` `event-host` `design` `security`
 
 ---
 
@@ -70,6 +74,7 @@ resume/
 │   └── resumeboot4.css     # Bootstrap version styles
 ├── js/
 │   ├── resumeJSON.js       # Resume data (JSON) - single source of truth
+│   ├── resume-config.js    # Profiles and default settings
 │   ├── resume-utils.js     # Shared utility functions
 │   ├── main.js             # Main resume renderer
 │   └── app-geeksi.js       # Bootstrap version renderer
@@ -84,15 +89,19 @@ resume/
 
 The `js/resume-utils.js` file contains shared functions used by multiple pages:
 
-- `getQueryParams()` - Parse URL query parameters
-- `filterWorkByTags()` - Filter jobs by tag array
+- `getQueryParams()` - Parse URL query parameters (`years`, `additional`, `profile`, `format`)
+- `getActiveProfile()` - Get active profile config from URL or default
+- `getSummary()` - Get profile-specific summary text
+- `getLabel()` - Get profile-specific label/title text
+- `filterWorkByProfile()` - Filter jobs by profile name (matches job tags)
 - `filterWorkByYears()` - Filter jobs by date range
-- `filterSkills()` - Filter skill categories
+- `filterSkillsByProfile()` - Filter skill categories by profile name (matches skill tags)
+- `partitionJobs()` - Split jobs into recent (full detail) and earlier (condensed)
 - `oxfordComma()` - Format arrays as comma-separated sentences
 - `formatDate()` - Format date strings for display
 - `applyFilters()` - Apply all filters to resume data
 
-The `DEFAULT_YEARS_FILTER` constant controls the default years shown (currently 15).
+Default view settings are configured in `js/resume-config.js` via `RESUME_CONFIG.defaultWorkHistoryYears` (fallback: 15) and `RESUME_CONFIG.defaultProfile` (currently `"qa-lead"`).
 
 ---
 

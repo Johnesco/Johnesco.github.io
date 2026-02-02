@@ -184,6 +184,10 @@
                     <td><code>geeksiresume.html</code></td>
                     <td>Bootstrap-styled alternative layout</td>
                 </tr>
+                <tr>
+                    <td><code>about.html</code></td>
+                    <td>This system documentation page</td>
+                </tr>
             </tbody>
         </table>
 
@@ -202,28 +206,18 @@
             <tbody>
                 <tr>
                     <td><code>profile</code></td>
-                    <td>Select a predefined profile (qa, all, etc.)</td>
-                    <td><code>?profile=qa</code></td>
+                    <td>Select a predefined profile (qa-lead, business-analyst, instructor, all)</td>
+                    <td><code>?profile=qa-lead</code></td>
                 </tr>
                 <tr>
                     <td><code>years</code></td>
-                    <td>Show only jobs within the last N years</td>
+                    <td>Override work history years (full-detail window)</td>
                     <td><code>?years=10</code></td>
                 </tr>
                 <tr>
-                    <td><code>tags</code></td>
-                    <td>Filter by industry/role tags (comma-separated)</td>
-                    <td><code>?tags=healthcare,government</code></td>
-                </tr>
-                <tr>
-                    <td><code>skills</code></td>
-                    <td>Filter which skill categories to display</td>
-                    <td><code>?skills=testing,tools</code></td>
-                </tr>
-                <tr>
-                    <td><code>earlier</code></td>
-                    <td>Years after which jobs are condensed</td>
-                    <td><code>?earlier=10</code></td>
+                    <td><code>additional</code></td>
+                    <td>Override additional condensed years beyond work history</td>
+                    <td><code>?additional=5</code></td>
                 </tr>
                 <tr>
                     <td><code>format</code></td>
@@ -236,28 +230,24 @@
         <h3>Example URLs</h3>
         <ul>
             <li>Last 10 years only: <code>index.html?years=10</code></li>
-            <li>Healthcare experience: <code>index.html?tags=healthcare</code></li>
-            <li>Government and healthcare: <code>index.html?tags=government,healthcare</code></li>
-            <li>Combined filters: <code>index.html?years=15&tags=lead</code></li>
-            <li>Condense jobs older than 10 years: <code>index.html?earlier=10</code></li>
+            <li>Show all jobs: <code>index.html?profile=all</code></li>
+            <li>Business analyst profile: <code>index.html?profile=business-analyst</code></li>
+            <li>Combined filters: <code>index.html?profile=qa-lead&years=15</code></li>
+            <li>Add 5 years of condensed history: <code>index.html?additional=5</code></li>
         </ul>
 
         <h2>Available Tags</h2>
 
-        <p>Jobs are categorized with the following tags for filtering:</p>
+        <p>Jobs and skills are tagged for profile-based filtering. Tags match profile names so that each profile shows only relevant content:</p>
 
         <div class="feature-list">
             <div class="feature-card">
-                <h3>Industry</h3>
-                <p>healthcare, government, gaming, education, ecommerce, entertainment, robotics, creative, web, adtech</p>
+                <h3>Profile Tags</h3>
+                <p>qa-lead, business-analyst, instructor</p>
             </div>
             <div class="feature-card">
-                <h3>Role Type</h3>
-                <p>lead, startup, support, admin, instructor</p>
-            </div>
-            <div class="feature-card">
-                <h3>Specialty</h3>
-                <p>accessibility, mobile, automation, hipaa, cicd, agile, asl, vr</p>
+                <h3>Other Tags</h3>
+                <p>default, event-host, design, security</p>
             </div>
         </div>
 
@@ -310,7 +300,7 @@ resume/
             <li><strong>CSS Custom Properties</strong> - Colors and spacing defined as variables</li>
             <li><strong>ATS-Optimized Print</strong> - Media queries transform layout for PDF output</li>
             <li><strong>Expandable UI</strong> - Click-to-expand older jobs without page reload</li>
-            <li><strong>Default Years Filter</strong> - Shows last 15 years of work history by default</li>
+            <li><strong>Profile-Driven Defaults</strong> - Default profile (qa-lead) controls work history years, skills format, and condensed history</li>
         </ul>
 
         <h2>Data Format</h2>
