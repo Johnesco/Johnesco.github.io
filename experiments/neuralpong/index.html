@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NeuralPong — NEAT AI Learns Pong</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>NEURALPONG</h1>
+    <p class="subtitle">NEAT AI learns to play Pong &mdash; watch the brain evolve</p>
+  </header>
+
+  <div class="game-container">
+    <canvas id="game-canvas" width="800" height="500"></canvas>
+  </div>
+
+  <div class="controls">
+    <button id="btn-human" class="active">Human vs AI</button>
+    <button id="btn-ai">AI vs AI (Turbo)</button>
+    <label>
+      Speed
+      <input type="range" id="speed-slider" min="1" max="100" value="10">
+      <span id="speed-label">10x</span>
+    </label>
+    <button id="btn-reset">Reset</button>
+  </div>
+
+  <div class="stats-bar">
+    <span>Gen: <span class="value" id="stat-gen">0</span></span>
+    <span>Pop: <span class="value" id="stat-pop">0</span></span>
+    <span>Species: <span class="value" id="stat-species">0</span></span>
+    <span>Best Fitness: <span class="value" id="stat-best">0</span></span>
+    <span>Avg Fitness: <span class="value" id="stat-avg">0</span></span>
+    <span>Genome: <span class="value" id="stat-genome">-</span></span>
+  </div>
+
+  <div class="dashboard">
+    <div class="panel network">
+      <div class="panel-title">Neural Network</div>
+      <canvas id="network-canvas"></canvas>
+    </div>
+    <div class="panel inputs-panel">
+      <div class="panel-title">Input Activations</div>
+      <canvas id="input-canvas"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Fitness Over Generations</div>
+      <canvas id="fitness-canvas"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Species Diversity</div>
+      <canvas id="species-canvas"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Ball Heatmap</div>
+      <canvas id="heatmap-canvas"></canvas>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
