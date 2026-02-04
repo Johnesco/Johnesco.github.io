@@ -245,34 +245,73 @@ header h1 {
   40% { transform: translateY(-12px); }
 }
 
-.current-key {
-  font-size: 3rem;
-  font-weight: bold;
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* ===== TYPING WINDOW ===== */
+.typing-window {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  height: 48px;
+  overflow: hidden;
   border: 2px solid var(--border-color);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.03);
-  transition: border-color 0.1s;
+  display: flex;
+  align-items: center;
 }
 
-.current-key.key-match {
+.typing-window::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 48px;
+  height: 100%;
+  background: linear-gradient(to right, rgba(10, 10, 20, 0.95), transparent);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.typing-track {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-left: auto;
+  padding: 0 8px;
+  gap: 1px;
+}
+
+.typing-char {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  font-size: 1.6rem;
+  font-family: var(--font-mono);
+  font-weight: bold;
+  flex-shrink: 0;
+  animation: charSlideIn 0.15s ease-out;
+}
+
+.typing-char.char-match {
   color: var(--accent-green);
-  border-color: var(--accent-green);
-  text-shadow: 0 0 10px rgba(0, 255, 136, 0.6);
-  animation: keyPop 0.15s ease-out;
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
 }
 
-.current-key.key-miss {
-  color: var(--accent-red);
-  border-color: var(--accent-red);
+.typing-char.char-miss {
+  color: var(--text-muted);
 }
 
-@keyframes keyPop {
-  0% { transform: scale(1.2); }
+.typing-char.char-match-pop {
+  animation: typingPop 0.2s ease-out;
+}
+
+@keyframes charSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes typingPop {
+  0% { transform: scale(1.3); }
   100% { transform: scale(1); }
 }
 
@@ -642,7 +681,8 @@ header h1 {
 
   .target-display { font-size: 1.5rem; }
 
-  .current-key { font-size: 2rem; width: 48px; height: 48px; }
+  .typing-window { height: 38px; }
+  .typing-char { font-size: 1.2rem; }
 
   .stats-bar { gap: 4px; padding: 8px; }
 

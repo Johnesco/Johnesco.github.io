@@ -197,7 +197,15 @@ function loop() {
 
   stats.update(simulation);
 
-  const frameDelay = milestoneHit ? milestoneDelay : speed.frameDelay;
+  let frameDelay;
+  if (milestoneHit) {
+    frameDelay = milestoneDelay;
+  } else if (speed.charsPerFrame === 1 && simulation.position > 0) {
+    const streakBonus = Math.min(simulation.position * 50, 400);
+    frameDelay = speed.frameDelay + streakBonus;
+  } else {
+    frameDelay = speed.frameDelay;
+  }
   loopTimer = setTimeout(() => requestAnimationFrame(loop), frameDelay);
 }
 

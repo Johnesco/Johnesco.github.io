@@ -1,13 +1,14 @@
 export class Renderer {
   constructor() {
     this.targetDisplay = document.getElementById('target-display');
-    this.currentKey = document.getElementById('current-key');
+    this.typingTrack = document.getElementById('typing-track');
     this.attemptDisplay = document.getElementById('attempt-display');
     this.bestAttemptEl = document.getElementById('best-attempt');
     this.milestoneHistoryEl = document.getElementById('milestone-history');
     this.stage = document.getElementById('stage');
     this.charEls = [];
-    this.keyTimeout = null;
+    this.typingChars = [];
+    this.WINDOW_SIZE = 20;
     this.recordTimeout = null;
     this.displayedMilestoneCount = 0;
   }
@@ -41,29 +42,28 @@ export class Renderer {
     }
   }
 
-  showKeypress(result) {
-    this.currentKey.textContent = result.char;
-    this.currentKey.classList.remove('key-match', 'key-miss');
-    void this.currentKey.offsetWidth;
-
-    if (result.matched) {
-      this.currentKey.classList.add('key-match');
-    } else {
-      this.currentKey.classList.add('key-miss');
+  appendTypingChar(char, matched, pop) {
+    const span = document.createElement('span');
+    span.className = 'typing-char ' + (matched ? 'char-match' : 'char-miss');
+    if (pop && matched) {
+      span.classList.add('char-match-pop');
     }
+    span.textContent = char;
+    this.typingTrack.appendChild(span);
+    this.typingChars.push(span);
 
-    clearTimeout(this.keyTimeout);
-    this.keyTimeout = setTimeout(() => {
-      this.currentKey.classList.remove('key-match', 'key-miss');
-    }, 150);
+    while (this.typingChars.length > this.WINDOW_SIZE) {
+      const old = this.typingChars.shift();
+      old.remove();
+    }
+  }
+
+  showKeypress(result) {
+    this.appendTypingChar(result.char, result.matched, result.matched);
   }
 
   batchUpdateKey(char, wasMatch) {
-    this.currentKey.textContent = char;
-    this.currentKey.classList.remove('key-match', 'key-miss');
-    if (wasMatch) {
-      this.currentKey.classList.add('key-match');
-    }
+    this.appendTypingChar(char, wasMatch, false);
   }
 
   updateAttempt(matched) {
@@ -75,8 +75,8 @@ export class Renderer {
   }
 
   clearKey() {
-    this.currentKey.textContent = '\u00A0';
-    this.currentKey.classList.remove('key-match', 'key-miss');
+    this.typingTrack.innerHTML = '';
+    this.typingChars = [];
   }
 
   getCharElement(index) {
