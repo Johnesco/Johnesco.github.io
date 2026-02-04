@@ -4,7 +4,6 @@ import { Renderer } from './renderer.js';
 import { ParticleSystem } from './effects.js';
 import { StatsDisplay } from './stats.js';
 import { HistoryTracker } from './history.js';
-
 let simulation, renderer, particles, stats, history;
 let running = false;
 let speedLevel = 0;
@@ -59,6 +58,7 @@ function setupControls() {
       els.targetInput.value = filtered;
     }
   });
+
 }
 
 function start() {
