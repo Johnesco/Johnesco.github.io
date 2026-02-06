@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>todooo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; display: flex; justify-content: center; padding: 3rem 1rem; }
+        .app { width: 100%; max-width: 500px; }
+        h1 { font-size: 2.5rem; letter-spacing: 0.3rem; margin-bottom: 1.5rem; color: #fff; }
+        .sound-toggle { position: fixed; top: 1rem; right: 1rem; background: #2a2a4a; border: none; color: #888; font-size: 1.2rem; padding: 0.5rem 0.7rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; z-index: 50; }
+        .sound-toggle:hover { color: #e0e0e0; }
+        .sound-toggle.on { color: #7c83ff; }
+        .progress-bar { width: 100%; height: 6px; background: #2a2a4a; border-radius: 3px; margin-bottom: 1.5rem; overflow: hidden; transition: opacity 0.3s; }
+        .progress-bar.hidden { opacity: 0; }
+        .progress-fill { height: 100%; background: #7c83ff; border-radius: 3px; transition: width 0.4s ease, background 0.4s ease; }
+        .progress-fill.complete { background: #4ade80; }
+        .input-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .input-row input { flex: 1; padding: 0.75rem 1rem; border: 2px solid #2a2a4a; border-radius: 8px; background: #16213e; color: #e0e0e0; font-size: 1rem; outline: none; transition: border-color 0.2s; }
+        .input-row input:focus { border-color: #7c83ff; }
+        .input-row input::placeholder { color: #555; }
+        .input-row button { padding: 0.75rem 1.25rem; border: none; border-radius: 8px; background: #7c83ff; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .input-row button:hover { background: #6a71e0; }
+        .priority-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; align-items: center; }
+        .priority-row span { color: #555; font-size: 0.8rem; }
+        .priority-btn { border: none; padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: all 0.2s; opacity: 0.4; }
+        .priority-btn.active { opacity: 1; }
+        .priority-btn[data-p="none"] { background: #2a2a4a; color: #888; }
+        .priority-btn[data-p="low"] { background: #1b5e3b; color: #4ade80; }
+        .priority-btn[data-p="med"] { background: #5e4b1b; color: #fbbf24; }
+        .priority-btn[data-p="high"] { background: #5e1b1b; color: #f87171; }
+        .search-row { margin-bottom: 0.75rem; }
+        .search-row input { width: 100%; padding: 0.5rem 1rem; border: 2px solid #2a2a4a; border-radius: 8px; background: #16213e; color: #e0e0e0; font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+        .search-row input:focus { border-color: #7c83ff; }
+        .search-row input::placeholder { color: #444; }
+        .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding: 0.5rem 0; font-size: 0.85rem; flex-wrap: wrap; gap: 0.4rem; }
+        .count { color: #888; }
+        .filters { display: flex; gap: 0.25rem; }
+        .filters button { background: none; border: 1px solid transparent; color: #888; padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+        .filters button:hover { color: #e0e0e0; }
+        .filters button.active { border-color: #7c83ff; color: #7c83ff; }
+        .toolbar-right { display: flex; gap: 0.5rem; align-items: center; }
+        .clear-done { background: none; border: none; color: #888; font-size: 0.85rem; cursor: pointer; transition: color 0.2s; }
+        .clear-done:hover { color: #ff6b6b; }
+        .clear-done:disabled { opacity: 0; pointer-events: none; }
+        .purge-ghosts { background: none; border: 1px solid #555; color: #777; font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+        .purge-ghosts:hover { color: #e0e0e0; border-color: #888; }
+        .todo-list { list-style: none; }
+        .todo-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 1rem; background: #16213e; border-radius: 8px; margin-bottom: 0.5rem; transition: opacity 0.3s, transform 0.3s, box-shadow 0.2s, background 0.5s; user-select: none; border-left: 3px solid transparent; position: relative; }
+        .todo-item .todo-main-row { display: flex; align-items: center; gap: 0.75rem; width: 100%; }
+        .todo-item .todo-content-wrap { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+        .todo-item.p-low { border-left-color: #4ade80; }
+        .todo-item.p-med { border-left-color: #fbbf24; }
+        .todo-item.p-high { border-left-color: #f87171; }
+        .todo-item.focused { outline: 2px solid #7c83ff; outline-offset: -2px; }
+        .todo-item.slide-in { animation: slideIn 0.3s ease-out; }
+        .todo-item.fade-out { animation: fadeOut 0.3s ease-out forwards; }
+        .todo-item.dragging { opacity: 0.4; }
+        .todo-item.drag-over { box-shadow: 0 -2px 0 0 #7c83ff; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(30px); } }
+        .todo-item.done { opacity: 0.5; }
+        .todo-item.done .todo-text { text-decoration: line-through; }
+        /* Time decay styles */
+        .todo-item.age-fresh { background: #16213e; }
+        .todo-item.age-day { background: #1a2235; }
+        .todo-item.age-old { background: #221e1e; }
+        .todo-item.age-ancient { background: #2a1a1a; animation: tremble 3s infinite; }
+        @keyframes tremble { 0%, 95%, 100% { transform: translateX(0); } 96% { transform: translateX(-1px); } 98% { transform: translateX(1px); } }
+        .age-badge { font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 3px; flex-shrink: 0; font-weight: 600; }
+        .age-badge.age-day { background: #3a3520; color: #d4a843; }
+        .age-badge.age-old { background: #3a2520; color: #e88a5a; }
+        .age-badge.age-ancient { background: #3a1a1a; color: #f87171; }
+        .drag-handle { cursor: grab; color: #444; font-size: 1rem; flex-shrink: 0; display: flex; align-items: center; transition: color 0.2s; }
+        .drag-handle:active { cursor: grabbing; }
+        .drag-handle:hover { color: #888; }
+        .priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .priority-dot.p-low { background: #4ade80; }
+        .priority-dot.p-med { background: #fbbf24; }
+        .priority-dot.p-high { background: #f87171; }
+        .todo-check { width: 22px; height: 22px; border: 2px solid #7c83ff; border-radius: 50%; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .todo-item.done .todo-check { background: #7c83ff; }
+        .todo-check::after { content: ''; display: none; width: 6px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px); }
+        .todo-item.done .todo-check::after { display: block; }
+        .todo-text { flex: 1; font-size: 1rem; cursor: default; word-break: break-word; }
+        .todo-text mark { background: #7c83ff44; color: #e0e0e0; border-radius: 2px; padding: 0 1px; }
+        .todo-text-edit { flex: 1; font-size: 1rem; background: #0f1a30; border: 2px solid #7c83ff; border-radius: 4px; color: #e0e0e0; padding: 0.2rem 0.4rem; outline: none; font-family: inherit; }
+        .todo-priority-cycle { background: none; border: none; cursor: pointer; font-size: 0.7rem; padding: 0.15rem 0.3rem; border-radius: 3px; transition: all 0.2s; color: #555; }
+        .todo-priority-cycle:hover { color: #aaa; }
+        .todo-delete { background: none; border: none; color: #555; font-size: 1.2rem; cursor: pointer; padding: 0 0.25rem; line-height: 1; transition: color 0.2s; }
+        .todo-delete:hover { color: #ff6b6b; }
+        .sentient-comment { font-size: 0.75rem; font-style: italic; color: #666; margin-top: 0.25rem; padding-left: 0.1rem; }
+        .sentient-comment.done-comment { color: #4ade80aa; }
+        .empty { color: #555; text-align: center; padding: 2rem; font-style: italic; }
+        .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); background: #2a2a4a; color: #e0e0e0; padding: 0.75rem 1.25rem; border-radius: 8px; display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; box-shadow: 0 4px 20px rgba(0,0,0,0.4); transition: transform 0.3s ease; z-index: 100; }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast button { background: #7c83ff; border: none; color: #fff; padding: 0.3rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+        .kbd-hint { position: fixed; bottom: 2rem; right: 2rem; color: #444; font-size: 0.75rem; text-align: right; line-height: 1.6; transition: opacity 0.3s; pointer-events: none; }
+        .kbd-hint.hidden { opacity: 0; }
+        kbd { background: #2a2a4a; padding: 0.1rem 0.35rem; border-radius: 3px; font-family: 'Consolas', monospace; font-size: 0.7rem; }
+        #confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 200; }
+
+        /* Ghost tasks */
+        .todo-ghost { opacity: 0.15; font-style: italic; pointer-events: none; animation: ghostFloat 4s ease-in-out infinite; }
+        @keyframes ghostFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+        .todo-ghost.purging { animation: ghostPurge 0.5s ease-in forwards; }
+        @keyframes ghostPurge { to { opacity: 0; transform: scale(0.5) translateY(-20px); } }
+        .ghost-text { font-size: 0.95rem; color: #888; }
+        .ghost-priority-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; opacity: 0.5; }
+        .ghost-priority-dot.p-low { background: #4ade80; }
+        .ghost-priority-dot.p-med { background: #fbbf24; }
+        .ghost-priority-dot.p-high { background: #f87171; }
+
+        /* Breakout overlay */
+        .breakout-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .breakout-overlay canvas { border: 2px solid #7c83ff; border-radius: 4px; }
+        .breakout-close { position: absolute; top: 1rem; right: 1.5rem; background: none; border: none; color: #888; font-size: 2rem; cursor: pointer; z-index: 301; }
+        .breakout-close:hover { color: #fff; }
+        .breakout-title { color: #7c83ff; font-size: 1.2rem; margin-bottom: 0.75rem; letter-spacing: 0.1rem; }
+    </style>
+</head>
+<body>
+    <button class="sound-toggle on" id="soundToggle" title="Toggle sound">&#9835;</button>
+    <div class="app">
+        <h1>todooo</h1>
+        <div class="progress-bar hidden" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="input-row"><input type="text" id="todoInput" placeholder="What needs doing?" autofocus><button id="addBtn">Add</button></div>
+        <div class="priority-row"><span>Priority:</span><button class="priority-btn active" data-p="none">None</button><button class="priority-btn" data-p="low">Low</button><button class="priority-btn" data-p="med">Med</button><button class="priority-btn" data-p="high">High</button></div>
+        <div class="search-row"><input type="text" id="searchInput" placeholder="Search tasks..."></div>
+        <div class="toolbar">
+            <span class="count" id="count"></span>
+            <div class="filters"><button class="active" data-filter="all">All</button><button data-filter="active">Active</button><button data-filter="done">Done</button></div>
+            <div class="toolbar-right">
+                <button class="purge-ghosts" id="purgeGhosts" style="display:none" title="Purge ghosts (G)">Purge ghosts</button>
+                <button class="clear-done" id="clearDone">Clear done</button>
+            </div>
+        </div>
+        <ul class="todo-list" id="todoList"></ul>
+    </div>
+    <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
+    <div class="kbd-hint" id="kbdHint"><kbd>/</kbd> search &nbsp; <kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate &nbsp; <kbd>Enter</kbd> toggle &nbsp; <kbd>Del</kbd> delete &nbsp; <kbd>E</kbd> edit &nbsp; <kbd>P</kbd> priority &nbsp; <kbd>G</kbd> purge ghosts &nbsp; <kbd>Esc</kbd> deselect</div>
+    <canvas id="confetti"></canvas>
+    <script>
+    // ========== AUDIO ==========
+    let audioCtx = null, soundOn = true;
+    function getAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+    function playTone(f, d, type = 'sine', v = 0.15) {
+        if (!soundOn) return;
+        const c = getAudio(), o = c.createOscillator(), g = c.createGain();
+        o.type = type; o.frequency.setValueAtTime(f, c.currentTime);
+        g.gain.setValueAtTime(v, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + d);
+        o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + d);
+    }
+    function playChord(fs, d, type = 'sine', v = 0.08) { fs.forEach(f => playTone(f, d, type, v)); }
+    function playPurgeWhoosh() {
+        if (!soundOn) return;
+        const c = getAudio(), o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(300, c.currentTime);
+        o.frequency.exponentialRampToValueAtTime(40, c.currentTime + 0.8);
+        f.type = 'lowpass'; f.frequency.setValueAtTime(1200, c.currentTime);
+        f.frequency.exponentialRampToValueAtTime(100, c.currentTime + 0.8);
+        g.gain.setValueAtTime(0.12, c.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.8);
+        o.connect(f); f.connect(g); g.connect(c.destination);
+        o.start(); o.stop(c.currentTime + 0.8);
+        // Add a noise layer
+        const bufSize = c.sampleRate;
+        const buf = c.createBuffer(1, bufSize, c.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+        const n = c.createBufferSource(); n.buffer = buf;
+        const ng = c.createGain(), nf = c.createBiquadFilter();
+        nf.type = 'lowpass'; nf.frequency.setValueAtTime(500, c.currentTime);
+        nf.frequency.exponentialRampToValueAtTime(50, c.currentTime + 0.6);
+        ng.gain.setValueAtTime(0.06, c.currentTime);
+        ng.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.6);
+        n.connect(nf); nf.connect(ng); ng.connect(c.destination);
+        n.start(); n.stop(c.currentTime + 0.6);
+    }
+    const sfx = {
+        add: () => { playTone(523.25, 0.15); setTimeout(() => playTone(659.25, 0.15), 80); },
+        complete: () => playChord([523.25, 659.25, 783.99], 0.5, 'sine', 0.06),
+        uncomplete: () => playTone(392, 0.2, 'triangle', 0.1),
+        delete: () => { playTone(440, 0.15, 'triangle', 0.1); setTimeout(() => playTone(330, 0.2, 'triangle', 0.08), 100); },
+        priority: (p) => { const fs = { none: 330, low: 440, med: 523, high: 660 }; playTone(fs[p] || 440, 0.12, 'square', 0.05); },
+        navigate: () => playTone(880, 0.05, 'sine', 0.03),
+        allDone: () => { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => playTone(f, 0.4, 'sine', 0.08), i * 120)); },
+        purge: () => playPurgeWhoosh()
+    };
+    document.getElementById('soundToggle').addEventListener('click', function () { soundOn = !soundOn; this.classList.toggle('on', soundOn); });
+
+    // ========== SENTIENT PERSONALITY ==========
+    const sentientPatterns = [
+        { re: /\blaundry\b/i, comments: ["It's always laundry, isn't it?", "The laundry never ends.", "Your clothes miss you.", "Wash, dry, fold, repeat. Such is life."] },
+        { re: /\bemail\b/i, comments: ["Inbox zero is a myth.", "Just... reply all?", "Another day, another 47 unread.", "The emails multiply when you're not looking."] },
+        { re: /\bgym\b|exercise|workout|run\b/i, comments: ["Your future self thanks you. Maybe.", "Muscles are just ornamental at this point.", "Leg day again? Bold.", "Sweat is just your fat crying."] },
+        { re: /\bmeeting\b/i, comments: ["This could've been an email.", "Prepare your nodding face.", "Meetings: where minutes are kept and hours are lost.", "Another meeting about the meeting."] },
+        { re: /\bbuy\b|shop|purchase|order/i, comments: ["Your wallet felt that.", "Capitalism never sleeps.", "Do you need it, or do you need it?", "Budget? What budget?"] },
+        { re: /\bfix\b|repair|debug/i, comments: ["It was always broken, wasn't it?", "Percussive maintenance?", "Have you tried turning it off and on?", "This will definitely only take 5 minutes."] },
+        { re: /\blearn\b|study|read\b|course/i, comments: ["Knowledge is power. Power is naps.", "Your brain is cautiously optimistic.", "Wikipedia rabbit hole in 3...2...1...", "Ambitious. I respect that."] },
+        { re: /\bcall\b|phone/i, comments: ["Can't you just text?", "Phone calls: the original horror.", "Deep breaths. It's just a phone.", "Calls are for people with courage."] },
+        { re: /\bclean\b|tidy|organize/i, comments: ["Entropy always wins eventually.", "Your space reflects your mind. Uh oh.", "Marie Kondo would be proud. Maybe.", "Cleaning: the original procrastination."] },
+        { re: /\bcook\b|dinner|lunch|breakfast|food|eat/i, comments: ["Cereal counts as cooking.", "Your kitchen awaits its hero.", "Eating is mandatory. Cooking is optional.", "Microwave goes brrr."] },
+        { re: /\bsleep\b|nap|rest\b|bed\b/i, comments: ["The best todo item.", "You deserve this one.", "Finally, something worthwhile.", "Sleep is just time travel."] },
+        { re: /\bwrite\b|blog|essay|report/i, comments: ["Staring at a blank page counts as writing.", "The words will come. Probably.", "Writer's block is just your brain loading.", "First drafts are meant to be terrible."] }
+    ];
+
+    function getSentientComment(todo) {
+        const text = todo.text;
+        const age = getAge(todo.createdAt);
+
+        // Completion comments override patterns
+        if (todo.done) {
+            const doneComments = [
+                "Finally.", "One less haunting you.", "Was that so hard?",
+                "The crowd goes mild.", "Checked off. Gone. Free.",
+                "You actually did it. Huh.", "Off the list, off the mind."
+            ];
+            return { text: doneComments[hashStr(text) % doneComments.length], isDone: true };
+        }
+
+        // Time-based overrides for very old tasks
+        if (age === 'ancient') {
+            const ancientComments = [
+                "This has been here so long it pays rent.",
+                "At this point, it's a lifestyle choice.",
+                "Are you... ever going to do this?",
+                "This task has given up on you.",
+                "I've aged. We've both aged.",
+                "This is older than some of my memories."
+            ];
+            return { text: ancientComments[hashStr(text) % ancientComments.length], isDone: false };
+        }
+        if (age === 'old') {
+            const oldComments = [
+                "Getting a bit stale, don't you think?",
+                "Three days and counting...",
+                "I'm starting to worry about this one.",
+                "Maybe tomorrow? Like you said yesterday?"
+            ];
+            return { text: oldComments[hashStr(text) % oldComments.length], isDone: false };
+        }
+        if (age === 'day') {
+            const dayComments = [
+                "A day old. The clock is ticking.",
+                "Yesterday's problem is today's problem.",
+                "Still here. Still waiting."
+            ];
+            return { text: dayComments[hashStr(text) % dayComments.length], isDone: false };
+        }
+
+        // Pattern matching
+        for (const p of sentientPatterns) {
+            if (p.re.test(text)) {
+                return { text: p.comments[hashStr(text) % p.comments.length], isDone: false };
+            }
+        }
+
+        // Generic fresh comments
+        const generic = [
+            "Another one for the pile.",
+            "Sure, add it to the list.",
+            "I believe in you. Sort of.",
+            "This one has potential.",
+            "Let's see how long this lasts.",
+            "Fresh and full of hope.",
+            "Added with optimism. Noted."
+        ];
+        return { text: generic[hashStr(text) % generic.length], isDone: false };
+    }
+
+    function hashStr(s) {
+        let h = 0;
+        for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+        return Math.abs(h);
+    }
+
+    // ========== TIME DECAY ==========
+    function getAge(createdAt) {
+        if (!createdAt) return 'fresh';
+        const hours = (Date.now() - createdAt) / 3600000;
+        if (hours < 24) return 'fresh';
+        if (hours < 72) return 'day';
+        if (hours < 168) return 'old';
+        return 'ancient';
+    }
+    function ageLabel(age) {
+        if (age === 'day') return '1d+';
+        if (age === 'old') return '3d+';
+        if (age === 'ancient') return '7d+';
+        return '';
+    }
+
+    // ========== APP STATE ==========
+    const $ = id => document.getElementById(id);
+    const input = $('todoInput'), searchInput = $('searchInput'), list = $('todoList');
+    const countEl = $('count'), clearDoneBtn = $('clearDone'), purgeGhostsBtn = $('purgeGhosts');
+    const progressBar = $('progressBar'), progressFill = $('progressFill');
+    const filterBtns = document.querySelectorAll('.filters button'), priorityBtns = document.querySelectorAll('.priority-btn');
+    const toast = $('toast'), toastMsg = $('toastMsg'), toastUndo = $('toastUndo'), kbdHint = $('kbdHint');
+    const confettiCanvas = $('confetti'), ctx = confettiCanvas.getContext('2d');
+
+    const STORAGE_KEY = 'todooo-015';
+    const GHOST_KEY = 'todooo-015-ghosts';
+    const PRIORITIES = ['none', 'low', 'med', 'high'];
+
+    let todos = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    let ghosts = JSON.parse(localStorage.getItem(GHOST_KEY) || '[]');
+    let filter = 'all', searchQuery = '', editingIndex = -1, animateIndex = -1, focusedIndex = -1;
+    let undoState = null, undoGhostState = null, toastTimer = null, dragSrcIndex = null, currentPriority = 'none', prevAllDone = false;
+    let breakoutActive = false;
+
+    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(todos)); }
+    function saveGhosts() {
+        // Remove ghosts older than 24 hours
+        const now = Date.now();
+        ghosts = ghosts.filter(g => (now - g.deletedAt) < 86400000);
+        localStorage.setItem(GHOST_KEY, JSON.stringify(ghosts));
+    }
+    function filtered() {
+        let r = todos;
+        if (filter === 'active') r = r.filter(t => !t.done);
+        else if (filter === 'done') r = r.filter(t => t.done);
+        if (searchQuery) { const q = searchQuery.toLowerCase(); r = r.filter(t => t.text.toLowerCase().includes(q)); }
+        return r;
+    }
+    function highlightMatch(text) {
+        if (!searchQuery) return escapeHtml(text);
+        const e = escapeHtml(text), q = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return e.replace(new RegExp(`(${q})`, 'gi'), '<mark>$1</mark>');
+    }
+    function showToast(msg, todoSnap, ghostSnap) {
+        undoState = todoSnap;
+        undoGhostState = ghostSnap || null;
+        toastMsg.textContent = msg;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.classList.remove('show'); undoState = null; undoGhostState = null; }, 4000);
+    }
+    toastUndo.addEventListener('click', () => {
+        if (!undoState) return;
+        todos = undoState;
+        if (undoGhostState !== null) ghosts = undoGhostState;
+        undoState = null; undoGhostState = null;
+        toast.classList.remove('show');
+        clearTimeout(toastTimer);
+        save(); saveGhosts(); render();
+    });
+    function cyclePriority(c) { return PRIORITIES[(PRIORITIES.indexOf(c || 'none') + 1) % PRIORITIES.length]; }
+
+    // ========== CONFETTI ==========
+    let confettiPieces = [], confettiRunning = false;
+    function resizeCanvas() { confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight; }
+    addEventListener('resize', resizeCanvas); resizeCanvas();
+    function launchConfetti() {
+        confettiPieces = [];
+        const cols = ['#7c83ff', '#4ade80', '#fbbf24', '#f87171', '#a78bfa', '#38bdf8', '#fb923c'];
+        for (let i = 0; i < 120; i++) confettiPieces.push({
+            x: Math.random() * confettiCanvas.width, y: -10 - Math.random() * confettiCanvas.height * 0.5,
+            w: 4 + Math.random() * 6, h: 8 + Math.random() * 8,
+            color: cols[~~(Math.random() * cols.length)],
+            vx: (Math.random() - 0.5) * 4, vy: 2 + Math.random() * 4,
+            rot: Math.random() * Math.PI * 2, vr: (Math.random() - 0.5) * 0.2, life: 1
+        });
+        if (!confettiRunning) { confettiRunning = true; animateConfetti(); }
+    }
+    function animateConfetti() {
+        ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        confettiPieces.forEach(p => {
+            p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.rot += p.vr;
+            if (p.y > confettiCanvas.height - 50) p.life -= 0.02;
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+            ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color;
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+        });
+        confettiPieces = confettiPieces.filter(p => p.life > 0);
+        if (confettiPieces.length > 0) requestAnimationFrame(animateConfetti);
+        else { confettiRunning = false; ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); }
+    }
+
+    // ========== BREAKOUT GAME ==========
+    function launchBreakout(completedTasks) {
+        if (breakoutActive) return;
+        breakoutActive = true;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'breakout-overlay';
+        overlay.innerHTML = `<button class="breakout-close">&times;</button><div class="breakout-title">BREAKOUT: Destroy Your Done Tasks</div><canvas id="breakoutCanvas" width="480" height="400"></canvas>`;
+        document.body.appendChild(overlay);
+
+        const closeBtn = overlay.querySelector('.breakout-close');
+        const canvas = overlay.querySelector('#breakoutCanvas');
+        const bctx = canvas.getContext('2d');
+
+        const paddleW = 75, paddleH = 12, ballR = 6;
+        let paddleX = (canvas.width - paddleW) / 2;
+        let ballX = canvas.width / 2, ballY = canvas.height - 40, ballDX = 3, ballDY = -3;
+        let lives = 3, score = 0, gameOver = false;
+
+        // Build bricks from completed tasks
+        const brickCols = 6, brickRowHeight = 22, brickPad = 4, brickOffsetTop = 40, brickOffsetLeft = 10;
+        const brickW = (canvas.width - brickOffsetLeft * 2 - brickPad * (brickCols - 1)) / brickCols;
+        const brickColors = ['#f87171', '#fb923c', '#fbbf24', '#4ade80', '#38bdf8', '#7c83ff', '#a78bfa'];
+        const bricks = [];
+        const taskNames = completedTasks.map(t => t.text).slice(0, 24);
+        const brickRows = Math.ceil(taskNames.length / brickCols) || 1;
+        for (let r = 0; r < brickRows; r++) {
+            for (let c = 0; c < brickCols; c++) {
+                const idx = r * brickCols + c;
+                if (idx >= taskNames.length) break;
+                bricks.push({
+                    x: brickOffsetLeft + c * (brickW + brickPad),
+                    y: brickOffsetTop + r * (brickRowHeight + brickPad),
+                    w: brickW, h: brickRowHeight,
+                    color: brickColors[r % brickColors.length],
+                    text: taskNames[idx], alive: true
+                });
+            }
+        }
+        if (bricks.length === 0) {
+            bricks.push({ x: brickOffsetLeft, y: brickOffsetTop, w: brickW, h: brickRowHeight, color: '#7c83ff', text: 'Victory!', alive: true });
+        }
+
+        let mouseX = paddleX + paddleW / 2;
+        function onMouseMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            paddleX = Math.max(0, Math.min(canvas.width - paddleW, mouseX - paddleW / 2));
+        }
+        canvas.addEventListener('mousemove', onMouseMove);
+
+        function closeBreakout() {
+            breakoutActive = false;
+            canvas.removeEventListener('mousemove', onMouseMove);
+            overlay.remove();
+        }
+        closeBtn.addEventListener('click', closeBreakout);
+
+        function drawBreakout() {
+            if (!breakoutActive) return;
+            bctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw bricks
+            bricks.forEach(b => {
+                if (!b.alive) return;
+                bctx.fillStyle = b.color;
+                bctx.fillRect(b.x, b.y, b.w, b.h);
+                bctx.fillStyle = '#000';
+                bctx.font = '10px sans-serif';
+                bctx.textAlign = 'center';
+                bctx.textBaseline = 'middle';
+                const label = b.text.length > 8 ? b.text.slice(0, 7) + '..' : b.text;
+                bctx.fillText(label, b.x + b.w / 2, b.y + b.h / 2);
+            });
+
+            // Draw paddle
+            bctx.fillStyle = '#7c83ff';
+            bctx.fillRect(paddleX, canvas.height - 20, paddleW, paddleH);
+
+            // Draw ball
+            bctx.beginPath();
+            bctx.arc(ballX, ballY, ballR, 0, Math.PI * 2);
+            bctx.fillStyle = '#fff';
+            bctx.fill();
+            bctx.closePath();
+
+            // HUD
+            bctx.fillStyle = '#888';
+            bctx.font = '12px sans-serif';
+            bctx.textAlign = 'left';
+            bctx.fillText('Score: ' + score, 10, 20);
+            bctx.textAlign = 'right';
+            bctx.fillText('Lives: ' + lives, canvas.width - 10, 20);
+
+            if (gameOver) {
+                bctx.fillStyle = '#fff';
+                bctx.font = '24px sans-serif';
+                bctx.textAlign = 'center';
+                const allGone = bricks.every(b => !b.alive);
+                bctx.fillText(allGone ? 'YOU WIN!' : 'GAME OVER', canvas.width / 2, canvas.height / 2);
+                bctx.font = '14px sans-serif';
+                bctx.fillStyle = '#888';
+                bctx.fillText('Click to close', canvas.width / 2, canvas.height / 2 + 30);
+                canvas.addEventListener('click', closeBreakout, { once: true });
+                return;
+            }
+
+            // Ball physics
+            ballX += ballDX;
+            ballY += ballDY;
+
+            if (ballX + ballR > canvas.width || ballX - ballR < 0) ballDX = -ballDX;
+            if (ballY - ballR < 0) ballDY = -ballDY;
+
+            // Paddle collision
+            if (ballY + ballR >= canvas.height - 20 && ballX >= paddleX && ballX <= paddleX + paddleW && ballDY > 0) {
+                ballDY = -ballDY;
+                const hitPos = (ballX - paddleX) / paddleW;
+                ballDX = 6 * (hitPos - 0.5);
+                playTone(440, 0.05, 'sine', 0.03);
+            }
+
+            // Bottom
+            if (ballY + ballR > canvas.height) {
+                lives--;
+                if (lives <= 0) { gameOver = true; }
+                else { ballX = canvas.width / 2; ballY = canvas.height - 40; ballDX = 3; ballDY = -3; }
+            }
+
+            // Brick collision
+            bricks.forEach(b => {
+                if (!b.alive) return;
+                if (ballX + ballR > b.x && ballX - ballR < b.x + b.w && ballY + ballR > b.y && ballY - ballR < b.y + b.h) {
+                    b.alive = false; ballDY = -ballDY; score += 10;
+                    playTone(660 + score * 2, 0.1, 'square', 0.04);
+                }
+            });
+
+            if (bricks.every(b => !b.alive)) { gameOver = true; }
+
+            requestAnimationFrame(drawBreakout);
+        }
+        requestAnimationFrame(drawBreakout);
+    }
+
+    // ========== GHOST TASKS ==========
+    function addGhost(todo) {
+        ghosts.push({ text: todo.text, priority: todo.priority || 'none', deletedAt: Date.now() });
+        saveGhosts();
+    }
+
+    function getGhostOpacity(ghost) {
+        const elapsed = Date.now() - ghost.deletedAt;
+        const hoursElapsed = elapsed / 3600000;
+        // Start at 0.15, fade to 0 over 24 hours
+        const fade = Math.max(0, 1 - (hoursElapsed / 24));
+        return 0.15 * fade;
+    }
+
+    function renderGhosts() {
+        // Clean up expired ghosts
+        const now = Date.now();
+        ghosts = ghosts.filter(g => (now - g.deletedAt) < 86400000);
+        saveGhosts();
+
+        // Show/hide purge button
+        purgeGhostsBtn.style.display = ghosts.length > 0 ? 'inline-block' : 'none';
+
+        ghosts.forEach(ghost => {
+            const li = document.createElement('li');
+            const opacity = getGhostOpacity(ghost);
+            const p = ghost.priority || 'none';
+            li.className = 'todo-item todo-ghost' + (p !== 'none' ? ` p-${p}` : '');
+            li.style.opacity = opacity;
+            const dot = p !== 'none' ? `<span class="ghost-priority-dot p-${p}"></span>` : '';
+            li.innerHTML = `<div class="todo-main-row">${dot}<span class="ghost-text">${escapeHtml(ghost.text)}</span></div>`;
+            list.appendChild(li);
+        });
+    }
+
+    function purgeGhosts() {
+        if (ghosts.length === 0) return;
+        sfx.purge();
+        const ghostEls = list.querySelectorAll('.todo-ghost');
+        ghostEls.forEach(el => el.classList.add('purging'));
+        setTimeout(() => {
+            ghosts = [];
+            saveGhosts();
+            render();
+        }, 550);
+    }
+
+    purgeGhostsBtn.addEventListener('click', purgeGhosts);
+
+    // ========== RENDER ==========
+    function render() {
+        const active = todos.filter(t => !t.done).length, done = todos.length - active, total = todos.length;
+        countEl.textContent = `${active} left`;
+        clearDoneBtn.disabled = done === 0;
+        progressBar.classList.toggle('hidden', total === 0);
+        progressFill.style.width = (total === 0 ? 0 : (done / total) * 100) + '%';
+        const allDone = total > 0 && active === 0;
+        progressFill.classList.toggle('complete', allDone);
+        if (allDone && !prevAllDone) {
+            launchConfetti(); sfx.allDone();
+            // Launch breakout after a short delay
+            const completedTasks = todos.filter(t => t.done);
+            setTimeout(() => launchBreakout(completedTasks), 1500);
+        }
+        prevAllDone = allDone;
+
+        const visible = filtered();
+        list.innerHTML = '';
+        kbdHint.classList.toggle('hidden', visible.length === 0 && ghosts.length === 0);
+
+        if (todos.length === 0 && ghosts.length === 0) { list.innerHTML = '<li class="empty">Nothing to do yet.</li>'; purgeGhostsBtn.style.display = 'none'; return; }
+        if (visible.length === 0 && ghosts.length === 0) {
+            const msg = searchQuery ? `No tasks matching "${escapeHtml(searchQuery)}"` : (filter === 'active' ? 'No active tasks.' : 'No completed tasks.');
+            list.innerHTML = `<li class="empty">${msg}</li>`;
+            purgeGhostsBtn.style.display = 'none';
+            return;
+        }
+
+        if (visible.length === 0 && todos.length > 0) {
+            const msg = searchQuery ? `No tasks matching "${escapeHtml(searchQuery)}"` : (filter === 'active' ? 'No active tasks.' : 'No completed tasks.');
+            list.innerHTML = `<li class="empty">${msg}</li>`;
+        }
+
+        visible.forEach((todo, vi) => {
+            const i = todos.indexOf(todo), li = document.createElement('li'), p = todo.priority || 'none';
+            const age = todo.done ? 'fresh' : getAge(todo.createdAt);
+            li.className = 'todo-item' + (todo.done ? ' done' : '') + (p !== 'none' ? ` p-${p}` : '') + (age !== 'fresh' ? ` age-${age}` : '');
+            li.dataset.idx = i;
+            li.draggable = (filter === 'all' && !searchQuery && editingIndex < 0);
+            if (focusedIndex === vi) li.classList.add('focused');
+            if (animateIndex === i) li.classList.add('slide-in');
+
+            const handle = (filter === 'all' && !searchQuery) ? `<span class="drag-handle" data-i="${i}">&#9776;</span>` : '';
+            const dot = p !== 'none' ? `<span class="priority-dot p-${p}"></span>` : '';
+            const ageBadge = (age !== 'fresh' && !todo.done) ? `<span class="age-badge age-${age}">${ageLabel(age)}</span>` : '';
+            const comment = getSentientComment(todo);
+            const commentHtml = `<div class="sentient-comment${comment.isDone ? ' done-comment' : ''}">${escapeHtml(comment.text)}</div>`;
+
+            if (editingIndex === i) {
+                li.innerHTML = `<div class="todo-main-row">${handle}<div class="todo-check" data-i="${i}"></div>${dot}<input class="todo-text-edit" data-i="${i}" value="${escapeAttr(todo.text)}">${ageBadge}<button class="todo-delete" data-i="${i}">&times;</button></div>`;
+            } else {
+                li.innerHTML = `<div class="todo-main-row">${handle}<div class="todo-check" data-i="${i}"></div>${dot}<div class="todo-content-wrap"><span class="todo-text" data-i="${i}">${highlightMatch(todo.text)}</span>${commentHtml}</div>${ageBadge}<button class="todo-priority-cycle" data-i="${i}" title="Cycle priority">${p === 'none' ? '&#9679;' : p.toUpperCase()}</button><button class="todo-delete" data-i="${i}">&times;</button></div>`;
+            }
+            list.appendChild(li);
+        });
+        animateIndex = -1;
+
+        // Render ghosts at the bottom
+        renderGhosts();
+
+        if (editingIndex >= 0) {
+            const ei = list.querySelector('.todo-text-edit');
+            if (ei) { ei.focus(); ei.selectionStart = ei.value.length; }
+        }
+    }
+
+    // ========== UTILITIES ==========
+    function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    function escapeAttr(s) { return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;'); }
+    function commitEdit(i, t) { t = t.trim(); if (t) todos[i].text = t; editingIndex = -1; save(); render(); }
+
+    function addTodo() {
+        const t = input.value.trim(); if (!t) return;
+        todos.push({ text: t, done: false, priority: currentPriority, createdAt: Date.now() });
+        animateIndex = todos.length - 1;
+        input.value = ''; save(); render(); input.focus(); sfx.add();
+    }
+
+    function deleteTodo(i) {
+        const todoSnap = JSON.parse(JSON.stringify(todos));
+        const ghostSnap = JSON.parse(JSON.stringify(ghosts));
+        const name = todos[i].text;
+        const todoToDelete = todos[i];
+        const visible = filtered();
+        const vi = visible.indexOf(todoToDelete);
+        const items = list.querySelectorAll('.todo-item:not(.todo-ghost)');
+        const li = items[vi];
+        sfx.delete();
+
+        // Add ghost
+        addGhost(todoToDelete);
+
+        if (li) {
+            li.classList.add('fade-out');
+            li.addEventListener('animationend', () => {
+                todos.splice(i, 1);
+                if (editingIndex === i) editingIndex = -1;
+                const nv = filtered();
+                if (focusedIndex >= nv.length) focusedIndex = nv.length - 1;
+                save(); render();
+                showToast(`Deleted "${name}"`, todoSnap, ghostSnap);
+            });
+        } else {
+            todos.splice(i, 1); save(); render();
+            showToast(`Deleted "${name}"`, todoSnap, ghostSnap);
+        }
+    }
+
+    // ========== EVENT LISTENERS ==========
+    searchInput.addEventListener('input', () => { searchQuery = searchInput.value.trim(); focusedIndex = -1; render(); });
+    priorityBtns.forEach(btn => btn.addEventListener('click', () => {
+        currentPriority = btn.dataset.p;
+        priorityBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }));
+
+    // Drag and drop
+    list.addEventListener('dragstart', (e) => {
+        const li = e.target.closest('.todo-item:not(.todo-ghost)');
+        if (!li) return;
+        dragSrcIndex = parseInt(li.dataset.idx);
+        li.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    });
+    list.addEventListener('dragover', (e) => {
+        e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+        const li = e.target.closest('.todo-item:not(.todo-ghost)');
+        list.querySelectorAll('.todo-item').forEach(el => el.classList.remove('drag-over'));
+        if (li) li.classList.add('drag-over');
+    });
+    list.addEventListener('dragleave', (e) => {
+        const li = e.target.closest('.todo-item');
+        if (li) li.classList.remove('drag-over');
+    });
+    list.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const li = e.target.closest('.todo-item:not(.todo-ghost)');
+        if (!li || dragSrcIndex === null) return;
+        const di = parseInt(li.dataset.idx);
+        if (dragSrcIndex === di) return;
+        const [m] = todos.splice(dragSrcIndex, 1);
+        todos.splice(di, 0, m);
+        dragSrcIndex = null; save(); render();
+    });
+    list.addEventListener('dragend', () => {
+        dragSrcIndex = null;
+        list.querySelectorAll('.todo-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
+    });
+
+    $('addBtn').addEventListener('click', addTodo);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') addTodo();
+        if (e.key === 'ArrowDown' && !input.value) {
+            e.preventDefault(); input.blur(); focusedIndex = 0; sfx.navigate(); render();
+        }
+    });
+
+    list.addEventListener('click', (e) => {
+        const t = e.target, i = parseInt(t.dataset.i);
+        if (isNaN(i)) return;
+        if (t.classList.contains('todo-check')) {
+            const w = todos[i].done; todos[i].done = !w;
+            w ? sfx.uncomplete() : sfx.complete();
+            save(); render();
+        } else if (t.classList.contains('todo-delete')) {
+            deleteTodo(i);
+        } else if (t.classList.contains('todo-priority-cycle')) {
+            todos[i].priority = cyclePriority(todos[i].priority);
+            sfx.priority(todos[i].priority);
+            save(); render();
+        }
+    });
+
+    list.addEventListener('dblclick', (e) => {
+        if (!e.target.classList.contains('todo-text')) return;
+        editingIndex = parseInt(e.target.dataset.i);
+        render();
+    });
+
+    list.addEventListener('keydown', (e) => {
+        if (!e.target.classList.contains('todo-text-edit')) return;
+        const i = parseInt(e.target.dataset.i);
+        if (e.key === 'Enter') commitEdit(i, e.target.value);
+        else if (e.key === 'Escape') { editingIndex = -1; render(); }
+    });
+
+    list.addEventListener('focusout', (e) => {
+        if (!e.target.classList.contains('todo-text-edit')) return;
+        commitEdit(parseInt(e.target.dataset.i), e.target.value);
+    });
+
+    filterBtns.forEach(btn => btn.addEventListener('click', () => {
+        filter = btn.dataset.filter;
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        focusedIndex = -1; render();
+    }));
+
+    clearDoneBtn.addEventListener('click', () => {
+        const todoSnap = JSON.parse(JSON.stringify(todos));
+        const ghostSnap = JSON.parse(JSON.stringify(ghosts));
+        const doneTasks = todos.filter(t => t.done);
+        const c = doneTasks.length;
+        // Add all cleared tasks as ghosts
+        doneTasks.forEach(t => addGhost(t));
+        todos = todos.filter(t => !t.done);
+        focusedIndex = -1;
+        save(); render(); sfx.delete();
+        showToast(`Cleared ${c} done task${c !== 1 ? 's' : ''}`, todoSnap, ghostSnap);
+    });
+
+    // ========== KEYBOARD NAVIGATION ==========
+    document.addEventListener('keydown', (e) => {
+        if (breakoutActive) return;
+        if (e.target === searchInput) {
+            if (e.key === 'Escape') { searchInput.value = ''; searchQuery = ''; searchInput.blur(); render(); }
+            return;
+        }
+        if (e.target.tagName === 'INPUT') return;
+        if (editingIndex >= 0) return;
+
+        if (e.key === '/') { e.preventDefault(); searchInput.focus(); return; }
+        if (e.key === 'g' || e.key === 'G') { e.preventDefault(); purgeGhosts(); return; }
+
+        const visible = filtered();
+        if (visible.length === 0) return;
+
+        if (e.key === 'ArrowDown' || e.key === 'j') {
+            e.preventDefault(); focusedIndex = Math.min(focusedIndex + 1, visible.length - 1); sfx.navigate(); render();
+        } else if (e.key === 'ArrowUp' || e.key === 'k') {
+            e.preventDefault(); sfx.navigate();
+            if (focusedIndex <= 0) { focusedIndex = -1; render(); input.focus(); }
+            else { focusedIndex--; render(); }
+        } else if (e.key === 'Enter' && focusedIndex >= 0) {
+            e.preventDefault();
+            const t = visible[focusedIndex], w = t.done;
+            todos[todos.indexOf(t)].done = !w;
+            w ? sfx.uncomplete() : sfx.complete();
+            save(); render();
+        } else if ((e.key === 'Delete' || e.key === 'Backspace') && focusedIndex >= 0) {
+            e.preventDefault(); deleteTodo(todos.indexOf(visible[focusedIndex]));
+        } else if (e.key === 'e' && focusedIndex >= 0) {
+            e.preventDefault(); editingIndex = todos.indexOf(visible[focusedIndex]); render();
+        } else if (e.key === 'p' && focusedIndex >= 0) {
+            e.preventDefault();
+            const t = visible[focusedIndex], idx = todos.indexOf(t);
+            todos[idx].priority = cyclePriority(todos[idx].priority);
+            sfx.priority(todos[idx].priority);
+            save(); render();
+        } else if (e.key === 'Escape') {
+            focusedIndex = -1; render();
+        }
+    });
+
+    // ========== INIT ==========
+    // Refresh decay visuals periodically
+    setInterval(render, 60000);
+    render();
+    </script>
+</body>
+</html>

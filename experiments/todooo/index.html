@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>todooo - Version History</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        h1 {
+            font-size: 3rem;
+            letter-spacing: 0.3rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+        .subtitle {
+            color: #888;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+        .versions {
+            max-width: 700px;
+        }
+        .version {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #2a2a4a;
+        }
+        .version:hover { background: #2a2a4a; margin: 0 -1rem; padding: 0.75rem 1rem; border-radius: 6px; border-color: transparent; }
+        .version-num {
+            font-family: 'Consolas', monospace;
+            font-size: 1.1rem;
+            color: #7c83ff;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .version-num a {
+            color: inherit;
+            text-decoration: none;
+        }
+        .version-num a:hover { text-decoration: underline; }
+        .version-desc {
+            color: #aaa;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>todooo</h1>
+    <p class="subtitle">A todo app, one version at a time.</p>
+    <div class="versions">
+        <div class="version">
+            <span class="version-num"><a href="001/">001</a></span>
+            <span class="version-desc">Basic todo app &mdash; add, complete, and delete tasks</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="002/">002</a></span>
+            <span class="version-desc">Filters &amp; counts &mdash; All/Active/Done tabs, item count, clear completed</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="003/">003</a></span>
+            <span class="version-desc">Inline editing &mdash; double-click a task to rename it</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="004/">004</a></span>
+            <span class="version-desc">Animations &mdash; slide-in on add, fade-out on delete</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="005/">005</a></span>
+            <span class="version-desc">Undo &mdash; toast notification with undo after delete or clear</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="006/">006</a></span>
+            <span class="version-desc">Keyboard mode &mdash; arrow keys to navigate, Enter/Del/E to act</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="007/">007</a></span>
+            <span class="version-desc">Drag-and-drop &mdash; reorder tasks by dragging the grip handle</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="008/">008</a></span>
+            <span class="version-desc">Priorities &mdash; color-coded Low/Med/High with cycle button and <kbd>P</kbd> key</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="009/">009</a></span>
+            <span class="version-desc">Live search &mdash; filter tasks instantly with highlighted matches, <kbd>/</kbd> to focus</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="010/">010</a></span>
+            <span class="version-desc">Progress bar &amp; confetti &mdash; visual completion tracker, celebration when all done</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="011/">011</a></span>
+            <span class="version-desc">Sound design &mdash; Web Audio API tones for every action, generative ambient feedback</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="012/">012</a></span>
+            <span class="version-desc">Time decay &mdash; tasks age visually over days, darkening and trembling with neglect</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="013/">013</a></span>
+            <span class="version-desc">Hidden game &mdash; complete all tasks to unlock a breakout game made from your todos</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="014/">014</a></span>
+            <span class="version-desc">Sentient app &mdash; the todo list talks back with dry, sarcastic commentary</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="015/">015</a></span>
+            <span class="version-desc">Ghost tasks &mdash; deleted tasks haunt the list as fading afterimages</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="016/">016</a></span>
+            <span class="version-desc">Zen mode &mdash; single-task focus view, one breath at a time</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="017/">017</a></span>
+            <span class="version-desc">Day/night theming &mdash; colors shift with the time of day, dawn to midnight</span>
+        </div>
+        <div class="version">
+            <span class="version-num"><a href="018/">018</a></span>
+            <span class="version-desc">Particle system &mdash; ambient particles react to every interaction, the app breathes</span>
+        </div>
+    </div>
+</body>
+</html>

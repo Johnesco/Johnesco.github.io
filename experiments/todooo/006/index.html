@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>todooo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 3rem 1rem;
+        }
+
+        .app {
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            letter-spacing: 0.3rem;
+            margin-bottom: 1.5rem;
+            color: #fff;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .input-row input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid #2a2a4a;
+            border-radius: 8px;
+            background: #16213e;
+            color: #e0e0e0;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-row input:focus { border-color: #7c83ff; }
+        .input-row input::placeholder { color: #555; }
+
+        .input-row button {
+            padding: 0.75rem 1.25rem;
+            border: none;
+            border-radius: 8px;
+            background: #7c83ff;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .input-row button:hover { background: #6a71e0; }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+
+        .count { color: #888; }
+
+        .filters { display: flex; gap: 0.25rem; }
+
+        .filters button {
+            background: none;
+            border: 1px solid transparent;
+            color: #888;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .filters button:hover { color: #e0e0e0; }
+        .filters button.active { border-color: #7c83ff; color: #7c83ff; }
+
+        .clear-done {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .clear-done:hover { color: #ff6b6b; }
+        .clear-done:disabled { opacity: 0; pointer-events: none; }
+
+        .todo-list { list-style: none; }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: #16213e;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .todo-item.focused {
+            outline: 2px solid #7c83ff;
+            outline-offset: -2px;
+        }
+
+        .todo-item.slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .todo-item.fade-out {
+            animation: fadeOut 0.3s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(30px); }
+        }
+
+        .todo-item.done { opacity: 0.5; }
+        .todo-item.done .todo-text { text-decoration: line-through; }
+
+        .todo-check {
+            width: 22px;
+            height: 22px;
+            border: 2px solid #7c83ff;
+            border-radius: 50%;
+            flex-shrink: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .todo-item.done .todo-check { background: #7c83ff; }
+
+        .todo-check::after {
+            content: '';
+            display: none;
+            width: 6px;
+            height: 10px;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg) translate(-1px, -1px);
+        }
+
+        .todo-item.done .todo-check::after { display: block; }
+
+        .todo-text {
+            flex: 1;
+            font-size: 1rem;
+            cursor: default;
+        }
+
+        .todo-text-edit {
+            flex: 1;
+            font-size: 1rem;
+            background: #0f1a30;
+            border: 2px solid #7c83ff;
+            border-radius: 4px;
+            color: #e0e0e0;
+            padding: 0.2rem 0.4rem;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .todo-delete {
+            background: none;
+            border: none;
+            color: #555;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0 0.25rem;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .todo-delete:hover { color: #ff6b6b; }
+
+        .empty {
+            color: #555;
+            text-align: center;
+            padding: 2rem;
+            font-style: italic;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #2a2a4a;
+            color: #e0e0e0;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast button {
+            background: #7c83ff;
+            border: none;
+            color: #fff;
+            padding: 0.3rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .toast button:hover { background: #6a71e0; }
+
+        .kbd-hint {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            color: #444;
+            font-size: 0.75rem;
+            text-align: right;
+            line-height: 1.6;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .kbd-hint.hidden { opacity: 0; }
+
+        kbd {
+            background: #2a2a4a;
+            padding: 0.1rem 0.35rem;
+            border-radius: 3px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.7rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <h1>todooo</h1>
+        <div class="input-row">
+            <input type="text" id="todoInput" placeholder="What needs doing?" autofocus>
+            <button id="addBtn">Add</button>
+        </div>
+        <div class="toolbar">
+            <span class="count" id="count"></span>
+            <div class="filters">
+                <button class="active" data-filter="all">All</button>
+                <button data-filter="active">Active</button>
+                <button data-filter="done">Done</button>
+            </div>
+            <button class="clear-done" id="clearDone">Clear done</button>
+        </div>
+        <ul class="todo-list" id="todoList"></ul>
+    </div>
+
+    <div class="toast" id="toast">
+        <span id="toastMsg"></span>
+        <button id="toastUndo">Undo</button>
+    </div>
+
+    <div class="kbd-hint" id="kbdHint">
+        <kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate &nbsp;
+        <kbd>Enter</kbd> toggle &nbsp;
+        <kbd>Del</kbd> delete &nbsp;
+        <kbd>E</kbd> edit &nbsp;
+        <kbd>Esc</kbd> deselect
+    </div>
+
+    <script>
+        const input = document.getElementById('todoInput');
+        const addBtn = document.getElementById('addBtn');
+        const list = document.getElementById('todoList');
+        const countEl = document.getElementById('count');
+        const clearDoneBtn = document.getElementById('clearDone');
+        const filterBtns = document.querySelectorAll('.filters button');
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toastMsg');
+        const toastUndo = document.getElementById('toastUndo');
+        const kbdHint = document.getElementById('kbdHint');
+
+        let todos = JSON.parse(localStorage.getItem('todooo-006') || '[]');
+        let filter = 'all';
+        let editingIndex = -1;
+        let animateIndex = -1;
+        let focusedIndex = -1;
+        let undoState = null;
+        let toastTimer = null;
+
+        function save() {
+            localStorage.setItem('todooo-006', JSON.stringify(todos));
+        }
+
+        function filtered() {
+            if (filter === 'active') return todos.filter(t => !t.done);
+            if (filter === 'done') return todos.filter(t => t.done);
+            return todos;
+        }
+
+        function showToast(msg, snapshot) {
+            undoState = snapshot;
+            toastMsg.textContent = msg;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+                undoState = null;
+            }, 4000);
+        }
+
+        toastUndo.addEventListener('click', () => {
+            if (!undoState) return;
+            todos = undoState;
+            undoState = null;
+            toast.classList.remove('show');
+            clearTimeout(toastTimer);
+            save();
+            render();
+        });
+
+        function visibleTodos() {
+            return filtered();
+        }
+
+        function render() {
+            const active = todos.filter(t => !t.done).length;
+            const done = todos.length - active;
+            countEl.textContent = `${active} left`;
+            clearDoneBtn.disabled = done === 0;
+
+            const visible = visibleTodos();
+            list.innerHTML = '';
+
+            kbdHint.classList.toggle('hidden', visible.length === 0);
+
+            if (todos.length === 0) {
+                list.innerHTML = '<li class="empty">Nothing to do yet.</li>';
+                return;
+            }
+            if (visible.length === 0) {
+                const label = filter === 'active' ? 'active' : 'completed';
+                list.innerHTML = `<li class="empty">No ${label} tasks.</li>`;
+                return;
+            }
+            visible.forEach((todo, vi) => {
+                const i = todos.indexOf(todo);
+                const li = document.createElement('li');
+                li.className = 'todo-item' + (todo.done ? ' done' : '');
+                if (focusedIndex === vi) li.classList.add('focused');
+                if (animateIndex === i) li.classList.add('slide-in');
+
+                if (editingIndex === i) {
+                    li.innerHTML = `
+                        <div class="todo-check" data-i="${i}"></div>
+                        <input class="todo-text-edit" data-i="${i}" value="${escapeAttr(todo.text)}">
+                        <button class="todo-delete" data-i="${i}">&times;</button>
+                    `;
+                } else {
+                    li.innerHTML = `
+                        <div class="todo-check" data-i="${i}"></div>
+                        <span class="todo-text" data-i="${i}">${escapeHtml(todo.text)}</span>
+                        <button class="todo-delete" data-i="${i}">&times;</button>
+                    `;
+                }
+                list.appendChild(li);
+            });
+
+            animateIndex = -1;
+
+            if (editingIndex >= 0) {
+                const editInput = list.querySelector('.todo-text-edit');
+                if (editInput) {
+                    editInput.focus();
+                    editInput.selectionStart = editInput.value.length;
+                }
+            }
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function escapeAttr(str) {
+            return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+        }
+
+        function commitEdit(i, newText) {
+            newText = newText.trim();
+            if (newText) {
+                todos[i].text = newText;
+            }
+            editingIndex = -1;
+            save();
+            render();
+        }
+
+        function addTodo() {
+            const text = input.value.trim();
+            if (!text) return;
+            todos.push({ text, done: false });
+            animateIndex = todos.length - 1;
+            input.value = '';
+            save();
+            render();
+            input.focus();
+        }
+
+        function deleteTodo(i) {
+            const snapshot = JSON.parse(JSON.stringify(todos));
+            const name = todos[i].text;
+            const visible = visibleTodos();
+            const visibleIdx = visible.indexOf(todos[i]);
+            const items = list.querySelectorAll('.todo-item');
+            const li = items[visibleIdx];
+            if (li) {
+                li.classList.add('fade-out');
+                li.addEventListener('animationend', () => {
+                    todos.splice(i, 1);
+                    if (editingIndex === i) editingIndex = -1;
+                    // Adjust focused index
+                    const newVisible = visibleTodos();
+                    if (focusedIndex >= newVisible.length) {
+                        focusedIndex = newVisible.length - 1;
+                    }
+                    save();
+                    render();
+                    showToast(`Deleted "${name}"`, snapshot);
+                });
+            } else {
+                todos.splice(i, 1);
+                save();
+                render();
+                showToast(`Deleted "${name}"`, snapshot);
+            }
+        }
+
+        addBtn.addEventListener('click', addTodo);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addTodo();
+            if (e.key === 'ArrowDown' && !input.value) {
+                e.preventDefault();
+                input.blur();
+                focusedIndex = 0;
+                render();
+            }
+        });
+
+        list.addEventListener('click', (e) => {
+            const target = e.target;
+            const i = parseInt(target.dataset.i);
+            if (isNaN(i)) return;
+            if (target.classList.contains('todo-check')) {
+                todos[i].done = !todos[i].done;
+                save();
+                render();
+            } else if (target.classList.contains('todo-delete')) {
+                deleteTodo(i);
+            }
+        });
+
+        list.addEventListener('dblclick', (e) => {
+            const target = e.target;
+            if (!target.classList.contains('todo-text')) return;
+            const i = parseInt(target.dataset.i);
+            if (isNaN(i)) return;
+            editingIndex = i;
+            render();
+        });
+
+        list.addEventListener('keydown', (e) => {
+            if (!e.target.classList.contains('todo-text-edit')) return;
+            const i = parseInt(e.target.dataset.i);
+            if (e.key === 'Enter') {
+                commitEdit(i, e.target.value);
+            } else if (e.key === 'Escape') {
+                editingIndex = -1;
+                render();
+            }
+        });
+
+        list.addEventListener('focusout', (e) => {
+            if (!e.target.classList.contains('todo-text-edit')) return;
+            const i = parseInt(e.target.dataset.i);
+            commitEdit(i, e.target.value);
+        });
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filter = btn.dataset.filter;
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                focusedIndex = -1;
+                render();
+            });
+        });
+
+        clearDoneBtn.addEventListener('click', () => {
+            const snapshot = JSON.parse(JSON.stringify(todos));
+            const count = todos.filter(t => t.done).length;
+            todos = todos.filter(t => !t.done);
+            focusedIndex = -1;
+            save();
+            render();
+            showToast(`Cleared ${count} done task${count !== 1 ? 's' : ''}`, snapshot);
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            // Don't intercept when typing in inputs
+            if (e.target.tagName === 'INPUT') return;
+            if (editingIndex >= 0) return;
+
+            const visible = visibleTodos();
+            if (visible.length === 0) return;
+
+            if (e.key === 'ArrowDown' || e.key === 'j') {
+                e.preventDefault();
+                focusedIndex = Math.min(focusedIndex + 1, visible.length - 1);
+                render();
+            } else if (e.key === 'ArrowUp' || e.key === 'k') {
+                e.preventDefault();
+                if (focusedIndex <= 0) {
+                    focusedIndex = -1;
+                    render();
+                    input.focus();
+                } else {
+                    focusedIndex--;
+                    render();
+                }
+            } else if (e.key === 'Enter' && focusedIndex >= 0) {
+                e.preventDefault();
+                const todo = visible[focusedIndex];
+                const i = todos.indexOf(todo);
+                todos[i].done = !todos[i].done;
+                save();
+                render();
+            } else if ((e.key === 'Delete' || e.key === 'Backspace') && focusedIndex >= 0) {
+                e.preventDefault();
+                const todo = visible[focusedIndex];
+                const i = todos.indexOf(todo);
+                deleteTodo(i);
+            } else if (e.key === 'e' && focusedIndex >= 0) {
+                e.preventDefault();
+                const todo = visible[focusedIndex];
+                const i = todos.indexOf(todo);
+                editingIndex = i;
+                render();
+            } else if (e.key === 'Escape') {
+                focusedIndex = -1;
+                render();
+            }
+        });
+
+        render();
+    </script>
+</body>
+</html>

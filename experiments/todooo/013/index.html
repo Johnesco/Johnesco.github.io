@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>todooo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; display: flex; justify-content: center; padding: 3rem 1rem; }
+        .app { width: 100%; max-width: 500px; }
+        h1 { font-size: 2.5rem; letter-spacing: 0.3rem; margin-bottom: 1.5rem; color: #fff; }
+        .sound-toggle { position: fixed; top: 1rem; right: 1rem; background: #2a2a4a; border: none; color: #888; font-size: 1.2rem; padding: 0.5rem 0.7rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; z-index: 50; }
+        .sound-toggle:hover { color: #e0e0e0; }
+        .sound-toggle.on { color: #7c83ff; }
+        .progress-bar { width: 100%; height: 6px; background: #2a2a4a; border-radius: 3px; margin-bottom: 1.5rem; overflow: hidden; transition: opacity 0.3s; }
+        .progress-bar.hidden { opacity: 0; }
+        .progress-fill { height: 100%; background: #7c83ff; border-radius: 3px; transition: width 0.4s ease, background 0.4s ease; }
+        .progress-fill.complete { background: #4ade80; }
+        .input-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .input-row input { flex: 1; padding: 0.75rem 1rem; border: 2px solid #2a2a4a; border-radius: 8px; background: #16213e; color: #e0e0e0; font-size: 1rem; outline: none; transition: border-color 0.2s; }
+        .input-row input:focus { border-color: #7c83ff; }
+        .input-row input::placeholder { color: #555; }
+        .input-row button { padding: 0.75rem 1.25rem; border: none; border-radius: 8px; background: #7c83ff; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .input-row button:hover { background: #6a71e0; }
+        .priority-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; align-items: center; }
+        .priority-row span { color: #555; font-size: 0.8rem; }
+        .priority-btn { border: none; padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: all 0.2s; opacity: 0.4; }
+        .priority-btn.active { opacity: 1; }
+        .priority-btn[data-p="none"] { background: #2a2a4a; color: #888; }
+        .priority-btn[data-p="low"] { background: #1b5e3b; color: #4ade80; }
+        .priority-btn[data-p="med"] { background: #5e4b1b; color: #fbbf24; }
+        .priority-btn[data-p="high"] { background: #5e1b1b; color: #f87171; }
+        .search-row { margin-bottom: 0.75rem; }
+        .search-row input { width: 100%; padding: 0.5rem 1rem; border: 2px solid #2a2a4a; border-radius: 8px; background: #16213e; color: #e0e0e0; font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+        .search-row input:focus { border-color: #7c83ff; }
+        .search-row input::placeholder { color: #444; }
+        .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding: 0.5rem 0; font-size: 0.85rem; }
+        .count { color: #888; }
+        .filters { display: flex; gap: 0.25rem; }
+        .filters button { background: none; border: 1px solid transparent; color: #888; padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+        .filters button:hover { color: #e0e0e0; }
+        .filters button.active { border-color: #7c83ff; color: #7c83ff; }
+        .clear-done { background: none; border: none; color: #888; font-size: 0.85rem; cursor: pointer; transition: color 0.2s; }
+        .clear-done:hover { color: #ff6b6b; }
+        .clear-done:disabled { opacity: 0; pointer-events: none; }
+        .todo-list { list-style: none; }
+        .todo-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: #16213e; border-radius: 8px; margin-bottom: 0.5rem; transition: opacity 0.3s, transform 0.3s, box-shadow 0.2s, background 0.5s; user-select: none; border-left: 3px solid transparent; }
+        .todo-item.p-low { border-left-color: #4ade80; }
+        .todo-item.p-med { border-left-color: #fbbf24; }
+        .todo-item.p-high { border-left-color: #f87171; }
+        .todo-item.focused { outline: 2px solid #7c83ff; outline-offset: -2px; }
+        .todo-item.slide-in { animation: slideIn 0.3s ease-out; }
+        .todo-item.fade-out { animation: fadeOut 0.3s ease-out forwards; }
+        .todo-item.dragging { opacity: 0.4; }
+        .todo-item.drag-over { box-shadow: 0 -2px 0 0 #7c83ff; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(30px); } }
+        .todo-item.done { opacity: 0.5; }
+        .todo-item.done .todo-text { text-decoration: line-through; }
+        /* Time decay styles */
+        .todo-item.age-fresh { background: #16213e; }
+        .todo-item.age-day { background: #1a2235; }
+        .todo-item.age-old { background: #221e1e; }
+        .todo-item.age-ancient { background: #2a1a1a; animation: tremble 3s infinite; }
+        @keyframes tremble { 0%, 95%, 100% { transform: translateX(0); } 96% { transform: translateX(-1px); } 98% { transform: translateX(1px); } }
+        .age-badge { font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 3px; flex-shrink: 0; font-weight: 600; }
+        .age-badge.age-day { background: #3a3520; color: #d4a843; }
+        .age-badge.age-old { background: #3a2520; color: #e88a5a; }
+        .age-badge.age-ancient { background: #3a1a1a; color: #f87171; }
+        .drag-handle { cursor: grab; color: #444; font-size: 1rem; flex-shrink: 0; display: flex; align-items: center; transition: color 0.2s; }
+        .drag-handle:active { cursor: grabbing; }
+        .drag-handle:hover { color: #888; }
+        .priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .priority-dot.p-low { background: #4ade80; }
+        .priority-dot.p-med { background: #fbbf24; }
+        .priority-dot.p-high { background: #f87171; }
+        .todo-check { width: 22px; height: 22px; border: 2px solid #7c83ff; border-radius: 50%; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .todo-item.done .todo-check { background: #7c83ff; }
+        .todo-check::after { content: ''; display: none; width: 6px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px); }
+        .todo-item.done .todo-check::after { display: block; }
+        .todo-text { flex: 1; font-size: 1rem; cursor: default; }
+        .todo-text mark { background: #7c83ff44; color: #e0e0e0; border-radius: 2px; padding: 0 1px; }
+        .todo-text-edit { flex: 1; font-size: 1rem; background: #0f1a30; border: 2px solid #7c83ff; border-radius: 4px; color: #e0e0e0; padding: 0.2rem 0.4rem; outline: none; font-family: inherit; }
+        .todo-priority-cycle { background: none; border: none; cursor: pointer; font-size: 0.7rem; padding: 0.15rem 0.3rem; border-radius: 3px; transition: all 0.2s; color: #555; }
+        .todo-priority-cycle:hover { color: #aaa; }
+        .todo-delete { background: none; border: none; color: #555; font-size: 1.2rem; cursor: pointer; padding: 0 0.25rem; line-height: 1; transition: color 0.2s; }
+        .todo-delete:hover { color: #ff6b6b; }
+        .empty { color: #555; text-align: center; padding: 2rem; font-style: italic; }
+        .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); background: #2a2a4a; color: #e0e0e0; padding: 0.75rem 1.25rem; border-radius: 8px; display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; box-shadow: 0 4px 20px rgba(0,0,0,0.4); transition: transform 0.3s ease; z-index: 100; }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast button { background: #7c83ff; border: none; color: #fff; padding: 0.3rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+        .kbd-hint { position: fixed; bottom: 2rem; right: 2rem; color: #444; font-size: 0.75rem; text-align: right; line-height: 1.6; transition: opacity 0.3s; pointer-events: none; }
+        .kbd-hint.hidden { opacity: 0; }
+        kbd { background: #2a2a4a; padding: 0.1rem 0.35rem; border-radius: 3px; font-family: 'Consolas', monospace; font-size: 0.7rem; }
+        #confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 200; }
+
+        /* Breakout Game Overlay */
+        .breakout-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 25, 0.92); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.5s ease; pointer-events: none; }
+        .breakout-overlay.visible { opacity: 1; pointer-events: all; }
+        .breakout-header { color: #7c83ff; font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem; letter-spacing: 0.1rem; }
+        .breakout-score { color: #888; font-size: 0.85rem; margin-bottom: 0.5rem; }
+        #breakoutCanvas { border: 2px solid #2a2a4a; border-radius: 8px; background: #0d0d1a; display: block; }
+        .breakout-controls { color: #555; font-size: 0.75rem; margin-top: 0.75rem; }
+        .breakout-controls kbd { background: #2a2a4a; padding: 0.1rem 0.35rem; border-radius: 3px; font-family: 'Consolas', monospace; font-size: 0.7rem; color: #888; }
+        .breakout-win { display: none; flex-direction: column; align-items: center; gap: 1rem; }
+        .breakout-win h2 { color: #4ade80; font-size: 2rem; letter-spacing: 0.2rem; }
+        .breakout-win .final-score { color: #7c83ff; font-size: 1.3rem; }
+        .breakout-btn { background: #7c83ff; border: none; color: #fff; padding: 0.6rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: background 0.2s; margin-top: 0.5rem; }
+        .breakout-btn:hover { background: #6a71e0; }
+        .breakout-close { position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: #555; font-size: 1.5rem; cursor: pointer; transition: color 0.2s; padding: 0.5rem; }
+        .breakout-close:hover { color: #e0e0e0; }
+    </style>
+</head>
+<body>
+    <button class="sound-toggle on" id="soundToggle" title="Toggle sound">&#9835;</button>
+    <div class="app">
+        <h1>todooo</h1>
+        <div class="progress-bar hidden" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="input-row"><input type="text" id="todoInput" placeholder="What needs doing?" autofocus><button id="addBtn">Add</button></div>
+        <div class="priority-row"><span>Priority:</span><button class="priority-btn active" data-p="none">None</button><button class="priority-btn" data-p="low">Low</button><button class="priority-btn" data-p="med">Med</button><button class="priority-btn" data-p="high">High</button></div>
+        <div class="search-row"><input type="text" id="searchInput" placeholder="Search tasks..."></div>
+        <div class="toolbar"><span class="count" id="count"></span><div class="filters"><button class="active" data-filter="all">All</button><button data-filter="active">Active</button><button data-filter="done">Done</button></div><button class="clear-done" id="clearDone">Clear done</button></div>
+        <ul class="todo-list" id="todoList"></ul>
+    </div>
+    <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
+    <div class="kbd-hint" id="kbdHint"><kbd>/</kbd> search &nbsp; <kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate &nbsp; <kbd>Enter</kbd> toggle &nbsp; <kbd>Del</kbd> delete &nbsp; <kbd>E</kbd> edit &nbsp; <kbd>P</kbd> priority &nbsp; <kbd>Esc</kbd> deselect</div>
+    <canvas id="confetti"></canvas>
+
+    <!-- Breakout Game Overlay -->
+    <div class="breakout-overlay" id="breakoutOverlay">
+        <button class="breakout-close" id="breakoutClose" title="Close (Esc)">&times;</button>
+        <div class="breakout-header">ALL TASKS DONE! Break your bricks!</div>
+        <div class="breakout-score">Score: <span id="breakoutScore">0</span></div>
+        <canvas id="breakoutCanvas" width="700" height="500"></canvas>
+        <div class="breakout-controls">
+            <kbd>Mouse</kbd> or <kbd>&larr;</kbd><kbd>&rarr;</kbd> move paddle &nbsp; <kbd>Space</kbd> launch ball &nbsp; <kbd>Esc</kbd> close
+        </div>
+        <div class="breakout-win" id="breakoutWin">
+            <h2>You Win!</h2>
+            <div class="final-score" id="finalScore">Score: 0</div>
+            <button class="breakout-btn" id="playAgainBtn">Play Again</button>
+            <button class="breakout-btn" id="closeGameBtn" style="background:#2a2a4a;">Back to Tasks</button>
+        </div>
+    </div>
+
+    <script>
+    // Audio
+    let audioCtx = null, soundOn = true;
+    function getAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+    function playTone(f, d, type='sine', v=0.15) { if (!soundOn) return; const c = getAudio(), o = c.createOscillator(), g = c.createGain(); o.type=type; o.frequency.setValueAtTime(f, c.currentTime); g.gain.setValueAtTime(v, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime+d); o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+d); }
+    function playChord(fs, d, type='sine', v=0.08) { fs.forEach(f => playTone(f, d, type, v)); }
+    const sfx = { add:()=>{playTone(523.25,0.15);setTimeout(()=>playTone(659.25,0.15),80)}, complete:()=>playChord([523.25,659.25,783.99],0.5,'sine',0.06), uncomplete:()=>playTone(392,0.2,'triangle',0.1), delete:()=>{playTone(440,0.15,'triangle',0.1);setTimeout(()=>playTone(330,0.2,'triangle',0.08),100)}, priority:(p)=>{const fs={none:330,low:440,med:523,high:660};playTone(fs[p]||440,0.12,'square',0.05)}, navigate:()=>playTone(880,0.05,'sine',0.03), allDone:()=>{[523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>playTone(f,0.4,'sine',0.08),i*120))},
+        brickHit:()=>playTone(600+Math.random()*400,0.08,'square',0.06),
+        paddleHit:()=>playTone(300,0.1,'triangle',0.08),
+        wallHit:()=>playTone(200,0.05,'sine',0.04),
+        gameWin:()=>{[523.25,659.25,783.99,1046.5,1318.5].forEach((f,i)=>setTimeout(()=>playTone(f,0.5,'sine',0.1),i*100))},
+        ballLost:()=>{playTone(200,0.3,'sawtooth',0.08);setTimeout(()=>playTone(150,0.4,'sawtooth',0.06),150)}
+    };
+    document.getElementById('soundToggle').addEventListener('click', function() { soundOn = !soundOn; this.classList.toggle('on', soundOn); });
+
+    // Time decay
+    function getAge(createdAt) {
+        if (!createdAt) return 'fresh';
+        const hours = (Date.now() - createdAt) / 3600000;
+        if (hours < 24) return 'fresh';
+        if (hours < 72) return 'day';
+        if (hours < 168) return 'old';
+        return 'ancient';
+    }
+    function ageLabel(age) {
+        if (age === 'day') return '1d+';
+        if (age === 'old') return '3d+';
+        if (age === 'ancient') return '7d+';
+        return '';
+    }
+
+    // App
+    const $ = id => document.getElementById(id);
+    const input = $('todoInput'), searchInput = $('searchInput'), list = $('todoList'), countEl = $('count'), clearDoneBtn = $('clearDone'), progressBar = $('progressBar'), progressFill = $('progressFill');
+    const filterBtns = document.querySelectorAll('.filters button'), priorityBtns = document.querySelectorAll('.priority-btn');
+    const toast = $('toast'), toastMsg = $('toastMsg'), toastUndo = $('toastUndo'), kbdHint = $('kbdHint');
+    const confettiCanvas = $('confetti'), ctx = confettiCanvas.getContext('2d');
+
+    const PRIORITIES = ['none','low','med','high'];
+    let todos = JSON.parse(localStorage.getItem('todooo-013') || '[]');
+    let filter = 'all', searchQuery = '', editingIndex = -1, animateIndex = -1, focusedIndex = -1;
+    let undoState = null, toastTimer = null, dragSrcIndex = null, currentPriority = 'none', prevAllDone = false;
+
+    function save() { localStorage.setItem('todooo-013', JSON.stringify(todos)); }
+    function filtered() { let r = todos; if (filter==='active') r=r.filter(t=>!t.done); else if (filter==='done') r=r.filter(t=>t.done); if (searchQuery) { const q=searchQuery.toLowerCase(); r=r.filter(t=>t.text.toLowerCase().includes(q)); } return r; }
+    function highlightMatch(text) { if (!searchQuery) return escapeHtml(text); const e=escapeHtml(text),q=searchQuery.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); return e.replace(new RegExp(`(${q})`,'gi'),'<mark>$1</mark>'); }
+    function showToast(msg, snap) { undoState=snap; toastMsg.textContent=msg; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>{toast.classList.remove('show');undoState=null;},4000); }
+    toastUndo.addEventListener('click', ()=>{ if(!undoState)return; todos=undoState; undoState=null; toast.classList.remove('show'); clearTimeout(toastTimer); save(); render(); });
+    function cyclePriority(c) { return PRIORITIES[(PRIORITIES.indexOf(c||'none')+1)%PRIORITIES.length]; }
+
+    let confettiPieces=[], confettiRunning=false;
+    function resizeCanvas() { confettiCanvas.width=innerWidth; confettiCanvas.height=innerHeight; } addEventListener('resize',resizeCanvas); resizeCanvas();
+    function launchConfetti() { confettiPieces=[]; const cols=['#7c83ff','#4ade80','#fbbf24','#f87171','#a78bfa','#38bdf8','#fb923c']; for(let i=0;i<120;i++) confettiPieces.push({x:Math.random()*confettiCanvas.width,y:-10-Math.random()*confettiCanvas.height*0.5,w:4+Math.random()*6,h:8+Math.random()*8,color:cols[~~(Math.random()*cols.length)],vx:(Math.random()-0.5)*4,vy:2+Math.random()*4,rot:Math.random()*Math.PI*2,vr:(Math.random()-0.5)*0.2,life:1}); if(!confettiRunning){confettiRunning=true;animateConfetti();} }
+    function animateConfetti() { ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); confettiPieces.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.05;p.rot+=p.vr;if(p.y>confettiCanvas.height-50)p.life-=0.02;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();}); confettiPieces=confettiPieces.filter(p=>p.life>0); if(confettiPieces.length>0)requestAnimationFrame(animateConfetti);else{confettiRunning=false;ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);} }
+
+    function render() {
+        const active=todos.filter(t=>!t.done).length, done=todos.length-active, total=todos.length;
+        countEl.textContent=`${active} left`; clearDoneBtn.disabled=done===0;
+        progressBar.classList.toggle('hidden',total===0);
+        progressFill.style.width=(total===0?0:(done/total)*100)+'%';
+        const allDone=total>0&&active===0; progressFill.classList.toggle('complete',allDone);
+        if(allDone&&!prevAllDone){
+            launchConfetti();
+            sfx.allDone();
+            // Launch breakout game after a short delay for confetti
+            setTimeout(()=>{ if(todos.length>0 && todos.filter(t=>!t.done).length===0) launchBreakout(); }, 1500);
+        }
+        prevAllDone=allDone;
+
+        const visible=filtered(); list.innerHTML='';
+        kbdHint.classList.toggle('hidden',visible.length===0);
+        if(todos.length===0){list.innerHTML='<li class="empty">Nothing to do yet.</li>';return;}
+        if(visible.length===0){const msg=searchQuery?`No tasks matching "${searchQuery}"`:(filter==='active'?'No active tasks.':'No completed tasks.');list.innerHTML=`<li class="empty">${msg}</li>`;return;}
+
+        visible.forEach((todo,vi)=>{
+            const i=todos.indexOf(todo),li=document.createElement('li'),p=todo.priority||'none';
+            const age = todo.done ? 'fresh' : getAge(todo.createdAt);
+            li.className='todo-item'+(todo.done?' done':'')+(p!=='none'?` p-${p}`:'')+(age!=='fresh'?` age-${age}`:'');
+            li.dataset.idx=i; li.draggable=(filter==='all'&&!searchQuery&&editingIndex<0);
+            if(focusedIndex===vi) li.classList.add('focused');
+            if(animateIndex===i) li.classList.add('slide-in');
+            const handle=(filter==='all'&&!searchQuery)?`<span class="drag-handle" data-i="${i}">&#9776;</span>`:'';
+            const dot=p!=='none'?`<span class="priority-dot p-${p}"></span>`:'';
+            const ageBadge = (age!=='fresh'&&!todo.done) ? `<span class="age-badge age-${age}">${ageLabel(age)}</span>` : '';
+            if(editingIndex===i){
+                li.innerHTML=`${handle}<div class="todo-check" data-i="${i}"></div>${dot}<input class="todo-text-edit" data-i="${i}" value="${escapeAttr(todo.text)}">${ageBadge}<button class="todo-delete" data-i="${i}">&times;</button>`;
+            } else {
+                li.innerHTML=`${handle}<div class="todo-check" data-i="${i}"></div>${dot}<span class="todo-text" data-i="${i}">${highlightMatch(todo.text)}</span>${ageBadge}<button class="todo-priority-cycle" data-i="${i}" title="Cycle priority">${p==='none'?'&#9679;':p.toUpperCase()}</button><button class="todo-delete" data-i="${i}">&times;</button>`;
+            }
+            list.appendChild(li);
+        });
+        animateIndex=-1;
+        if(editingIndex>=0){const ei=list.querySelector('.todo-text-edit');if(ei){ei.focus();ei.selectionStart=ei.value.length;}}
+    }
+
+    function escapeHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+    function escapeAttr(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
+    function commitEdit(i,t){t=t.trim();if(t)todos[i].text=t;editingIndex=-1;save();render();}
+    function addTodo(){const t=input.value.trim();if(!t)return;todos.push({text:t,done:false,priority:currentPriority,createdAt:Date.now()});animateIndex=todos.length-1;input.value='';save();render();input.focus();sfx.add();}
+    function deleteTodo(i){const snap=JSON.parse(JSON.stringify(todos)),name=todos[i].text,visible=filtered(),vi=visible.indexOf(todos[i]),items=list.querySelectorAll('.todo-item'),li=items[vi];sfx.delete();if(li){li.classList.add('fade-out');li.addEventListener('animationend',()=>{todos.splice(i,1);if(editingIndex===i)editingIndex=-1;const nv=filtered();if(focusedIndex>=nv.length)focusedIndex=nv.length-1;save();render();showToast(`Deleted "${name}"`,snap);});}else{todos.splice(i,1);save();render();showToast(`Deleted "${name}"`,snap);}}
+
+    searchInput.addEventListener('input',()=>{searchQuery=searchInput.value.trim();focusedIndex=-1;render();});
+    priorityBtns.forEach(btn=>btn.addEventListener('click',()=>{currentPriority=btn.dataset.p;priorityBtns.forEach(b=>b.classList.remove('active'));btn.classList.add('active');}));
+    list.addEventListener('dragstart',(e)=>{const li=e.target.closest('.todo-item');if(!li)return;dragSrcIndex=parseInt(li.dataset.idx);li.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+    list.addEventListener('dragover',(e)=>{e.preventDefault();e.dataTransfer.dropEffect='move';const li=e.target.closest('.todo-item');list.querySelectorAll('.todo-item').forEach(el=>el.classList.remove('drag-over'));if(li)li.classList.add('drag-over');});
+    list.addEventListener('dragleave',(e)=>{const li=e.target.closest('.todo-item');if(li)li.classList.remove('drag-over');});
+    list.addEventListener('drop',(e)=>{e.preventDefault();const li=e.target.closest('.todo-item');if(!li||dragSrcIndex===null)return;const di=parseInt(li.dataset.idx);if(dragSrcIndex===di)return;const[m]=todos.splice(dragSrcIndex,1);todos.splice(di,0,m);dragSrcIndex=null;save();render();});
+    list.addEventListener('dragend',()=>{dragSrcIndex=null;list.querySelectorAll('.todo-item').forEach(el=>el.classList.remove('dragging','drag-over'));});
+    $('addBtn').addEventListener('click',addTodo);
+    input.addEventListener('keydown',(e)=>{if(e.key==='Enter')addTodo();if(e.key==='ArrowDown'&&!input.value){e.preventDefault();input.blur();focusedIndex=0;sfx.navigate();render();}});
+    list.addEventListener('click',(e)=>{const t=e.target,i=parseInt(t.dataset.i);if(isNaN(i))return;if(t.classList.contains('todo-check')){const w=todos[i].done;todos[i].done=!w;w?sfx.uncomplete():sfx.complete();save();render();}else if(t.classList.contains('todo-delete'))deleteTodo(i);else if(t.classList.contains('todo-priority-cycle')){todos[i].priority=cyclePriority(todos[i].priority);sfx.priority(todos[i].priority);save();render();}});
+    list.addEventListener('dblclick',(e)=>{if(!e.target.classList.contains('todo-text'))return;editingIndex=parseInt(e.target.dataset.i);render();});
+    list.addEventListener('keydown',(e)=>{if(!e.target.classList.contains('todo-text-edit'))return;const i=parseInt(e.target.dataset.i);if(e.key==='Enter')commitEdit(i,e.target.value);else if(e.key==='Escape'){editingIndex=-1;render();}});
+    list.addEventListener('focusout',(e)=>{if(!e.target.classList.contains('todo-text-edit'))return;commitEdit(parseInt(e.target.dataset.i),e.target.value);});
+    filterBtns.forEach(btn=>btn.addEventListener('click',()=>{filter=btn.dataset.filter;filterBtns.forEach(b=>b.classList.remove('active'));btn.classList.add('active');focusedIndex=-1;render();}));
+    clearDoneBtn.addEventListener('click',()=>{const snap=JSON.parse(JSON.stringify(todos)),c=todos.filter(t=>t.done).length;todos=todos.filter(t=>!t.done);focusedIndex=-1;save();render();sfx.delete();showToast(`Cleared ${c} done task${c!==1?'s':''}`,snap);});
+    document.addEventListener('keydown',(e)=>{
+        // If breakout game is active, let it handle keys
+        if(breakoutActive) return;
+        if(e.target===searchInput){if(e.key==='Escape'){searchInput.value='';searchQuery='';searchInput.blur();render();}return;}
+        if(e.target.tagName==='INPUT')return;if(editingIndex>=0)return;
+        if(e.key==='/'){e.preventDefault();searchInput.focus();return;}
+        const visible=filtered();if(visible.length===0)return;
+        if(e.key==='ArrowDown'||e.key==='j'){e.preventDefault();focusedIndex=Math.min(focusedIndex+1,visible.length-1);sfx.navigate();render();}
+        else if(e.key==='ArrowUp'||e.key==='k'){e.preventDefault();sfx.navigate();if(focusedIndex<=0){focusedIndex=-1;render();input.focus();}else{focusedIndex--;render();}}
+        else if(e.key==='Enter'&&focusedIndex>=0){e.preventDefault();const t=visible[focusedIndex];const w=t.done;todos[todos.indexOf(t)].done=!w;w?sfx.uncomplete():sfx.complete();save();render();}
+        else if((e.key==='Delete'||e.key==='Backspace')&&focusedIndex>=0){e.preventDefault();deleteTodo(todos.indexOf(visible[focusedIndex]));}
+        else if(e.key==='e'&&focusedIndex>=0){e.preventDefault();editingIndex=todos.indexOf(visible[focusedIndex]);render();}
+        else if(e.key==='p'&&focusedIndex>=0){e.preventDefault();const t=visible[focusedIndex],idx=todos.indexOf(t);todos[idx].priority=cyclePriority(todos[idx].priority);sfx.priority(todos[idx].priority);save();render();}
+        else if(e.key==='Escape'){focusedIndex=-1;render();}
+    });
+
+    // ==========================================
+    // BREAKOUT GAME
+    // ==========================================
+    const breakoutOverlay = $('breakoutOverlay');
+    const breakoutCanvas = $('breakoutCanvas');
+    const bCtx = breakoutCanvas.getContext('2d');
+    const breakoutScoreEl = $('breakoutScore');
+    const breakoutWin = $('breakoutWin');
+    const finalScoreEl = $('finalScore');
+    const playAgainBtn = $('playAgainBtn');
+    const closeGameBtn = $('closeGameBtn');
+    const breakoutClose = $('breakoutClose');
+
+    let breakoutActive = false;
+    let breakoutAnimId = null;
+
+    // Game state
+    let gameBall, gamePaddle, gameBricks, gameScore, gameLives, gameLaunched, gameOver, gameWon;
+    let keysPressed = {};
+    let paddleMouseX = null;
+
+    const BRICK_COLORS = ['#7c83ff','#a78bfa','#38bdf8','#4ade80','#fbbf24','#fb923c','#f87171','#e879f9','#22d3ee','#84cc16'];
+    const PRIORITY_COLORS = { none: '#7c83ff', low: '#4ade80', med: '#fbbf24', high: '#f87171' };
+
+    function initBreakoutGame() {
+        const cw = breakoutCanvas.width;
+        const ch = breakoutCanvas.height;
+
+        gameScore = 0;
+        gameLives = 3;
+        gameLaunched = false;
+        gameOver = false;
+        gameWon = false;
+        breakoutScoreEl.textContent = '0';
+        breakoutWin.style.display = 'none';
+
+        // Create bricks from completed tasks
+        const completedTasks = todos.filter(t => t.done);
+        const taskTexts = completedTasks.length > 0 ? completedTasks : [{text: 'Victory!', priority: 'none'}];
+
+        // Calculate grid layout
+        const maxCols = Math.min(taskTexts.length, 7);
+        const rows = Math.ceil(taskTexts.length / maxCols);
+        const brickPadding = 6;
+        const brickTopOffset = 40;
+        const brickWidth = Math.floor((cw - brickPadding * (maxCols + 1)) / maxCols);
+        const brickHeight = 28;
+
+        gameBricks = [];
+        taskTexts.forEach((task, idx) => {
+            const row = Math.floor(idx / maxCols);
+            const col = idx % maxCols;
+            const colsInRow = (row === rows - 1 && taskTexts.length % maxCols !== 0) ? (taskTexts.length % maxCols) : maxCols;
+            const rowOffset = (cw - (colsInRow * (brickWidth + brickPadding) - brickPadding)) / 2;
+            const x = rowOffset + col * (brickWidth + brickPadding);
+            const y = brickTopOffset + row * (brickHeight + brickPadding);
+            const color = PRIORITY_COLORS[task.priority || 'none'] || BRICK_COLORS[idx % BRICK_COLORS.length];
+
+            // Truncate text to fit brick
+            const maxChars = Math.floor(brickWidth / 8);
+            let label = task.text;
+            if (label.length > maxChars) label = label.substring(0, maxChars - 1) + '\u2026';
+
+            gameBricks.push({
+                x, y, w: brickWidth, h: brickHeight,
+                color, label, alive: true, alpha: 1,
+                particles: []
+            });
+        });
+
+        // Paddle
+        const paddleW = 100;
+        gamePaddle = {
+            x: cw / 2 - paddleW / 2,
+            y: ch - 35,
+            w: paddleW,
+            h: 12,
+            speed: 7
+        };
+
+        // Ball
+        gameBall = {
+            x: cw / 2,
+            y: gamePaddle.y - 10,
+            r: 7,
+            dx: 0,
+            dy: 0,
+            speed: 5,
+            trail: []
+        };
+
+        paddleMouseX = null;
+    }
+
+    function launchBall() {
+        if (gameLaunched || gameOver || gameWon) return;
+        gameLaunched = true;
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.8;
+        gameBall.dx = Math.cos(angle) * gameBall.speed;
+        gameBall.dy = Math.sin(angle) * gameBall.speed;
+    }
+
+    function resetBall() {
+        const cw = breakoutCanvas.width;
+        gameBall.x = gamePaddle.x + gamePaddle.w / 2;
+        gameBall.y = gamePaddle.y - 10;
+        gameBall.dx = 0;
+        gameBall.dy = 0;
+        gameBall.trail = [];
+        gameLaunched = false;
+    }
+
+    function updateBreakout() {
+        const cw = breakoutCanvas.width;
+        const ch = breakoutCanvas.height;
+
+        // Paddle movement
+        if (paddleMouseX !== null) {
+            gamePaddle.x = paddleMouseX - gamePaddle.w / 2;
+        } else {
+            if (keysPressed['ArrowLeft'] || keysPressed['a']) gamePaddle.x -= gamePaddle.speed;
+            if (keysPressed['ArrowRight'] || keysPressed['d']) gamePaddle.x += gamePaddle.speed;
+        }
+        // Clamp paddle
+        gamePaddle.x = Math.max(0, Math.min(cw - gamePaddle.w, gamePaddle.x));
+
+        // Stick ball to paddle if not launched
+        if (!gameLaunched) {
+            gameBall.x = gamePaddle.x + gamePaddle.w / 2;
+            gameBall.y = gamePaddle.y - gameBall.r - 1;
+            return;
+        }
+
+        // Trail
+        gameBall.trail.push({ x: gameBall.x, y: gameBall.y });
+        if (gameBall.trail.length > 8) gameBall.trail.shift();
+
+        // Move ball
+        gameBall.x += gameBall.dx;
+        gameBall.y += gameBall.dy;
+
+        // Wall collisions
+        if (gameBall.x - gameBall.r <= 0) {
+            gameBall.x = gameBall.r;
+            gameBall.dx = Math.abs(gameBall.dx);
+            sfx.wallHit();
+        }
+        if (gameBall.x + gameBall.r >= cw) {
+            gameBall.x = cw - gameBall.r;
+            gameBall.dx = -Math.abs(gameBall.dx);
+            sfx.wallHit();
+        }
+        if (gameBall.y - gameBall.r <= 0) {
+            gameBall.y = gameBall.r;
+            gameBall.dy = Math.abs(gameBall.dy);
+            sfx.wallHit();
+        }
+
+        // Ball falls below paddle
+        if (gameBall.y + gameBall.r > ch) {
+            gameLives--;
+            sfx.ballLost();
+            if (gameLives <= 0) {
+                gameOver = true;
+                // Show win screen with loss message
+                breakoutWin.style.display = 'flex';
+                breakoutWin.querySelector('h2').textContent = 'Game Over';
+                breakoutWin.querySelector('h2').style.color = '#f87171';
+                finalScoreEl.textContent = 'Score: ' + gameScore;
+                return;
+            }
+            resetBall();
+            return;
+        }
+
+        // Paddle collision
+        if (gameBall.dy > 0 &&
+            gameBall.y + gameBall.r >= gamePaddle.y &&
+            gameBall.y + gameBall.r <= gamePaddle.y + gamePaddle.h + 4 &&
+            gameBall.x >= gamePaddle.x - gameBall.r &&
+            gameBall.x <= gamePaddle.x + gamePaddle.w + gameBall.r) {
+            // Calculate bounce angle based on where ball hits paddle
+            const hitPos = (gameBall.x - gamePaddle.x) / gamePaddle.w; // 0 to 1
+            const angle = -Math.PI / 2 + (hitPos - 0.5) * 1.2; // Spread angle
+            const currentSpeed = Math.sqrt(gameBall.dx * gameBall.dx + gameBall.dy * gameBall.dy);
+            gameBall.dx = Math.cos(angle) * currentSpeed;
+            gameBall.dy = Math.sin(angle) * currentSpeed;
+            gameBall.y = gamePaddle.y - gameBall.r - 1;
+            sfx.paddleHit();
+        }
+
+        // Brick collision
+        for (let brick of gameBricks) {
+            if (!brick.alive) continue;
+
+            // AABB collision
+            const bx = gameBall.x, by = gameBall.y, br = gameBall.r;
+            if (bx + br > brick.x && bx - br < brick.x + brick.w &&
+                by + br > brick.y && by - br < brick.y + brick.h) {
+
+                brick.alive = false;
+                gameScore += 100;
+                breakoutScoreEl.textContent = gameScore;
+                sfx.brickHit();
+
+                // Spawn particles
+                for (let p = 0; p < 8; p++) {
+                    brick.particles.push({
+                        x: bx, y: by,
+                        dx: (Math.random() - 0.5) * 6,
+                        dy: (Math.random() - 0.5) * 6,
+                        life: 1,
+                        color: brick.color
+                    });
+                }
+
+                // Determine which side was hit
+                const overlapLeft = (bx + br) - brick.x;
+                const overlapRight = (brick.x + brick.w) - (bx - br);
+                const overlapTop = (by + br) - brick.y;
+                const overlapBottom = (brick.y + brick.h) - (by - br);
+                const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+
+                if (minOverlap === overlapLeft || minOverlap === overlapRight) {
+                    gameBall.dx = -gameBall.dx;
+                } else {
+                    gameBall.dy = -gameBall.dy;
+                }
+
+                break; // Only one brick per frame
+            }
+        }
+
+        // Check win
+        const aliveBricks = gameBricks.filter(b => b.alive).length;
+        if (aliveBricks === 0) {
+            gameWon = true;
+            sfx.gameWin();
+            breakoutWin.style.display = 'flex';
+            breakoutWin.querySelector('h2').textContent = 'You Win!';
+            breakoutWin.querySelector('h2').style.color = '#4ade80';
+            finalScoreEl.textContent = 'Score: ' + gameScore;
+        }
+
+        // Gradually increase speed
+        const speedFactor = 1 + (gameScore / 5000) * 0.5;
+        const currentSpeed = Math.sqrt(gameBall.dx * gameBall.dx + gameBall.dy * gameBall.dy);
+        const targetSpeed = gameBall.speed * speedFactor;
+        if (Math.abs(currentSpeed - targetSpeed) > 0.1) {
+            const ratio = targetSpeed / currentSpeed;
+            gameBall.dx *= ratio;
+            gameBall.dy *= ratio;
+        }
+    }
+
+    function drawBreakout() {
+        const cw = breakoutCanvas.width;
+        const ch = breakoutCanvas.height;
+        bCtx.clearRect(0, 0, cw, ch);
+
+        // Background grid effect
+        bCtx.strokeStyle = 'rgba(124, 131, 255, 0.03)';
+        bCtx.lineWidth = 1;
+        for (let gx = 0; gx < cw; gx += 40) {
+            bCtx.beginPath(); bCtx.moveTo(gx, 0); bCtx.lineTo(gx, ch); bCtx.stroke();
+        }
+        for (let gy = 0; gy < ch; gy += 40) {
+            bCtx.beginPath(); bCtx.moveTo(0, gy); bCtx.lineTo(cw, gy); bCtx.stroke();
+        }
+
+        // Draw bricks
+        for (let brick of gameBricks) {
+            // Draw particles (even for dead bricks)
+            brick.particles.forEach(p => {
+                p.x += p.dx;
+                p.y += p.dy;
+                p.dy += 0.15;
+                p.life -= 0.03;
+                if (p.life > 0) {
+                    bCtx.globalAlpha = p.life;
+                    bCtx.fillStyle = p.color;
+                    bCtx.fillRect(p.x - 2, p.y - 2, 4, 4);
+                    bCtx.globalAlpha = 1;
+                }
+            });
+            brick.particles = brick.particles.filter(p => p.life > 0);
+
+            if (!brick.alive) continue;
+
+            // Brick body with subtle gradient
+            const grad = bCtx.createLinearGradient(brick.x, brick.y, brick.x, brick.y + brick.h);
+            grad.addColorStop(0, brick.color);
+            grad.addColorStop(1, adjustBrightness(brick.color, -30));
+            bCtx.fillStyle = grad;
+            bCtx.beginPath();
+            roundRect(bCtx, brick.x, brick.y, brick.w, brick.h, 4);
+            bCtx.fill();
+
+            // Brick border glow
+            bCtx.strokeStyle = adjustBrightness(brick.color, 40);
+            bCtx.lineWidth = 1;
+            bCtx.beginPath();
+            roundRect(bCtx, brick.x, brick.y, brick.w, brick.h, 4);
+            bCtx.stroke();
+
+            // Brick text
+            bCtx.fillStyle = '#fff';
+            bCtx.font = '11px "Segoe UI", system-ui, sans-serif';
+            bCtx.textAlign = 'center';
+            bCtx.textBaseline = 'middle';
+            bCtx.fillText(brick.label, brick.x + brick.w / 2, brick.y + brick.h / 2);
+        }
+
+        // Draw ball trail
+        gameBall.trail.forEach((t, i) => {
+            const alpha = (i / gameBall.trail.length) * 0.3;
+            const size = gameBall.r * (i / gameBall.trail.length) * 0.7;
+            bCtx.globalAlpha = alpha;
+            bCtx.fillStyle = '#7c83ff';
+            bCtx.beginPath();
+            bCtx.arc(t.x, t.y, size, 0, Math.PI * 2);
+            bCtx.fill();
+        });
+        bCtx.globalAlpha = 1;
+
+        // Draw ball
+        const ballGrad = bCtx.createRadialGradient(gameBall.x - 2, gameBall.y - 2, 1, gameBall.x, gameBall.y, gameBall.r);
+        ballGrad.addColorStop(0, '#fff');
+        ballGrad.addColorStop(0.5, '#c4c7ff');
+        ballGrad.addColorStop(1, '#7c83ff');
+        bCtx.fillStyle = ballGrad;
+        bCtx.beginPath();
+        bCtx.arc(gameBall.x, gameBall.y, gameBall.r, 0, Math.PI * 2);
+        bCtx.fill();
+
+        // Ball glow
+        bCtx.shadowColor = '#7c83ff';
+        bCtx.shadowBlur = 12;
+        bCtx.beginPath();
+        bCtx.arc(gameBall.x, gameBall.y, gameBall.r, 0, Math.PI * 2);
+        bCtx.fill();
+        bCtx.shadowBlur = 0;
+
+        // Draw paddle
+        const paddleGrad = bCtx.createLinearGradient(gamePaddle.x, gamePaddle.y, gamePaddle.x, gamePaddle.y + gamePaddle.h);
+        paddleGrad.addColorStop(0, '#a5a9ff');
+        paddleGrad.addColorStop(1, '#5a5fcf');
+        bCtx.fillStyle = paddleGrad;
+        bCtx.beginPath();
+        roundRect(bCtx, gamePaddle.x, gamePaddle.y, gamePaddle.w, gamePaddle.h, 6);
+        bCtx.fill();
+
+        // Paddle glow
+        bCtx.shadowColor = '#7c83ff';
+        bCtx.shadowBlur = 10;
+        bCtx.beginPath();
+        roundRect(bCtx, gamePaddle.x, gamePaddle.y, gamePaddle.w, gamePaddle.h, 6);
+        bCtx.fill();
+        bCtx.shadowBlur = 0;
+
+        // Lives indicator
+        bCtx.fillStyle = '#888';
+        bCtx.font = '13px "Segoe UI", system-ui, sans-serif';
+        bCtx.textAlign = 'left';
+        bCtx.textBaseline = 'bottom';
+        let livesStr = '';
+        for (let i = 0; i < gameLives; i++) livesStr += '\u2764 ';
+        bCtx.fillStyle = '#f87171';
+        bCtx.fillText(livesStr, 10, ch - 8);
+
+        // "Click to launch" prompt
+        if (!gameLaunched && !gameOver && !gameWon) {
+            bCtx.fillStyle = 'rgba(255,255,255,0.5)';
+            bCtx.font = '14px "Segoe UI", system-ui, sans-serif';
+            bCtx.textAlign = 'center';
+            const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 400);
+            bCtx.globalAlpha = 0.4 + pulse * 0.4;
+            bCtx.fillText('Click or press Space to launch', cw / 2, ch / 2 + 40);
+            bCtx.globalAlpha = 1;
+        }
+    }
+
+    function breakoutLoop() {
+        if (!breakoutActive) return;
+        if (!gameOver && !gameWon) {
+            updateBreakout();
+        }
+        drawBreakout();
+        breakoutAnimId = requestAnimationFrame(breakoutLoop);
+    }
+
+    function launchBreakout() {
+        if (breakoutActive) return;
+        breakoutActive = true;
+
+        // Responsive canvas sizing
+        const maxW = Math.min(700, window.innerWidth - 40);
+        const maxH = Math.min(500, window.innerHeight - 200);
+        breakoutCanvas.width = maxW;
+        breakoutCanvas.height = maxH;
+
+        initBreakoutGame();
+        breakoutOverlay.classList.add('visible');
+        breakoutLoop();
+    }
+
+    function closeBreakout() {
+        breakoutActive = false;
+        breakoutOverlay.classList.remove('visible');
+        if (breakoutAnimId) {
+            cancelAnimationFrame(breakoutAnimId);
+            breakoutAnimId = null;
+        }
+        keysPressed = {};
+        paddleMouseX = null;
+    }
+
+    // Helper: rounded rectangle
+    function roundRect(ctx, x, y, w, h, r) {
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+    }
+
+    // Helper: adjust hex color brightness
+    function adjustBrightness(hex, amount) {
+        hex = hex.replace('#', '');
+        let r = parseInt(hex.substring(0, 2), 16);
+        let g = parseInt(hex.substring(2, 4), 16);
+        let b = parseInt(hex.substring(4, 6), 16);
+        r = Math.max(0, Math.min(255, r + amount));
+        g = Math.max(0, Math.min(255, g + amount));
+        b = Math.max(0, Math.min(255, b + amount));
+        return '#' + [r, g, b].map(c => c.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Breakout event listeners
+    breakoutCanvas.addEventListener('mousemove', (e) => {
+        if (!breakoutActive) return;
+        const rect = breakoutCanvas.getBoundingClientRect();
+        paddleMouseX = (e.clientX - rect.left) * (breakoutCanvas.width / rect.width);
+    });
+
+    breakoutCanvas.addEventListener('click', (e) => {
+        if (!breakoutActive) return;
+        if (!gameLaunched && !gameOver && !gameWon) launchBall();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (!breakoutActive) return;
+        keysPressed[e.key] = true;
+        if (e.key === ' ' || e.key === 'Space') {
+            e.preventDefault();
+            if (!gameLaunched && !gameOver && !gameWon) launchBall();
+        }
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closeBreakout();
+        }
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            e.preventDefault();
+            paddleMouseX = null; // Switch to keyboard control
+        }
+    });
+
+    document.addEventListener('keyup', (e) => {
+        if (!breakoutActive) return;
+        keysPressed[e.key] = false;
+    });
+
+    breakoutClose.addEventListener('click', closeBreakout);
+    closeGameBtn.addEventListener('click', closeBreakout);
+    playAgainBtn.addEventListener('click', () => {
+        initBreakoutGame();
+    });
+
+    // Refresh decay visuals periodically
+    setInterval(render, 60000);
+    render();
+    </script>
+</body>
+</html>

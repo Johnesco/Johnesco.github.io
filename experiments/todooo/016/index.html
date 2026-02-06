@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>todooo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; display: flex; justify-content: center; padding: 3rem 1rem; transition: background 0.5s ease; }
+        .app { width: 100%; max-width: 500px; transition: opacity 0.5s ease; }
+        h1 { font-size: 2.5rem; letter-spacing: 0.3rem; margin-bottom: 1.5rem; color: #fff; }
+
+        /* Sound toggle */
+        .sound-toggle { position: fixed; top: 1rem; right: 1rem; background: #2a2a4a; border: none; color: #888; font-size: 1.2rem; padding: 0.5rem 0.7rem; border-radius: 8px; cursor: pointer; transition: all 0.3s; z-index: 50; }
+        .sound-toggle:hover { color: #e0e0e0; }
+        .sound-toggle.on { color: #7c83ff; }
+
+        /* Progress bar */
+        .progress-bar { width: 100%; height: 6px; background: #2a2a4a; border-radius: 3px; margin-bottom: 1.5rem; overflow: hidden; transition: opacity 0.3s; }
+        .progress-bar.hidden { opacity: 0; }
+        .progress-fill { height: 100%; background: #7c83ff; border-radius: 3px; transition: width 0.4s ease, background 0.4s ease; }
+        .progress-fill.complete { background: #4ade80; }
+
+        /* Input row */
+        .input-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .input-row input { flex: 1; padding: 0.75rem 1rem; border: 2px solid #2a2a4a; border-radius: 8px; background: #16213e; color: #e0e0e0; font-size: 1rem; outline: none; transition: border-color 0.2s; }
+        .input-row input:focus { border-color: #7c83ff; }
+        .input-row input::placeholder { color: #555; }
+        .input-row button { padding: 0.75rem 1.25rem; border: none; border-radius: 8px; background: #7c83ff; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .input-row button:hover { background: #6a71e0; }
+
+        /* Priority row */
+        .priority-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; align-items: center; }
+        .priority-row span { color: #555; font-size: 0.8rem; }
+        .priority-btn { border: none; padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: all 0.2s; opacity: 0.4; }
+        .priority-btn.active { opacity: 1; }
+        .priority-btn[data-p="none"] { background: #2a2a4a; color: #888; }
+        .priority-btn[data-p="low"] { background: #1b5e3b; color: #4ade80; }
+        .priority-btn[data-p="med"] { background: #5e4b1b; color: #fbbf24; }
+        .priority-btn[data-p="high"] { background: #5e1b1b; color: #f87171; }
+
+        /* Search row */
+        .search-row { margin-bottom: 0.75rem; }
+        .search-row input { width: 100%; padding: 0.5rem 1rem; border: 2px solid #2a2a4a; border-radius: 8px; background: #16213e; color: #e0e0e0; font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+        .search-row input:focus { border-color: #7c83ff; }
+        .search-row input::placeholder { color: #444; }
+
+        /* Toolbar */
+        .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding: 0.5rem 0; font-size: 0.85rem; }
+        .count { color: #888; }
+        .filters { display: flex; gap: 0.25rem; }
+        .filters button { background: none; border: 1px solid transparent; color: #888; padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+        .filters button:hover { color: #e0e0e0; }
+        .filters button.active { border-color: #7c83ff; color: #7c83ff; }
+        .clear-done { background: none; border: none; color: #888; font-size: 0.85rem; cursor: pointer; transition: color 0.2s; }
+        .clear-done:hover { color: #ff6b6b; }
+        .clear-done:disabled { opacity: 0; pointer-events: none; }
+
+        /* Zen button in toolbar */
+        .zen-btn { background: none; border: 1px solid #2a2a4a; color: #888; padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; margin-left: 0.25rem; }
+        .zen-btn:hover { color: #e0e0e0; border-color: #7c83ff; }
+
+        /* Todo list */
+        .todo-list { list-style: none; }
+        .todo-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: #16213e; border-radius: 8px; margin-bottom: 0.5rem; transition: opacity 0.3s, transform 0.3s, box-shadow 0.2s, background 0.5s; user-select: none; border-left: 3px solid transparent; position: relative; }
+        .todo-item.p-low { border-left-color: #4ade80; }
+        .todo-item.p-med { border-left-color: #fbbf24; }
+        .todo-item.p-high { border-left-color: #f87171; }
+        .todo-item.focused { outline: 2px solid #7c83ff; outline-offset: -2px; }
+        .todo-item.slide-in { animation: slideIn 0.3s ease-out; }
+        .todo-item.fade-out { animation: fadeOut 0.3s ease-out forwards; }
+        .todo-item.dragging { opacity: 0.4; }
+        .todo-item.drag-over { box-shadow: 0 -2px 0 0 #7c83ff; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(30px); } }
+        .todo-item.done { opacity: 0.5; }
+        .todo-item.done .todo-text { text-decoration: line-through; }
+
+        /* Ghost tasks */
+        .todo-item.ghost-item { opacity: 0.12; pointer-events: none; filter: blur(0.5px); transition: opacity 0.5s; }
+        .todo-item.ghost-item.ghost-fade { opacity: 0; transform: translateY(-10px) scale(0.95); transition: all 0.5s ease; }
+
+        /* Time decay */
+        .todo-item.age-fresh { background: #16213e; }
+        .todo-item.age-day { background: #1a2235; }
+        .todo-item.age-old { background: #221e1e; }
+        .todo-item.age-ancient { background: #2a1a1a; animation: tremble 3s infinite; }
+        @keyframes tremble { 0%, 95%, 100% { transform: translateX(0); } 96% { transform: translateX(-1px); } 98% { transform: translateX(1px); } }
+
+        /* Sentient comment */
+        .sentient-comment { font-size: 0.72rem; color: #666; font-style: italic; padding: 0.15rem 1rem 0.3rem 3.5rem; margin-top: -0.35rem; margin-bottom: 0.35rem; line-height: 1.3; }
+
+        .age-badge { font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 3px; flex-shrink: 0; font-weight: 600; }
+        .age-badge.age-day { background: #3a3520; color: #d4a843; }
+        .age-badge.age-old { background: #3a2520; color: #e88a5a; }
+        .age-badge.age-ancient { background: #3a1a1a; color: #f87171; }
+        .drag-handle { cursor: grab; color: #444; font-size: 1rem; flex-shrink: 0; display: flex; align-items: center; transition: color 0.2s; }
+        .drag-handle:active { cursor: grabbing; }
+        .drag-handle:hover { color: #888; }
+        .priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .priority-dot.p-low { background: #4ade80; }
+        .priority-dot.p-med { background: #fbbf24; }
+        .priority-dot.p-high { background: #f87171; }
+        .todo-check { width: 22px; height: 22px; border: 2px solid #7c83ff; border-radius: 50%; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .todo-item.done .todo-check { background: #7c83ff; }
+        .todo-check::after { content: ''; display: none; width: 6px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px); }
+        .todo-item.done .todo-check::after { display: block; }
+        .todo-text { flex: 1; font-size: 1rem; cursor: default; }
+        .todo-text mark { background: #7c83ff44; color: #e0e0e0; border-radius: 2px; padding: 0 1px; }
+        .todo-text-edit { flex: 1; font-size: 1rem; background: #0f1a30; border: 2px solid #7c83ff; border-radius: 4px; color: #e0e0e0; padding: 0.2rem 0.4rem; outline: none; font-family: inherit; }
+        .todo-priority-cycle { background: none; border: none; cursor: pointer; font-size: 0.7rem; padding: 0.15rem 0.3rem; border-radius: 3px; transition: all 0.2s; color: #555; }
+        .todo-priority-cycle:hover { color: #aaa; }
+        .todo-delete { background: none; border: none; color: #555; font-size: 1.2rem; cursor: pointer; padding: 0 0.25rem; line-height: 1; transition: color 0.2s; }
+        .todo-delete:hover { color: #ff6b6b; }
+        .empty { color: #555; text-align: center; padding: 2rem; font-style: italic; }
+
+        /* Toast */
+        .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); background: #2a2a4a; color: #e0e0e0; padding: 0.75rem 1.25rem; border-radius: 8px; display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; box-shadow: 0 4px 20px rgba(0,0,0,0.4); transition: transform 0.3s ease; z-index: 100; }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast button { background: #7c83ff; border: none; color: #fff; padding: 0.3rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+
+        /* Keyboard hints */
+        .kbd-hint { position: fixed; bottom: 2rem; right: 2rem; color: #444; font-size: 0.75rem; text-align: right; line-height: 1.6; transition: opacity 0.3s; pointer-events: none; }
+        .kbd-hint.hidden { opacity: 0; }
+        kbd { background: #2a2a4a; padding: 0.1rem 0.35rem; border-radius: 3px; font-family: 'Consolas', monospace; font-size: 0.7rem; }
+
+        #confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 200; }
+
+        /* ========== ZEN MODE ========== */
+        .zen-progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: #2a2a4a; z-index: 300; opacity: 0; transition: opacity 0.5s ease; pointer-events: none; }
+        .zen-progress-fill { height: 100%; background: #7c83ff; border-radius: 0 2px 2px 0; transition: width 0.6s ease, background 0.4s ease; }
+        .zen-progress-fill.complete { background: #4ade80; }
+
+        .zen-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #141428; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 250; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; }
+        .zen-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .zen-exit-hint { position: fixed; bottom: 1.5rem; color: #333; font-size: 0.75rem; z-index: 260; opacity: 0; transition: opacity 0.5s ease 0.3s; pointer-events: none; }
+        .zen-overlay.active ~ .zen-exit-hint { opacity: 1; }
+
+        .zen-task-container { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; max-width: 80%; cursor: pointer; }
+
+        .zen-task { font-size: 1.8rem; text-align: center; color: #e0e0e0; line-height: 1.4; animation: breathe 4s ease-in-out infinite; transition: opacity 0.5s ease, transform 0.5s ease; padding: 0 1rem; }
+        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
+        .zen-task.completing { opacity: 0; transform: scale(0.95) translateY(-20px); animation: none; }
+        .zen-task.entering { animation: zenEnter 0.6s ease-out forwards; }
+        @keyframes zenEnter { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+        .zen-task-meta { display: flex; align-items: center; gap: 0.75rem; opacity: 0.7; }
+        .zen-priority-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .zen-priority-dot.p-low { background: #4ade80; }
+        .zen-priority-dot.p-med { background: #fbbf24; }
+        .zen-priority-dot.p-high { background: #f87171; }
+
+        .zen-comment { font-size: 0.9rem; color: #555; font-style: italic; text-align: center; max-width: 400px; line-height: 1.4; }
+
+        .zen-complete-msg { color: #4ade80; font-size: 1.5rem; text-align: center; text-shadow: 0 0 20px #4ade8044; animation: zenGlow 3s ease-in-out infinite; }
+        @keyframes zenGlow { 0%, 100% { text-shadow: 0 0 20px #4ade8044; } 50% { text-shadow: 0 0 40px #4ade8066, 0 0 60px #4ade8022; } }
+
+        /* ========== BREAKOUT GAME ========== */
+        .breakout-container { text-align: center; margin-top: 2rem; }
+        .breakout-container h2 { color: #4ade80; font-size: 1.2rem; margin-bottom: 0.75rem; }
+        .breakout-container p { color: #555; font-size: 0.8rem; margin-bottom: 0.5rem; }
+        #breakoutCanvas { border: 2px solid #2a2a4a; border-radius: 8px; display: block; margin: 0 auto; background: #0f1a2e; cursor: none; }
+        .breakout-score { color: #7c83ff; font-size: 0.85rem; margin-top: 0.5rem; }
+    </style>
+</head>
+<body>
+    <button class="sound-toggle on" id="soundToggle" title="Toggle sound">&#9835;</button>
+
+    <div class="app" id="app">
+        <h1>todooo</h1>
+        <div class="progress-bar hidden" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="input-row" id="inputRow"><input type="text" id="todoInput" placeholder="What needs doing?" autofocus><button id="addBtn">Add</button></div>
+        <div class="priority-row" id="priorityRow"><span>Priority:</span><button class="priority-btn active" data-p="none">None</button><button class="priority-btn" data-p="low">Low</button><button class="priority-btn" data-p="med">Med</button><button class="priority-btn" data-p="high">High</button></div>
+        <div class="search-row" id="searchRow"><input type="text" id="searchInput" placeholder="Search tasks..."></div>
+        <div class="toolbar" id="toolbar">
+            <span class="count" id="count"></span>
+            <div class="filters">
+                <button class="active" data-filter="all">All</button>
+                <button data-filter="active">Active</button>
+                <button data-filter="done">Done</button>
+                <button class="zen-btn" id="zenBtn" title="Zen Mode (Z)">Zen</button>
+            </div>
+            <button class="clear-done" id="clearDone">Clear done</button>
+        </div>
+        <ul class="todo-list" id="todoList"></ul>
+        <div id="breakoutArea"></div>
+    </div>
+
+    <!-- Zen Mode overlay -->
+    <div class="zen-progress-bar" id="zenProgressBar"><div class="zen-progress-fill" id="zenProgressFill"></div></div>
+    <div class="zen-overlay" id="zenOverlay">
+        <div class="zen-task-container" id="zenTaskContainer"></div>
+    </div>
+    <div class="zen-exit-hint" id="zenExitHint"><kbd>Esc</kbd> or <kbd>Z</kbd> to exit zen</div>
+
+    <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
+    <div class="kbd-hint" id="kbdHint">
+        <kbd>/</kbd> search &nbsp; <kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate &nbsp; <kbd>Enter</kbd> toggle &nbsp; <kbd>Del</kbd> delete &nbsp; <kbd>E</kbd> edit &nbsp; <kbd>P</kbd> priority<br>
+        <kbd>G</kbd> purge ghosts &nbsp; <kbd>Z</kbd> zen mode &nbsp; <kbd>Esc</kbd> deselect
+    </div>
+    <canvas id="confetti"></canvas>
+
+    <script>
+    // ============ AUDIO ENGINE ============
+    let audioCtx = null, soundOn = true;
+    function getAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+    function playTone(f, d, type = 'sine', v = 0.15) {
+        if (!soundOn) return;
+        const c = getAudio(), o = c.createOscillator(), g = c.createGain();
+        o.type = type; o.frequency.setValueAtTime(f, c.currentTime);
+        g.gain.setValueAtTime(v, c.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + d);
+        o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + d);
+    }
+    function playChord(fs, d, type = 'sine', v = 0.08) { fs.forEach(f => playTone(f, d, type, v)); }
+    const sfx = {
+        add: () => { playTone(523.25, 0.15); setTimeout(() => playTone(659.25, 0.15), 80); },
+        complete: () => playChord([523.25, 659.25, 783.99], 0.5, 'sine', 0.06),
+        uncomplete: () => playTone(392, 0.2, 'triangle', 0.1),
+        delete: () => { playTone(440, 0.15, 'triangle', 0.1); setTimeout(() => playTone(330, 0.2, 'triangle', 0.08), 100); },
+        priority: (p) => { const fs = { none: 330, low: 440, med: 523, high: 660 }; playTone(fs[p] || 440, 0.12, 'square', 0.05); },
+        navigate: () => playTone(880, 0.05, 'sine', 0.03),
+        allDone: () => { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => playTone(f, 0.4, 'sine', 0.08), i * 120)); },
+        ghost: () => { playTone(220, 0.4, 'sine', 0.04); playTone(165, 0.5, 'sine', 0.03); },
+        purge: () => { [330, 277, 220, 165].forEach((f, i) => setTimeout(() => playTone(f, 0.3, 'sine', 0.04), i * 80)); },
+        zenEnter: () => { playTone(440, 0.6, 'sine', 0.06); setTimeout(() => playTone(554.37, 0.6, 'sine', 0.05), 200); setTimeout(() => playTone(659.25, 0.8, 'sine', 0.04), 400); },
+        zenExit: () => { playTone(659.25, 0.3, 'sine', 0.05); setTimeout(() => playTone(440, 0.4, 'sine', 0.04), 150); },
+        zenComplete: () => { playChord([523.25, 659.25, 783.99], 0.7, 'sine', 0.05); setTimeout(() => playTone(1046.5, 0.5, 'sine', 0.04), 300); },
+        zenAllDone: () => { [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => setTimeout(() => playTone(f, 0.6, 'sine', 0.06), i * 200)); }
+    };
+    document.getElementById('soundToggle').addEventListener('click', function () { soundOn = !soundOn; this.classList.toggle('on', soundOn); });
+
+    // ============ TIME DECAY ============
+    function getAge(createdAt) {
+        if (!createdAt) return 'fresh';
+        const hours = (Date.now() - createdAt) / 3600000;
+        if (hours < 24) return 'fresh';
+        if (hours < 72) return 'day';
+        if (hours < 168) return 'old';
+        return 'ancient';
+    }
+    function ageLabel(age) {
+        if (age === 'day') return '1d+';
+        if (age === 'old') return '3d+';
+        if (age === 'ancient') return '7d+';
+        return '';
+    }
+
+    // ============ SENTIENT PERSONALITY ============
+    function getSentientComment(todo) {
+        const text = todo.text.toLowerCase();
+        const age = todo.done ? 'fresh' : getAge(todo.createdAt);
+
+        // Age-based comments
+        if (age === 'ancient' && !todo.done) {
+            const ancientComments = [
+                "This one has been here so long it's basically furniture.",
+                "A week. It's been a week. You know that, right?",
+                "I'm starting to think this one is decorative.",
+                "At this point, we're just roommates.",
+                "It watches. It waits. It judges.",
+                "Some tasks become legends. This is becoming one."
+            ];
+            return ancientComments[Math.abs(hashStr(todo.text)) % ancientComments.length];
+        }
+        if (age === 'old' && !todo.done) {
+            const oldComments = [
+                "Getting a little dusty, this one.",
+                "Three days and counting...",
+                "It's been staring at you. Patiently.",
+                "The cobwebs are forming."
+            ];
+            return oldComments[Math.abs(hashStr(todo.text)) % oldComments.length];
+        }
+
+        // Pattern-based comments
+        if (/\bbuy\b|shop|grocery|store/i.test(text))
+            return pickComment(todo.text, ["Consumer mode activated.", "The economy thanks you.", "Retail therapy, is it?"]);
+        if (/\bcall\b|phone|ring|text\b/i.test(text))
+            return pickComment(todo.text, ["Social obligations. Fun.", "They probably miss you. Maybe.", "Phones work both ways, you know."]);
+        if (/\bclean\b|tidy|wash|laundry|dishes/i.test(text))
+            return pickComment(todo.text, ["Entropy always wins, but sure.", "A noble, Sisyphean effort.", "The dirt will return. It always does."]);
+        if (/\bfix\b|repair|debug|broken/i.test(text))
+            return pickComment(todo.text, ["Something is always broken somewhere.", "The fixer. The mender. The hero.", "If only everything were this fixable."]);
+        if (/\bwrite\b|draft|essay|blog|email/i.test(text))
+            return pickComment(todo.text, ["Words into the void. Lovely.", "The blank page awaits your genius.", "Every great work started as a todo."]);
+        if (/\bexercise\b|gym|run\b|workout|jog/i.test(text))
+            return pickComment(todo.text, ["The body is a temple. Allegedly.", "Endorphins incoming.", "Past you will thank future you."]);
+        if (/\bstudy\b|learn|read|book|course/i.test(text))
+            return pickComment(todo.text, ["Knowledge is power, or so they say.", "Your brain called. It's hungry.", "The student becomes the master. Eventually."]);
+        if (/\bmeeting\b|sync|standup|review/i.test(text))
+            return pickComment(todo.text, ["Could've been an email.", "Synergy. Alignment. Buzzwords.", "Bless your calendar."]);
+        if (/\!{2,}/.test(todo.text))
+            return pickComment(todo.text, ["The exclamation marks suggest urgency. Or panic.", "Calm down. Deep breaths.", "I can feel the stress from here."]);
+        if (/\?$/.test(todo.text.trim()))
+            return pickComment(todo.text, ["That's... a question, not a task.", "Existential todo detected.", "I have no answers for you. Only checkboxes."]);
+
+        // Priority-based
+        if (todo.priority === 'high')
+            return pickComment(todo.text, ["Marked high priority. No pressure.", "This one means business.", "Red. Urgent. Terrifying."]);
+
+        // Done-based
+        if (todo.done)
+            return pickComment(todo.text, ["Gone but not forgotten.", "Another one bites the dust.", "Checked off. How satisfying."]);
+
+        return null;
+    }
+    function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0; return h; }
+    function pickComment(seed, arr) { return arr[Math.abs(hashStr(seed)) % arr.length]; }
+
+    // ============ APP STATE ============
+    const $ = id => document.getElementById(id);
+    const input = $('todoInput'), searchInput = $('searchInput'), list = $('todoList');
+    const countEl = $('count'), clearDoneBtn = $('clearDone'), progressBar = $('progressBar'), progressFill = $('progressFill');
+    const filterBtns = document.querySelectorAll('.filters button[data-filter]'), priorityBtns = document.querySelectorAll('.priority-btn');
+    const toast = $('toast'), toastMsg = $('toastMsg'), toastUndo = $('toastUndo'), kbdHint = $('kbdHint');
+    const confettiCanvas = $('confetti'), ctx = confettiCanvas.getContext('2d');
+    const zenOverlay = $('zenOverlay'), zenTaskContainer = $('zenTaskContainer');
+    const zenProgressBar = $('zenProgressBar'), zenProgressFill = $('zenProgressFill');
+
+    const STORAGE_KEY = 'todooo-016';
+    const PRIORITIES = ['none', 'low', 'med', 'high'];
+    let todos = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    let ghosts = JSON.parse(localStorage.getItem(STORAGE_KEY + '-ghosts') || '[]');
+    let filter = 'all', searchQuery = '', editingIndex = -1, animateIndex = -1, focusedIndex = -1;
+    let undoState = null, undoGhosts = null, toastTimer = null, dragSrcIndex = null, currentPriority = 'none', prevAllDone = false;
+    let zenMode = false, zenTransitioning = false;
+    let breakoutInstance = null;
+
+    function save() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+        localStorage.setItem(STORAGE_KEY + '-ghosts', JSON.stringify(ghosts));
+    }
+    function filtered() {
+        let r = todos;
+        if (filter === 'active') r = r.filter(t => !t.done);
+        else if (filter === 'done') r = r.filter(t => t.done);
+        if (searchQuery) { const q = searchQuery.toLowerCase(); r = r.filter(t => t.text.toLowerCase().includes(q)); }
+        return r;
+    }
+    function highlightMatch(text) {
+        if (!searchQuery) return escapeHtml(text);
+        const e = escapeHtml(text), q = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return e.replace(new RegExp(`(${q})`, 'gi'), '<mark>$1</mark>');
+    }
+    function showToast(msg, snap, ghostSnap) {
+        undoState = snap; undoGhosts = ghostSnap || null;
+        toastMsg.textContent = msg; toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.classList.remove('show'); undoState = null; undoGhosts = null; }, 4000);
+    }
+    toastUndo.addEventListener('click', () => {
+        if (!undoState) return;
+        todos = undoState;
+        if (undoGhosts) ghosts = undoGhosts;
+        undoState = null; undoGhosts = null;
+        toast.classList.remove('show'); clearTimeout(toastTimer);
+        save(); render();
+    });
+    function cyclePriority(c) { return PRIORITIES[(PRIORITIES.indexOf(c || 'none') + 1) % PRIORITIES.length]; }
+
+    // ============ CONFETTI ============
+    let confettiPieces = [], confettiRunning = false;
+    function resizeCanvas() { confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight; }
+    addEventListener('resize', resizeCanvas); resizeCanvas();
+    function launchConfetti() {
+        confettiPieces = [];
+        const cols = ['#7c83ff', '#4ade80', '#fbbf24', '#f87171', '#a78bfa', '#38bdf8', '#fb923c'];
+        for (let i = 0; i < 120; i++)
+            confettiPieces.push({
+                x: Math.random() * confettiCanvas.width, y: -10 - Math.random() * confettiCanvas.height * 0.5,
+                w: 4 + Math.random() * 6, h: 8 + Math.random() * 8,
+                color: cols[~~(Math.random() * cols.length)],
+                vx: (Math.random() - 0.5) * 4, vy: 2 + Math.random() * 4,
+                rot: Math.random() * Math.PI * 2, vr: (Math.random() - 0.5) * 0.2, life: 1
+            });
+        if (!confettiRunning) { confettiRunning = true; animateConfetti(); }
+    }
+    function animateConfetti() {
+        ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        confettiPieces.forEach(p => {
+            p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.rot += p.vr;
+            if (p.y > confettiCanvas.height - 50) p.life -= 0.02;
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+            ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color;
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+        });
+        confettiPieces = confettiPieces.filter(p => p.life > 0);
+        if (confettiPieces.length > 0) requestAnimationFrame(animateConfetti);
+        else { confettiRunning = false; ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); }
+    }
+
+    // ============ RENDER ============
+    function render() {
+        const active = todos.filter(t => !t.done).length, done = todos.length - active, total = todos.length;
+        countEl.textContent = `${active} left`;
+        clearDoneBtn.disabled = done === 0;
+        progressBar.classList.toggle('hidden', total === 0);
+        progressFill.style.width = (total === 0 ? 0 : (done / total) * 100) + '%';
+        const allDone = total > 0 && active === 0;
+        progressFill.classList.toggle('complete', allDone);
+        if (allDone && !prevAllDone) { launchConfetti(); sfx.allDone(); showBreakout(); }
+        if (!allDone && prevAllDone) { hideBreakout(); }
+        prevAllDone = allDone;
+
+        const visible = filtered();
+        list.innerHTML = '';
+        kbdHint.classList.toggle('hidden', visible.length === 0 && ghosts.length === 0);
+
+        if (todos.length === 0 && ghosts.length === 0) {
+            list.innerHTML = '<li class="empty">Nothing to do yet.</li>';
+            return;
+        }
+
+        if (visible.length === 0 && ghosts.length === 0) {
+            const msg = searchQuery ? `No tasks matching "${escapeHtml(searchQuery)}"` : (filter === 'active' ? 'No active tasks.' : 'No completed tasks.');
+            list.innerHTML = `<li class="empty">${msg}</li>`;
+            // Still show breakout area if all done
+            return;
+        }
+
+        visible.forEach((todo, vi) => {
+            const i = todos.indexOf(todo), li = document.createElement('li'), p = todo.priority || 'none';
+            const age = todo.done ? 'fresh' : getAge(todo.createdAt);
+            li.className = 'todo-item' + (todo.done ? ' done' : '') + (p !== 'none' ? ` p-${p}` : '') + (age !== 'fresh' ? ` age-${age}` : '');
+            li.dataset.idx = i; li.draggable = (filter === 'all' && !searchQuery && editingIndex < 0);
+            if (focusedIndex === vi) li.classList.add('focused');
+            if (animateIndex === i) li.classList.add('slide-in');
+            const handle = (filter === 'all' && !searchQuery) ? `<span class="drag-handle" data-i="${i}">&#9776;</span>` : '';
+            const dot = p !== 'none' ? `<span class="priority-dot p-${p}"></span>` : '';
+            const ageBadge = (age !== 'fresh' && !todo.done) ? `<span class="age-badge age-${age}">${ageLabel(age)}</span>` : '';
+            if (editingIndex === i) {
+                li.innerHTML = `${handle}<div class="todo-check" data-i="${i}"></div>${dot}<input class="todo-text-edit" data-i="${i}" value="${escapeAttr(todo.text)}">${ageBadge}<button class="todo-delete" data-i="${i}">&times;</button>`;
+            } else {
+                li.innerHTML = `${handle}<div class="todo-check" data-i="${i}"></div>${dot}<span class="todo-text" data-i="${i}">${highlightMatch(todo.text)}</span>${ageBadge}<button class="todo-priority-cycle" data-i="${i}" title="Cycle priority">${p === 'none' ? '&#9679;' : p.toUpperCase()}</button><button class="todo-delete" data-i="${i}">&times;</button>`;
+            }
+            list.appendChild(li);
+
+            // Sentient comment
+            const comment = getSentientComment(todo);
+            if (comment) {
+                const commentEl = document.createElement('div');
+                commentEl.className = 'sentient-comment';
+                commentEl.textContent = comment;
+                list.appendChild(commentEl);
+            }
+        });
+
+        // Render ghost tasks
+        if (filter === 'all' && !searchQuery) {
+            ghosts.forEach((ghost, gi) => {
+                const li = document.createElement('li');
+                const p = ghost.priority || 'none';
+                li.className = 'todo-item ghost-item' + (p !== 'none' ? ` p-${p}` : '');
+                li.dataset.ghost = gi;
+                const dot = p !== 'none' ? `<span class="priority-dot p-${p}"></span>` : '';
+                li.innerHTML = `<span class="drag-handle" style="visibility:hidden">&#9776;</span><div class="todo-check"></div>${dot}<span class="todo-text">${escapeHtml(ghost.text)}</span>`;
+                list.appendChild(li);
+            });
+        }
+
+        animateIndex = -1;
+        if (editingIndex >= 0) {
+            const ei = list.querySelector('.todo-text-edit');
+            if (ei) { ei.focus(); ei.selectionStart = ei.value.length; }
+        }
+    }
+
+    function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    function escapeAttr(s) { return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;'); }
+    function commitEdit(i, t) { t = t.trim(); if (t) todos[i].text = t; editingIndex = -1; save(); render(); }
+
+    function addTodo() {
+        const t = input.value.trim(); if (!t) return;
+        todos.push({ text: t, done: false, priority: currentPriority, createdAt: Date.now() });
+        animateIndex = todos.length - 1;
+        input.value = ''; save(); render(); input.focus(); sfx.add();
+    }
+
+    function deleteTodo(i) {
+        const snap = JSON.parse(JSON.stringify(todos));
+        const ghostSnap = JSON.parse(JSON.stringify(ghosts));
+        const name = todos[i].text;
+        const deletedTodo = JSON.parse(JSON.stringify(todos[i]));
+        const visible = filtered(), vi = visible.indexOf(todos[i]);
+        const items = list.querySelectorAll('.todo-item:not(.ghost-item)'), li = items[vi];
+        sfx.delete();
+
+        // Create ghost
+        ghosts.push({ text: deletedTodo.text, priority: deletedTodo.priority, deletedAt: Date.now() });
+        sfx.ghost();
+
+        if (li) {
+            li.classList.add('fade-out');
+            li.addEventListener('animationend', () => {
+                todos.splice(i, 1);
+                if (editingIndex === i) editingIndex = -1;
+                const nv = filtered();
+                if (focusedIndex >= nv.length) focusedIndex = nv.length - 1;
+                save(); render();
+                showToast(`Deleted "${name}"`, snap, ghostSnap);
+            });
+        } else {
+            todos.splice(i, 1); save(); render();
+            showToast(`Deleted "${name}"`, snap, ghostSnap);
+        }
+    }
+
+    function purgeGhosts() {
+        if (ghosts.length === 0) return;
+        const ghostSnap = JSON.parse(JSON.stringify(ghosts));
+        const snap = JSON.parse(JSON.stringify(todos));
+        const count = ghosts.length;
+
+        // Animate ghost fade
+        const ghostEls = list.querySelectorAll('.ghost-item');
+        ghostEls.forEach(el => el.classList.add('ghost-fade'));
+
+        sfx.purge();
+        setTimeout(() => {
+            ghosts = [];
+            save(); render();
+            showToast(`Purged ${count} ghost${count !== 1 ? 's' : ''}`, snap, ghostSnap);
+        }, 500);
+    }
+
+    // ============ ZEN MODE ============
+    let currentZenTask = null;
+
+    function enterZen() {
+        if (zenMode) return;
+        const activeTasks = todos.filter(t => !t.done);
+        if (activeTasks.length === 0 && todos.length === 0) return; // Nothing to zen about
+
+        zenMode = true;
+        sfx.zenEnter();
+
+        // Show overlay
+        zenOverlay.classList.add('active');
+        zenProgressBar.style.opacity = '1';
+        document.body.style.background = '#141428';
+
+        // Hide keyboard hints
+        kbdHint.classList.add('hidden');
+
+        renderZen();
+    }
+
+    function exitZen() {
+        if (!zenMode) return;
+        zenMode = false;
+        sfx.zenExit();
+
+        zenOverlay.classList.remove('active');
+        zenProgressBar.style.opacity = '0';
+        document.body.style.background = '#1a1a2e';
+
+        render();
+    }
+
+    function renderZen() {
+        if (!zenMode) return;
+
+        // Update zen progress bar
+        const total = todos.length;
+        const done = todos.filter(t => t.done).length;
+        zenProgressFill.style.width = (total === 0 ? 0 : (done / total) * 100) + '%';
+        zenProgressFill.classList.toggle('complete', total > 0 && done === total);
+
+        const activeTasks = todos.filter(t => !t.done);
+        zenTaskContainer.innerHTML = '';
+
+        if (activeTasks.length === 0) {
+            // All done message
+            const msg = document.createElement('div');
+            msg.className = 'zen-complete-msg';
+            msg.textContent = "Nothing left. You're free.";
+            zenTaskContainer.appendChild(msg);
+            zenTaskContainer.style.cursor = 'default';
+            sfx.zenAllDone();
+            launchConfetti();
+            return;
+        }
+
+        const task = activeTasks[0];
+        currentZenTask = task;
+
+        // Task text
+        const taskEl = document.createElement('div');
+        taskEl.className = 'zen-task entering';
+        taskEl.textContent = task.text;
+        zenTaskContainer.appendChild(taskEl);
+        zenTaskContainer.style.cursor = 'pointer';
+
+        // Meta (priority dot + comment)
+        const meta = document.createElement('div');
+        meta.className = 'zen-task-meta';
+        const p = task.priority || 'none';
+        if (p !== 'none') {
+            const dot = document.createElement('div');
+            dot.className = `zen-priority-dot p-${p}`;
+            meta.appendChild(dot);
+        }
+        zenTaskContainer.appendChild(meta);
+
+        // Sentient comment
+        const comment = getSentientComment(task);
+        if (comment) {
+            const commentEl = document.createElement('div');
+            commentEl.className = 'zen-comment';
+            commentEl.textContent = comment;
+            zenTaskContainer.appendChild(commentEl);
+        }
+    }
+
+    function zenCompleteTask() {
+        if (!zenMode || zenTransitioning || !currentZenTask) return;
+        zenTransitioning = true;
+
+        // Mark task done
+        const idx = todos.indexOf(currentZenTask);
+        if (idx >= 0) {
+            todos[idx].done = true;
+            save();
+        }
+
+        sfx.zenComplete();
+
+        // Fade out current task
+        const taskEl = zenTaskContainer.querySelector('.zen-task');
+        if (taskEl) {
+            taskEl.classList.remove('entering');
+            taskEl.classList.add('completing');
+        }
+
+        // After transition, show next task
+        setTimeout(() => {
+            zenTransitioning = false;
+            renderZen();
+        }, 600);
+    }
+
+    // Zen click handler
+    zenTaskContainer.addEventListener('click', () => {
+        if (zenMode && currentZenTask && !zenTransitioning) {
+            zenCompleteTask();
+        }
+    });
+
+    $('zenBtn').addEventListener('click', () => {
+        if (zenMode) exitZen(); else enterZen();
+    });
+
+    // ============ EVENT LISTENERS ============
+    searchInput.addEventListener('input', () => { searchQuery = searchInput.value.trim(); focusedIndex = -1; render(); });
+    priorityBtns.forEach(btn => btn.addEventListener('click', () => {
+        currentPriority = btn.dataset.p;
+        priorityBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active');
+    }));
+
+    // Drag and drop
+    list.addEventListener('dragstart', (e) => {
+        const li = e.target.closest('.todo-item');
+        if (!li || li.classList.contains('ghost-item')) return;
+        dragSrcIndex = parseInt(li.dataset.idx);
+        li.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move';
+    });
+    list.addEventListener('dragover', (e) => {
+        e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+        const li = e.target.closest('.todo-item');
+        list.querySelectorAll('.todo-item').forEach(el => el.classList.remove('drag-over'));
+        if (li && !li.classList.contains('ghost-item')) li.classList.add('drag-over');
+    });
+    list.addEventListener('dragleave', (e) => { const li = e.target.closest('.todo-item'); if (li) li.classList.remove('drag-over'); });
+    list.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const li = e.target.closest('.todo-item');
+        if (!li || li.classList.contains('ghost-item') || dragSrcIndex === null) return;
+        const di = parseInt(li.dataset.idx); if (dragSrcIndex === di) return;
+        const [m] = todos.splice(dragSrcIndex, 1); todos.splice(di, 0, m);
+        dragSrcIndex = null; save(); render();
+    });
+    list.addEventListener('dragend', () => { dragSrcIndex = null; list.querySelectorAll('.todo-item').forEach(el => el.classList.remove('dragging', 'drag-over')); });
+
+    $('addBtn').addEventListener('click', addTodo);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') addTodo();
+        if (e.key === 'ArrowDown' && !input.value) { e.preventDefault(); input.blur(); focusedIndex = 0; sfx.navigate(); render(); }
+    });
+
+    list.addEventListener('click', (e) => {
+        const t = e.target, i = parseInt(t.dataset.i);
+        if (isNaN(i)) return;
+        if (t.classList.contains('todo-check')) {
+            const w = todos[i].done; todos[i].done = !w;
+            w ? sfx.uncomplete() : sfx.complete();
+            save(); render();
+        } else if (t.classList.contains('todo-delete')) {
+            deleteTodo(i);
+        } else if (t.classList.contains('todo-priority-cycle')) {
+            todos[i].priority = cyclePriority(todos[i].priority);
+            sfx.priority(todos[i].priority); save(); render();
+        }
+    });
+
+    list.addEventListener('dblclick', (e) => {
+        if (!e.target.classList.contains('todo-text')) return;
+        editingIndex = parseInt(e.target.dataset.i); render();
+    });
+    list.addEventListener('keydown', (e) => {
+        if (!e.target.classList.contains('todo-text-edit')) return;
+        const i = parseInt(e.target.dataset.i);
+        if (e.key === 'Enter') commitEdit(i, e.target.value);
+        else if (e.key === 'Escape') { editingIndex = -1; render(); }
+    });
+    list.addEventListener('focusout', (e) => {
+        if (!e.target.classList.contains('todo-text-edit')) return;
+        commitEdit(parseInt(e.target.dataset.i), e.target.value);
+    });
+
+    filterBtns.forEach(btn => btn.addEventListener('click', () => {
+        filter = btn.dataset.filter;
+        filterBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active');
+        focusedIndex = -1; render();
+    }));
+
+    clearDoneBtn.addEventListener('click', () => {
+        const snap = JSON.parse(JSON.stringify(todos)), c = todos.filter(t => t.done).length;
+        todos = todos.filter(t => !t.done);
+        focusedIndex = -1; save(); render(); sfx.delete();
+        showToast(`Cleared ${c} done task${c !== 1 ? 's' : ''}`, snap);
+    });
+
+    // ============ KEYBOARD NAVIGATION ============
+    document.addEventListener('keydown', (e) => {
+        // Zen mode keys
+        if (zenMode) {
+            if (e.key === 'Escape' || (e.key === 'z' && e.target.tagName !== 'INPUT')) {
+                e.preventDefault(); exitZen(); return;
+            }
+            if ((e.key === 'Enter' || e.key === ' ') && currentZenTask) {
+                e.preventDefault(); zenCompleteTask(); return;
+            }
+            return; // Swallow all other keys in zen mode
+        }
+
+        if (e.target === searchInput) {
+            if (e.key === 'Escape') { searchInput.value = ''; searchQuery = ''; searchInput.blur(); render(); }
+            return;
+        }
+        if (e.target.tagName === 'INPUT') return;
+        if (editingIndex >= 0) return;
+
+        // Zen toggle
+        if (e.key === 'z') { e.preventDefault(); enterZen(); return; }
+
+        // Ghost purge
+        if (e.key === 'g') { e.preventDefault(); purgeGhosts(); return; }
+
+        if (e.key === '/') { e.preventDefault(); searchInput.focus(); return; }
+
+        const visible = filtered();
+        if (visible.length === 0) return;
+
+        if (e.key === 'ArrowDown' || e.key === 'j') {
+            e.preventDefault(); focusedIndex = Math.min(focusedIndex + 1, visible.length - 1); sfx.navigate(); render();
+        } else if (e.key === 'ArrowUp' || e.key === 'k') {
+            e.preventDefault(); sfx.navigate();
+            if (focusedIndex <= 0) { focusedIndex = -1; render(); input.focus(); }
+            else { focusedIndex--; render(); }
+        } else if (e.key === 'Enter' && focusedIndex >= 0) {
+            e.preventDefault();
+            const t = visible[focusedIndex], w = t.done;
+            todos[todos.indexOf(t)].done = !w;
+            w ? sfx.uncomplete() : sfx.complete(); save(); render();
+        } else if ((e.key === 'Delete' || e.key === 'Backspace') && focusedIndex >= 0) {
+            e.preventDefault(); deleteTodo(todos.indexOf(visible[focusedIndex]));
+        } else if (e.key === 'e' && focusedIndex >= 0) {
+            e.preventDefault(); editingIndex = todos.indexOf(visible[focusedIndex]); render();
+        } else if (e.key === 'p' && focusedIndex >= 0) {
+            e.preventDefault();
+            const t = visible[focusedIndex], idx = todos.indexOf(t);
+            todos[idx].priority = cyclePriority(todos[idx].priority);
+            sfx.priority(todos[idx].priority); save(); render();
+        } else if (e.key === 'Escape') {
+            focusedIndex = -1; render();
+        }
+    });
+
+    // ============ BREAKOUT GAME ============
+    function showBreakout() {
+        if (breakoutInstance) return;
+        const area = $('breakoutArea');
+        area.innerHTML = `
+            <div class="breakout-container">
+                <h2>All tasks done! Have a game.</h2>
+                <p>Mouse to move &middot; Click to launch</p>
+                <canvas id="breakoutCanvas" width="400" height="300"></canvas>
+                <div class="breakout-score" id="breakoutScore">Score: 0</div>
+            </div>
+        `;
+        breakoutInstance = initBreakout($('breakoutCanvas'), $('breakoutScore'));
+    }
+
+    function hideBreakout() {
+        if (breakoutInstance) {
+            breakoutInstance.stop();
+            breakoutInstance = null;
+        }
+        $('breakoutArea').innerHTML = '';
+    }
+
+    function initBreakout(canvas, scoreEl) {
+        const bCtx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+        let running = true, animId = null;
+
+        // Paddle
+        const paddle = { w: 60, h: 10, x: W / 2 - 30, y: H - 20, speed: 0 };
+
+        // Ball
+        const ball = { x: W / 2, y: H - 35, r: 5, dx: 0, dy: 0, launched: false };
+
+        // Bricks
+        const brickRows = 4, brickCols = 8, brickW = 44, brickH = 14, brickPad = 4, brickTop = 30, brickLeft = 10;
+        const brickColors = ['#f87171', '#fbbf24', '#4ade80', '#7c83ff'];
+        let bricks = [];
+        let score = 0;
+
+        function resetBricks() {
+            bricks = [];
+            for (let r = 0; r < brickRows; r++) {
+                for (let c = 0; c < brickCols; c++) {
+                    bricks.push({ x: brickLeft + c * (brickW + brickPad), y: brickTop + r * (brickH + brickPad), w: brickW, h: brickH, color: brickColors[r], alive: true });
+                }
+            }
+        }
+        resetBricks();
+
+        // Mouse
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            paddle.x = Math.max(0, Math.min(W - paddle.w, (e.clientX - rect.left) * (W / rect.width) - paddle.w / 2));
+            if (!ball.launched) ball.x = paddle.x + paddle.w / 2;
+        });
+        canvas.addEventListener('click', () => {
+            if (!ball.launched) {
+                ball.launched = true;
+                ball.dx = 3 * (Math.random() > 0.5 ? 1 : -1);
+                ball.dy = -3.5;
+            }
+        });
+
+        function resetBall() {
+            ball.launched = false;
+            ball.x = paddle.x + paddle.w / 2;
+            ball.y = H - 35;
+            ball.dx = 0; ball.dy = 0;
+        }
+
+        function draw() {
+            if (!running) return;
+            bCtx.clearRect(0, 0, W, H);
+
+            // Bricks
+            bricks.forEach(b => {
+                if (!b.alive) return;
+                bCtx.fillStyle = b.color;
+                bCtx.beginPath();
+                bCtx.roundRect(b.x, b.y, b.w, b.h, 3);
+                bCtx.fill();
+            });
+
+            // Paddle
+            bCtx.fillStyle = '#7c83ff';
+            bCtx.beginPath();
+            bCtx.roundRect(paddle.x, paddle.y, paddle.w, paddle.h, 4);
+            bCtx.fill();
+
+            // Ball
+            bCtx.fillStyle = '#e0e0e0';
+            bCtx.beginPath();
+            bCtx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+            bCtx.fill();
+
+            if (ball.launched) {
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+
+                // Wall collisions
+                if (ball.x - ball.r <= 0 || ball.x + ball.r >= W) ball.dx = -ball.dx;
+                if (ball.y - ball.r <= 0) ball.dy = -ball.dy;
+
+                // Paddle collision
+                if (ball.dy > 0 && ball.y + ball.r >= paddle.y && ball.y + ball.r <= paddle.y + paddle.h + 4 &&
+                    ball.x >= paddle.x && ball.x <= paddle.x + paddle.w) {
+                    ball.dy = -Math.abs(ball.dy);
+                    // Angle based on where it hit
+                    const hit = (ball.x - paddle.x) / paddle.w - 0.5;
+                    ball.dx = hit * 6;
+                    playTone(660, 0.08, 'sine', 0.04);
+                }
+
+                // Brick collision
+                bricks.forEach(b => {
+                    if (!b.alive) return;
+                    if (ball.x + ball.r > b.x && ball.x - ball.r < b.x + b.w &&
+                        ball.y + ball.r > b.y && ball.y - ball.r < b.y + b.h) {
+                        b.alive = false;
+                        ball.dy = -ball.dy;
+                        score += 10;
+                        scoreEl.textContent = 'Score: ' + score;
+                        playTone(440 + score * 2, 0.08, 'square', 0.03);
+                    }
+                });
+
+                // Ball lost
+                if (ball.y > H + 20) {
+                    resetBall();
+                    playTone(200, 0.3, 'triangle', 0.06);
+                }
+
+                // All bricks gone
+                if (bricks.every(b => !b.alive)) {
+                    score += 100;
+                    scoreEl.textContent = 'Score: ' + score + ' - Nice!';
+                    resetBricks();
+                    resetBall();
+                    launchConfetti();
+                    sfx.allDone();
+                }
+            }
+
+            animId = requestAnimationFrame(draw);
+        }
+
+        draw();
+
+        return {
+            stop: () => {
+                running = false;
+                if (animId) cancelAnimationFrame(animId);
+            }
+        };
+    }
+
+    // ============ INIT ============
+    // Clean up old ghosts (older than 24 hours)
+    ghosts = ghosts.filter(g => (Date.now() - (g.deletedAt || 0)) < 86400000);
+    save();
+
+    // Refresh decay visuals periodically
+    setInterval(() => { if (!zenMode) render(); }, 60000);
+    render();
+
+    // Show breakout if already all done on load
+    if (todos.length > 0 && todos.every(t => t.done)) {
+        prevAllDone = true;
+        showBreakout();
+    }
+    </script>
+</body>
+</html>

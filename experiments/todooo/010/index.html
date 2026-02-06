@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>todooo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0;
+            min-height: 100vh; display: flex; justify-content: center; padding: 3rem 1rem;
+        }
+        .app { width: 100%; max-width: 500px; }
+        h1 { font-size: 2.5rem; letter-spacing: 0.3rem; margin-bottom: 1.5rem; color: #fff; }
+
+        .progress-bar {
+            width: 100%; height: 6px; background: #2a2a4a; border-radius: 3px; margin-bottom: 1.5rem;
+            overflow: hidden; transition: opacity 0.3s;
+        }
+        .progress-bar.hidden { opacity: 0; }
+        .progress-fill {
+            height: 100%; background: #7c83ff; border-radius: 3px;
+            transition: width 0.4s ease, background 0.4s ease;
+        }
+        .progress-fill.complete { background: #4ade80; }
+
+        .input-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .input-row input {
+            flex: 1; padding: 0.75rem 1rem; border: 2px solid #2a2a4a; border-radius: 8px;
+            background: #16213e; color: #e0e0e0; font-size: 1rem; outline: none; transition: border-color 0.2s;
+        }
+        .input-row input:focus { border-color: #7c83ff; }
+        .input-row input::placeholder { color: #555; }
+        .input-row button {
+            padding: 0.75rem 1.25rem; border: none; border-radius: 8px; background: #7c83ff;
+            color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s;
+        }
+        .input-row button:hover { background: #6a71e0; }
+
+        .priority-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; align-items: center; }
+        .priority-row span { color: #555; font-size: 0.8rem; }
+        .priority-btn {
+            border: none; padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer;
+            font-size: 0.8rem; font-weight: 600; transition: all 0.2s; opacity: 0.4;
+        }
+        .priority-btn.active { opacity: 1; }
+        .priority-btn[data-p="none"] { background: #2a2a4a; color: #888; }
+        .priority-btn[data-p="low"] { background: #1b5e3b; color: #4ade80; }
+        .priority-btn[data-p="med"] { background: #5e4b1b; color: #fbbf24; }
+        .priority-btn[data-p="high"] { background: #5e1b1b; color: #f87171; }
+
+        .search-row { margin-bottom: 0.75rem; }
+        .search-row input {
+            width: 100%; padding: 0.5rem 1rem; border: 2px solid #2a2a4a; border-radius: 8px;
+            background: #16213e; color: #e0e0e0; font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+        }
+        .search-row input:focus { border-color: #7c83ff; }
+        .search-row input::placeholder { color: #444; }
+
+        .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding: 0.5rem 0; font-size: 0.85rem; }
+        .count { color: #888; }
+        .filters { display: flex; gap: 0.25rem; }
+        .filters button {
+            background: none; border: 1px solid transparent; color: #888; padding: 0.25rem 0.6rem;
+            border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;
+        }
+        .filters button:hover { color: #e0e0e0; }
+        .filters button.active { border-color: #7c83ff; color: #7c83ff; }
+        .clear-done { background: none; border: none; color: #888; font-size: 0.85rem; cursor: pointer; transition: color 0.2s; }
+        .clear-done:hover { color: #ff6b6b; }
+        .clear-done:disabled { opacity: 0; pointer-events: none; }
+
+        .todo-list { list-style: none; }
+        .todo-item {
+            display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem;
+            background: #16213e; border-radius: 8px; margin-bottom: 0.5rem;
+            transition: opacity 0.3s, transform 0.3s, box-shadow 0.2s; user-select: none;
+            border-left: 3px solid transparent;
+        }
+        .todo-item.p-low { border-left-color: #4ade80; }
+        .todo-item.p-med { border-left-color: #fbbf24; }
+        .todo-item.p-high { border-left-color: #f87171; }
+        .todo-item.focused { outline: 2px solid #7c83ff; outline-offset: -2px; }
+        .todo-item.slide-in { animation: slideIn 0.3s ease-out; }
+        .todo-item.fade-out { animation: fadeOut 0.3s ease-out forwards; }
+        .todo-item.dragging { opacity: 0.4; }
+        .todo-item.drag-over { box-shadow: 0 -2px 0 0 #7c83ff; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(30px); } }
+
+        .todo-item.done { opacity: 0.5; }
+        .todo-item.done .todo-text { text-decoration: line-through; }
+
+        .drag-handle { cursor: grab; color: #444; font-size: 1rem; flex-shrink: 0; display: flex; align-items: center; padding: 0 0.1rem; transition: color 0.2s; }
+        .drag-handle:active { cursor: grabbing; }
+        .drag-handle:hover { color: #888; }
+
+        .priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .priority-dot.p-low { background: #4ade80; }
+        .priority-dot.p-med { background: #fbbf24; }
+        .priority-dot.p-high { background: #f87171; }
+
+        .todo-check {
+            width: 22px; height: 22px; border: 2px solid #7c83ff; border-radius: 50%;
+            flex-shrink: 0; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; transition: background 0.2s;
+        }
+        .todo-item.done .todo-check { background: #7c83ff; }
+        .todo-check::after {
+            content: ''; display: none; width: 6px; height: 10px; border: solid #fff;
+            border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px);
+        }
+        .todo-item.done .todo-check::after { display: block; }
+
+        .todo-text { flex: 1; font-size: 1rem; cursor: default; }
+        .todo-text mark { background: #7c83ff44; color: #e0e0e0; border-radius: 2px; padding: 0 1px; }
+        .todo-text-edit {
+            flex: 1; font-size: 1rem; background: #0f1a30; border: 2px solid #7c83ff;
+            border-radius: 4px; color: #e0e0e0; padding: 0.2rem 0.4rem; outline: none; font-family: inherit;
+        }
+        .todo-priority-cycle {
+            background: none; border: none; cursor: pointer; font-size: 0.7rem; padding: 0.15rem 0.3rem;
+            border-radius: 3px; transition: all 0.2s; color: #555;
+        }
+        .todo-priority-cycle:hover { color: #aaa; }
+        .todo-delete {
+            background: none; border: none; color: #555; font-size: 1.2rem;
+            cursor: pointer; padding: 0 0.25rem; line-height: 1; transition: color 0.2s;
+        }
+        .todo-delete:hover { color: #ff6b6b; }
+        .empty { color: #555; text-align: center; padding: 2rem; font-style: italic; }
+
+        .toast {
+            position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: #2a2a4a; color: #e0e0e0; padding: 0.75rem 1.25rem; border-radius: 8px;
+            display: flex; align-items: center; gap: 1rem; font-size: 0.9rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4); transition: transform 0.3s ease; z-index: 100;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast button {
+            background: #7c83ff; border: none; color: #fff; padding: 0.3rem 0.75rem;
+            border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+        }
+        .toast button:hover { background: #6a71e0; }
+
+        .kbd-hint {
+            position: fixed; bottom: 2rem; right: 2rem; color: #444; font-size: 0.75rem;
+            text-align: right; line-height: 1.6; transition: opacity 0.3s; pointer-events: none;
+        }
+        .kbd-hint.hidden { opacity: 0; }
+        kbd { background: #2a2a4a; padding: 0.1rem 0.35rem; border-radius: 3px; font-family: 'Consolas', monospace; font-size: 0.7rem; }
+
+        /* Confetti canvas */
+        #confetti {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 200;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <h1>todooo</h1>
+        <div class="progress-bar hidden" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="input-row">
+            <input type="text" id="todoInput" placeholder="What needs doing?" autofocus>
+            <button id="addBtn">Add</button>
+        </div>
+        <div class="priority-row">
+            <span>Priority:</span>
+            <button class="priority-btn active" data-p="none">None</button>
+            <button class="priority-btn" data-p="low">Low</button>
+            <button class="priority-btn" data-p="med">Med</button>
+            <button class="priority-btn" data-p="high">High</button>
+        </div>
+        <div class="search-row">
+            <input type="text" id="searchInput" placeholder="Search tasks...">
+        </div>
+        <div class="toolbar">
+            <span class="count" id="count"></span>
+            <div class="filters">
+                <button class="active" data-filter="all">All</button>
+                <button data-filter="active">Active</button>
+                <button data-filter="done">Done</button>
+            </div>
+            <button class="clear-done" id="clearDone">Clear done</button>
+        </div>
+        <ul class="todo-list" id="todoList"></ul>
+    </div>
+    <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
+    <div class="kbd-hint" id="kbdHint">
+        <kbd>/</kbd> search &nbsp;
+        <kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate &nbsp; <kbd>Enter</kbd> toggle &nbsp;
+        <kbd>Del</kbd> delete &nbsp; <kbd>E</kbd> edit &nbsp; <kbd>P</kbd> priority &nbsp; <kbd>Esc</kbd> deselect
+    </div>
+    <canvas id="confetti"></canvas>
+
+    <script>
+        const input = document.getElementById('todoInput');
+        const searchInput = document.getElementById('searchInput');
+        const addBtn = document.getElementById('addBtn');
+        const list = document.getElementById('todoList');
+        const countEl = document.getElementById('count');
+        const clearDoneBtn = document.getElementById('clearDone');
+        const filterBtns = document.querySelectorAll('.filters button');
+        const priorityBtns = document.querySelectorAll('.priority-btn');
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toastMsg');
+        const toastUndo = document.getElementById('toastUndo');
+        const kbdHint = document.getElementById('kbdHint');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const confettiCanvas = document.getElementById('confetti');
+        const ctx = confettiCanvas.getContext('2d');
+
+        const PRIORITIES = ['none', 'low', 'med', 'high'];
+
+        let todos = JSON.parse(localStorage.getItem('todooo-010') || '[]');
+        let filter = 'all';
+        let searchQuery = '';
+        let editingIndex = -1;
+        let animateIndex = -1;
+        let focusedIndex = -1;
+        let undoState = null;
+        let toastTimer = null;
+        let dragSrcIndex = null;
+        let currentPriority = 'none';
+        let prevAllDone = false;
+
+        function save() { localStorage.setItem('todooo-010', JSON.stringify(todos)); }
+
+        function filtered() {
+            let result = todos;
+            if (filter === 'active') result = result.filter(t => !t.done);
+            else if (filter === 'done') result = result.filter(t => t.done);
+            if (searchQuery) {
+                const q = searchQuery.toLowerCase();
+                result = result.filter(t => t.text.toLowerCase().includes(q));
+            }
+            return result;
+        }
+
+        function highlightMatch(text) {
+            if (!searchQuery) return escapeHtml(text);
+            const escaped = escapeHtml(text);
+            const q = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return escaped.replace(new RegExp(`(${q})`, 'gi'), '<mark>$1</mark>');
+        }
+
+        function showToast(msg, snapshot) {
+            undoState = snapshot; toastMsg.textContent = msg; toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { toast.classList.remove('show'); undoState = null; }, 4000);
+        }
+
+        toastUndo.addEventListener('click', () => {
+            if (!undoState) return;
+            todos = undoState; undoState = null; toast.classList.remove('show');
+            clearTimeout(toastTimer); save(); render();
+        });
+
+        function cyclePriority(current) {
+            const idx = PRIORITIES.indexOf(current || 'none');
+            return PRIORITIES[(idx + 1) % PRIORITIES.length];
+        }
+
+        // --- Confetti ---
+        let confettiPieces = [];
+        let confettiRunning = false;
+
+        function resizeCanvas() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function launchConfetti() {
+            confettiPieces = [];
+            const colors = ['#7c83ff', '#4ade80', '#fbbf24', '#f87171', '#a78bfa', '#38bdf8', '#fb923c'];
+            for (let i = 0; i < 120; i++) {
+                confettiPieces.push({
+                    x: Math.random() * confettiCanvas.width,
+                    y: -10 - Math.random() * confettiCanvas.height * 0.5,
+                    w: 4 + Math.random() * 6,
+                    h: 8 + Math.random() * 8,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: 2 + Math.random() * 4,
+                    rot: Math.random() * Math.PI * 2,
+                    vr: (Math.random() - 0.5) * 0.2,
+                    life: 1,
+                });
+            }
+            if (!confettiRunning) { confettiRunning = true; animateConfetti(); }
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            confettiPieces.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05;
+                p.rot += p.vr;
+                if (p.y > confettiCanvas.height - 50) p.life -= 0.02;
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rot);
+                ctx.globalAlpha = Math.max(0, p.life);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                ctx.restore();
+            });
+            confettiPieces = confettiPieces.filter(p => p.life > 0);
+            if (confettiPieces.length > 0) {
+                requestAnimationFrame(animateConfetti);
+            } else {
+                confettiRunning = false;
+                ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            }
+        }
+
+        function render() {
+            const active = todos.filter(t => !t.done).length;
+            const done = todos.length - active;
+            const total = todos.length;
+            countEl.textContent = `${active} left`;
+            clearDoneBtn.disabled = done === 0;
+
+            // Progress bar
+            progressBar.classList.toggle('hidden', total === 0);
+            const pct = total === 0 ? 0 : (done / total) * 100;
+            progressFill.style.width = pct + '%';
+            const allDone = total > 0 && active === 0;
+            progressFill.classList.toggle('complete', allDone);
+
+            // Confetti on completion
+            if (allDone && !prevAllDone) launchConfetti();
+            prevAllDone = allDone;
+
+            const visible = filtered();
+            list.innerHTML = '';
+            kbdHint.classList.toggle('hidden', visible.length === 0);
+
+            if (todos.length === 0) { list.innerHTML = '<li class="empty">Nothing to do yet.</li>'; return; }
+            if (visible.length === 0) {
+                const msg = searchQuery ? `No tasks matching "${searchQuery}"` :
+                    (filter === 'active' ? 'No active tasks.' : 'No completed tasks.');
+                list.innerHTML = `<li class="empty">${msg}</li>`; return;
+            }
+
+            visible.forEach((todo, vi) => {
+                const i = todos.indexOf(todo);
+                const li = document.createElement('li');
+                const p = todo.priority || 'none';
+                li.className = 'todo-item' + (todo.done ? ' done' : '') + (p !== 'none' ? ` p-${p}` : '');
+                li.dataset.idx = i;
+                li.draggable = (filter === 'all' && !searchQuery && editingIndex < 0);
+                if (focusedIndex === vi) li.classList.add('focused');
+                if (animateIndex === i) li.classList.add('slide-in');
+
+                const handle = (filter === 'all' && !searchQuery) ? `<span class="drag-handle" data-i="${i}">&#9776;</span>` : '';
+                const dot = p !== 'none' ? `<span class="priority-dot p-${p}"></span>` : '';
+
+                if (editingIndex === i) {
+                    li.innerHTML = `${handle}
+                        <div class="todo-check" data-i="${i}"></div>${dot}
+                        <input class="todo-text-edit" data-i="${i}" value="${escapeAttr(todo.text)}">
+                        <button class="todo-delete" data-i="${i}">&times;</button>`;
+                } else {
+                    li.innerHTML = `${handle}
+                        <div class="todo-check" data-i="${i}"></div>${dot}
+                        <span class="todo-text" data-i="${i}">${highlightMatch(todo.text)}</span>
+                        <button class="todo-priority-cycle" data-i="${i}" title="Cycle priority">${p === 'none' ? '&#9679;' : p.toUpperCase()}</button>
+                        <button class="todo-delete" data-i="${i}">&times;</button>`;
+                }
+                list.appendChild(li);
+            });
+
+            animateIndex = -1;
+            if (editingIndex >= 0) {
+                const ei = list.querySelector('.todo-text-edit');
+                if (ei) { ei.focus(); ei.selectionStart = ei.value.length; }
+            }
+        }
+
+        function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+        function escapeAttr(str) { return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;'); }
+
+        function commitEdit(i, newText) {
+            newText = newText.trim();
+            if (newText) todos[i].text = newText;
+            editingIndex = -1; save(); render();
+        }
+
+        function addTodo() {
+            const text = input.value.trim();
+            if (!text) return;
+            todos.push({ text, done: false, priority: currentPriority });
+            animateIndex = todos.length - 1;
+            input.value = ''; save(); render(); input.focus();
+        }
+
+        function deleteTodo(i) {
+            const snapshot = JSON.parse(JSON.stringify(todos));
+            const name = todos[i].text;
+            const visible = filtered();
+            const visibleIdx = visible.indexOf(todos[i]);
+            const items = list.querySelectorAll('.todo-item');
+            const li = items[visibleIdx];
+            if (li) {
+                li.classList.add('fade-out');
+                li.addEventListener('animationend', () => {
+                    todos.splice(i, 1);
+                    if (editingIndex === i) editingIndex = -1;
+                    const nv = filtered();
+                    if (focusedIndex >= nv.length) focusedIndex = nv.length - 1;
+                    save(); render();
+                    showToast(`Deleted "${name}"`, snapshot);
+                });
+            } else { todos.splice(i, 1); save(); render(); showToast(`Deleted "${name}"`, snapshot); }
+        }
+
+        searchInput.addEventListener('input', () => { searchQuery = searchInput.value.trim(); focusedIndex = -1; render(); });
+
+        priorityBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentPriority = btn.dataset.p;
+                priorityBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        // Drag and drop
+        list.addEventListener('dragstart', (e) => {
+            const li = e.target.closest('.todo-item'); if (!li) return;
+            dragSrcIndex = parseInt(li.dataset.idx); li.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        list.addEventListener('dragover', (e) => {
+            e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+            const li = e.target.closest('.todo-item');
+            list.querySelectorAll('.todo-item').forEach(el => el.classList.remove('drag-over'));
+            if (li) li.classList.add('drag-over');
+        });
+        list.addEventListener('dragleave', (e) => { const li = e.target.closest('.todo-item'); if (li) li.classList.remove('drag-over'); });
+        list.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const li = e.target.closest('.todo-item'); if (!li || dragSrcIndex === null) return;
+            const dropIndex = parseInt(li.dataset.idx);
+            if (dragSrcIndex === dropIndex) return;
+            const [moved] = todos.splice(dragSrcIndex, 1);
+            todos.splice(dropIndex, 0, moved); dragSrcIndex = null; save(); render();
+        });
+        list.addEventListener('dragend', () => {
+            dragSrcIndex = null;
+            list.querySelectorAll('.todo-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
+        });
+
+        addBtn.addEventListener('click', addTodo);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addTodo();
+            if (e.key === 'ArrowDown' && !input.value) { e.preventDefault(); input.blur(); focusedIndex = 0; render(); }
+        });
+
+        list.addEventListener('click', (e) => {
+            const target = e.target; const i = parseInt(target.dataset.i);
+            if (isNaN(i)) return;
+            if (target.classList.contains('todo-check')) { todos[i].done = !todos[i].done; save(); render(); }
+            else if (target.classList.contains('todo-delete')) { deleteTodo(i); }
+            else if (target.classList.contains('todo-priority-cycle')) {
+                todos[i].priority = cyclePriority(todos[i].priority); save(); render();
+            }
+        });
+
+        list.addEventListener('dblclick', (e) => {
+            if (!e.target.classList.contains('todo-text')) return;
+            editingIndex = parseInt(e.target.dataset.i); render();
+        });
+        list.addEventListener('keydown', (e) => {
+            if (!e.target.classList.contains('todo-text-edit')) return;
+            const i = parseInt(e.target.dataset.i);
+            if (e.key === 'Enter') commitEdit(i, e.target.value);
+            else if (e.key === 'Escape') { editingIndex = -1; render(); }
+        });
+        list.addEventListener('focusout', (e) => {
+            if (!e.target.classList.contains('todo-text-edit')) return;
+            commitEdit(parseInt(e.target.dataset.i), e.target.value);
+        });
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filter = btn.dataset.filter;
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active'); focusedIndex = -1; render();
+            });
+        });
+
+        clearDoneBtn.addEventListener('click', () => {
+            const snapshot = JSON.parse(JSON.stringify(todos));
+            const count = todos.filter(t => t.done).length;
+            todos = todos.filter(t => !t.done); focusedIndex = -1; save(); render();
+            showToast(`Cleared ${count} done task${count !== 1 ? 's' : ''}`, snapshot);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.target === searchInput) {
+                if (e.key === 'Escape') { searchInput.value = ''; searchQuery = ''; searchInput.blur(); render(); }
+                return;
+            }
+            if (e.target.tagName === 'INPUT') return;
+            if (editingIndex >= 0) return;
+
+            if (e.key === '/') { e.preventDefault(); searchInput.focus(); return; }
+
+            const visible = filtered();
+            if (visible.length === 0) return;
+
+            if (e.key === 'ArrowDown' || e.key === 'j') { e.preventDefault(); focusedIndex = Math.min(focusedIndex + 1, visible.length - 1); render(); }
+            else if (e.key === 'ArrowUp' || e.key === 'k') { e.preventDefault(); if (focusedIndex <= 0) { focusedIndex = -1; render(); input.focus(); } else { focusedIndex--; render(); } }
+            else if (e.key === 'Enter' && focusedIndex >= 0) { e.preventDefault(); const t = visible[focusedIndex]; todos[todos.indexOf(t)].done = !todos[todos.indexOf(t)].done; save(); render(); }
+            else if ((e.key === 'Delete' || e.key === 'Backspace') && focusedIndex >= 0) { e.preventDefault(); deleteTodo(todos.indexOf(visible[focusedIndex])); }
+            else if (e.key === 'e' && focusedIndex >= 0) { e.preventDefault(); editingIndex = todos.indexOf(visible[focusedIndex]); render(); }
+            else if (e.key === 'p' && focusedIndex >= 0) {
+                e.preventDefault(); const t = visible[focusedIndex];
+                todos[todos.indexOf(t)].priority = cyclePriority(todos[todos.indexOf(t)].priority); save(); render();
+            }
+            else if (e.key === 'Escape') { focusedIndex = -1; render(); }
+        });
+
+        render();
+    </script>
+</body>
+</html>

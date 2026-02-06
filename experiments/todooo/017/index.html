@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>todooo</title>
+    <style>
+        :root {
+            --bg: #1a1e2e;
+            --card: #16213e;
+            --accent: #7c83ff;
+            --text: #e0e0e0;
+            --text-dim: #888;
+            --text-vdim: #555;
+            --text-xdim: #444;
+            --card-hover: #1e2845;
+            --toast-bg: #2a2a4a;
+            --border: #2a2a4a;
+            --search-bg: #16213e;
+            --edit-bg: #0f1a30;
+            --accent-glow: #7c83ff44;
+        }
+        :root, body, .app, .todo-item, .input-row input, .input-row button,
+        .search-row input, .filters button, .toast, .sound-toggle,
+        .progress-fill, .todo-check, kbd, .priority-btn[data-p="none"],
+        .age-badge, .theme-clock, .ghost-item, .zen-overlay {
+            transition: background 2s ease, color 2s ease, border-color 2s ease, box-shadow 2s ease, opacity 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; justify-content: center; padding: 3rem 1rem; }
+        .app { width: 100%; max-width: 500px; }
+        h1 { font-size: 2.5rem; letter-spacing: 0.3rem; margin-bottom: 1.5rem; color: #fff; }
+
+        /* Theme clock indicator */
+        .theme-clock { position: fixed; top: 1rem; left: 1rem; background: var(--card); border: 1px solid var(--border); color: var(--text-dim); font-size: 0.75rem; padding: 0.4rem 0.7rem; border-radius: 8px; z-index: 50; display: flex; align-items: center; gap: 0.4rem; user-select: none; }
+        .theme-clock .clock-icon { font-size: 0.9rem; }
+        .theme-clock .period-name { color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05rem; }
+
+        .sound-toggle { position: fixed; top: 1rem; right: 1rem; background: var(--border); border: none; color: var(--text-dim); font-size: 1.2rem; padding: 0.5rem 0.7rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; z-index: 50; }
+        .sound-toggle:hover { color: var(--text); }
+        .sound-toggle.on { color: var(--accent); }
+
+        .progress-bar { width: 100%; height: 6px; background: var(--border); border-radius: 3px; margin-bottom: 1.5rem; overflow: hidden; transition: opacity 0.3s; }
+        .progress-bar.hidden { opacity: 0; }
+        .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.4s ease, background 0.4s ease; }
+        .progress-fill.complete { background: #4ade80; }
+
+        .input-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .input-row input { flex: 1; padding: 0.75rem 1rem; border: 2px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text); font-size: 1rem; outline: none; transition: border-color 0.2s, background 2s ease, color 2s ease; }
+        .input-row input:focus { border-color: var(--accent); }
+        .input-row input::placeholder { color: var(--text-vdim); }
+        .input-row button { padding: 0.75rem 1.25rem; border: none; border-radius: 8px; background: var(--accent); color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s, filter 0.2s; }
+        .input-row button:hover { filter: brightness(0.85); }
+
+        .priority-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; align-items: center; }
+        .priority-row span { color: var(--text-vdim); font-size: 0.8rem; }
+        .priority-btn { border: none; padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: all 0.2s; opacity: 0.4; }
+        .priority-btn.active { opacity: 1; }
+        .priority-btn[data-p="none"] { background: var(--border); color: var(--text-dim); }
+        .priority-btn[data-p="low"] { background: #1b5e3b; color: #4ade80; }
+        .priority-btn[data-p="med"] { background: #5e4b1b; color: #fbbf24; }
+        .priority-btn[data-p="high"] { background: #5e1b1b; color: #f87171; }
+
+        .search-row { margin-bottom: 0.75rem; }
+        .search-row input { width: 100%; padding: 0.5rem 1rem; border: 2px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text); font-size: 0.9rem; outline: none; transition: border-color 0.2s, background 2s ease, color 2s ease; }
+        .search-row input:focus { border-color: var(--accent); }
+        .search-row input::placeholder { color: var(--text-xdim); }
+
+        .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding: 0.5rem 0; font-size: 0.85rem; }
+        .count { color: var(--text-dim); }
+        .filters { display: flex; gap: 0.25rem; }
+        .filters button { background: none; border: 1px solid transparent; color: var(--text-dim); padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+        .filters button:hover { color: var(--text); }
+        .filters button.active { border-color: var(--accent); color: var(--accent); }
+
+        .clear-done { background: none; border: none; color: var(--text-dim); font-size: 0.85rem; cursor: pointer; transition: color 0.2s; }
+        .clear-done:hover { color: #ff6b6b; }
+        .clear-done:disabled { opacity: 0; pointer-events: none; }
+
+        .todo-list { list-style: none; }
+        .todo-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: var(--card); border-radius: 8px; margin-bottom: 0.5rem; transition: opacity 0.3s, transform 0.3s, box-shadow 0.2s, background 2s ease; user-select: none; border-left: 3px solid transparent; }
+        .todo-item.p-low { border-left-color: #4ade80; }
+        .todo-item.p-med { border-left-color: #fbbf24; }
+        .todo-item.p-high { border-left-color: #f87171; }
+        .todo-item.focused { outline: 2px solid var(--accent); outline-offset: -2px; }
+        .todo-item.slide-in { animation: slideIn 0.3s ease-out; }
+        .todo-item.fade-out { animation: fadeOut 0.3s ease-out forwards; }
+        .todo-item.dragging { opacity: 0.4; }
+        .todo-item.drag-over { box-shadow: 0 -2px 0 0 var(--accent); }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(30px); } }
+
+        .todo-item.done { opacity: 0.5; }
+        .todo-item.done .todo-text { text-decoration: line-through; }
+
+        /* Time decay styles */
+        .todo-item.age-fresh { background: var(--card); }
+        .todo-item.age-day { background: color-mix(in srgb, var(--card) 80%, #3a3520 20%); }
+        .todo-item.age-old { background: color-mix(in srgb, var(--card) 60%, #3a2520 40%); }
+        .todo-item.age-ancient { background: color-mix(in srgb, var(--card) 40%, #3a1a1a 60%); animation: tremble 3s infinite; }
+        @keyframes tremble { 0%, 95%, 100% { transform: translateX(0); } 96% { transform: translateX(-1px); } 98% { transform: translateX(1px); } }
+
+        .age-badge { font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 3px; flex-shrink: 0; font-weight: 600; }
+        .age-badge.age-day { background: #3a3520; color: #d4a843; }
+        .age-badge.age-old { background: #3a2520; color: #e88a5a; }
+        .age-badge.age-ancient { background: #3a1a1a; color: #f87171; }
+
+        .drag-handle { cursor: grab; color: var(--text-xdim); font-size: 1rem; flex-shrink: 0; display: flex; align-items: center; transition: color 0.2s; }
+        .drag-handle:active { cursor: grabbing; }
+        .drag-handle:hover { color: var(--text-dim); }
+
+        .priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .priority-dot.p-low { background: #4ade80; }
+        .priority-dot.p-med { background: #fbbf24; }
+        .priority-dot.p-high { background: #f87171; }
+
+        .todo-check { width: 22px; height: 22px; border: 2px solid var(--accent); border-radius: 50%; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s, border-color 2s ease; }
+        .todo-item.done .todo-check { background: var(--accent); }
+        .todo-check::after { content: ''; display: none; width: 6px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px); }
+        .todo-item.done .todo-check::after { display: block; }
+
+        .todo-text { flex: 1; font-size: 1rem; cursor: default; }
+        .todo-text mark { background: var(--accent-glow); color: var(--text); border-radius: 2px; padding: 0 1px; }
+        .todo-text-edit { flex: 1; font-size: 1rem; background: var(--edit-bg); border: 2px solid var(--accent); border-radius: 4px; color: var(--text); padding: 0.2rem 0.4rem; outline: none; font-family: inherit; }
+
+        .todo-priority-cycle { background: none; border: none; cursor: pointer; font-size: 0.7rem; padding: 0.15rem 0.3rem; border-radius: 3px; transition: all 0.2s; color: var(--text-vdim); }
+        .todo-priority-cycle:hover { color: var(--text-dim); }
+        .todo-delete { background: none; border: none; color: var(--text-vdim); font-size: 1.2rem; cursor: pointer; padding: 0 0.25rem; line-height: 1; transition: color 0.2s; }
+        .todo-delete:hover { color: #ff6b6b; }
+
+        .empty { color: var(--text-vdim); text-align: center; padding: 2rem; font-style: italic; }
+
+        /* Ghost tasks */
+        .ghost-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1rem; background: transparent; border-radius: 8px; margin-bottom: 0.3rem; opacity: 0.15; user-select: none; pointer-events: none; border-left: 3px solid transparent; }
+        .ghost-item .ghost-text { flex: 1; font-size: 0.9rem; text-decoration: line-through; color: var(--text-dim); font-style: italic; }
+        .ghost-item .ghost-icon { color: var(--text-xdim); font-size: 0.8rem; }
+        @keyframes ghostFade { from { opacity: 0.3; } to { opacity: 0.15; } }
+        .ghost-item.ghost-new { animation: ghostFade 1s ease-out forwards; }
+
+        /* Sentient personality comment */
+        .sentient-comment { text-align: center; padding: 0.5rem; margin-bottom: 0.75rem; font-size: 0.8rem; color: var(--text-dim); font-style: italic; min-height: 1.6rem; transition: opacity 0.5s, color 2s ease; }
+        .sentient-comment.fading { opacity: 0; }
+
+        /* Zen mode */
+        .zen-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s ease, background 2s ease; }
+        .zen-overlay.active { opacity: 1; pointer-events: auto; }
+        .zen-label { font-size: 0.8rem; color: var(--text-dim); letter-spacing: 0.2rem; text-transform: uppercase; margin-bottom: 2rem; }
+        .zen-task { font-size: 1.8rem; color: var(--text); max-width: 80%; text-align: center; line-height: 1.4; }
+        .zen-hint { position: absolute; bottom: 2rem; color: var(--text-xdim); font-size: 0.75rem; }
+        .zen-nav { display: flex; gap: 1rem; margin-top: 2rem; }
+        .zen-nav button { background: var(--card); border: 1px solid var(--border); color: var(--text-dim); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+        .zen-nav button:hover { color: var(--text); border-color: var(--accent); }
+        .zen-check { width: 28px; height: 28px; border: 2px solid var(--accent); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; transition: background 0.2s, border-color 2s ease; }
+        .zen-check.done { background: var(--accent); }
+        .zen-check::after { content: ''; display: none; width: 8px; height: 13px; border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg) translate(-1px, -1px); }
+        .zen-check.done::after { display: block; }
+
+        /* Breakout game */
+        .breakout-toggle { position: fixed; bottom: 1rem; left: 1rem; background: var(--card); border: 1px solid var(--border); color: var(--text-xdim); font-size: 0.7rem; padding: 0.3rem 0.6rem; border-radius: 6px; cursor: pointer; z-index: 50; transition: all 0.2s; }
+        .breakout-toggle:hover { color: var(--text-dim); border-color: var(--accent); }
+        .breakout-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 400; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .breakout-overlay.active { opacity: 1; pointer-events: auto; }
+        .breakout-overlay canvas { border: 1px solid var(--border); border-radius: 4px; }
+        .breakout-close { position: absolute; top: 1rem; right: 1.5rem; background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer; }
+        .breakout-close:hover { color: #fff; }
+
+        .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--toast-bg); color: var(--text); padding: 0.75rem 1.25rem; border-radius: 8px; display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; box-shadow: 0 4px 20px rgba(0,0,0,0.4); transition: transform 0.3s ease; z-index: 100; }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast button { background: var(--accent); border: none; color: #fff; padding: 0.3rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+
+        .kbd-hint { position: fixed; bottom: 2rem; right: 2rem; color: var(--text-xdim); font-size: 0.75rem; text-align: right; line-height: 1.6; transition: opacity 0.3s; pointer-events: none; }
+        .kbd-hint.hidden { opacity: 0; }
+        kbd { background: var(--border); padding: 0.1rem 0.35rem; border-radius: 3px; font-family: 'Consolas', monospace; font-size: 0.7rem; color: var(--text-dim); }
+
+        #confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 200; }
+    </style>
+</head>
+<body>
+    <div class="theme-clock" id="themeClock">
+        <span class="clock-icon"></span>
+        <span class="period-name" id="periodName">Morning</span>
+    </div>
+    <button class="sound-toggle on" id="soundToggle" title="Toggle sound">&#9835;</button>
+    <div class="app">
+        <h1>todooo</h1>
+        <div class="sentient-comment" id="sentientComment"></div>
+        <div class="progress-bar hidden" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="input-row"><input type="text" id="todoInput" placeholder="What needs doing?" autofocus><button id="addBtn">Add</button></div>
+        <div class="priority-row"><span>Priority:</span><button class="priority-btn active" data-p="none">None</button><button class="priority-btn" data-p="low">Low</button><button class="priority-btn" data-p="med">Med</button><button class="priority-btn" data-p="high">High</button></div>
+        <div class="search-row"><input type="text" id="searchInput" placeholder="Search tasks... ( / )"></div>
+        <div class="toolbar"><span class="count" id="count"></span><div class="filters"><button class="active" data-filter="all">All</button><button data-filter="active">Active</button><button data-filter="done">Done</button></div><button class="clear-done" id="clearDone">Clear done</button></div>
+        <ul class="todo-list" id="todoList"></ul>
+        <div id="ghostList"></div>
+    </div>
+    <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
+    <div class="kbd-hint" id="kbdHint"><kbd>/</kbd> search &nbsp; <kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate &nbsp; <kbd>Enter</kbd> toggle &nbsp; <kbd>Del</kbd> delete &nbsp; <kbd>E</kbd> edit &nbsp; <kbd>P</kbd> priority<br><kbd>G</kbd> purge ghosts &nbsp; <kbd>Z</kbd> zen mode &nbsp; <kbd>Esc</kbd> deselect</div>
+    <canvas id="confetti"></canvas>
+
+    <!-- Zen mode overlay -->
+    <div class="zen-overlay" id="zenOverlay">
+        <div class="zen-label">zen mode</div>
+        <div class="zen-check" id="zenCheck"></div>
+        <div class="zen-task" id="zenTask"></div>
+        <div class="zen-nav">
+            <button id="zenPrev">&larr; Prev</button>
+            <button id="zenNext">Next &rarr;</button>
+        </div>
+        <div class="zen-hint">Press <kbd>Z</kbd> to exit &nbsp;&middot;&nbsp; <kbd>&larr;</kbd><kbd>&rarr;</kbd> navigate &nbsp;&middot;&nbsp; <kbd>Enter</kbd> toggle</div>
+    </div>
+
+    <!-- Breakout game -->
+    <button class="breakout-toggle" id="breakoutToggle">&#127790;</button>
+    <div class="breakout-overlay" id="breakoutOverlay">
+        <button class="breakout-close" id="breakoutClose">&times;</button>
+        <canvas id="breakoutCanvas" width="400" height="300"></canvas>
+    </div>
+
+    <script>
+    // ===== TIME-OF-DAY THEME MORPHING =====
+    const themes = {
+        dawn:      { bg:'#1a1520', card:'#231c28', accent:'#d4a0c0', text:'#e8d5df', textDim:'#a08898', textVdim:'#705868', textXdim:'#584858', border:'#302430', toastBg:'#2e2230', editBg:'#150e18', accentGlow:'#d4a0c044', icon:'\u{1F305}' },
+        morning:   { bg:'#1a1e2e', card:'#16213e', accent:'#7c83ff', text:'#e0e0e0', textDim:'#888888', textVdim:'#555555', textXdim:'#444444', border:'#2a2a4a', toastBg:'#2a2a4a', editBg:'#0f1a30', accentGlow:'#7c83ff44', icon:'\u2600\uFE0F' },
+        afternoon: { bg:'#1e1e28', card:'#1e2338', accent:'#38bdf8', text:'#e0e8f0', textDim:'#8898a8', textVdim:'#556575', textXdim:'#445565', border:'#2a2e48', toastBg:'#282e48', editBg:'#141828', accentGlow:'#38bdf844', icon:'\u{1F324}\uFE0F' },
+        evening:   { bg:'#1e1818', card:'#251e1e', accent:'#fb923c', text:'#e8dcd0', textDim:'#a89080', textVdim:'#706050', textXdim:'#584840', border:'#352a2a', toastBg:'#302520', editBg:'#181010', accentGlow:'#fb923c44', icon:'\u{1F307}' },
+        night:     { bg:'#0f0f1a', card:'#12121e', accent:'#a78bfa', text:'#c0c0d0', textDim:'#707088', textVdim:'#484860', textXdim:'#383850', border:'#1e1e30', toastBg:'#1e1e30', editBg:'#0a0a14', accentGlow:'#a78bfa44', icon:'\u{1F319}' }
+    };
+
+    function getTimePeriod() {
+        const h = new Date().getHours();
+        if (h >= 5 && h < 8) return 'dawn';
+        if (h >= 8 && h < 12) return 'morning';
+        if (h >= 12 && h < 17) return 'afternoon';
+        if (h >= 17 && h < 21) return 'evening';
+        return 'night';
+    }
+
+    const periodLabels = { dawn:'Dawn', morning:'Morning', afternoon:'Afternoon', evening:'Evening', night:'Night' };
+    let currentPeriod = '';
+
+    function applyTheme() {
+        const period = getTimePeriod();
+        if (period === currentPeriod) return;
+        currentPeriod = period;
+        const t = themes[period];
+        const root = document.documentElement;
+        root.style.setProperty('--bg', t.bg);
+        root.style.setProperty('--card', t.card);
+        root.style.setProperty('--accent', t.accent);
+        root.style.setProperty('--text', t.text);
+        root.style.setProperty('--text-dim', t.textDim);
+        root.style.setProperty('--text-vdim', t.textVdim);
+        root.style.setProperty('--text-xdim', t.textXdim);
+        root.style.setProperty('--border', t.border);
+        root.style.setProperty('--toast-bg', t.toastBg);
+        root.style.setProperty('--edit-bg', t.editBg);
+        root.style.setProperty('--accent-glow', t.accentGlow);
+        document.getElementById('periodName').textContent = periodLabels[period];
+        document.querySelector('.theme-clock .clock-icon').textContent = t.icon;
+    }
+
+    applyTheme();
+    setInterval(applyTheme, 60000);
+
+    // ===== AUDIO =====
+    let audioCtx = null, soundOn = true;
+    function getAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+    function playTone(f, d, type='sine', v=0.15) { if (!soundOn) return; try { const c = getAudio(), o = c.createOscillator(), g = c.createGain(); o.type=type; o.frequency.setValueAtTime(f, c.currentTime); g.gain.setValueAtTime(v, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime+d); o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+d); } catch(e){} }
+    function playChord(fs, d, type='sine', v=0.08) { fs.forEach(f => playTone(f, d, type, v)); }
+    const sfx = {
+        add:()=>{playTone(523.25,0.15);setTimeout(()=>playTone(659.25,0.15),80)},
+        complete:()=>playChord([523.25,659.25,783.99],0.5,'sine',0.06),
+        uncomplete:()=>playTone(392,0.2,'triangle',0.1),
+        delete:()=>{playTone(440,0.15,'triangle',0.1);setTimeout(()=>playTone(330,0.2,'triangle',0.08),100)},
+        priority:(p)=>{const fs={none:330,low:440,med:523,high:660};playTone(fs[p]||440,0.12,'square',0.05)},
+        navigate:()=>playTone(880,0.05,'sine',0.03),
+        allDone:()=>{[523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>playTone(f,0.4,'sine',0.08),i*120))},
+        ghost:()=>playTone(200,0.4,'sine',0.04),
+        purge:()=>{playTone(300,0.3,'triangle',0.05);setTimeout(()=>playTone(250,0.3,'triangle',0.04),150)},
+        zen:()=>playChord([261.63,329.63,392],0.8,'sine',0.04)
+    };
+    document.getElementById('soundToggle').addEventListener('click', function() { soundOn = !soundOn; this.classList.toggle('on', soundOn); });
+
+    // ===== TIME DECAY =====
+    function getAge(createdAt) {
+        if (!createdAt) return 'fresh';
+        const hours = (Date.now() - createdAt) / 3600000;
+        if (hours < 24) return 'fresh';
+        if (hours < 72) return 'day';
+        if (hours < 168) return 'old';
+        return 'ancient';
+    }
+    function ageLabel(age) {
+        if (age === 'day') return '1d+';
+        if (age === 'old') return '3d+';
+        if (age === 'ancient') return '7d+';
+        return '';
+    }
+
+    // ===== SENTIENT PERSONALITY =====
+    const sentientComments = {
+        empty: [
+            "A clean slate. How refreshing... or concerning.",
+            "Nothing here. The void stares back.",
+            "No tasks. Are you free, or just in denial?",
+            "The list is empty. I almost miss the chaos.",
+            "Tabula rasa. Make it count this time."
+        ],
+        fewActive: [
+            "A manageable load. I'm cautiously optimistic.",
+            "Just a few things. You've got this. Probably.",
+            "Light workload detected. Suspicious.",
+            "Not too many. Not too few. The Goldilocks zone."
+        ],
+        manyActive: [
+            "That's... quite the list you've built.",
+            "I can feel the weight of your ambitions from here.",
+            "So many tasks. So little time. Classic you.",
+            "The list grows. My concern grows with it.",
+            "Are you collecting tasks as a hobby now?"
+        ],
+        allDone: [
+            "Everything done! I'm genuinely impressed.",
+            "All complete. You're a force of nature today.",
+            "Nothing left. The satisfaction must be immense.",
+            "Clean sweep! Take a bow.",
+            "All done. I didn't think you had it in you. (I did.)"
+        ],
+        justCompleted: [
+            "One down. Keep that momentum.",
+            "Checked off. The dopamine hit should arrive shortly.",
+            "Done! Was that so hard?",
+            "Progress. Beautiful, incremental progress.",
+            "Another one bites the dust."
+        ],
+        justAdded: [
+            "New task acquired. Bold move.",
+            "Added to the pile. No pressure.",
+            "Another commitment. You're brave.",
+            "Noted. I'll be watching this one.",
+            "Fresh task, full of potential and unfulfilled promises."
+        ],
+        justDeleted: [
+            "Gone. Like it never existed. Almost.",
+            "Deleted. I won't judge. (I'm judging a little.)",
+            "Removed from existence. The ghost remembers.",
+            "Poof. But the memory lingers.",
+            "Erased. But at what cost?"
+        ],
+        ancient: [
+            "Some of these tasks are aging like milk, not wine.",
+            "I see tasks older than some civilizations.",
+            "Those old tasks aren't going to finish themselves. Or are they?",
+            "The ancient tasks whisper for attention."
+        ],
+        morning: [
+            "Good morning. The day is young and full of potential.",
+            "Rise and grind. Or rise and gently proceed. Your call.",
+            "Morning light, fresh starts. Let's be productive."
+        ],
+        afternoon: [
+            "Afternoon already. How's the progress?",
+            "Past noon. The day waits for no one.",
+            "Midday check-in: are we on track?"
+        ],
+        evening: [
+            "Evening approaches. Time to wind down... or power through.",
+            "The golden hour. Finish strong or finish tomorrow.",
+            "Dusk settles. Your tasks still linger."
+        ],
+        night: [
+            "Late night productivity? Bold strategy.",
+            "The night owl emerges. Tasks don't sleep either.",
+            "Midnight oil burns bright. So do your tasks."
+        ],
+        dawn: [
+            "You're up at dawn? Respect.",
+            "Early bird gets the tasks done.",
+            "Dawn breaks. A new day, same old tasks."
+        ]
+    };
+
+    let lastCommentTrigger = '', commentTimer = null;
+    function pickComment(category) {
+        const pool = sentientComments[category];
+        if (!pool || pool.length === 0) return '';
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+    function showSentientComment(category) {
+        if (category === lastCommentTrigger && Math.random() > 0.4) return;
+        lastCommentTrigger = category;
+        const el = document.getElementById('sentientComment');
+        el.classList.add('fading');
+        clearTimeout(commentTimer);
+        setTimeout(() => {
+            el.textContent = pickComment(category);
+            el.classList.remove('fading');
+        }, 300);
+        commentTimer = setTimeout(() => {
+            el.classList.add('fading');
+            setTimeout(() => { el.textContent = ''; el.classList.remove('fading'); }, 500);
+        }, 8000);
+    }
+
+    // ===== APP STATE =====
+    const $ = id => document.getElementById(id);
+    const input = $('todoInput'), searchInput = $('searchInput'), list = $('todoList'), countEl = $('count'), clearDoneBtn = $('clearDone'), progressBar = $('progressBar'), progressFill = $('progressFill');
+    const filterBtns = document.querySelectorAll('.filters button'), priorityBtns = document.querySelectorAll('.priority-btn');
+    const toast = $('toast'), toastMsg = $('toastMsg'), toastUndo = $('toastUndo'), kbdHint = $('kbdHint');
+    const confettiCanvas = $('confetti'), ctx = confettiCanvas.getContext('2d');
+    const ghostListEl = $('ghostList');
+
+    const PRIORITIES = ['none','low','med','high'];
+    let todos = JSON.parse(localStorage.getItem('todooo-017') || '[]');
+    let ghosts = JSON.parse(localStorage.getItem('todooo-017-ghosts') || '[]');
+    let filter = 'all', searchQuery = '', editingIndex = -1, animateIndex = -1, focusedIndex = -1;
+    let undoState = null, undoGhostState = null, toastTimer = null, dragSrcIndex = null, currentPriority = 'none', prevAllDone = false;
+    let zenMode = false, zenIndex = 0;
+
+    function save() { localStorage.setItem('todooo-017', JSON.stringify(todos)); localStorage.setItem('todooo-017-ghosts', JSON.stringify(ghosts)); }
+    function filtered() {
+        let r = todos;
+        if (filter==='active') r = r.filter(t=>!t.done);
+        else if (filter==='done') r = r.filter(t=>t.done);
+        if (searchQuery) { const q = searchQuery.toLowerCase(); r = r.filter(t=>t.text.toLowerCase().includes(q)); }
+        return r;
+    }
+    function highlightMatch(text) {
+        if (!searchQuery) return escapeHtml(text);
+        const e = escapeHtml(text), q = searchQuery.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+        return e.replace(new RegExp(`(${q})`,'gi'),'<mark>$1</mark>');
+    }
+    function showToast(msg, snap, ghostSnap) {
+        undoState = snap; undoGhostState = ghostSnap || null;
+        toastMsg.textContent = msg; toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(()=>{ toast.classList.remove('show'); undoState = null; undoGhostState = null; }, 4000);
+    }
+    toastUndo.addEventListener('click', ()=>{
+        if (!undoState) return;
+        todos = undoState;
+        if (undoGhostState) ghosts = undoGhostState;
+        undoState = null; undoGhostState = null;
+        toast.classList.remove('show'); clearTimeout(toastTimer);
+        save(); render();
+    });
+    function cyclePriority(c) { return PRIORITIES[(PRIORITIES.indexOf(c||'none')+1)%PRIORITIES.length]; }
+
+    // ===== CONFETTI =====
+    let confettiPieces = [], confettiRunning = false;
+    function resizeCanvas() { confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight; }
+    addEventListener('resize', resizeCanvas); resizeCanvas();
+    function launchConfetti() {
+        confettiPieces = [];
+        const cols = ['#7c83ff','#4ade80','#fbbf24','#f87171','#a78bfa','#38bdf8','#fb923c','#d4a0c0'];
+        for (let i = 0; i < 120; i++) confettiPieces.push({ x:Math.random()*confettiCanvas.width, y:-10-Math.random()*confettiCanvas.height*0.5, w:4+Math.random()*6, h:8+Math.random()*8, color:cols[~~(Math.random()*cols.length)], vx:(Math.random()-0.5)*4, vy:2+Math.random()*4, rot:Math.random()*Math.PI*2, vr:(Math.random()-0.5)*0.2, life:1 });
+        if (!confettiRunning) { confettiRunning = true; animateConfetti(); }
+    }
+    function animateConfetti() {
+        ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+        confettiPieces.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.rot+=p.vr; if(p.y>confettiCanvas.height-50) p.life-=0.02; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.color; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); });
+        confettiPieces = confettiPieces.filter(p=>p.life>0);
+        if (confettiPieces.length > 0) requestAnimationFrame(animateConfetti);
+        else { confettiRunning = false; ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); }
+    }
+
+    // ===== GHOST TASKS =====
+    function addGhost(text) {
+        ghosts.push({ text, deletedAt: Date.now() });
+        if (ghosts.length > 10) ghosts = ghosts.slice(-10);
+        sfx.ghost();
+        save();
+        renderGhosts();
+    }
+    function purgeGhosts() {
+        if (ghosts.length === 0) return;
+        const snap = JSON.parse(JSON.stringify(ghosts));
+        const count = ghosts.length;
+        ghosts = [];
+        save();
+        renderGhosts();
+        sfx.purge();
+        showToast(`Purged ${count} ghost${count!==1?'s':''}`, JSON.parse(JSON.stringify(todos)), snap);
+    }
+    function renderGhosts() {
+        ghostListEl.innerHTML = '';
+        if (ghosts.length === 0) return;
+        ghosts.forEach((g, i) => {
+            const div = document.createElement('div');
+            const isNew = (Date.now() - g.deletedAt) < 2000;
+            div.className = 'ghost-item' + (isNew ? ' ghost-new' : '');
+            div.innerHTML = `<span class="ghost-icon">&#128123;</span><span class="ghost-text">${escapeHtml(g.text)}</span>`;
+            ghostListEl.appendChild(div);
+        });
+    }
+
+    // ===== RENDER =====
+    function render() {
+        const active = todos.filter(t=>!t.done).length, done = todos.length - active, total = todos.length;
+        countEl.textContent = `${active} left`;
+        clearDoneBtn.disabled = done === 0;
+        progressBar.classList.toggle('hidden', total === 0);
+        progressFill.style.width = (total === 0 ? 0 : (done/total)*100) + '%';
+        const allDone = total > 0 && active === 0;
+        progressFill.classList.toggle('complete', allDone);
+        if (allDone && !prevAllDone) { launchConfetti(); sfx.allDone(); showSentientComment('allDone'); }
+        prevAllDone = allDone;
+
+        // Check for ancient tasks
+        if (todos.some(t => !t.done && getAge(t.createdAt) === 'ancient')) {
+            if (Math.random() < 0.3) showSentientComment('ancient');
+        }
+
+        const visible = filtered();
+        list.innerHTML = '';
+        kbdHint.classList.toggle('hidden', visible.length === 0);
+        if (todos.length === 0) { list.innerHTML = '<li class="empty">Nothing to do yet.</li>'; renderGhosts(); return; }
+        if (visible.length === 0) {
+            const msg = searchQuery ? `No tasks matching "${escapeHtml(searchQuery)}"` : (filter==='active' ? 'No active tasks.' : 'No completed tasks.');
+            list.innerHTML = `<li class="empty">${msg}</li>`;
+            renderGhosts();
+            return;
+        }
+
+        visible.forEach((todo, vi) => {
+            const i = todos.indexOf(todo), li = document.createElement('li'), p = todo.priority || 'none';
+            const age = todo.done ? 'fresh' : getAge(todo.createdAt);
+            li.className = 'todo-item' + (todo.done ? ' done' : '') + (p !== 'none' ? ` p-${p}` : '') + (age !== 'fresh' ? ` age-${age}` : '');
+            li.dataset.idx = i;
+            li.draggable = (filter === 'all' && !searchQuery && editingIndex < 0);
+            if (focusedIndex === vi) li.classList.add('focused');
+            if (animateIndex === i) li.classList.add('slide-in');
+
+            const handle = (filter === 'all' && !searchQuery) ? `<span class="drag-handle" data-i="${i}">&#9776;</span>` : '';
+            const dot = p !== 'none' ? `<span class="priority-dot p-${p}"></span>` : '';
+            const ageBadge = (age !== 'fresh' && !todo.done) ? `<span class="age-badge age-${age}">${ageLabel(age)}</span>` : '';
+
+            if (editingIndex === i) {
+                li.innerHTML = `${handle}<div class="todo-check" data-i="${i}"></div>${dot}<input class="todo-text-edit" data-i="${i}" value="${escapeAttr(todo.text)}">${ageBadge}<button class="todo-delete" data-i="${i}">&times;</button>`;
+            } else {
+                li.innerHTML = `${handle}<div class="todo-check" data-i="${i}"></div>${dot}<span class="todo-text" data-i="${i}">${highlightMatch(todo.text)}</span>${ageBadge}<button class="todo-priority-cycle" data-i="${i}" title="Cycle priority">${p === 'none' ? '&#9679;' : p.toUpperCase()}</button><button class="todo-delete" data-i="${i}">&times;</button>`;
+            }
+            list.appendChild(li);
+        });
+        animateIndex = -1;
+        if (editingIndex >= 0) {
+            const ei = list.querySelector('.todo-text-edit');
+            if (ei) { ei.focus(); ei.selectionStart = ei.value.length; }
+        }
+        renderGhosts();
+    }
+
+    function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    function escapeAttr(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+    function commitEdit(i, t) { t = t.trim(); if (t) todos[i].text = t; editingIndex = -1; save(); render(); }
+
+    function addTodo() {
+        const t = input.value.trim();
+        if (!t) return;
+        todos.push({ text: t, done: false, priority: currentPriority, createdAt: Date.now() });
+        animateIndex = todos.length - 1;
+        input.value = '';
+        save(); render(); input.focus();
+        sfx.add();
+        showSentientComment('justAdded');
+    }
+
+    function deleteTodo(i) {
+        const snap = JSON.parse(JSON.stringify(todos));
+        const ghostSnap = JSON.parse(JSON.stringify(ghosts));
+        const name = todos[i].text;
+        const visible = filtered(), vi = visible.indexOf(todos[i]);
+        const items = list.querySelectorAll('.todo-item'), li = items[vi];
+        sfx.delete();
+        addGhost(name);
+        if (li) {
+            li.classList.add('fade-out');
+            li.addEventListener('animationend', () => {
+                todos.splice(i, 1);
+                if (editingIndex === i) editingIndex = -1;
+                const nv = filtered();
+                if (focusedIndex >= nv.length) focusedIndex = nv.length - 1;
+                save(); render();
+                showToast(`Deleted "${name}"`, snap, ghostSnap);
+                showSentientComment('justDeleted');
+            });
+        } else {
+            todos.splice(i, 1);
+            save(); render();
+            showToast(`Deleted "${name}"`, snap, ghostSnap);
+            showSentientComment('justDeleted');
+        }
+    }
+
+    // ===== ZEN MODE =====
+    function enterZen() {
+        const active = todos.filter(t => !t.done);
+        if (active.length === 0) return;
+        zenMode = true;
+        zenIndex = 0;
+        sfx.zen();
+        renderZen();
+        $('zenOverlay').classList.add('active');
+    }
+    function exitZen() {
+        zenMode = false;
+        $('zenOverlay').classList.remove('active');
+        render();
+    }
+    function renderZen() {
+        const active = todos.filter(t => !t.done);
+        if (active.length === 0) { exitZen(); return; }
+        if (zenIndex >= active.length) zenIndex = active.length - 1;
+        if (zenIndex < 0) zenIndex = 0;
+        const task = active[zenIndex];
+        $('zenTask').textContent = task.text;
+        $('zenCheck').classList.toggle('done', task.done);
+    }
+    $('zenCheck').addEventListener('click', () => {
+        const active = todos.filter(t => !t.done);
+        if (!active[zenIndex]) return;
+        const t = active[zenIndex];
+        todos[todos.indexOf(t)].done = true;
+        sfx.complete();
+        save();
+        const remaining = todos.filter(t => !t.done);
+        if (remaining.length === 0) { exitZen(); render(); return; }
+        if (zenIndex >= remaining.length) zenIndex = remaining.length - 1;
+        renderZen();
+    });
+    $('zenPrev').addEventListener('click', () => { zenIndex = Math.max(0, zenIndex - 1); renderZen(); });
+    $('zenNext').addEventListener('click', () => { const active = todos.filter(t => !t.done); zenIndex = Math.min(active.length - 1, zenIndex + 1); renderZen(); });
+
+    // ===== EVENT LISTENERS =====
+    searchInput.addEventListener('input', () => { searchQuery = searchInput.value.trim(); focusedIndex = -1; render(); });
+    priorityBtns.forEach(btn => btn.addEventListener('click', () => { currentPriority = btn.dataset.p; priorityBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active'); }));
+
+    // Drag and drop
+    list.addEventListener('dragstart', (e) => { const li = e.target.closest('.todo-item'); if (!li) return; dragSrcIndex = parseInt(li.dataset.idx); li.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+    list.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; const li = e.target.closest('.todo-item'); list.querySelectorAll('.todo-item').forEach(el => el.classList.remove('drag-over')); if (li) li.classList.add('drag-over'); });
+    list.addEventListener('dragleave', (e) => { const li = e.target.closest('.todo-item'); if (li) li.classList.remove('drag-over'); });
+    list.addEventListener('drop', (e) => { e.preventDefault(); const li = e.target.closest('.todo-item'); if (!li || dragSrcIndex === null) return; const di = parseInt(li.dataset.idx); if (dragSrcIndex === di) return; const [m] = todos.splice(dragSrcIndex, 1); todos.splice(di, 0, m); dragSrcIndex = null; save(); render(); });
+    list.addEventListener('dragend', () => { dragSrcIndex = null; list.querySelectorAll('.todo-item').forEach(el => el.classList.remove('dragging','drag-over')); });
+
+    $('addBtn').addEventListener('click', addTodo);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') addTodo();
+        if (e.key === 'ArrowDown' && !input.value) { e.preventDefault(); input.blur(); focusedIndex = 0; sfx.navigate(); render(); }
+    });
+
+    list.addEventListener('click', (e) => {
+        const t = e.target, i = parseInt(t.dataset.i);
+        if (isNaN(i)) return;
+        if (t.classList.contains('todo-check')) {
+            const w = todos[i].done;
+            todos[i].done = !w;
+            w ? sfx.uncomplete() : sfx.complete();
+            if (!w) showSentientComment('justCompleted');
+            save(); render();
+        } else if (t.classList.contains('todo-delete')) {
+            deleteTodo(i);
+        } else if (t.classList.contains('todo-priority-cycle')) {
+            todos[i].priority = cyclePriority(todos[i].priority);
+            sfx.priority(todos[i].priority);
+            save(); render();
+        }
+    });
+
+    list.addEventListener('dblclick', (e) => { if (!e.target.classList.contains('todo-text')) return; editingIndex = parseInt(e.target.dataset.i); render(); });
+    list.addEventListener('keydown', (e) => {
+        if (!e.target.classList.contains('todo-text-edit')) return;
+        const i = parseInt(e.target.dataset.i);
+        if (e.key === 'Enter') commitEdit(i, e.target.value);
+        else if (e.key === 'Escape') { editingIndex = -1; render(); }
+    });
+    list.addEventListener('focusout', (e) => { if (!e.target.classList.contains('todo-text-edit')) return; commitEdit(parseInt(e.target.dataset.i), e.target.value); });
+    filterBtns.forEach(btn => btn.addEventListener('click', () => { filter = btn.dataset.filter; filterBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active'); focusedIndex = -1; render(); }));
+    clearDoneBtn.addEventListener('click', () => {
+        const snap = JSON.parse(JSON.stringify(todos)), c = todos.filter(t=>t.done).length;
+        todos = todos.filter(t => !t.done);
+        focusedIndex = -1; save(); render(); sfx.delete();
+        showToast(`Cleared ${c} done task${c !== 1 ? 's' : ''}`, snap);
+    });
+
+    // ===== KEYBOARD NAVIGATION =====
+    document.addEventListener('keydown', (e) => {
+        // Zen mode shortcuts
+        if (zenMode) {
+            if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); exitZen(); return; }
+            if (e.key === 'Escape') { e.preventDefault(); exitZen(); return; }
+            if (e.key === 'ArrowLeft') { e.preventDefault(); zenIndex = Math.max(0, zenIndex - 1); renderZen(); return; }
+            if (e.key === 'ArrowRight') { e.preventDefault(); const active = todos.filter(t => !t.done); zenIndex = Math.min(active.length - 1, zenIndex + 1); renderZen(); return; }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const active = todos.filter(t => !t.done);
+                if (!active[zenIndex]) return;
+                todos[todos.indexOf(active[zenIndex])].done = true;
+                sfx.complete(); save();
+                const remaining = todos.filter(t => !t.done);
+                if (remaining.length === 0) { exitZen(); render(); return; }
+                if (zenIndex >= remaining.length) zenIndex = remaining.length - 1;
+                renderZen();
+                return;
+            }
+            return;
+        }
+
+        // Breakout overlay
+        if ($('breakoutOverlay').classList.contains('active')) {
+            if (e.key === 'Escape') { $('breakoutOverlay').classList.remove('active'); breakoutRunning = false; }
+            return;
+        }
+
+        if (e.target === searchInput) {
+            if (e.key === 'Escape') { searchInput.value = ''; searchQuery = ''; searchInput.blur(); render(); }
+            return;
+        }
+        if (e.target.tagName === 'INPUT') return;
+        if (editingIndex >= 0) return;
+
+        if (e.key === '/') { e.preventDefault(); searchInput.focus(); return; }
+        if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); enterZen(); return; }
+        if (e.key === 'g' || e.key === 'G') { e.preventDefault(); purgeGhosts(); return; }
+
+        const visible = filtered();
+        if (visible.length === 0) return;
+
+        if (e.key === 'ArrowDown' || e.key === 'j') { e.preventDefault(); focusedIndex = Math.min(focusedIndex + 1, visible.length - 1); sfx.navigate(); render(); }
+        else if (e.key === 'ArrowUp' || e.key === 'k') { e.preventDefault(); sfx.navigate(); if (focusedIndex <= 0) { focusedIndex = -1; render(); input.focus(); } else { focusedIndex--; render(); } }
+        else if (e.key === 'Enter' && focusedIndex >= 0) { e.preventDefault(); const t = visible[focusedIndex]; const w = t.done; todos[todos.indexOf(t)].done = !w; w ? sfx.uncomplete() : sfx.complete(); if (!w) showSentientComment('justCompleted'); save(); render(); }
+        else if ((e.key === 'Delete' || e.key === 'Backspace') && focusedIndex >= 0) { e.preventDefault(); deleteTodo(todos.indexOf(visible[focusedIndex])); }
+        else if (e.key === 'e' && focusedIndex >= 0) { e.preventDefault(); editingIndex = todos.indexOf(visible[focusedIndex]); render(); }
+        else if (e.key === 'p' && focusedIndex >= 0) { e.preventDefault(); const t = visible[focusedIndex], idx = todos.indexOf(t); todos[idx].priority = cyclePriority(todos[idx].priority); sfx.priority(todos[idx].priority); save(); render(); }
+        else if (e.key === 'Escape') { focusedIndex = -1; render(); }
+    });
+
+    // ===== BREAKOUT GAME =====
+    let breakoutRunning = false;
+    const bCanvas = $('breakoutCanvas'), bCtx = bCanvas.getContext('2d');
+
+    $('breakoutToggle').addEventListener('click', () => {
+        $('breakoutOverlay').classList.add('active');
+        startBreakout();
+    });
+    $('breakoutClose').addEventListener('click', () => {
+        $('breakoutOverlay').classList.remove('active');
+        breakoutRunning = false;
+    });
+
+    function startBreakout() {
+        breakoutRunning = true;
+        const W = bCanvas.width, H = bCanvas.height;
+        const paddleW = 60, paddleH = 10, ballR = 5;
+        let px = W / 2 - paddleW / 2, ballX = W / 2, ballY = H - 30, dx = 2.5, dy = -2.5;
+        const cols = 8, rows = 4, brickW = W / cols - 4, brickH = 14;
+        const brickColors = ['#f87171','#fbbf24','#4ade80','#38bdf8'];
+        let bricks = [];
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) bricks.push({ x: c * (brickW + 4) + 2, y: r * (brickH + 4) + 30, w: brickW, h: brickH, alive: true, color: brickColors[r] });
+        let keys = {};
+        const kd = e => { keys[e.key] = true; };
+        const ku = e => { keys[e.key] = false; };
+        document.addEventListener('keydown', kd);
+        document.addEventListener('keyup', ku);
+        let mouseX = px + paddleW / 2;
+        const mm = e => {
+            const rect = bCanvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+        };
+        bCanvas.addEventListener('mousemove', mm);
+
+        function loop() {
+            if (!breakoutRunning) { document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); bCanvas.removeEventListener('mousemove', mm); return; }
+            // Move paddle
+            px = mouseX - paddleW / 2;
+            if (keys['ArrowLeft'] || keys['a']) px -= 5;
+            if (keys['ArrowRight'] || keys['d']) px += 5;
+            px = Math.max(0, Math.min(W - paddleW, px));
+            // Ball
+            ballX += dx; ballY += dy;
+            if (ballX < ballR || ballX > W - ballR) dx = -dx;
+            if (ballY < ballR) dy = -dy;
+            if (ballY > H) { ballX = W / 2; ballY = H - 30; dx = 2.5 * (Math.random() > 0.5 ? 1 : -1); dy = -2.5; }
+            // Paddle collision
+            if (ballY + ballR >= H - paddleH - 5 && ballY + ballR <= H - 5 && ballX >= px && ballX <= px + paddleW) {
+                dy = -Math.abs(dy);
+                dx += (ballX - (px + paddleW / 2)) * 0.08;
+            }
+            // Brick collision
+            bricks.forEach(b => {
+                if (!b.alive) return;
+                if (ballX > b.x && ballX < b.x + b.w && ballY - ballR < b.y + b.h && ballY + ballR > b.y) {
+                    b.alive = false; dy = -dy;
+                    playTone(440 + Math.random() * 200, 0.1, 'square', 0.03);
+                }
+            });
+            // Check win
+            if (bricks.every(b => !b.alive)) {
+                for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) bricks[r * cols + c].alive = true;
+            }
+            // Draw
+            bCtx.fillStyle = '#0a0a14';
+            bCtx.fillRect(0, 0, W, H);
+            bricks.forEach(b => { if (!b.alive) return; bCtx.fillStyle = b.color; bCtx.fillRect(b.x, b.y, b.w, b.h); });
+            bCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#7c83ff';
+            bCtx.fillRect(px, H - paddleH - 5, paddleW, paddleH);
+            bCtx.beginPath(); bCtx.arc(ballX, ballY, ballR, 0, Math.PI * 2); bCtx.fillStyle = '#fff'; bCtx.fill();
+            // Score
+            const alive = bricks.filter(b => b.alive).length;
+            bCtx.fillStyle = '#888';
+            bCtx.font = '11px monospace';
+            bCtx.fillText(`Bricks: ${bricks.length - alive}/${bricks.length}`, 5, 15);
+            requestAnimationFrame(loop);
+        }
+        loop();
+    }
+
+    // ===== PERIODIC TIME-BASED COMMENTS =====
+    function periodicComment() {
+        const total = todos.length, active = todos.filter(t => !t.done).length;
+        if (total === 0) { showSentientComment('empty'); return; }
+        const period = getTimePeriod();
+        if (sentientComments[period] && Math.random() < 0.5) { showSentientComment(period); return; }
+        if (active === 0) showSentientComment('allDone');
+        else if (active <= 3) showSentientComment('fewActive');
+        else showSentientComment('manyActive');
+    }
+
+    // Show a comment after initial load
+    setTimeout(periodicComment, 2000);
+    // Periodic ambient comments every 2 minutes
+    setInterval(periodicComment, 120000);
+
+    // ===== INIT =====
+    // Refresh decay visuals and theme periodically
+    setInterval(render, 60000);
+    render();
+    </script>
+</body>
+</html>
