@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(for f in 019 020 021 022 023 024 025 026)",
+      "Bash(do if [ -f \"C:/code/Johnesco.github.io/experiments/todooo/$f/index.html\" ])",
+      "Bash(then wc -l \"C:/code/Johnesco.github.io/experiments/todooo/$f/index.html\")",
+      "Bash(else echo \"$f: NOT YET\")",
+      "Bash(fi)",
+      "Bash(done)"
+    ]
+  }
+}

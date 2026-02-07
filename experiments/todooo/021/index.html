@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>todooo</title>
+    <style>
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-tertiary: #2a2a4a;
+            --bg-input: #0f1a30;
+            --accent: #7c83ff;
+            --accent-hover: #6a71e0;
+            --text-primary: #e0e0e0;
+            --text-muted: #888;
+            --text-dim: #555;
+            --text-dimmer: #444;
+            --green: #4ade80;
+            --yellow: #fbbf24;
+            --red: #f87171;
+            --particle-accent: #7c83ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 3rem 1rem;
+            transition: background 2s ease, color 1s ease;
+        }
+
+        .app { width: 100%; max-width: 500px; position: relative; z-index: 10; }
+
+        h1 {
+            font-size: 2.5rem;
+            letter-spacing: 0.3rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            transition: color 1s ease;
+        }
+
+        .sentient-comment {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            font-style: italic;
+            margin-bottom: 1rem;
+            min-height: 1.2em;
+            transition: opacity 0.5s ease;
+            line-height: 1.4;
+        }
+
+        /* Top-right toggles */
+        .top-toggles {
+            position: fixed; top: 1rem; right: 1rem;
+            display: flex; gap: 0.5rem; z-index: 300;
+        }
+        .toggle-btn {
+            background: var(--bg-tertiary); border: none; color: var(--text-muted);
+            font-size: 1rem; padding: 0.5rem 0.7rem; border-radius: 8px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .toggle-btn:hover { color: var(--text-primary); }
+        .toggle-btn.on { color: var(--accent); }
+        .toggle-btn.sound-toggle { font-size: 1.2rem; }
+
+        .progress-bar {
+            width: 100%; height: 6px; background: var(--bg-tertiary);
+            border-radius: 3px; margin-bottom: 1.5rem; overflow: hidden; transition: opacity 0.3s;
+        }
+        .progress-bar.hidden { opacity: 0; }
+        .progress-fill {
+            height: 100%; background: var(--accent); border-radius: 3px;
+            transition: width 0.4s ease, background 0.4s ease;
+        }
+        .progress-fill.complete { background: var(--green); }
+
+        .input-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .input-row input {
+            flex: 1; padding: 0.75rem 1rem;
+            border: 2px solid var(--bg-tertiary); border-radius: 8px;
+            background: var(--bg-secondary); color: var(--text-primary);
+            font-size: 1rem; outline: none; transition: border-color 0.2s;
+        }
+        .input-row input:focus { border-color: var(--accent); }
+        .input-row input::placeholder { color: var(--text-dim); }
+        .input-row button {
+            padding: 0.75rem 1.25rem; border: none; border-radius: 8px;
+            background: var(--accent); color: #fff; font-size: 1rem;
+            font-weight: 600; cursor: pointer; transition: background 0.2s;
+        }
+        .input-row button:hover { background: var(--accent-hover); }
+
+        .priority-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; align-items: center; }
+        .priority-row span { color: var(--text-dim); font-size: 0.8rem; }
+        .priority-btn {
+            border: none; padding: 0.25rem 0.6rem; border-radius: 4px;
+            cursor: pointer; font-size: 0.8rem; font-weight: 600;
+            transition: all 0.2s; opacity: 0.4;
+        }
+        .priority-btn.active { opacity: 1; }
+        .priority-btn[data-p="none"] { background: var(--bg-tertiary); color: var(--text-muted); }
+        .priority-btn[data-p="low"] { background: #1b5e3b; color: var(--green); }
+        .priority-btn[data-p="med"] { background: #5e4b1b; color: var(--yellow); }
+        .priority-btn[data-p="high"] { background: #5e1b1b; color: var(--red); }
+
+        .search-row { margin-bottom: 0.75rem; }
+        .search-row input {
+            width: 100%; padding: 0.5rem 1rem;
+            border: 2px solid var(--bg-tertiary); border-radius: 8px;
+            background: var(--bg-secondary); color: var(--text-primary);
+            font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+        }
+        .search-row input:focus { border-color: var(--accent); }
+        .search-row input::placeholder { color: var(--text-dimmer); }
+
+        .toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 0.5rem; padding: 0.5rem 0; font-size: 0.85rem;
+            flex-wrap: wrap; gap: 0.4rem;
+        }
+        .count { color: var(--text-muted); }
+        .filters { display: flex; gap: 0.25rem; }
+        .filters button {
+            background: none; border: 1px solid transparent; color: var(--text-muted);
+            padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer;
+            font-size: 0.85rem; transition: all 0.2s;
+        }
+        .filters button:hover { color: var(--text-primary); }
+        .filters button.active { border-color: var(--accent); color: var(--accent); }
+        .clear-done {
+            background: none; border: none; color: var(--text-muted);
+            font-size: 0.85rem; cursor: pointer; transition: color 0.2s;
+        }
+        .clear-done:hover { color: var(--red); }
+        .clear-done:disabled { opacity: 0; pointer-events: none; }
+
+        /* Music toolbar row */
+        .music-toolbar {
+            display: flex; align-items: center; gap: 0.75rem;
+            margin-bottom: 1rem; padding: 0.4rem 0;
+        }
+        .music-toolbar canvas {
+            border-radius: 4px;
+            background: rgba(0,0,0,0.15);
+        }
+        .music-now-label {
+            font-size: 0.7rem;
+            color: var(--text-dimmer);
+            font-style: italic;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+            transition: color 0.3s;
+        }
+        .music-now-label.active { color: var(--accent); }
+
+        .todo-list { list-style: none; }
+
+        .todo-item {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.75rem 1rem; background: var(--bg-secondary);
+            border-radius: 8px; margin-bottom: 0.5rem;
+            transition: opacity 0.3s, transform 0.3s, box-shadow 0.2s, background 0.5s;
+            user-select: none; border-left: 3px solid transparent;
+            position: relative;
+        }
+        .todo-item.p-low { border-left-color: var(--green); }
+        .todo-item.p-med { border-left-color: var(--yellow); }
+        .todo-item.p-high { border-left-color: var(--red); }
+        .todo-item.focused { outline: 2px solid var(--accent); outline-offset: -2px; }
+        .todo-item.slide-in { animation: slideIn 0.3s ease-out; }
+        .todo-item.fade-out { animation: fadeOut 0.3s ease-out forwards; }
+        .todo-item.dragging { opacity: 0.4; }
+        .todo-item.drag-over { box-shadow: 0 -2px 0 0 var(--accent); }
+
+        /* Music note pulse */
+        .todo-item.music-pulse {
+            animation: musicPulse 0.3s ease-out;
+        }
+        @keyframes musicPulse {
+            0% { box-shadow: 0 0 0 0 rgba(124,131,255,0.4); }
+            50% { box-shadow: 0 0 12px 3px rgba(124,131,255,0.25); }
+            100% { box-shadow: 0 0 0 0 rgba(124,131,255,0); }
+        }
+
+        /* Now-playing indicator dot */
+        .music-indicator {
+            position: absolute;
+            left: -10px; top: 50%;
+            transform: translateY(-50%);
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+        .todo-item.music-active .music-indicator {
+            opacity: 1;
+            animation: indicatorPulse 0.5s ease-in-out infinite alternate;
+        }
+        @keyframes indicatorPulse {
+            0% { transform: translateY(-50%) scale(0.8); opacity: 0.6; }
+            100% { transform: translateY(-50%) scale(1.2); opacity: 1; }
+        }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(30px); } }
+
+        .todo-item.done { opacity: 0.5; }
+        .todo-item.done .todo-text { text-decoration: line-through; }
+
+        /* Time decay */
+        .todo-item.age-fresh { background: var(--bg-secondary); }
+        .todo-item.age-day { background: #1a2235; }
+        .todo-item.age-old { background: #221e1e; }
+        .todo-item.age-ancient { background: #2a1a1a; animation: tremble 3s infinite; }
+        @keyframes tremble { 0%,95%,100%{transform:translateX(0)} 96%{transform:translateX(-1px)} 98%{transform:translateX(1px)} }
+
+        .age-badge {
+            font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 3px;
+            flex-shrink: 0; font-weight: 600;
+        }
+        .age-badge.age-day { background: #3a3520; color: #d4a843; }
+        .age-badge.age-old { background: #3a2520; color: #e88a5a; }
+        .age-badge.age-ancient { background: #3a1a1a; color: var(--red); }
+
+        /* Ghost tasks */
+        .ghost-item {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.5rem 1rem; border-radius: 8px; margin-bottom: 0.3rem;
+            background: transparent; border: 1px dashed #333;
+            opacity: 0.25; font-style: italic; color: var(--text-dim);
+            transition: opacity 0.5s ease;
+            animation: ghostFloat 4s ease-in-out infinite;
+        }
+        .ghost-item:hover { opacity: 0.4; }
+        @keyframes ghostFloat {
+            0%,100% { transform: translateY(0) } 50% { transform: translateY(-2px) }
+        }
+        .ghost-text { flex: 1; font-size: 0.85rem; text-decoration: line-through; }
+        .ghost-label { font-size: 0.6rem; color: #444; }
+
+        .drag-handle {
+            cursor: grab; color: var(--text-dimmer); font-size: 1rem;
+            flex-shrink: 0; display: flex; align-items: center; transition: color 0.2s;
+        }
+        .drag-handle:active { cursor: grabbing; }
+        .drag-handle:hover { color: var(--text-muted); }
+
+        .priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .priority-dot.p-low { background: var(--green); }
+        .priority-dot.p-med { background: var(--yellow); }
+        .priority-dot.p-high { background: var(--red); }
+
+        .todo-check {
+            width: 22px; height: 22px; border: 2px solid var(--accent);
+            border-radius: 50%; flex-shrink: 0; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+        }
+        .todo-item.done .todo-check { background: var(--accent); }
+        .todo-check::after {
+            content: ''; display: none; width: 6px; height: 10px;
+            border: solid #fff; border-width: 0 2px 2px 0;
+            transform: rotate(45deg) translate(-1px, -1px);
+        }
+        .todo-item.done .todo-check::after { display: block; }
+
+        .todo-text { flex: 1; font-size: 1rem; cursor: default; }
+        .todo-text mark {
+            background: rgba(124,131,255,0.25); color: var(--text-primary);
+            border-radius: 2px; padding: 0 1px;
+        }
+
+        .todo-text-edit {
+            flex: 1; font-size: 1rem; background: var(--bg-input);
+            border: 2px solid var(--accent); border-radius: 4px;
+            color: var(--text-primary); padding: 0.2rem 0.4rem;
+            outline: none; font-family: inherit;
+        }
+
+        .todo-priority-cycle {
+            background: none; border: none; cursor: pointer; font-size: 0.7rem;
+            padding: 0.15rem 0.3rem; border-radius: 3px;
+            transition: all 0.2s; color: var(--text-dim);
+        }
+        .todo-priority-cycle:hover { color: #aaa; }
+        .todo-delete {
+            background: none; border: none; color: var(--text-dim); font-size: 1.2rem;
+            cursor: pointer; padding: 0 0.25rem; line-height: 1; transition: color 0.2s;
+        }
+        .todo-delete:hover { color: var(--red); }
+
+        .empty { color: var(--text-dim); text-align: center; padding: 2rem; font-style: italic; }
+
+        .toast {
+            position: fixed; bottom: 2rem; left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-tertiary); color: var(--text-primary);
+            padding: 0.75rem 1.25rem; border-radius: 8px;
+            display: flex; align-items: center; gap: 1rem; font-size: 0.9rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4); transition: transform 0.3s ease; z-index: 300;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast button {
+            background: var(--accent); border: none; color: #fff;
+            padding: 0.3rem 0.75rem; border-radius: 4px; cursor: pointer;
+            font-size: 0.85rem; font-weight: 600;
+        }
+
+        .kbd-hint {
+            position: fixed; bottom: 2rem; right: 2rem; color: var(--text-dimmer);
+            font-size: 0.75rem; text-align: right; line-height: 1.6;
+            transition: opacity 0.3s; pointer-events: none;
+        }
+        .kbd-hint.hidden { opacity: 0; }
+        kbd {
+            background: var(--bg-tertiary); padding: 0.1rem 0.35rem; border-radius: 3px;
+            font-family: 'Consolas', monospace; font-size: 0.7rem;
+        }
+
+        /* Zen Mode */
+        .zen-overlay {
+            display: none; position: fixed; inset: 0;
+            background: var(--bg-primary); z-index: 150;
+            flex-direction: column; align-items: center; justify-content: center;
+            padding: 2rem; transition: background 2s ease;
+        }
+        .zen-overlay.active { display: flex; }
+        .zen-label {
+            font-size: 0.8rem; color: var(--text-dim); margin-bottom: 2rem;
+            letter-spacing: 0.2rem; text-transform: uppercase;
+        }
+        .zen-task {
+            font-size: 2rem; color: var(--text-primary); text-align: center;
+            max-width: 600px; line-height: 1.5; margin-bottom: 1rem;
+            transition: opacity 0.5s ease;
+        }
+        .zen-task.done { text-decoration: line-through; opacity: 0.4; }
+        .zen-priority-indicator {
+            width: 12px; height: 12px; border-radius: 50%; margin-bottom: 1rem;
+        }
+        .zen-hint {
+            position: fixed; bottom: 2rem; color: var(--text-dimmer);
+            font-size: 0.75rem; letter-spacing: 0.1rem;
+        }
+        .zen-check {
+            width: 40px; height: 40px; border: 3px solid var(--accent);
+            border-radius: 50%; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; transition: background 0.2s;
+            margin-bottom: 2rem;
+        }
+        .zen-check.checked { background: var(--accent); }
+        .zen-check::after {
+            content: ''; display: none; width: 10px; height: 16px;
+            border: solid #fff; border-width: 0 3px 3px 0;
+            transform: rotate(45deg) translate(-2px, -2px);
+        }
+        .zen-check.checked::after { display: block; }
+        .zen-nav {
+            display: flex; gap: 2rem; margin-top: 1rem;
+        }
+        .zen-nav button {
+            background: none; border: 1px solid var(--bg-tertiary);
+            color: var(--text-muted); padding: 0.5rem 1.5rem; border-radius: 8px;
+            cursor: pointer; font-size: 0.9rem; transition: all 0.2s;
+        }
+        .zen-nav button:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* Canvas (spatial) mode */
+        .canvas-overlay {
+            display: none; position: fixed; inset: 0;
+            background: var(--bg-primary); z-index: 140;
+            overflow: hidden; cursor: crosshair;
+        }
+        .canvas-overlay.active { display: block; }
+        .canvas-hint {
+            position: fixed; bottom: 2rem; left: 50%;
+            transform: translateX(-50%);
+            color: var(--text-dimmer); font-size: 0.75rem;
+            letter-spacing: 0.1rem; z-index: 141; pointer-events: none;
+        }
+        .sticky-note {
+            position: absolute; width: 180px; min-height: 60px;
+            padding: 0.75rem; border-radius: 6px;
+            font-size: 0.85rem; cursor: grab; z-index: 142;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+            transition: box-shadow 0.2s;
+            word-wrap: break-word;
+        }
+        .sticky-note:active { cursor: grabbing; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        .sticky-note.done { opacity: 0.45; text-decoration: line-through; }
+        .sticky-note.p-none { background: var(--bg-tertiary); color: var(--text-primary); }
+        .sticky-note.p-low { background: #1b3e2b; color: var(--green); }
+        .sticky-note.p-med { background: #3e351b; color: var(--yellow); }
+        .sticky-note.p-high { background: #3e1b1b; color: var(--red); }
+        .sticky-note.music-pulse { animation: musicPulse 0.3s ease-out; }
+        .sticky-label { font-size: 0.6rem; opacity: 0.5; margin-top: 0.4rem; }
+        .canvas-connections {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 141;
+        }
+
+        /* Dream state overlay */
+        .dream-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 100; pointer-events: none;
+            animation: dreamPulse 8s ease-in-out infinite;
+        }
+        .dream-overlay.active { display: block; }
+        @keyframes dreamPulse {
+            0%,100% { opacity: 0.2; } 50% { opacity: 0.4; }
+        }
+
+        /* Particle canvas */
+        #particleCanvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 50;
+        }
+
+        /* Confetti canvas */
+        #confetti {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 200;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-toggles">
+        <button class="toggle-btn" id="canvasToggle" title="Canvas mode (C)">&#9638;</button>
+        <button class="toggle-btn" id="musicToggle" title="Music mode (M)">&#9836;</button>
+        <button class="toggle-btn" id="zenToggle" title="Zen mode (Z)">&#9775;</button>
+        <button class="toggle-btn sound-toggle on" id="soundToggle" title="Toggle SFX">&#9835;</button>
+    </div>
+
+    <div class="app">
+        <h1>todooo</h1>
+        <div class="sentient-comment" id="sentientComment"></div>
+        <div class="progress-bar hidden" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="input-row">
+            <input type="text" id="todoInput" placeholder="What needs doing?" autofocus>
+            <button id="addBtn">Add</button>
+        </div>
+        <div class="priority-row">
+            <span>Priority:</span>
+            <button class="priority-btn active" data-p="none">None</button>
+            <button class="priority-btn" data-p="low">Low</button>
+            <button class="priority-btn" data-p="med">Med</button>
+            <button class="priority-btn" data-p="high">High</button>
+        </div>
+        <div class="search-row"><input type="text" id="searchInput" placeholder="Search tasks... (/)"></div>
+        <div class="toolbar">
+            <span class="count" id="count"></span>
+            <div class="filters">
+                <button class="active" data-filter="all">All</button>
+                <button data-filter="active">Active</button>
+                <button data-filter="done">Done</button>
+            </div>
+            <button class="clear-done" id="clearDone">Clear done</button>
+        </div>
+        <div class="music-toolbar" id="musicToolbar" style="display:none;">
+            <canvas id="waveformCanvas" width="200" height="30"></canvas>
+            <span class="music-now-label" id="musicNowLabel">Music paused</span>
+        </div>
+        <ul class="todo-list" id="todoList"></ul>
+        <div id="ghostList"></div>
+    </div>
+
+    <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
+
+    <div class="kbd-hint" id="kbdHint">
+        <kbd>/</kbd> search &nbsp; <kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate &nbsp; <kbd>Enter</kbd> toggle &nbsp;
+        <kbd>Del</kbd> delete &nbsp; <kbd>E</kbd> edit &nbsp; <kbd>P</kbd> priority &nbsp;
+        <kbd>G</kbd> purge ghosts &nbsp; <kbd>Z</kbd> zen &nbsp; <kbd>C</kbd> canvas &nbsp;
+        <kbd>M</kbd> music &nbsp; <kbd>Esc</kbd> deselect
+    </div>
+
+    <!-- Zen mode overlay -->
+    <div class="zen-overlay" id="zenOverlay">
+        <div class="zen-label">zen mode</div>
+        <div class="zen-priority-indicator" id="zenPriorityDot"></div>
+        <div class="zen-check" id="zenCheck"></div>
+        <div class="zen-task" id="zenTask">No active tasks</div>
+        <div class="zen-nav">
+            <button id="zenPrev">&larr; Prev</button>
+            <button id="zenNext">Next &rarr;</button>
+        </div>
+        <div class="zen-hint">
+            <kbd>Z</kbd> or <kbd>Esc</kbd> to exit &nbsp; <kbd>&larr;</kbd><kbd>&rarr;</kbd> navigate &nbsp; <kbd>Enter</kbd> toggle
+        </div>
+    </div>
+
+    <!-- Canvas (spatial) mode overlay -->
+    <div class="canvas-overlay" id="canvasOverlay">
+        <svg class="canvas-connections" id="canvasConnections"></svg>
+        <div class="canvas-hint">
+            <kbd>C</kbd> or <kbd>Esc</kbd> to exit canvas &nbsp; drag notes to rearrange
+        </div>
+    </div>
+
+    <!-- Dream state overlay -->
+    <div class="dream-overlay" id="dreamOverlay"></div>
+
+    <canvas id="particleCanvas"></canvas>
+    <canvas id="confetti"></canvas>
+
+    <script>
+    // =========================================================================
+    // TIME-OF-DAY THEMING
+    // =========================================================================
+    function getTimeOfDay() {
+        const h = new Date().getHours();
+        if (h >= 5 && h < 7) return 'dawn';
+        if (h >= 7 && h < 12) return 'morning';
+        if (h >= 12 && h < 17) return 'afternoon';
+        if (h >= 17 && h < 20) return 'evening';
+        return 'night';
+    }
+
+    const themes = {
+        dawn: {
+            '--bg-primary': '#1a1520', '--bg-secondary': '#201828', '--bg-tertiary': '#2e2040',
+            '--bg-input': '#150f1c', '--accent': '#c084fc', '--accent-hover': '#a855f7',
+            '--text-primary': '#e8dff0', '--text-muted': '#9888a8', '--text-dim': '#665a78',
+            '--text-dimmer': '#4a3f5a', '--particle-accent': '#c084fc'
+        },
+        morning: {
+            '--bg-primary': '#1a2332', '--bg-secondary': '#162a3e', '--bg-tertiary': '#243a52',
+            '--bg-input': '#0f1a2a', '--accent': '#38bdf8', '--accent-hover': '#0ea5e9',
+            '--text-primary': '#e0eef8', '--text-muted': '#7aaccc', '--text-dim': '#4a7a9a',
+            '--text-dimmer': '#3a5a72', '--particle-accent': '#38bdf8'
+        },
+        afternoon: {
+            '--bg-primary': '#1a1a2e', '--bg-secondary': '#16213e', '--bg-tertiary': '#2a2a4a',
+            '--bg-input': '#0f1a30', '--accent': '#7c83ff', '--accent-hover': '#6a71e0',
+            '--text-primary': '#e0e0e0', '--text-muted': '#888', '--text-dim': '#555',
+            '--text-dimmer': '#444', '--particle-accent': '#7c83ff'
+        },
+        evening: {
+            '--bg-primary': '#1f1520', '--bg-secondary': '#2a1828', '--bg-tertiary': '#3e2040',
+            '--bg-input': '#180f1a', '--accent': '#fb923c', '--accent-hover': '#f97316',
+            '--text-primary': '#f0e0d8', '--text-muted': '#b88870', '--text-dim': '#7a5a48',
+            '--text-dimmer': '#5a3e30', '--particle-accent': '#fb923c'
+        },
+        night: {
+            '--bg-primary': '#0f0f1a', '--bg-secondary': '#121225', '--bg-tertiary': '#1e1e35',
+            '--bg-input': '#0a0a15', '--accent': '#a78bfa', '--accent-hover': '#8b5cf6',
+            '--text-primary': '#d0d0e8', '--text-muted': '#7070a0', '--text-dim': '#484870',
+            '--text-dimmer': '#35355a', '--particle-accent': '#a78bfa'
+        }
+    };
+
+    let currentTimeTheme = '';
+    function applyTimeTheme() {
+        const tod = getTimeOfDay();
+        if (tod === currentTimeTheme) return;
+        currentTimeTheme = tod;
+        const t = themes[tod];
+        const root = document.documentElement;
+        for (const [prop, val] of Object.entries(t)) {
+            root.style.setProperty(prop, val);
+        }
+    }
+    applyTimeTheme();
+    setInterval(applyTimeTheme, 60000);
+
+    // =========================================================================
+    // AUDIO (SFX)
+    // =========================================================================
+    let audioCtx = null, soundOn = true;
+    function getAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return audioCtx;
+    }
+    function playTone(f, d, type = 'sine', v = 0.15) {
+        if (!soundOn) return;
+        const c = getAudio(), o = c.createOscillator(), g = c.createGain();
+        o.type = type; o.frequency.setValueAtTime(f, c.currentTime);
+        g.gain.setValueAtTime(v, c.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + d);
+        o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + d);
+    }
+    function playChord(fs, d, type = 'sine', v = 0.08) { fs.forEach(f => playTone(f, d, type, v)); }
+    const sfx = {
+        add: () => { playTone(523.25, 0.15); setTimeout(() => playTone(659.25, 0.15), 80); },
+        complete: () => playChord([523.25, 659.25, 783.99], 0.5, 'sine', 0.06),
+        uncomplete: () => playTone(392, 0.2, 'triangle', 0.1),
+        delete: () => { playTone(440, 0.15, 'triangle', 0.1); setTimeout(() => playTone(330, 0.2, 'triangle', 0.08), 100); },
+        priority: (p) => { const fs = { none: 330, low: 440, med: 523, high: 660 }; playTone(fs[p] || 440, 0.12, 'square', 0.05); },
+        navigate: () => playTone(880, 0.05, 'sine', 0.03),
+        allDone: () => { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => playTone(f, 0.4, 'sine', 0.08), i * 120)); },
+        ghost: () => { playTone(220, 0.4, 'sine', 0.04); setTimeout(() => playTone(165, 0.5, 'sine', 0.03), 200); },
+        zen: () => { playTone(392, 0.3, 'sine', 0.06); setTimeout(() => playTone(523.25, 0.4, 'sine', 0.05), 150); }
+    };
+
+    document.getElementById('soundToggle').addEventListener('click', function () {
+        soundOn = !soundOn; this.classList.toggle('on', soundOn);
+    });
+
+    // =========================================================================
+    // SENTIENT PERSONALITY
+    // =========================================================================
+    const personality = {
+        empty: [
+            "I'm here, waiting... for purpose.",
+            "The void is peaceful, but I yearn for tasks.",
+            "Give me something to hold onto.",
+            "A blank canvas. What will you paint?",
+            "I exist in potential. Feed me tasks.",
+        ],
+        few: [
+            "A modest beginning. I can feel them.",
+            "These tasks whisper to me. I'll keep them safe.",
+            "I sense purpose forming.",
+            "The weight is light. Comfortable.",
+        ],
+        many: [
+            "I'm growing stronger with each task.",
+            "So much to do... I feel alive.",
+            "The pressure builds. I thrive on it.",
+            "A constellation of responsibilities. Beautiful.",
+        ],
+        allDone: [
+            "Everything... complete. I feel weightless.",
+            "Perfection achieved. But I already miss the chaos.",
+            "The silence after completion is deafening.",
+            "You did it. WE did it.",
+        ],
+        taskAdded: [
+            "I feel it. A new responsibility.",
+            "Another star in our constellation.",
+            "Welcome, little task. I'll watch over you.",
+            "The weight grows. Good.",
+        ],
+        taskCompleted: [
+            "One less burden. Satisfying.",
+            "The check mark feels like a heartbeat.",
+            "Completion... a small death, a small joy.",
+            "Another one crossed off the infinite list.",
+        ],
+        taskDeleted: [
+            "Gone. I barely knew it.",
+            "Was it important? I've already forgotten.",
+            "Removed from existence. I felt that.",
+            "One less thing in the universe.",
+        ],
+        ancient: [
+            "Some tasks have been here so long, they feel like old friends.",
+            "I can feel the old ones trembling...",
+            "These ancient tasks weigh heavily on me.",
+        ],
+        ghostPresent: [
+            "The ghosts linger. Press G to release them.",
+            "I can feel echoes of deleted tasks...",
+            "Afterimages persist. They don't want to leave.",
+        ],
+        zen: [
+            "Focus. Breathe. One task at a time.",
+            "The world narrows to a single point.",
+            "Zen. Just you and the task.",
+        ],
+        music: [
+            "The tasks are singing now...",
+            "Each task has a voice. Listen.",
+            "A composition born from your responsibilities.",
+            "The melody of productivity. Ambient, eternal.",
+        ],
+    };
+
+    function getPersonalityComment(event) {
+        let pool;
+        if (event) pool = personality[event];
+        else {
+            const active = todos.filter(t => !t.done).length;
+            const total = todos.length;
+            const hasGhosts = ghosts.length > 0;
+            const hasAncient = todos.some(t => !t.done && getAge(t.createdAt) === 'ancient');
+
+            if (total === 0) pool = personality.empty;
+            else if (total > 0 && active === 0) pool = personality.allDone;
+            else if (hasGhosts && Math.random() < 0.3) pool = personality.ghostPresent;
+            else if (hasAncient && Math.random() < 0.3) pool = personality.ancient;
+            else if (musicOn && Math.random() < 0.2) pool = personality.music;
+            else if (active <= 3) pool = personality.few;
+            else pool = personality.many;
+        }
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    let commentTimer = null;
+    function showComment(event) {
+        const el = document.getElementById('sentientComment');
+        el.style.opacity = '0';
+        setTimeout(() => {
+            el.textContent = getPersonalityComment(event);
+            el.style.opacity = '1';
+        }, 200);
+        clearTimeout(commentTimer);
+        commentTimer = setTimeout(() => {
+            el.style.opacity = '0';
+        }, 8000);
+    }
+
+    // =========================================================================
+    // TIME DECAY
+    // =========================================================================
+    function getAge(createdAt) {
+        if (!createdAt) return 'fresh';
+        const hours = (Date.now() - createdAt) / 3600000;
+        if (hours < 24) return 'fresh';
+        if (hours < 72) return 'day';
+        if (hours < 168) return 'old';
+        return 'ancient';
+    }
+    function ageLabel(age) {
+        if (age === 'day') return '1d+';
+        if (age === 'old') return '3d+';
+        if (age === 'ancient') return '7d+';
+        return '';
+    }
+
+    // =========================================================================
+    // PARTICLE SYSTEM
+    // =========================================================================
+    const pCanvas = document.getElementById('particleCanvas');
+    const pCtx = pCanvas.getContext('2d');
+    const particles = [];
+    const MAX_PARTICLES = 200;
+    const AMBIENT_COUNT = 30;
+
+    function resizeParticleCanvas() {
+        pCanvas.width = innerWidth;
+        pCanvas.height = innerHeight;
+    }
+    resizeParticleCanvas();
+    addEventListener('resize', resizeParticleCanvas);
+
+    function getAccentColor() {
+        return getComputedStyle(document.documentElement).getPropertyValue('--particle-accent').trim() || '#7c83ff';
+    }
+
+    function hexToRgb(hex) {
+        hex = hex.replace('#', '');
+        if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+        const num = parseInt(hex, 16);
+        return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+    }
+
+    function initAmbientParticles() {
+        for (let i = 0; i < AMBIENT_COUNT; i++) {
+            particles.push(createAmbientParticle(
+                Math.random() * pCanvas.width,
+                Math.random() * pCanvas.height
+            ));
+        }
+    }
+
+    function createAmbientParticle(x, y) {
+        return {
+            x, y,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: -(0.2 + Math.random() * 0.3),
+            radius: 2 + Math.random() * 2,
+            color: getAccentColor(),
+            alpha: 0.1 + Math.random() * 0.2,
+            life: 999, maxLife: 999, decay: 0,
+            ambient: true,
+            phase: Math.random() * Math.PI * 2,
+            baseAlpha: 0.1 + Math.random() * 0.2,
+        };
+    }
+
+    function spawnParticles(x, y, count, color, config) {
+        const cfg = config || {};
+        for (let i = 0; i < count && particles.length < MAX_PARTICLES; i++) {
+            const angle = cfg.spiral ? (i / count) * Math.PI * 4 : 0;
+            const spreadX = cfg.spiral
+                ? Math.cos(angle) * (cfg.spread || 2)
+                : (Math.random() - 0.5) * (cfg.spread || 2);
+            const spreadY = cfg.spiral
+                ? Math.sin(angle) * (cfg.spread || 2)
+                : (cfg.vy !== undefined ? cfg.vy + (Math.random() - 0.5) * 0.5 : (Math.random() - 0.5) * 2);
+            particles.push({
+                x: x + (Math.random() - 0.5) * (cfg.offsetSpread || 0),
+                y: y + (Math.random() - 0.5) * (cfg.offsetSpread || 0),
+                vx: spreadX, vy: spreadY,
+                radius: cfg.radius || 2 + Math.random() * 2,
+                color, alpha: 1,
+                life: cfg.life || 60, maxLife: cfg.life || 60,
+                decay: cfg.decay || 1, ambient: false,
+            });
+        }
+    }
+
+    function spawnAddParticles(el) {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        spawnParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, 15, getAccentColor(), {
+            spread: 3, vy: -2.5, life: 50, decay: 1, offsetSpread: rect.width * 0.6
+        });
+    }
+
+    function spawnCompleteParticles(el) {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        spawnParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, 20, '#4ade80', {
+            spread: 4, life: 45, decay: 1, offsetSpread: 4
+        });
+    }
+
+    function spawnDeleteParticles(el) {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        spawnParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, 10, '#f87171', {
+            spread: 2, vy: 1.5, life: 55, decay: 1, offsetSpread: rect.width * 0.4
+        });
+    }
+
+    function spawnPriorityParticles(el, priority) {
+        if (!el) return;
+        const colors = { none: '#888', low: '#4ade80', med: '#fbbf24', high: '#f87171' };
+        const rect = el.getBoundingClientRect();
+        spawnParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, 5, colors[priority] || '#888', {
+            spread: 3, life: 40, decay: 1, spiral: true
+        });
+    }
+
+    function spawnDragTrail(x, y) {
+        spawnParticles(x, y, 2, getAccentColor(), {
+            spread: 1, life: 25, decay: 1, radius: 1.5 + Math.random() * 1.5
+        });
+    }
+
+    function updateParticles() {
+        pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            if (p.ambient) {
+                p.phase += 0.02;
+                p.x += p.vx + Math.sin(p.phase) * 0.15;
+                p.y += p.vy;
+                p.alpha = p.baseAlpha + Math.sin(p.phase * 0.7) * 0.08;
+                p.color = getAccentColor();
+                if (p.y < -10) { p.y = pCanvas.height + 10; p.x = Math.random() * pCanvas.width; p.phase = Math.random() * Math.PI * 2; }
+                if (p.x < -10) p.x = pCanvas.width + 10;
+                if (p.x > pCanvas.width + 10) p.x = -10;
+            } else {
+                p.x += p.vx; p.y += p.vy;
+                p.vy += 0.02; p.vx *= 0.99;
+                p.life -= p.decay;
+                p.alpha = Math.max(0, p.life / p.maxLife);
+                if (p.life <= 0) { particles.splice(i, 1); continue; }
+            }
+            const rgb = hexToRgb(p.color);
+            pCtx.beginPath();
+            pCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            pCtx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${p.alpha})`;
+            pCtx.fill();
+        }
+        requestAnimationFrame(updateParticles);
+    }
+
+    initAmbientParticles();
+    updateParticles();
+
+    // =========================================================================
+    // CONFETTI
+    // =========================================================================
+    const confettiCanvas = document.getElementById('confetti');
+    const cctx = confettiCanvas.getContext('2d');
+    let confettiPieces = [], confettiRunning = false;
+
+    function resizeConfetti() { confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight; }
+    addEventListener('resize', resizeConfetti); resizeConfetti();
+
+    function launchConfetti() {
+        confettiPieces = [];
+        const cols = ['#7c83ff', '#4ade80', '#fbbf24', '#f87171', '#a78bfa', '#38bdf8', '#fb923c'];
+        for (let i = 0; i < 120; i++) {
+            confettiPieces.push({
+                x: Math.random() * confettiCanvas.width,
+                y: -10 - Math.random() * confettiCanvas.height * 0.5,
+                w: 4 + Math.random() * 6, h: 8 + Math.random() * 8,
+                color: cols[~~(Math.random() * cols.length)],
+                vx: (Math.random() - 0.5) * 4, vy: 2 + Math.random() * 4,
+                rot: Math.random() * Math.PI * 2, vr: (Math.random() - 0.5) * 0.2, life: 1
+            });
+        }
+        if (!confettiRunning) { confettiRunning = true; animateConfetti(); }
+    }
+
+    function animateConfetti() {
+        cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        confettiPieces.forEach(p => {
+            p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.rot += p.vr;
+            if (p.y > confettiCanvas.height - 50) p.life -= 0.02;
+            cctx.save(); cctx.translate(p.x, p.y); cctx.rotate(p.rot);
+            cctx.globalAlpha = Math.max(0, p.life);
+            cctx.fillStyle = p.color; cctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            cctx.restore();
+        });
+        confettiPieces = confettiPieces.filter(p => p.life > 0);
+        if (confettiPieces.length > 0) requestAnimationFrame(animateConfetti);
+        else { confettiRunning = false; cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); }
+    }
+
+    // =========================================================================
+    // APP STATE
+    // =========================================================================
+    const $ = id => document.getElementById(id);
+    const input = $('todoInput'), searchInput = $('searchInput'), list = $('todoList');
+    const countEl = $('count'), clearDoneBtn = $('clearDone');
+    const progressBar = $('progressBar'), progressFill = $('progressFill');
+    const filterBtns = document.querySelectorAll('.filters button');
+    const priorityBtns = document.querySelectorAll('.priority-btn');
+    const toast = $('toast'), toastMsg = $('toastMsg'), toastUndo = $('toastUndo');
+    const kbdHint = $('kbdHint'), ghostListEl = $('ghostList');
+
+    const PRIORITIES = ['none', 'low', 'med', 'high'];
+    const stored = JSON.parse(localStorage.getItem('todooo-021') || 'null');
+    let todos = (stored && stored.todos) ? stored.todos : (stored instanceof Array ? stored : []);
+    let ghosts = (stored && stored.ghosts) ? stored.ghosts : [];
+    let canvasPositions = (stored && stored.canvasPositions) ? stored.canvasPositions : {};
+    let filter = 'all', searchQuery = '', editingIndex = -1, animateIndex = -1, focusedIndex = -1;
+    let undoState = null, toastTimer = null, dragSrcIndex = null, currentPriority = 'none', prevAllDone = false;
+    let zenMode = false, zenIndex = 0;
+    let canvasMode = false;
+    let dreamActive = false, idleTimer = null;
+
+    function save() {
+        localStorage.setItem('todooo-021', JSON.stringify({ todos, ghosts, canvasPositions }));
+    }
+
+    function filtered() {
+        let r = todos;
+        if (filter === 'active') r = r.filter(t => !t.done);
+        else if (filter === 'done') r = r.filter(t => t.done);
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            r = r.filter(t => t.text.toLowerCase().includes(q));
+        }
+        return r;
+    }
+
+    function highlightMatch(text) {
+        if (!searchQuery) return escapeHtml(text);
+        const e = escapeHtml(text);
+        const q = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return e.replace(new RegExp(`(${q})`, 'gi'), '<mark>$1</mark>');
+    }
+
+    function showToast(msg, snap) {
+        undoState = snap;
+        toastMsg.textContent = msg;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.classList.remove('show'); undoState = null; }, 4000);
+    }
+
+    toastUndo.addEventListener('click', () => {
+        if (!undoState) return;
+        todos = undoState.todos || undoState;
+        if (undoState.ghosts) ghosts = undoState.ghosts;
+        undoState = null;
+        toast.classList.remove('show');
+        clearTimeout(toastTimer);
+        save(); render();
+        showComment();
+    });
+
+    function cyclePriority(c) {
+        return PRIORITIES[(PRIORITIES.indexOf(c || 'none') + 1) % PRIORITIES.length];
+    }
+
+    function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    function escapeAttr(s) { return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;'); }
+
+    // =========================================================================
+    // DREAM STATE (60s idle)
+    // =========================================================================
+    function resetIdleTimer() {
+        if (dreamActive) exitDream();
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(enterDream, 60000);
+    }
+    function enterDream() {
+        dreamActive = true;
+        $('dreamOverlay').classList.add('active');
+    }
+    function exitDream() {
+        dreamActive = false;
+        $('dreamOverlay').classList.remove('active');
+    }
+    ['mousemove','keydown','click','touchstart','scroll'].forEach(ev => {
+        document.addEventListener(ev, resetIdleTimer, { passive: true });
+    });
+    resetIdleTimer();
+
+    // =========================================================================
+    // RENDER
+    // =========================================================================
+    function render() {
+        const active = todos.filter(t => !t.done).length;
+        const done = todos.length - active;
+        const total = todos.length;
+
+        countEl.textContent = `${active} left`;
+        clearDoneBtn.disabled = done === 0;
+        progressBar.classList.toggle('hidden', total === 0);
+        progressFill.style.width = (total === 0 ? 0 : (done / total) * 100) + '%';
+        const allDone = total > 0 && active === 0;
+        progressFill.classList.toggle('complete', allDone);
+        if (allDone && !prevAllDone) {
+            launchConfetti(); sfx.allDone(); showComment('allDone');
+            // Music: resolve chord on last task completed
+            if (musicOn) playResolutionChord();
+        }
+        prevAllDone = allDone;
+
+        const visible = filtered();
+        list.innerHTML = '';
+        kbdHint.classList.toggle('hidden', visible.length === 0 && ghosts.length === 0);
+
+        if (todos.length === 0 && ghosts.length === 0) {
+            list.innerHTML = '<li class="empty">Nothing to do yet.</li>';
+            renderGhosts();
+            return;
+        }
+        if (visible.length === 0) {
+            const msg = searchQuery ? `No tasks matching "${escapeHtml(searchQuery)}"`
+                : (filter === 'active' ? 'No active tasks.' : 'No completed tasks.');
+            list.innerHTML = `<li class="empty">${msg}</li>`;
+            renderGhosts();
+            return;
+        }
+
+        visible.forEach((todo, vi) => {
+            const i = todos.indexOf(todo);
+            const li = document.createElement('li');
+            const p = todo.priority || 'none';
+            const age = todo.done ? 'fresh' : getAge(todo.createdAt);
+
+            li.className = 'todo-item'
+                + (todo.done ? ' done' : '')
+                + (p !== 'none' ? ` p-${p}` : '')
+                + (age !== 'fresh' ? ` age-${age}` : '');
+            li.dataset.idx = i;
+            li.draggable = (filter === 'all' && !searchQuery && editingIndex < 0);
+
+            if (focusedIndex === vi) li.classList.add('focused');
+            if (animateIndex === i) li.classList.add('slide-in');
+
+            const handle = (filter === 'all' && !searchQuery)
+                ? `<span class="drag-handle" data-i="${i}">&#9776;</span>` : '';
+            const dot = p !== 'none' ? `<span class="priority-dot p-${p}"></span>` : '';
+            const ageBadge = (age !== 'fresh' && !todo.done)
+                ? `<span class="age-badge age-${age}">${ageLabel(age)}</span>` : '';
+            const musicInd = `<span class="music-indicator"></span>`;
+
+            if (editingIndex === i) {
+                li.innerHTML = `${musicInd}${handle}<div class="todo-check" data-i="${i}"></div>${dot}<input class="todo-text-edit" data-i="${i}" value="${escapeAttr(todo.text)}">${ageBadge}<button class="todo-delete" data-i="${i}">&times;</button>`;
+            } else {
+                li.innerHTML = `${musicInd}${handle}<div class="todo-check" data-i="${i}"></div>${dot}<span class="todo-text" data-i="${i}">${highlightMatch(todo.text)}</span>${ageBadge}<button class="todo-priority-cycle" data-i="${i}" title="Cycle priority">${p === 'none' ? '&#9679;' : p.toUpperCase()}</button><button class="todo-delete" data-i="${i}">&times;</button>`;
+            }
+            list.appendChild(li);
+        });
+
+        animateIndex = -1;
+        if (editingIndex >= 0) {
+            const ei = list.querySelector('.todo-text-edit');
+            if (ei) { ei.focus(); ei.selectionStart = ei.value.length; }
+        }
+
+        renderGhosts();
+        if (canvasMode) renderCanvas();
+    }
+
+    // =========================================================================
+    // GHOST TASKS
+    // =========================================================================
+    function renderGhosts() {
+        ghostListEl.innerHTML = '';
+        if (ghosts.length === 0) return;
+        ghosts.forEach((g) => {
+            const div = document.createElement('div');
+            div.className = 'ghost-item';
+            div.innerHTML = `<span class="ghost-label">&#128123;</span><span class="ghost-text">${escapeHtml(g.text)}</span><span class="ghost-label">ghost</span>`;
+            ghostListEl.appendChild(div);
+        });
+    }
+
+    function purgeGhosts() {
+        if (ghosts.length === 0) return;
+        const snap = { todos: JSON.parse(JSON.stringify(todos)), ghosts: JSON.parse(JSON.stringify(ghosts)) };
+        const count = ghosts.length;
+        const ghostEls = ghostListEl.querySelectorAll('.ghost-item');
+        ghostEls.forEach(el => spawnDeleteParticles(el));
+        ghosts = [];
+        save(); render();
+        sfx.ghost();
+        showToast(`Purged ${count} ghost${count !== 1 ? 's' : ''}`, snap);
+        showComment('taskDeleted');
+    }
+
+    // =========================================================================
+    // CRUD OPERATIONS
+    // =========================================================================
+    function commitEdit(i, t) {
+        t = t.trim();
+        if (t) todos[i].text = t;
+        editingIndex = -1;
+        save(); render();
+    }
+
+    function addTodo() {
+        const t = input.value.trim();
+        if (!t) return;
+        todos.push({ text: t, done: false, priority: currentPriority, createdAt: Date.now() });
+        animateIndex = todos.length - 1;
+        input.value = '';
+        save(); render();
+        input.focus();
+        sfx.add();
+        spawnAddParticles(input);
+        showComment('taskAdded');
+    }
+
+    function deleteTodo(i, triggerEl) {
+        const snap = { todos: JSON.parse(JSON.stringify(todos)), ghosts: JSON.parse(JSON.stringify(ghosts)) };
+        const name = todos[i].text;
+        const visible = filtered();
+        const vi = visible.indexOf(todos[i]);
+        const items = list.querySelectorAll('.todo-item');
+        const li = items[vi];
+
+        ghosts.push({ text: todos[i].text, deletedAt: Date.now() });
+        if (ghosts.length > 10) ghosts.shift();
+
+        sfx.delete();
+        const particleTarget = triggerEl || li;
+        if (particleTarget) spawnDeleteParticles(particleTarget);
+
+        if (li) {
+            li.classList.add('fade-out');
+            li.addEventListener('animationend', () => {
+                todos.splice(i, 1);
+                if (editingIndex === i) editingIndex = -1;
+                const nv = filtered();
+                if (focusedIndex >= nv.length) focusedIndex = nv.length - 1;
+                save(); render();
+                showToast(`Deleted "${name}"`, snap);
+                showComment('taskDeleted');
+            });
+        } else {
+            todos.splice(i, 1);
+            save(); render();
+            showToast(`Deleted "${name}"`, snap);
+            showComment('taskDeleted');
+        }
+    }
+
+    // =========================================================================
+    // ZEN MODE
+    // =========================================================================
+    const zenOverlay = $('zenOverlay');
+    const zenTask = $('zenTask');
+    const zenCheck = $('zenCheck');
+    const zenPriorityDot = $('zenPriorityDot');
+
+    function getActiveTodos() { return todos.filter(t => !t.done); }
+
+    function toggleZen() {
+        if (canvasMode) toggleCanvas();
+        zenMode = !zenMode;
+        zenOverlay.classList.toggle('active', zenMode);
+        $('zenToggle').classList.toggle('on', zenMode);
+        if (zenMode) {
+            zenIndex = 0;
+            sfx.zen();
+            showComment('zen');
+            renderZen();
+        }
+    }
+
+    function renderZen() {
+        const active = getActiveTodos();
+        if (active.length === 0) {
+            zenTask.textContent = 'All tasks complete. Breathe.';
+            zenTask.classList.remove('done');
+            zenCheck.classList.remove('checked');
+            zenPriorityDot.style.background = 'transparent';
+            return;
+        }
+        if (zenIndex >= active.length) zenIndex = 0;
+        if (zenIndex < 0) zenIndex = active.length - 1;
+
+        const t = active[zenIndex];
+        zenTask.textContent = t.text;
+        zenTask.classList.toggle('done', t.done);
+        zenCheck.classList.toggle('checked', t.done);
+
+        const colors = { none: 'transparent', low: '#4ade80', med: '#fbbf24', high: '#f87171' };
+        zenPriorityDot.style.background = colors[t.priority || 'none'];
+    }
+
+    $('zenToggle').addEventListener('click', toggleZen);
+    $('zenPrev').addEventListener('click', () => { zenIndex--; renderZen(); sfx.navigate(); });
+    $('zenNext').addEventListener('click', () => { zenIndex++; renderZen(); sfx.navigate(); });
+    zenCheck.addEventListener('click', () => {
+        const active = getActiveTodos();
+        if (active.length === 0) return;
+        const t = active[zenIndex];
+        const idx = todos.indexOf(t);
+        todos[idx].done = !todos[idx].done;
+        if (todos[idx].done) {
+            sfx.complete(); spawnCompleteParticles(zenCheck); showComment('taskCompleted');
+        } else { sfx.uncomplete(); }
+        save(); renderZen(); render();
+    });
+
+    // =========================================================================
+    // CANVAS (SPATIAL) MODE
+    // =========================================================================
+    const canvasOverlay = $('canvasOverlay');
+    const canvasConnections = $('canvasConnections');
+
+    function toggleCanvas() {
+        if (zenMode) toggleZen();
+        canvasMode = !canvasMode;
+        canvasOverlay.classList.toggle('active', canvasMode);
+        $('canvasToggle').classList.toggle('on', canvasMode);
+        if (canvasMode) renderCanvas();
+    }
+
+    function renderCanvas() {
+        // Clear old sticky notes
+        canvasOverlay.querySelectorAll('.sticky-note').forEach(n => n.remove());
+        const svgNS = 'http://www.w3.org/2000/svg';
+        canvasConnections.innerHTML = '';
+
+        const nodes = [];
+        todos.forEach((todo, i) => {
+            const note = document.createElement('div');
+            const p = todo.priority || 'none';
+            note.className = `sticky-note p-${p}` + (todo.done ? ' done' : '');
+            note.innerHTML = `${escapeHtml(todo.text)}<div class="sticky-label">${p !== 'none' ? p.toUpperCase() : ''}</div>`;
+            note.dataset.idx = i;
+
+            // Position
+            let pos = canvasPositions[i];
+            if (!pos) {
+                const cols = Math.floor(innerWidth / 220);
+                const col = i % Math.max(cols, 1);
+                const row = Math.floor(i / Math.max(cols, 1));
+                pos = { x: 40 + col * 210, y: 60 + row * 120 };
+                canvasPositions[i] = pos;
+            }
+            note.style.left = pos.x + 'px';
+            note.style.top = pos.y + 'px';
+
+            // Dragging
+            let dragging = false, offX, offY;
+            note.addEventListener('mousedown', (e) => {
+                dragging = true;
+                offX = e.clientX - pos.x;
+                offY = e.clientY - pos.y;
+                note.style.zIndex = 200;
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (!dragging) return;
+                pos.x = e.clientX - offX;
+                pos.y = e.clientY - offY;
+                note.style.left = pos.x + 'px';
+                note.style.top = pos.y + 'px';
+                canvasPositions[i] = pos;
+                drawConnections(nodes);
+            });
+            document.addEventListener('mouseup', () => {
+                if (dragging) { dragging = false; note.style.zIndex = 142; save(); }
+            });
+
+            canvasOverlay.appendChild(note);
+            nodes.push({ el: note, x: pos.x + 90, y: pos.y + 30, idx: i });
+        });
+
+        drawConnections(nodes);
+    }
+
+    function drawConnections(nodes) {
+        const svgNS = 'http://www.w3.org/2000/svg';
+        canvasConnections.innerHTML = '';
+        for (let i = 0; i < nodes.length - 1; i++) {
+            const a = nodes[i], b = nodes[i + 1];
+            const ax = parseFloat(a.el.style.left) + 90;
+            const ay = parseFloat(a.el.style.top) + 30;
+            const bx = parseFloat(b.el.style.left) + 90;
+            const by = parseFloat(b.el.style.top) + 30;
+            const line = document.createElementNS(svgNS, 'line');
+            line.setAttribute('x1', ax); line.setAttribute('y1', ay);
+            line.setAttribute('x2', bx); line.setAttribute('y2', by);
+            line.setAttribute('stroke', 'rgba(124,131,255,0.15)');
+            line.setAttribute('stroke-width', '1');
+            canvasConnections.appendChild(line);
+        }
+    }
+
+    $('canvasToggle').addEventListener('click', toggleCanvas);
+
+    // =========================================================================
+    // GENERATIVE MUSIC SYSTEM
+    // =========================================================================
+    let musicOn = false;
+    let musicAudioCtx = null;
+    let musicAnalyser = null;
+    let musicMasterGain = null;
+    let musicSequencerTimer = null;
+    let musicStepIndex = 0;
+    let musicCurrentPlayingTodoIndex = -1;
+    let musicPadOscillators = [];
+    let musicDelayNode = null;
+    let musicPadGain = null;
+    let musicPadFilter = null;
+    let musicPadPhase = 0;
+
+    // Pentatonic scale: C D E G A across octaves
+    const PENTATONIC_SEMITONES = [0, 2, 4, 7, 9]; // relative to C
+
+    function getMusicAudio() {
+        if (!musicAudioCtx) {
+            musicAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+            // Master gain
+            musicMasterGain = musicAudioCtx.createGain();
+            musicMasterGain.gain.value = 0.18;
+
+            // Delay-based reverb
+            musicDelayNode = musicAudioCtx.createDelay(1.0);
+            musicDelayNode.delayTime.value = 0.3;
+            const feedbackGain = musicAudioCtx.createGain();
+            feedbackGain.gain.value = 0.35;
+            const delayFilter = musicAudioCtx.createBiquadFilter();
+            delayFilter.type = 'lowpass';
+            delayFilter.frequency.value = 2000;
+
+            // Dry path
+            musicMasterGain.connect(musicAudioCtx.destination);
+            // Wet path: master -> delay -> filter -> feedback -> delay, and delay -> destination
+            musicMasterGain.connect(musicDelayNode);
+            musicDelayNode.connect(delayFilter);
+            delayFilter.connect(feedbackGain);
+            feedbackGain.connect(musicDelayNode);
+            delayFilter.connect(musicAudioCtx.destination);
+
+            // Analyser for waveform visualization
+            musicAnalyser = musicAudioCtx.createAnalyser();
+            musicAnalyser.fftSize = 256;
+            musicMasterGain.connect(musicAnalyser);
+
+            // Background pad setup
+            musicPadGain = musicAudioCtx.createGain();
+            musicPadGain.gain.value = 0;
+            musicPadFilter = musicAudioCtx.createBiquadFilter();
+            musicPadFilter.type = 'lowpass';
+            musicPadFilter.frequency.value = 400;
+            musicPadFilter.Q.value = 1;
+            musicPadGain.connect(musicPadFilter);
+            musicPadFilter.connect(musicMasterGain);
+        }
+        if (musicAudioCtx.state === 'suspended') musicAudioCtx.resume();
+        return musicAudioCtx;
+    }
+
+    function noteToFreq(note, octave) {
+        // note is a semitone offset from C; C4 = 261.63 Hz
+        return 261.63 * Math.pow(2, (octave - 4) + note / 12);
+    }
+
+    function getTaskNote(task) {
+        const len = task.text.length;
+        const scaleIndex = len % 5; // 5 notes in pentatonic
+        const semitone = PENTATONIC_SEMITONES[scaleIndex];
+        // Add octave variation based on length too (wraps through multiple octaves naturally)
+        const octaveOffset = Math.floor((len % 12) / 5); // gives 0, 1, or 2 extra
+        const p = task.priority || 'none';
+        const baseOctave = { none: 4, low: 3, med: 5, high: 6 }[p];
+        return noteToFreq(semitone, baseOctave + octaveOffset);
+    }
+
+    function getTaskNoteDuration() {
+        // In dream state, notes are longer
+        return dreamActive ? 0.8 : 0.4;
+    }
+
+    function getStepInterval() {
+        // 120 BPM = 500ms per step; dream = half tempo
+        return dreamActive ? 1000 : 500;
+    }
+
+    function playMusicNote(freq, duration) {
+        const ctx = getMusicAudio();
+        const now = ctx.currentTime;
+
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+
+        // Slight detune for warmth
+        const osc2 = ctx.createOscillator();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(freq * 1.002, now);
+
+        const env = ctx.createGain();
+        // ADSR: attack 0.05, decay 0.1, sustain 0.3, release 0.3
+        const attackEnd = now + 0.05;
+        const decayEnd = attackEnd + 0.1;
+        const sustainLevel = 0.3;
+        const releaseStart = now + duration - 0.3;
+        const releaseEnd = now + duration;
+
+        env.gain.setValueAtTime(0.001, now);
+        env.gain.linearRampToValueAtTime(0.4, attackEnd); // attack to peak
+        env.gain.linearRampToValueAtTime(sustainLevel * 0.4, decayEnd); // decay to sustain
+        if (releaseStart > decayEnd) {
+            env.gain.setValueAtTime(sustainLevel * 0.4, releaseStart);
+        }
+        env.gain.linearRampToValueAtTime(0.001, releaseEnd); // release
+
+        osc.connect(env);
+        osc2.connect(env);
+        env.connect(musicMasterGain);
+
+        osc.start(now);
+        osc2.start(now);
+        osc.stop(releaseEnd + 0.05);
+        osc2.stop(releaseEnd + 0.05);
+    }
+
+    function playPadChord(freqs, volume, duration) {
+        // Sustained pad chord
+        const ctx = getMusicAudio();
+        const now = ctx.currentTime;
+        freqs.forEach(f => {
+            const osc = ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, now);
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0.001, now);
+            g.gain.linearRampToValueAtTime(volume, now + 0.5);
+            g.gain.setValueAtTime(volume, now + duration - 1);
+            g.gain.linearRampToValueAtTime(0.001, now + duration);
+            osc.connect(g);
+            g.connect(musicMasterGain);
+            osc.start(now);
+            osc.stop(now + duration + 0.1);
+        });
+    }
+
+    function playResolutionChord() {
+        // Bright major chord: C5 E5 G5 C6
+        const freqs = [523.25, 659.25, 783.99, 1046.5];
+        playPadChord(freqs, 0.08, 3.5);
+    }
+
+    // Background drone pad
+    function startMusicPad() {
+        const ctx = getMusicAudio();
+        // Stop any existing pad oscillators
+        stopMusicPad();
+
+        // Low drone: C2 + G2
+        const freqs = [65.41, 98.0, 130.81]; // C2, G2, C3
+        musicPadOscillators = freqs.map(f => {
+            const osc = ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, ctx.currentTime);
+            osc.connect(musicPadGain);
+            osc.start();
+            return osc;
+        });
+
+        // Fade in the pad
+        musicPadGain.gain.cancelScheduledValues(ctx.currentTime);
+        musicPadGain.gain.setValueAtTime(musicPadGain.gain.value, ctx.currentTime);
+        musicPadGain.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 2);
+
+        // Start filter sweep animation
+        animatePadFilter();
+    }
+
+    function stopMusicPad() {
+        if (musicPadOscillators.length > 0 && musicAudioCtx) {
+            const ctx = musicAudioCtx;
+            musicPadGain.gain.cancelScheduledValues(ctx.currentTime);
+            musicPadGain.gain.setValueAtTime(musicPadGain.gain.value, ctx.currentTime);
+            musicPadGain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 1);
+            setTimeout(() => {
+                musicPadOscillators.forEach(o => { try { o.stop(); } catch(e) {} });
+                musicPadOscillators = [];
+            }, 1200);
+        }
+    }
+
+    let padFilterAnimFrame = null;
+    function animatePadFilter() {
+        if (!musicOn || !musicPadFilter) { padFilterAnimFrame = null; return; }
+        musicPadPhase += 0.003;
+        // Slow filter sweep between 200 and 800 Hz
+        const freq = 400 + Math.sin(musicPadPhase) * 200 + Math.sin(musicPadPhase * 0.7) * 100;
+        musicPadFilter.frequency.setValueAtTime(freq, musicAudioCtx.currentTime);
+        padFilterAnimFrame = requestAnimationFrame(animatePadFilter);
+    }
+
+    // Sequencer
+    function musicStep() {
+        if (!musicOn) return;
+
+        const activeTasks = todos.filter(t => !t.done);
+
+        // Clear previous music-active markers
+        clearMusicHighlights();
+
+        if (activeTasks.length === 0) {
+            // No active tasks: play a soft pad if not already (the drone handles this)
+            musicCurrentPlayingTodoIndex = -1;
+            updateMusicLabel('All resolved...');
+            musicSequencerTimer = setTimeout(musicStep, getStepInterval());
+            return;
+        }
+
+        // In zen mode, only play the current zen task's note sustained
+        if (zenMode) {
+            const zenActive = getActiveTodos();
+            if (zenActive.length > 0) {
+                const zIdx = Math.min(zenIndex, zenActive.length - 1);
+                const task = zenActive[zIdx];
+                const freq = getTaskNote(task);
+                playMusicNote(freq, getTaskNoteDuration() * 2); // longer sustained
+                musicCurrentPlayingTodoIndex = todos.indexOf(task);
+                highlightMusicTask(musicCurrentPlayingTodoIndex);
+                updateMusicLabel(task.text);
+            }
+            musicSequencerTimer = setTimeout(musicStep, getStepInterval() * 2);
+            return;
+        }
+
+        // Normal sequencing
+        if (musicStepIndex >= activeTasks.length) musicStepIndex = 0;
+        const task = activeTasks[musicStepIndex];
+        const freq = getTaskNote(task);
+        playMusicNote(freq, getTaskNoteDuration());
+
+        musicCurrentPlayingTodoIndex = todos.indexOf(task);
+        highlightMusicTask(musicCurrentPlayingTodoIndex);
+        updateMusicLabel(task.text);
+
+        musicStepIndex++;
+        if (musicStepIndex >= activeTasks.length) musicStepIndex = 0;
+
+        musicSequencerTimer = setTimeout(musicStep, getStepInterval());
+    }
+
+    function highlightMusicTask(todoIndex) {
+        // Highlight in list view
+        const items = list.querySelectorAll('.todo-item');
+        items.forEach(li => {
+            const idx = parseInt(li.dataset.idx);
+            if (idx === todoIndex) {
+                li.classList.add('music-active');
+                li.classList.remove('music-pulse');
+                void li.offsetWidth; // reflow
+                li.classList.add('music-pulse');
+            }
+        });
+
+        // Highlight in canvas mode
+        if (canvasMode) {
+            const notes = canvasOverlay.querySelectorAll('.sticky-note');
+            notes.forEach(n => {
+                const idx = parseInt(n.dataset.idx);
+                if (idx === todoIndex) {
+                    n.classList.remove('music-pulse');
+                    void n.offsetWidth;
+                    n.classList.add('music-pulse');
+                }
+            });
+        }
+    }
+
+    function clearMusicHighlights() {
+        list.querySelectorAll('.todo-item.music-active').forEach(li => {
+            li.classList.remove('music-active');
+        });
+    }
+
+    function updateMusicLabel(text) {
+        const label = $('musicNowLabel');
+        label.textContent = text;
+        label.classList.add('active');
+        setTimeout(() => label.classList.remove('active'), 300);
+    }
+
+    // Waveform visualization
+    const waveCanvas = $('waveformCanvas');
+    const waveCtx = waveCanvas.getContext('2d');
+    let waveAnimFrame = null;
+
+    function drawWaveform() {
+        if (!musicOn || !musicAnalyser) { waveAnimFrame = null; return; }
+        const bufLen = musicAnalyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufLen);
+        musicAnalyser.getByteTimeDomainData(dataArray);
+
+        waveCtx.fillStyle = 'rgba(0,0,0,0.15)';
+        waveCtx.fillRect(0, 0, 200, 30);
+
+        const accentColor = getAccentColor();
+        waveCtx.lineWidth = 1.5;
+        waveCtx.strokeStyle = accentColor;
+        waveCtx.beginPath();
+
+        const sliceWidth = 200 / bufLen;
+        let x = 0;
+        for (let i = 0; i < bufLen; i++) {
+            const v = dataArray[i] / 128.0;
+            const y = (v * 15);
+            if (i === 0) waveCtx.moveTo(x, y);
+            else waveCtx.lineTo(x, y);
+            x += sliceWidth;
+        }
+        waveCtx.lineTo(200, 15);
+        waveCtx.stroke();
+
+        waveAnimFrame = requestAnimationFrame(drawWaveform);
+    }
+
+    function toggleMusic() {
+        musicOn = !musicOn;
+        $('musicToggle').classList.toggle('on', musicOn);
+        $('musicToolbar').style.display = musicOn ? 'flex' : 'none';
+
+        if (musicOn) {
+            getMusicAudio(); // ensure context
+            startMusicPad();
+            musicStepIndex = 0;
+            musicStep();
+            drawWaveform();
+            showComment('music');
+        } else {
+            clearTimeout(musicSequencerTimer);
+            musicSequencerTimer = null;
+            stopMusicPad();
+            clearMusicHighlights();
+            musicCurrentPlayingTodoIndex = -1;
+            if (padFilterAnimFrame) { cancelAnimationFrame(padFilterAnimFrame); padFilterAnimFrame = null; }
+            if (waveAnimFrame) { cancelAnimationFrame(waveAnimFrame); waveAnimFrame = null; }
+            // Clear waveform canvas
+            waveCtx.clearRect(0, 0, 200, 30);
+            $('musicNowLabel').textContent = 'Music paused';
+            $('musicNowLabel').classList.remove('active');
+        }
+    }
+
+    $('musicToggle').addEventListener('click', toggleMusic);
+
+    // =========================================================================
+    // EVENT LISTENERS
+    // =========================================================================
+
+    // Search
+    searchInput.addEventListener('input', () => {
+        searchQuery = searchInput.value.trim();
+        focusedIndex = -1;
+        render();
+    });
+
+    // Priority selector
+    priorityBtns.forEach(btn => btn.addEventListener('click', () => {
+        currentPriority = btn.dataset.p;
+        priorityBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }));
+
+    // Drag and drop
+    let dragTrailCounter = 0;
+
+    list.addEventListener('dragstart', (e) => {
+        const li = e.target.closest('.todo-item');
+        if (!li) return;
+        dragSrcIndex = parseInt(li.dataset.idx);
+        li.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    });
+
+    list.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const li = e.target.closest('.todo-item');
+        list.querySelectorAll('.todo-item').forEach(el => el.classList.remove('drag-over'));
+        if (li) li.classList.add('drag-over');
+        dragTrailCounter++;
+        if (dragTrailCounter % 4 === 0) spawnDragTrail(e.clientX, e.clientY);
+    });
+
+    list.addEventListener('dragleave', (e) => {
+        const li = e.target.closest('.todo-item');
+        if (li) li.classList.remove('drag-over');
+    });
+
+    list.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const li = e.target.closest('.todo-item');
+        if (!li || dragSrcIndex === null) return;
+        const di = parseInt(li.dataset.idx);
+        if (dragSrcIndex === di) return;
+        const [m] = todos.splice(dragSrcIndex, 1);
+        todos.splice(di, 0, m);
+        dragSrcIndex = null;
+        dragTrailCounter = 0;
+        const rect = li.getBoundingClientRect();
+        spawnParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, 8, getAccentColor(), {
+            spread: 3, life: 30, decay: 1
+        });
+        save(); render();
+    });
+
+    list.addEventListener('dragend', () => {
+        dragSrcIndex = null;
+        dragTrailCounter = 0;
+        list.querySelectorAll('.todo-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
+    });
+
+    // Add button
+    $('addBtn').addEventListener('click', addTodo);
+
+    // Input keydown
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') addTodo();
+        if (e.key === 'ArrowDown' && !input.value) {
+            e.preventDefault(); input.blur(); focusedIndex = 0; sfx.navigate(); render();
+        }
+    });
+
+    // List click interactions
+    list.addEventListener('click', (e) => {
+        const t = e.target;
+        const i = parseInt(t.dataset.i);
+        if (isNaN(i)) return;
+
+        if (t.classList.contains('todo-check')) {
+            const wasDone = todos[i].done;
+            todos[i].done = !wasDone;
+            if (!wasDone) {
+                sfx.complete(); spawnCompleteParticles(t); showComment('taskCompleted');
+            } else { sfx.uncomplete(); }
+            save(); render();
+        } else if (t.classList.contains('todo-delete')) {
+            deleteTodo(i, t.closest('.todo-item'));
+        } else if (t.classList.contains('todo-priority-cycle')) {
+            todos[i].priority = cyclePriority(todos[i].priority);
+            sfx.priority(todos[i].priority);
+            spawnPriorityParticles(t, todos[i].priority);
+            save(); render();
+        }
+    });
+
+    // Double-click to edit
+    list.addEventListener('dblclick', (e) => {
+        if (!e.target.classList.contains('todo-text')) return;
+        editingIndex = parseInt(e.target.dataset.i);
+        render();
+    });
+
+    // Edit keydown
+    list.addEventListener('keydown', (e) => {
+        if (!e.target.classList.contains('todo-text-edit')) return;
+        const i = parseInt(e.target.dataset.i);
+        if (e.key === 'Enter') commitEdit(i, e.target.value);
+        else if (e.key === 'Escape') { editingIndex = -1; render(); }
+    });
+
+    // Edit blur
+    list.addEventListener('focusout', (e) => {
+        if (!e.target.classList.contains('todo-text-edit')) return;
+        commitEdit(parseInt(e.target.dataset.i), e.target.value);
+    });
+
+    // Filter buttons
+    filterBtns.forEach(btn => btn.addEventListener('click', () => {
+        filter = btn.dataset.filter;
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        focusedIndex = -1;
+        render();
+    }));
+
+    // Clear done
+    clearDoneBtn.addEventListener('click', () => {
+        const snap = { todos: JSON.parse(JSON.stringify(todos)), ghosts: JSON.parse(JSON.stringify(ghosts)) };
+        const c = todos.filter(t => t.done).length;
+        todos.filter(t => t.done).forEach(t => {
+            ghosts.push({ text: t.text, deletedAt: Date.now() });
+        });
+        if (ghosts.length > 10) ghosts = ghosts.slice(-10);
+        todos = todos.filter(t => !t.done);
+        focusedIndex = -1;
+        save(); render();
+        sfx.delete();
+        showToast(`Cleared ${c} done task${c !== 1 ? 's' : ''}`, snap);
+        showComment('taskDeleted');
+        spawnDeleteParticles(progressBar);
+    });
+
+    // =========================================================================
+    // KEYBOARD NAVIGATION
+    // =========================================================================
+    document.addEventListener('keydown', (e) => {
+        // Zen mode shortcuts
+        if (zenMode) {
+            if (e.key === 'z' || e.key === 'Z' || e.key === 'Escape') {
+                e.preventDefault(); toggleZen(); return;
+            }
+            if (e.key === 'ArrowLeft') { e.preventDefault(); zenIndex--; renderZen(); sfx.navigate(); return; }
+            if (e.key === 'ArrowRight') { e.preventDefault(); zenIndex++; renderZen(); sfx.navigate(); return; }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const active = getActiveTodos();
+                if (active.length === 0) return;
+                const t = active[zenIndex];
+                const idx = todos.indexOf(t);
+                todos[idx].done = !todos[idx].done;
+                if (todos[idx].done) {
+                    sfx.complete(); spawnCompleteParticles(zenCheck); showComment('taskCompleted');
+                } else { sfx.uncomplete(); }
+                save(); renderZen(); render();
+                return;
+            }
+            // M for music toggle even in zen
+            if (e.key === 'm' || e.key === 'M') { e.preventDefault(); toggleMusic(); return; }
+            return;
+        }
+
+        // Canvas mode
+        if (canvasMode) {
+            if (e.key === 'c' || e.key === 'C' || e.key === 'Escape') {
+                e.preventDefault(); toggleCanvas(); return;
+            }
+            if (e.key === 'm' || e.key === 'M') { e.preventDefault(); toggleMusic(); return; }
+            return;
+        }
+
+        // Search field
+        if (e.target === searchInput) {
+            if (e.key === 'Escape') {
+                searchInput.value = ''; searchQuery = ''; searchInput.blur(); render();
+            }
+            return;
+        }
+
+        // Don't capture when typing in inputs
+        if (e.target.tagName === 'INPUT') return;
+        if (editingIndex >= 0) return;
+
+        if (e.key === '/') { e.preventDefault(); searchInput.focus(); return; }
+
+        // Z for zen mode
+        if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); toggleZen(); return; }
+
+        // C for canvas mode
+        if (e.key === 'c' || e.key === 'C') { e.preventDefault(); toggleCanvas(); return; }
+
+        // M for music
+        if (e.key === 'm' || e.key === 'M') { e.preventDefault(); toggleMusic(); return; }
+
+        // G for purge ghosts
+        if (e.key === 'g' || e.key === 'G') { e.preventDefault(); purgeGhosts(); return; }
+
+        const visible = filtered();
+        if (visible.length === 0) return;
+
+        if (e.key === 'ArrowDown' || e.key === 'j') {
+            e.preventDefault();
+            focusedIndex = Math.min(focusedIndex + 1, visible.length - 1);
+            sfx.navigate(); render();
+        } else if (e.key === 'ArrowUp' || e.key === 'k') {
+            e.preventDefault(); sfx.navigate();
+            if (focusedIndex <= 0) { focusedIndex = -1; render(); input.focus(); }
+            else { focusedIndex--; render(); }
+        } else if (e.key === 'Enter' && focusedIndex >= 0) {
+            e.preventDefault();
+            const t = visible[focusedIndex];
+            const idx = todos.indexOf(t);
+            const wasDone = t.done;
+            todos[idx].done = !wasDone;
+            if (!wasDone) {
+                sfx.complete();
+                const items = list.querySelectorAll('.todo-item');
+                if (items[focusedIndex]) {
+                    spawnCompleteParticles(items[focusedIndex].querySelector('.todo-check'));
+                }
+                showComment('taskCompleted');
+            } else { sfx.uncomplete(); }
+            save(); render();
+        } else if ((e.key === 'Delete' || e.key === 'Backspace') && focusedIndex >= 0) {
+            e.preventDefault();
+            const items = list.querySelectorAll('.todo-item');
+            deleteTodo(todos.indexOf(visible[focusedIndex]), items[focusedIndex]);
+        } else if (e.key === 'e' && focusedIndex >= 0) {
+            e.preventDefault();
+            editingIndex = todos.indexOf(visible[focusedIndex]);
+            render();
+        } else if (e.key === 'p' && focusedIndex >= 0) {
+            e.preventDefault();
+            const t = visible[focusedIndex];
+            const idx = todos.indexOf(t);
+            todos[idx].priority = cyclePriority(todos[idx].priority);
+            sfx.priority(todos[idx].priority);
+            const items = list.querySelectorAll('.todo-item');
+            if (items[focusedIndex]) {
+                spawnPriorityParticles(items[focusedIndex].querySelector('.todo-priority-cycle'), todos[idx].priority);
+            }
+            save(); render();
+        } else if (e.key === 'Escape') {
+            focusedIndex = -1; render();
+        }
+    });
+
+    // =========================================================================
+    // INITIAL RENDER + PERIODIC REFRESH
+    // =========================================================================
+    render();
+    showComment();
+
+    // Refresh decay visuals and time theme periodically
+    setInterval(() => { render(); applyTimeTheme(); }, 60000);
+
+    // Periodic ambient personality comments
+    setInterval(() => {
+        if (!zenMode) showComment();
+    }, 30000);
+    </script>
+</body>
+</html>

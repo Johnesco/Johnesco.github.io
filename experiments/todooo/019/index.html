@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>todooo</title>
+    <style>
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-tertiary: #2a2a4a;
+            --bg-input: #0f1a30;
+            --accent: #7c83ff;
+            --accent-hover: #6a71e0;
+            --text-primary: #e0e0e0;
+            --text-muted: #888;
+            --text-dim: #555;
+            --text-dimmer: #444;
+            --green: #4ade80;
+            --yellow: #fbbf24;
+            --red: #f87171;
+            --particle-accent: #7c83ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 3rem 1rem;
+            transition: background 2s ease, color 1s ease, filter 3s ease;
+        }
+
+        body.dream-waking {
+            transition: filter 0.5s ease !important;
+        }
+
+        .app { width: 100%; max-width: 500px; position: relative; z-index: 10; }
+
+        h1 {
+            font-size: 2.5rem;
+            letter-spacing: 0.3rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            transition: color 1s ease;
+        }
+
+        /* Sentient personality comment */
+        .sentient-comment {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            font-style: italic;
+            margin-bottom: 1rem;
+            min-height: 1.2em;
+            transition: opacity 0.5s ease;
+            line-height: 1.4;
+        }
+
+        .sound-toggle {
+            position: fixed; top: 1rem; right: 1rem;
+            background: var(--bg-tertiary); border: none; color: var(--text-muted);
+            font-size: 1.2rem; padding: 0.5rem 0.7rem; border-radius: 8px;
+            cursor: pointer; transition: all 0.2s; z-index: 300;
+        }
+        .sound-toggle:hover { color: var(--text-primary); }
+        .sound-toggle.on { color: var(--accent); }
+
+        .zen-toggle {
+            position: fixed; top: 1rem; right: 4rem;
+            background: var(--bg-tertiary); border: none; color: var(--text-muted);
+            font-size: 1rem; padding: 0.5rem 0.7rem; border-radius: 8px;
+            cursor: pointer; transition: all 0.2s; z-index: 300;
+        }
+        .zen-toggle:hover { color: var(--text-primary); }
+        .zen-toggle.on { color: var(--accent); }
+
+        .progress-bar {
+            width: 100%; height: 6px; background: var(--bg-tertiary);
+            border-radius: 3px; margin-bottom: 1.5rem; overflow: hidden; transition: opacity 0.3s;
+        }
+        .progress-bar.hidden { opacity: 0; }
+        .progress-fill {
+            height: 100%; background: var(--accent); border-radius: 3px;
+            transition: width 0.4s ease, background 0.4s ease;
+        }
+        .progress-fill.complete { background: var(--green); }
+
+        .input-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .input-row input {
+            flex: 1; padding: 0.75rem 1rem;
+            border: 2px solid var(--bg-tertiary); border-radius: 8px;
+            background: var(--bg-secondary); color: var(--text-primary);
+            font-size: 1rem; outline: none; transition: border-color 0.2s;
+        }
+        .input-row input:focus { border-color: var(--accent); }
+        .input-row input::placeholder { color: var(--text-dim); }
+        .input-row button {
+            padding: 0.75rem 1.25rem; border: none; border-radius: 8px;
+            background: var(--accent); color: #fff; font-size: 1rem;
+            font-weight: 600; cursor: pointer; transition: background 0.2s;
+        }
+        .input-row button:hover { background: var(--accent-hover); }
+
+        .priority-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; align-items: center; }
+        .priority-row span { color: var(--text-dim); font-size: 0.8rem; }
+        .priority-btn {
+            border: none; padding: 0.25rem 0.6rem; border-radius: 4px;
+            cursor: pointer; font-size: 0.8rem; font-weight: 600;
+            transition: all 0.2s; opacity: 0.4;
+        }
+        .priority-btn.active { opacity: 1; }
+        .priority-btn[data-p="none"] { background: var(--bg-tertiary); color: var(--text-muted); }
+        .priority-btn[data-p="low"] { background: #1b5e3b; color: var(--green); }
+        .priority-btn[data-p="med"] { background: #5e4b1b; color: var(--yellow); }
+        .priority-btn[data-p="high"] { background: #5e1b1b; color: var(--red); }
+
+        .search-row { margin-bottom: 0.75rem; }
+        .search-row input {
+            width: 100%; padding: 0.5rem 1rem;
+            border: 2px solid var(--bg-tertiary); border-radius: 8px;
+            background: var(--bg-secondary); color: var(--text-primary);
+            font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+        }
+        .search-row input:focus { border-color: var(--accent); }
+        .search-row input::placeholder { color: var(--text-dimmer); }
+
+        .toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1rem; padding: 0.5rem 0; font-size: 0.85rem;
+        }
+        .count { color: var(--text-muted); }
+        .filters { display: flex; gap: 0.25rem; }
+        .filters button {
+            background: none; border: 1px solid transparent; color: var(--text-muted);
+            padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer;
+            font-size: 0.85rem; transition: all 0.2s;
+        }
+        .filters button:hover { color: var(--text-primary); }
+        .filters button.active { border-color: var(--accent); color: var(--accent); }
+        .clear-done {
+            background: none; border: none; color: var(--text-muted);
+            font-size: 0.85rem; cursor: pointer; transition: color 0.2s;
+        }
+        .clear-done:hover { color: var(--red); }
+        .clear-done:disabled { opacity: 0; pointer-events: none; }
+
+        .todo-list { list-style: none; }
+
+        .todo-item {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.75rem 1rem; background: var(--bg-secondary);
+            border-radius: 8px; margin-bottom: 0.5rem;
+            transition: opacity 0.3s, transform 0.3s, box-shadow 0.2s, background 0.5s;
+            user-select: none; border-left: 3px solid transparent;
+        }
+        .todo-item.p-low { border-left-color: var(--green); }
+        .todo-item.p-med { border-left-color: var(--yellow); }
+        .todo-item.p-high { border-left-color: var(--red); }
+        .todo-item.focused { outline: 2px solid var(--accent); outline-offset: -2px; }
+        .todo-item.slide-in { animation: slideIn 0.3s ease-out; }
+        .todo-item.fade-out { animation: fadeOut 0.3s ease-out forwards; }
+        .todo-item.dragging { opacity: 0.4; }
+        .todo-item.drag-over { box-shadow: 0 -2px 0 0 var(--accent); }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(30px); } }
+
+        .todo-item.done { opacity: 0.5; }
+        .todo-item.done .todo-text { text-decoration: line-through; }
+
+        /* Time decay styles */
+        .todo-item.age-fresh { background: var(--bg-secondary); }
+        .todo-item.age-day { background: #1a2235; }
+        .todo-item.age-old { background: #221e1e; }
+        .todo-item.age-ancient { background: #2a1a1a; animation: tremble 3s infinite; }
+        @keyframes tremble { 0%,95%,100%{transform:translateX(0)} 96%{transform:translateX(-1px)} 98%{transform:translateX(1px)} }
+
+        .age-badge {
+            font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 3px;
+            flex-shrink: 0; font-weight: 600;
+        }
+        .age-badge.age-day { background: #3a3520; color: #d4a843; }
+        .age-badge.age-old { background: #3a2520; color: #e88a5a; }
+        .age-badge.age-ancient { background: #3a1a1a; color: var(--red); }
+
+        /* Ghost tasks */
+        .ghost-item {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.5rem 1rem; border-radius: 8px; margin-bottom: 0.3rem;
+            background: transparent; border: 1px dashed #333;
+            opacity: 0.25; font-style: italic; color: var(--text-dim);
+            transition: opacity 0.5s ease;
+            animation: ghostFloat 4s ease-in-out infinite;
+        }
+        .ghost-item:hover { opacity: 0.4; }
+        @keyframes ghostFloat {
+            0%,100% { transform: translateY(0) } 50% { transform: translateY(-2px) }
+        }
+        .ghost-text { flex: 1; font-size: 0.85rem; text-decoration: line-through; }
+        .ghost-label { font-size: 0.6rem; color: #444; }
+
+        .drag-handle {
+            cursor: grab; color: var(--text-dimmer); font-size: 1rem;
+            flex-shrink: 0; display: flex; align-items: center; transition: color 0.2s;
+        }
+        .drag-handle:active { cursor: grabbing; }
+        .drag-handle:hover { color: var(--text-muted); }
+
+        .priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .priority-dot.p-low { background: var(--green); }
+        .priority-dot.p-med { background: var(--yellow); }
+        .priority-dot.p-high { background: var(--red); }
+
+        .todo-check {
+            width: 22px; height: 22px; border: 2px solid var(--accent);
+            border-radius: 50%; flex-shrink: 0; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+        }
+        .todo-item.done .todo-check { background: var(--accent); }
+        .todo-check::after {
+            content: ''; display: none; width: 6px; height: 10px;
+            border: solid #fff; border-width: 0 2px 2px 0;
+            transform: rotate(45deg) translate(-1px, -1px);
+        }
+        .todo-item.done .todo-check::after { display: block; }
+
+        .todo-text { flex: 1; font-size: 1rem; cursor: default; }
+        .todo-text mark {
+            background: rgba(124,131,255,0.25); color: var(--text-primary);
+            border-radius: 2px; padding: 0 1px;
+        }
+
+        .todo-text-edit {
+            flex: 1; font-size: 1rem; background: var(--bg-input);
+            border: 2px solid var(--accent); border-radius: 4px;
+            color: var(--text-primary); padding: 0.2rem 0.4rem;
+            outline: none; font-family: inherit;
+        }
+
+        .todo-priority-cycle {
+            background: none; border: none; cursor: pointer; font-size: 0.7rem;
+            padding: 0.15rem 0.3rem; border-radius: 3px;
+            transition: all 0.2s; color: var(--text-dim);
+        }
+        .todo-priority-cycle:hover { color: #aaa; }
+        .todo-delete {
+            background: none; border: none; color: var(--text-dim); font-size: 1.2rem;
+            cursor: pointer; padding: 0 0.25rem; line-height: 1; transition: color 0.2s;
+        }
+        .todo-delete:hover { color: var(--red); }
+
+        .empty { color: var(--text-dim); text-align: center; padding: 2rem; font-style: italic; }
+
+        .toast {
+            position: fixed; bottom: 2rem; left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-tertiary); color: var(--text-primary);
+            padding: 0.75rem 1.25rem; border-radius: 8px;
+            display: flex; align-items: center; gap: 1rem; font-size: 0.9rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4); transition: transform 0.3s ease; z-index: 300;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast button {
+            background: var(--accent); border: none; color: #fff;
+            padding: 0.3rem 0.75rem; border-radius: 4px; cursor: pointer;
+            font-size: 0.85rem; font-weight: 600;
+        }
+
+        .kbd-hint {
+            position: fixed; bottom: 2rem; right: 2rem; color: var(--text-dimmer);
+            font-size: 0.75rem; text-align: right; line-height: 1.6;
+            transition: opacity 0.3s; pointer-events: none;
+        }
+        .kbd-hint.hidden { opacity: 0; }
+        kbd {
+            background: var(--bg-tertiary); padding: 0.1rem 0.35rem; border-radius: 3px;
+            font-family: 'Consolas', monospace; font-size: 0.7rem;
+        }
+
+        /* Zen Mode */
+        .zen-overlay {
+            display: none; position: fixed; inset: 0;
+            background: var(--bg-primary); z-index: 150;
+            flex-direction: column; align-items: center; justify-content: center;
+            padding: 2rem; transition: background 2s ease;
+        }
+        .zen-overlay.active { display: flex; }
+        .zen-label {
+            font-size: 0.8rem; color: var(--text-dim); margin-bottom: 2rem;
+            letter-spacing: 0.2rem; text-transform: uppercase;
+        }
+        .zen-task {
+            font-size: 2rem; color: var(--text-primary); text-align: center;
+            max-width: 600px; line-height: 1.5; margin-bottom: 1rem;
+            transition: opacity 0.5s ease;
+        }
+        .zen-task.done { text-decoration: line-through; opacity: 0.4; }
+        .zen-priority-indicator {
+            width: 12px; height: 12px; border-radius: 50%; margin-bottom: 1rem;
+        }
+        .zen-hint {
+            position: fixed; bottom: 2rem; color: var(--text-dimmer);
+            font-size: 0.75rem; letter-spacing: 0.1rem;
+        }
+        .zen-check {
+            width: 40px; height: 40px; border: 3px solid var(--accent);
+            border-radius: 50%; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; transition: background 0.2s;
+            margin-bottom: 2rem;
+        }
+        .zen-check.checked { background: var(--accent); }
+        .zen-check::after {
+            content: ''; display: none; width: 10px; height: 16px;
+            border: solid #fff; border-width: 0 3px 3px 0;
+            transform: rotate(45deg) translate(-2px, -2px);
+        }
+        .zen-check.checked::after { display: block; }
+        .zen-nav {
+            display: flex; gap: 2rem; margin-top: 1rem;
+        }
+        .zen-nav button {
+            background: none; border: 1px solid var(--bg-tertiary);
+            color: var(--text-muted); padding: 0.5rem 1.5rem; border-radius: 8px;
+            cursor: pointer; font-size: 0.9rem; transition: all 0.2s;
+        }
+        .zen-nav button:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* Particle canvas */
+        #particleCanvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 50;
+        }
+
+        /* Confetti canvas */
+        #confetti {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 200;
+        }
+
+        /* ===== DREAM STATE ===== */
+        .todo-item.drifting {
+            animation-timing-function: ease-in-out;
+            animation-iteration-count: infinite;
+            animation-direction: alternate;
+        }
+
+        @keyframes dreamDrift {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(var(--drift-x1), var(--drift-y1)); }
+            50% { transform: translate(var(--drift-x2), var(--drift-y2)); }
+            75% { transform: translate(var(--drift-x3), var(--drift-y3)); }
+            100% { transform: translate(0, 0); }
+        }
+
+        .dream-murmur {
+            position: fixed;
+            bottom: 3rem;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #7c83ff88;
+            font-style: italic;
+            font-size: 1rem;
+            transition: opacity 1s ease;
+            pointer-events: none;
+            z-index: 300;
+            text-align: center;
+            max-width: 400px;
+            opacity: 0;
+            letter-spacing: 0.05rem;
+        }
+        .dream-murmur.visible { opacity: 1; }
+
+        .ghost-item.drifting {
+            animation-timing-function: ease-in-out;
+            animation-iteration-count: infinite;
+            animation-direction: alternate;
+        }
+    </style>
+</head>
+<body>
+    <button class="sound-toggle on" id="soundToggle" title="Toggle sound">&#9835;</button>
+    <button class="zen-toggle" id="zenToggle" title="Zen mode (Z)">&#9775;</button>
+
+    <div class="app">
+        <h1>todooo</h1>
+        <div class="sentient-comment" id="sentientComment"></div>
+        <div class="progress-bar hidden" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="input-row">
+            <input type="text" id="todoInput" placeholder="What needs doing?" autofocus>
+            <button id="addBtn">Add</button>
+        </div>
+        <div class="priority-row">
+            <span>Priority:</span>
+            <button class="priority-btn active" data-p="none">None</button>
+            <button class="priority-btn" data-p="low">Low</button>
+            <button class="priority-btn" data-p="med">Med</button>
+            <button class="priority-btn" data-p="high">High</button>
+        </div>
+        <div class="search-row"><input type="text" id="searchInput" placeholder="Search tasks... (/)"></div>
+        <div class="toolbar">
+            <span class="count" id="count"></span>
+            <div class="filters">
+                <button class="active" data-filter="all">All</button>
+                <button data-filter="active">Active</button>
+                <button data-filter="done">Done</button>
+            </div>
+            <button class="clear-done" id="clearDone">Clear done</button>
+        </div>
+        <ul class="todo-list" id="todoList"></ul>
+        <div id="ghostList"></div>
+    </div>
+
+    <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
+
+    <div class="kbd-hint" id="kbdHint">
+        <kbd>/</kbd> search &nbsp; <kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate &nbsp; <kbd>Enter</kbd> toggle &nbsp;
+        <kbd>Del</kbd> delete &nbsp; <kbd>E</kbd> edit &nbsp; <kbd>P</kbd> priority &nbsp;
+        <kbd>G</kbd> purge ghosts &nbsp; <kbd>Z</kbd> zen &nbsp; <kbd>Esc</kbd> deselect
+    </div>
+
+    <!-- Zen mode overlay -->
+    <div class="zen-overlay" id="zenOverlay">
+        <div class="zen-label">zen mode</div>
+        <div class="zen-priority-indicator" id="zenPriorityDot"></div>
+        <div class="zen-check" id="zenCheck"></div>
+        <div class="zen-task" id="zenTask">No active tasks</div>
+        <div class="zen-nav">
+            <button id="zenPrev">&larr; Prev</button>
+            <button id="zenNext">Next &rarr;</button>
+        </div>
+        <div class="zen-hint">
+            <kbd>Z</kbd> or <kbd>Esc</kbd> to exit &nbsp; <kbd>&larr;</kbd><kbd>&rarr;</kbd> navigate &nbsp; <kbd>Enter</kbd> toggle
+        </div>
+    </div>
+
+    <!-- Dream murmur element -->
+    <div class="dream-murmur" id="dreamMurmur"></div>
+
+    <canvas id="particleCanvas"></canvas>
+    <canvas id="confetti"></canvas>
+
+    <script>
+    // =========================================================================
+    // TIME-OF-DAY THEMING
+    // =========================================================================
+    function getTimeOfDay() {
+        const h = new Date().getHours();
+        if (h >= 5 && h < 7) return 'dawn';
+        if (h >= 7 && h < 12) return 'morning';
+        if (h >= 12 && h < 17) return 'afternoon';
+        if (h >= 17 && h < 20) return 'evening';
+        return 'night';
+    }
+
+    const themes = {
+        dawn: {
+            '--bg-primary': '#1a1520', '--bg-secondary': '#201828', '--bg-tertiary': '#2e2040',
+            '--bg-input': '#150f1c', '--accent': '#c084fc', '--accent-hover': '#a855f7',
+            '--text-primary': '#e8dff0', '--text-muted': '#9888a8', '--text-dim': '#665a78',
+            '--text-dimmer': '#4a3f5a', '--particle-accent': '#c084fc'
+        },
+        morning: {
+            '--bg-primary': '#1a2332', '--bg-secondary': '#162a3e', '--bg-tertiary': '#243a52',
+            '--bg-input': '#0f1a2a', '--accent': '#38bdf8', '--accent-hover': '#0ea5e9',
+            '--text-primary': '#e0eef8', '--text-muted': '#7aaccc', '--text-dim': '#4a7a9a',
+            '--text-dimmer': '#3a5a72', '--particle-accent': '#38bdf8'
+        },
+        afternoon: {
+            '--bg-primary': '#1a1a2e', '--bg-secondary': '#16213e', '--bg-tertiary': '#2a2a4a',
+            '--bg-input': '#0f1a30', '--accent': '#7c83ff', '--accent-hover': '#6a71e0',
+            '--text-primary': '#e0e0e0', '--text-muted': '#888', '--text-dim': '#555',
+            '--text-dimmer': '#444', '--particle-accent': '#7c83ff'
+        },
+        evening: {
+            '--bg-primary': '#1f1520', '--bg-secondary': '#2a1828', '--bg-tertiary': '#3e2040',
+            '--bg-input': '#180f1a', '--accent': '#fb923c', '--accent-hover': '#f97316',
+            '--text-primary': '#f0e0d8', '--text-muted': '#b88870', '--text-dim': '#7a5a48',
+            '--text-dimmer': '#5a3e30', '--particle-accent': '#fb923c'
+        },
+        night: {
+            '--bg-primary': '#0f0f1a', '--bg-secondary': '#121225', '--bg-tertiary': '#1e1e35',
+            '--bg-input': '#0a0a15', '--accent': '#a78bfa', '--accent-hover': '#8b5cf6',
+            '--text-primary': '#d0d0e8', '--text-muted': '#7070a0', '--text-dim': '#484870',
+            '--text-dimmer': '#35355a', '--particle-accent': '#a78bfa'
+        }
+    };
+
+    let currentTimeTheme = '';
+    function applyTimeTheme() {
+        const tod = getTimeOfDay();
+        if (tod === currentTimeTheme) return;
+        currentTimeTheme = tod;
+        const t = themes[tod];
+        const root = document.documentElement;
+        for (const [prop, val] of Object.entries(t)) {
+            root.style.setProperty(prop, val);
+        }
+    }
+    applyTimeTheme();
+    setInterval(applyTimeTheme, 60000);
+
+    // =========================================================================
+    // AUDIO
+    // =========================================================================
+    let audioCtx = null, soundOn = true;
+    function getAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+    function playTone(f, d, type = 'sine', v = 0.15) {
+        if (!soundOn) return;
+        const c = getAudio(), o = c.createOscillator(), g = c.createGain();
+        o.type = type; o.frequency.setValueAtTime(f, c.currentTime);
+        g.gain.setValueAtTime(v, c.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + d);
+        o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + d);
+    }
+    function playChord(fs, d, type = 'sine', v = 0.08) { fs.forEach(f => playTone(f, d, type, v)); }
+    const sfx = {
+        add: () => { playTone(523.25, 0.15); setTimeout(() => playTone(659.25, 0.15), 80); },
+        complete: () => playChord([523.25, 659.25, 783.99], 0.5, 'sine', 0.06),
+        uncomplete: () => playTone(392, 0.2, 'triangle', 0.1),
+        delete: () => { playTone(440, 0.15, 'triangle', 0.1); setTimeout(() => playTone(330, 0.2, 'triangle', 0.08), 100); },
+        priority: (p) => { const fs = { none: 330, low: 440, med: 523, high: 660 }; playTone(fs[p] || 440, 0.12, 'square', 0.05); },
+        navigate: () => playTone(880, 0.05, 'sine', 0.03),
+        allDone: () => { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => playTone(f, 0.4, 'sine', 0.08), i * 120)); },
+        ghost: () => { playTone(220, 0.4, 'sine', 0.04); setTimeout(() => playTone(165, 0.5, 'sine', 0.03), 200); },
+        zen: () => { playTone(392, 0.3, 'sine', 0.06); setTimeout(() => playTone(523.25, 0.4, 'sine', 0.05), 150); }
+    };
+
+    document.getElementById('soundToggle').addEventListener('click', function () {
+        soundOn = !soundOn; this.classList.toggle('on', soundOn);
+        // If turning off sound during dream, stop drone
+        if (!soundOn && dreaming && droneOsc) {
+            stopDreamDrone();
+        }
+    });
+
+    // =========================================================================
+    // SENTIENT PERSONALITY
+    // =========================================================================
+    const personality = {
+        empty: [
+            "I'm here, waiting... for purpose.",
+            "The void is peaceful, but I yearn for tasks.",
+            "Give me something to hold onto.",
+            "A blank canvas. What will you paint?",
+            "I exist in potential. Feed me tasks.",
+        ],
+        few: [
+            "A modest beginning. I can feel them.",
+            "These tasks whisper to me. I'll keep them safe.",
+            "I sense purpose forming.",
+            "The weight is light. Comfortable.",
+        ],
+        many: [
+            "I'm growing stronger with each task.",
+            "So much to do... I feel alive.",
+            "The pressure builds. I thrive on it.",
+            "A constellation of responsibilities. Beautiful.",
+        ],
+        allDone: [
+            "Everything... complete. I feel weightless.",
+            "Perfection achieved. But I already miss the chaos.",
+            "The silence after completion is deafening.",
+            "You did it. WE did it.",
+        ],
+        taskAdded: [
+            "I feel it. A new responsibility.",
+            "Another star in our constellation.",
+            "Welcome, little task. I'll watch over you.",
+            "The weight grows. Good.",
+        ],
+        taskCompleted: [
+            "One less burden. Satisfying.",
+            "The check mark feels like a heartbeat.",
+            "Completion... a small death, a small joy.",
+            "Another one crossed off the infinite list.",
+        ],
+        taskDeleted: [
+            "Gone. I barely knew it.",
+            "Was it important? I've already forgotten.",
+            "Removed from existence. I felt that.",
+            "One less thing in the universe.",
+        ],
+        ancient: [
+            "Some tasks have been here so long, they feel like old friends.",
+            "I can feel the old ones trembling...",
+            "These ancient tasks weigh heavily on me.",
+        ],
+        ghostPresent: [
+            "The ghosts linger. Press G to release them.",
+            "I can feel echoes of deleted tasks...",
+            "Afterimages persist. They don't want to leave.",
+        ],
+        zen: [
+            "Focus. Breathe. One task at a time.",
+            "The world narrows to a single point.",
+            "Zen. Just you and the task.",
+        ],
+        dreamWake: [
+            "oh! you're back",
+            "was I dreaming?",
+            "act natural",
+        ],
+    };
+
+    function getPersonalityComment(event) {
+        let pool;
+        if (event) pool = personality[event];
+        else {
+            const active = todos.filter(t => !t.done).length;
+            const total = todos.length;
+            const hasGhosts = ghosts.length > 0;
+            const hasAncient = todos.some(t => !t.done && getAge(t.createdAt) === 'ancient');
+
+            if (total === 0) pool = personality.empty;
+            else if (total > 0 && active === 0) pool = personality.allDone;
+            else if (hasGhosts && Math.random() < 0.3) pool = personality.ghostPresent;
+            else if (hasAncient && Math.random() < 0.3) pool = personality.ancient;
+            else if (active <= 3) pool = personality.few;
+            else pool = personality.many;
+        }
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    let commentTimer = null;
+    function showComment(event) {
+        const el = document.getElementById('sentientComment');
+        el.style.opacity = '0';
+        setTimeout(() => {
+            el.textContent = getPersonalityComment(event);
+            el.style.opacity = '1';
+        }, 200);
+        clearTimeout(commentTimer);
+        commentTimer = setTimeout(() => {
+            el.style.opacity = '0';
+        }, 8000);
+    }
+
+    // =========================================================================
+    // TIME DECAY
+    // =========================================================================
+    function getAge(createdAt) {
+        if (!createdAt) return 'fresh';
+        const hours = (Date.now() - createdAt) / 3600000;
+        if (hours < 24) return 'fresh';
+        if (hours < 72) return 'day';
+        if (hours < 168) return 'old';
+        return 'ancient';
+    }
+    function ageLabel(age) {
+        if (age === 'day') return '1d+';
+        if (age === 'old') return '3d+';
+        if (age === 'ancient') return '7d+';
+        return '';
+    }
+
+    // =========================================================================
+    // PARTICLE SYSTEM
+    // =========================================================================
+    const pCanvas = document.getElementById('particleCanvas');
+    const pCtx = pCanvas.getContext('2d');
+    const particles = [];
+    const MAX_PARTICLES = 200;
+    const AMBIENT_COUNT = 30;
+
+    function resizeParticleCanvas() {
+        pCanvas.width = innerWidth;
+        pCanvas.height = innerHeight;
+    }
+    resizeParticleCanvas();
+    addEventListener('resize', resizeParticleCanvas);
+
+    function getAccentColor() {
+        return getComputedStyle(document.documentElement).getPropertyValue('--particle-accent').trim() || '#7c83ff';
+    }
+
+    function hexToRgb(hex) {
+        hex = hex.replace('#', '');
+        if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+        const num = parseInt(hex, 16);
+        return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+    }
+
+    // Initialize ambient particles
+    function initAmbientParticles() {
+        for (let i = 0; i < AMBIENT_COUNT; i++) {
+            particles.push(createAmbientParticle(
+                Math.random() * pCanvas.width,
+                Math.random() * pCanvas.height
+            ));
+        }
+    }
+
+    function createAmbientParticle(x, y) {
+        return {
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: -(0.2 + Math.random() * 0.3),
+            radius: 2 + Math.random() * 2,
+            color: getAccentColor(),
+            alpha: 0.1 + Math.random() * 0.2,
+            life: 999,
+            maxLife: 999,
+            decay: 0,
+            ambient: true,
+            phase: Math.random() * Math.PI * 2,
+            baseAlpha: 0.1 + Math.random() * 0.2,
+            // Store original values for dream state restoration
+            origVx: 0,
+            origVy: 0,
+            origRadius: 0,
+        };
+    }
+
+    function spawnParticles(x, y, count, color, config) {
+        const cfg = config || {};
+        for (let i = 0; i < count && particles.length < MAX_PARTICLES; i++) {
+            const angle = cfg.spiral ? (i / count) * Math.PI * 4 : 0;
+            const spreadX = cfg.spiral
+                ? Math.cos(angle) * (cfg.spread || 2)
+                : (Math.random() - 0.5) * (cfg.spread || 2);
+            const spreadY = cfg.spiral
+                ? Math.sin(angle) * (cfg.spread || 2)
+                : (cfg.vy !== undefined ? cfg.vy + (Math.random() - 0.5) * 0.5 : (Math.random() - 0.5) * 2);
+
+            particles.push({
+                x: x + (Math.random() - 0.5) * (cfg.offsetSpread || 0),
+                y: y + (Math.random() - 0.5) * (cfg.offsetSpread || 0),
+                vx: spreadX,
+                vy: spreadY,
+                radius: cfg.radius || 2 + Math.random() * 2,
+                color: color,
+                alpha: 1,
+                life: cfg.life || 60,
+                maxLife: cfg.life || 60,
+                decay: cfg.decay || 1,
+                ambient: false,
+            });
+        }
+    }
+
+    function spawnAddParticles(el) {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        spawnParticles(x, y, 15, getAccentColor(), {
+            spread: 3, vy: -2.5, life: 50, decay: 1, offsetSpread: rect.width * 0.6
+        });
+    }
+
+    function spawnCompleteParticles(el) {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        spawnParticles(x, y, 20, '#4ade80', {
+            spread: 4, life: 45, decay: 1, offsetSpread: 4
+        });
+    }
+
+    function spawnDeleteParticles(el) {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        spawnParticles(x, y, 10, '#f87171', {
+            spread: 2, vy: 1.5, life: 55, decay: 1, offsetSpread: rect.width * 0.4
+        });
+    }
+
+    function spawnPriorityParticles(el, priority) {
+        if (!el) return;
+        const colors = { none: '#888', low: '#4ade80', med: '#fbbf24', high: '#f87171' };
+        const rect = el.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        spawnParticles(x, y, 5, colors[priority] || '#888', {
+            spread: 3, life: 40, decay: 1, spiral: true
+        });
+    }
+
+    function spawnDragTrail(x, y) {
+        spawnParticles(x, y, 2, getAccentColor(), {
+            spread: 1, life: 25, decay: 1, radius: 1.5 + Math.random() * 1.5
+        });
+    }
+
+    // Particle animation loop
+    function updateParticles() {
+        pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+
+            if (p.ambient) {
+                if (dreaming) {
+                    // Dream mode: lazy circles, slower, larger
+                    p.phase += 0.008;
+                    const circleRadius = 40 + Math.sin(p.phase * 0.3) * 20;
+                    p.x += Math.cos(p.phase) * 0.3;
+                    p.y += Math.sin(p.phase * 0.7) * 0.3;
+                    // Grow slightly
+                    p.radius = (p.origRadius || p.radius) * 1.5;
+                    // More vivid/saturated alpha
+                    p.alpha = p.baseAlpha * 2.0 + Math.sin(p.phase * 0.5) * 0.15;
+                    // Shift colors to be more vivid
+                    const hueShift = (Date.now() / 100) % 360;
+                    p.color = `hsl(${(240 + hueShift * 0.1) % 360}, 80%, 65%)`;
+                } else {
+                    // Normal ambient: gentle floating with sine wobble
+                    p.phase += 0.02;
+                    p.x += p.vx + Math.sin(p.phase) * 0.15;
+                    p.y += p.vy;
+                    // Pulse alpha
+                    p.alpha = p.baseAlpha + Math.sin(p.phase * 0.7) * 0.08;
+                    // Update color to match current accent
+                    p.color = getAccentColor();
+                    // Restore radius if coming back from dream
+                    if (p.origRadius) p.radius = p.origRadius;
+                }
+
+                // Respawn at bottom if off-screen top
+                if (p.y < -10) {
+                    p.y = pCanvas.height + 10;
+                    p.x = Math.random() * pCanvas.width;
+                    p.phase = Math.random() * Math.PI * 2;
+                }
+                // Wrap horizontally
+                if (p.x < -10) p.x = pCanvas.width + 10;
+                if (p.x > pCanvas.width + 10) p.x = -10;
+                // Wrap vertically (for dream mode where they may drift down)
+                if (p.y > pCanvas.height + 10) {
+                    p.y = -10;
+                    p.x = Math.random() * pCanvas.width;
+                }
+            } else {
+                // Interaction particles: physics + decay
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.02; // slight gravity
+                p.vx *= 0.99; // friction
+                p.life -= p.decay;
+                p.alpha = Math.max(0, p.life / p.maxLife);
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+            }
+
+            // Draw particle
+            let fillColor;
+            if (typeof p.color === 'string' && p.color.startsWith('hsl')) {
+                // HSL color (dream mode)
+                fillColor = p.color.replace(')', `, ${p.alpha})`).replace('hsl(', 'hsla(');
+            } else {
+                const rgb = hexToRgb(p.color);
+                fillColor = `rgba(${rgb.r},${rgb.g},${rgb.b},${p.alpha})`;
+            }
+            pCtx.beginPath();
+            pCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            pCtx.fillStyle = fillColor;
+            pCtx.fill();
+        }
+
+        requestAnimationFrame(updateParticles);
+    }
+
+    // Store original radius for ambient particles
+    function storeAmbientOriginals() {
+        particles.forEach(p => {
+            if (p.ambient && !p.origRadius) {
+                p.origRadius = p.radius;
+            }
+        });
+    }
+
+    initAmbientParticles();
+    storeAmbientOriginals();
+    updateParticles();
+
+    // =========================================================================
+    // CONFETTI
+    // =========================================================================
+    const confettiCanvas = document.getElementById('confetti');
+    const ctx = confettiCanvas.getContext('2d');
+    let confettiPieces = [], confettiRunning = false;
+
+    function resizeConfetti() { confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight; }
+    addEventListener('resize', resizeConfetti); resizeConfetti();
+
+    function launchConfetti() {
+        confettiPieces = [];
+        const cols = ['#7c83ff', '#4ade80', '#fbbf24', '#f87171', '#a78bfa', '#38bdf8', '#fb923c'];
+        for (let i = 0; i < 120; i++) {
+            confettiPieces.push({
+                x: Math.random() * confettiCanvas.width,
+                y: -10 - Math.random() * confettiCanvas.height * 0.5,
+                w: 4 + Math.random() * 6, h: 8 + Math.random() * 8,
+                color: cols[~~(Math.random() * cols.length)],
+                vx: (Math.random() - 0.5) * 4, vy: 2 + Math.random() * 4,
+                rot: Math.random() * Math.PI * 2, vr: (Math.random() - 0.5) * 0.2, life: 1
+            });
+        }
+        if (!confettiRunning) { confettiRunning = true; animateConfetti(); }
+    }
+
+    function animateConfetti() {
+        ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        confettiPieces.forEach(p => {
+            p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.rot += p.vr;
+            if (p.y > confettiCanvas.height - 50) p.life -= 0.02;
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+            ctx.globalAlpha = Math.max(0, p.life);
+            ctx.fillStyle = p.color; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            ctx.restore();
+        });
+        confettiPieces = confettiPieces.filter(p => p.life > 0);
+        if (confettiPieces.length > 0) requestAnimationFrame(animateConfetti);
+        else { confettiRunning = false; ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); }
+    }
+
+    // =========================================================================
+    // APP STATE
+    // =========================================================================
+    const $ = id => document.getElementById(id);
+    const input = $('todoInput'), searchInput = $('searchInput'), list = $('todoList');
+    const countEl = $('count'), clearDoneBtn = $('clearDone');
+    const progressBar = $('progressBar'), progressFill = $('progressFill');
+    const filterBtns = document.querySelectorAll('.filters button');
+    const priorityBtns = document.querySelectorAll('.priority-btn');
+    const toast = $('toast'), toastMsg = $('toastMsg'), toastUndo = $('toastUndo');
+    const kbdHint = $('kbdHint'), ghostListEl = $('ghostList');
+
+    const PRIORITIES = ['none', 'low', 'med', 'high'];
+    const stored = JSON.parse(localStorage.getItem('todooo-019') || 'null');
+    let todos = (stored && stored.todos) ? stored.todos : (stored instanceof Array ? stored : []);
+    let ghosts = (stored && stored.ghosts) ? stored.ghosts : [];
+    let filter = 'all', searchQuery = '', editingIndex = -1, animateIndex = -1, focusedIndex = -1;
+    let undoState = null, toastTimer = null, dragSrcIndex = null, currentPriority = 'none', prevAllDone = false;
+    let zenMode = false, zenIndex = 0;
+
+    function save() {
+        localStorage.setItem('todooo-019', JSON.stringify({ todos, ghosts }));
+    }
+
+    function filtered() {
+        let r = todos;
+        if (filter === 'active') r = r.filter(t => !t.done);
+        else if (filter === 'done') r = r.filter(t => t.done);
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            r = r.filter(t => t.text.toLowerCase().includes(q));
+        }
+        return r;
+    }
+
+    function highlightMatch(text) {
+        if (!searchQuery) return escapeHtml(text);
+        const e = escapeHtml(text);
+        const q = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return e.replace(new RegExp(`(${q})`, 'gi'), '<mark>$1</mark>');
+    }
+
+    function showToast(msg, snap) {
+        undoState = snap;
+        toastMsg.textContent = msg;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.classList.remove('show'); undoState = null; }, 4000);
+    }
+
+    toastUndo.addEventListener('click', () => {
+        if (!undoState) return;
+        todos = undoState.todos || undoState;
+        if (undoState.ghosts) ghosts = undoState.ghosts;
+        undoState = null;
+        toast.classList.remove('show');
+        clearTimeout(toastTimer);
+        save(); render();
+        showComment();
+    });
+
+    function cyclePriority(c) {
+        return PRIORITIES[(PRIORITIES.indexOf(c || 'none') + 1) % PRIORITIES.length];
+    }
+
+    function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    function escapeAttr(s) { return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;'); }
+
+    // =========================================================================
+    // RENDER
+    // =========================================================================
+    function render() {
+        const active = todos.filter(t => !t.done).length;
+        const done = todos.length - active;
+        const total = todos.length;
+
+        countEl.textContent = `${active} left`;
+        clearDoneBtn.disabled = done === 0;
+        progressBar.classList.toggle('hidden', total === 0);
+        progressFill.style.width = (total === 0 ? 0 : (done / total) * 100) + '%';
+        const allDone = total > 0 && active === 0;
+        progressFill.classList.toggle('complete', allDone);
+        if (allDone && !prevAllDone) { launchConfetti(); sfx.allDone(); showComment('allDone'); }
+        prevAllDone = allDone;
+
+        const visible = filtered();
+        list.innerHTML = '';
+        kbdHint.classList.toggle('hidden', visible.length === 0 && ghosts.length === 0);
+
+        if (todos.length === 0 && ghosts.length === 0) {
+            list.innerHTML = '<li class="empty">Nothing to do yet.</li>';
+            renderGhosts();
+            return;
+        }
+        if (visible.length === 0) {
+            const msg = searchQuery ? `No tasks matching "${escapeHtml(searchQuery)}"`
+                : (filter === 'active' ? 'No active tasks.' : 'No completed tasks.');
+            list.innerHTML = `<li class="empty">${msg}</li>`;
+            renderGhosts();
+            return;
+        }
+
+        visible.forEach((todo, vi) => {
+            const i = todos.indexOf(todo);
+            const li = document.createElement('li');
+            const p = todo.priority || 'none';
+            const age = todo.done ? 'fresh' : getAge(todo.createdAt);
+
+            li.className = 'todo-item'
+                + (todo.done ? ' done' : '')
+                + (p !== 'none' ? ` p-${p}` : '')
+                + (age !== 'fresh' ? ` age-${age}` : '');
+            li.dataset.idx = i;
+            li.draggable = (filter === 'all' && !searchQuery && editingIndex < 0);
+
+            if (focusedIndex === vi) li.classList.add('focused');
+            if (animateIndex === i) li.classList.add('slide-in');
+
+            const handle = (filter === 'all' && !searchQuery)
+                ? `<span class="drag-handle" data-i="${i}">&#9776;</span>` : '';
+            const dot = p !== 'none' ? `<span class="priority-dot p-${p}"></span>` : '';
+            const ageBadge = (age !== 'fresh' && !todo.done)
+                ? `<span class="age-badge age-${age}">${ageLabel(age)}</span>` : '';
+
+            if (editingIndex === i) {
+                li.innerHTML = `${handle}<div class="todo-check" data-i="${i}"></div>${dot}<input class="todo-text-edit" data-i="${i}" value="${escapeAttr(todo.text)}">${ageBadge}<button class="todo-delete" data-i="${i}">&times;</button>`;
+            } else {
+                li.innerHTML = `${handle}<div class="todo-check" data-i="${i}"></div>${dot}<span class="todo-text" data-i="${i}">${highlightMatch(todo.text)}</span>${ageBadge}<button class="todo-priority-cycle" data-i="${i}" title="Cycle priority">${p === 'none' ? '&#9679;' : p.toUpperCase()}</button><button class="todo-delete" data-i="${i}">&times;</button>`;
+            }
+            list.appendChild(li);
+        });
+
+        animateIndex = -1;
+        if (editingIndex >= 0) {
+            const ei = list.querySelector('.todo-text-edit');
+            if (ei) { ei.focus(); ei.selectionStart = ei.value.length; }
+        }
+
+        renderGhosts();
+
+        // If currently dreaming, reapply drift to newly rendered items
+        if (dreaming) {
+            applyDreamDrift();
+        }
+    }
+
+    // =========================================================================
+    // GHOST TASKS
+    // =========================================================================
+    function renderGhosts() {
+        ghostListEl.innerHTML = '';
+        if (ghosts.length === 0) return;
+        ghosts.forEach((g, i) => {
+            const div = document.createElement('div');
+            div.className = 'ghost-item';
+            div.innerHTML = `<span class="ghost-label">&#128123;</span><span class="ghost-text">${escapeHtml(g.text)}</span><span class="ghost-label">ghost</span>`;
+            ghostListEl.appendChild(div);
+        });
+
+        // If dreaming, apply drift to ghosts too
+        if (dreaming) {
+            applyDreamDriftToGhosts();
+        }
+    }
+
+    function purgeGhosts() {
+        if (ghosts.length === 0) return;
+        const snap = { todos: JSON.parse(JSON.stringify(todos)), ghosts: JSON.parse(JSON.stringify(ghosts)) };
+        const count = ghosts.length;
+        const ghostEls = ghostListEl.querySelectorAll('.ghost-item');
+        ghostEls.forEach(el => {
+            spawnDeleteParticles(el);
+        });
+        ghosts = [];
+        save(); render();
+        sfx.ghost();
+        showToast(`Purged ${count} ghost${count !== 1 ? 's' : ''}`, snap);
+        showComment('taskDeleted');
+    }
+
+    // =========================================================================
+    // CRUD OPERATIONS
+    // =========================================================================
+    function commitEdit(i, t) {
+        t = t.trim();
+        if (t) todos[i].text = t;
+        editingIndex = -1;
+        save(); render();
+    }
+
+    function addTodo() {
+        const t = input.value.trim();
+        if (!t) return;
+        todos.push({ text: t, done: false, priority: currentPriority, createdAt: Date.now() });
+        animateIndex = todos.length - 1;
+        input.value = '';
+        save(); render();
+        input.focus();
+        sfx.add();
+        spawnAddParticles(input);
+        showComment('taskAdded');
+    }
+
+    function deleteTodo(i, triggerEl) {
+        const snap = { todos: JSON.parse(JSON.stringify(todos)), ghosts: JSON.parse(JSON.stringify(ghosts)) };
+        const name = todos[i].text;
+        const visible = filtered();
+        const vi = visible.indexOf(todos[i]);
+        const items = list.querySelectorAll('.todo-item');
+        const li = items[vi];
+
+        ghosts.push({ text: todos[i].text, deletedAt: Date.now() });
+        if (ghosts.length > 10) ghosts.shift();
+
+        sfx.delete();
+
+        const particleTarget = triggerEl || li;
+        if (particleTarget) spawnDeleteParticles(particleTarget);
+
+        if (li) {
+            li.classList.add('fade-out');
+            li.addEventListener('animationend', () => {
+                todos.splice(i, 1);
+                if (editingIndex === i) editingIndex = -1;
+                const nv = filtered();
+                if (focusedIndex >= nv.length) focusedIndex = nv.length - 1;
+                save(); render();
+                showToast(`Deleted "${name}"`, snap);
+                showComment('taskDeleted');
+            });
+        } else {
+            todos.splice(i, 1);
+            save(); render();
+            showToast(`Deleted "${name}"`, snap);
+            showComment('taskDeleted');
+        }
+    }
+
+    // =========================================================================
+    // ZEN MODE
+    // =========================================================================
+    const zenOverlay = $('zenOverlay');
+    const zenTask = $('zenTask');
+    const zenCheck = $('zenCheck');
+    const zenPriorityDot = $('zenPriorityDot');
+
+    function getActiveTodos() { return todos.filter(t => !t.done); }
+
+    function toggleZen() {
+        zenMode = !zenMode;
+        zenOverlay.classList.toggle('active', zenMode);
+        document.getElementById('zenToggle').classList.toggle('on', zenMode);
+        if (zenMode) {
+            zenIndex = 0;
+            sfx.zen();
+            showComment('zen');
+            renderZen();
+        }
+    }
+
+    function renderZen() {
+        const active = getActiveTodos();
+        if (active.length === 0) {
+            zenTask.textContent = 'All tasks complete. Breathe.';
+            zenTask.classList.remove('done');
+            zenCheck.classList.remove('checked');
+            zenPriorityDot.style.background = 'transparent';
+            return;
+        }
+        if (zenIndex >= active.length) zenIndex = 0;
+        if (zenIndex < 0) zenIndex = active.length - 1;
+
+        const t = active[zenIndex];
+        zenTask.textContent = t.text;
+        zenTask.classList.toggle('done', t.done);
+        zenCheck.classList.toggle('checked', t.done);
+
+        const colors = { none: 'transparent', low: '#4ade80', med: '#fbbf24', high: '#f87171' };
+        zenPriorityDot.style.background = colors[t.priority || 'none'];
+    }
+
+    $('zenToggle').addEventListener('click', toggleZen);
+    $('zenPrev').addEventListener('click', () => { zenIndex--; renderZen(); sfx.navigate(); });
+    $('zenNext').addEventListener('click', () => { zenIndex++; renderZen(); sfx.navigate(); });
+    zenCheck.addEventListener('click', () => {
+        const active = getActiveTodos();
+        if (active.length === 0) return;
+        const t = active[zenIndex];
+        const idx = todos.indexOf(t);
+        todos[idx].done = !todos[idx].done;
+        if (todos[idx].done) {
+            sfx.complete();
+            spawnCompleteParticles(zenCheck);
+            showComment('taskCompleted');
+        } else {
+            sfx.uncomplete();
+        }
+        save(); renderZen(); render();
+    });
+
+    // =========================================================================
+    // DREAM STATE
+    // =========================================================================
+    let dreaming = false;
+    let idleTimer = null;
+    const IDLE_TIMEOUT = 60000; // 60 seconds
+
+    // Dream sub-systems
+    let dreamMorphInterval = null;
+    let dreamMurmurInterval = null;
+    let dreamHueRAF = null;
+    let dreamHueStart = 0;
+    let droneOsc = null;
+    let droneLfo = null;
+    let droneGain = null;
+    let dreamMorphedTexts = {}; // map of element index -> original text, for restoration
+
+    const dreamMurmurs = [
+        "do tasks dream of completion?",
+        "the list sleeps...",
+        "shhh... they're resting",
+        "in the space between tasks, there is peace",
+        "what if none of this is real?",
+        "I think therefore I list",
+        "to do or not to do...",
+        "the items are dreaming of checkmarks",
+        "am I the app or is the app me?",
+        "everything is connected in the dream",
+    ];
+
+    const dreamGlyphs = "~*.:+\u00B0\u2022";
+
+    const dreamMurmurEl = $('dreamMurmur');
+
+    function resetIdleTimer() {
+        clearTimeout(idleTimer);
+        if (dreaming) {
+            wakeFromDream();
+        }
+        idleTimer = setTimeout(enterDream, IDLE_TIMEOUT);
+    }
+
+    // Listen for user activity
+    ['mousemove', 'click', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
+        document.addEventListener(evt, resetIdleTimer, { passive: true });
+    });
+
+    // Start idle timer
+    idleTimer = setTimeout(enterDream, IDLE_TIMEOUT);
+
+    function enterDream() {
+        if (dreaming) return;
+        dreaming = true;
+
+        // Store original radii of ambient particles
+        storeAmbientOriginals();
+
+        // 1. Task drift - apply drifting animations
+        applyDreamDrift();
+        applyDreamDriftToGhosts();
+
+        // 2. Text morphing - every 2 seconds
+        dreamMorphedTexts = {};
+        dreamMorphInterval = setInterval(morphRandomTaskText, 2000);
+
+        // 3. Color melting - hue rotate on body
+        dreamHueStart = performance.now();
+        body.style.filter = 'hue-rotate(0deg)';
+        animateDreamHue();
+
+        // 4. Sentient murmuring
+        showDreamMurmur();
+        dreamMurmurInterval = setInterval(showDreamMurmur, 4000);
+
+        // 5. Particle behavior changes are handled in updateParticles()
+
+        // 6. Dream drone sound
+        if (soundOn) startDreamDrone();
+    }
+
+    function wakeFromDream() {
+        if (!dreaming) return;
+        dreaming = false;
+
+        // Quick transition back
+        const body = document.body;
+        body.classList.add('dream-waking');
+        body.style.filter = 'none';
+        setTimeout(() => body.classList.remove('dream-waking'), 600);
+
+        // 1. Remove drift from tasks
+        removeDreamDrift();
+
+        // 2. Restore morphed text
+        restoreMorphedTexts();
+        clearInterval(dreamMorphInterval);
+        dreamMorphInterval = null;
+        dreamMorphedTexts = {};
+
+        // 3. Stop hue animation
+        if (dreamHueRAF) {
+            cancelAnimationFrame(dreamHueRAF);
+            dreamHueRAF = null;
+        }
+
+        // 4. Hide murmur, show wake comment
+        clearInterval(dreamMurmurInterval);
+        dreamMurmurInterval = null;
+        dreamMurmurEl.classList.remove('visible');
+        dreamMurmurEl.textContent = '';
+
+        // Show wake-up personality comment
+        showComment('dreamWake');
+
+        // 5. Particles restore themselves via the dreaming flag check in updateParticles
+
+        // 6. Fade out drone
+        if (droneOsc) stopDreamDrone();
+    }
+
+    // --- Dream drift ---
+    function applyDreamDrift() {
+        const items = list.querySelectorAll('.todo-item');
+        items.forEach((item, idx) => {
+            const duration = 3 + Math.random() * 5; // 3-8 seconds
+            const delay = Math.random() * -8; // random start offset
+            const dx1 = (Math.random() - 0.5) * 16;
+            const dy1 = (Math.random() - 0.5) * 10;
+            const dx2 = (Math.random() - 0.5) * 16;
+            const dy2 = (Math.random() - 0.5) * 10;
+            const dx3 = (Math.random() - 0.5) * 16;
+            const dy3 = (Math.random() - 0.5) * 10;
+
+            item.style.setProperty('--drift-x1', dx1 + 'px');
+            item.style.setProperty('--drift-y1', dy1 + 'px');
+            item.style.setProperty('--drift-x2', dx2 + 'px');
+            item.style.setProperty('--drift-y2', dy2 + 'px');
+            item.style.setProperty('--drift-x3', dx3 + 'px');
+            item.style.setProperty('--drift-y3', dy3 + 'px');
+            item.style.animationName = 'dreamDrift';
+            item.style.animationDuration = duration + 's';
+            item.style.animationDelay = delay + 's';
+            item.style.animationTimingFunction = 'ease-in-out';
+            item.style.animationIterationCount = 'infinite';
+            item.style.animationDirection = 'alternate';
+            item.classList.add('drifting');
+        });
+    }
+
+    function applyDreamDriftToGhosts() {
+        const ghostItems = ghostListEl.querySelectorAll('.ghost-item');
+        ghostItems.forEach((item, idx) => {
+            const duration = 4 + Math.random() * 5;
+            const delay = Math.random() * -8;
+            const dx1 = (Math.random() - 0.5) * 20;
+            const dy1 = (Math.random() - 0.5) * 12;
+            const dx2 = (Math.random() - 0.5) * 20;
+            const dy2 = (Math.random() - 0.5) * 12;
+            const dx3 = (Math.random() - 0.5) * 20;
+            const dy3 = (Math.random() - 0.5) * 12;
+
+            item.style.setProperty('--drift-x1', dx1 + 'px');
+            item.style.setProperty('--drift-y1', dy1 + 'px');
+            item.style.setProperty('--drift-x2', dx2 + 'px');
+            item.style.setProperty('--drift-y2', dy2 + 'px');
+            item.style.setProperty('--drift-x3', dx3 + 'px');
+            item.style.setProperty('--drift-y3', dy3 + 'px');
+            item.style.animationName = 'dreamDrift';
+            item.style.animationDuration = duration + 's';
+            item.style.animationDelay = delay + 's';
+            item.style.animationTimingFunction = 'ease-in-out';
+            item.style.animationIterationCount = 'infinite';
+            item.style.animationDirection = 'alternate';
+            item.classList.add('drifting');
+        });
+    }
+
+    function removeDreamDrift() {
+        const items = list.querySelectorAll('.todo-item');
+        items.forEach(item => {
+            item.classList.remove('drifting');
+            item.style.animationName = '';
+            item.style.animationDuration = '';
+            item.style.animationDelay = '';
+            item.style.animationTimingFunction = '';
+            item.style.animationIterationCount = '';
+            item.style.animationDirection = '';
+            item.style.removeProperty('--drift-x1');
+            item.style.removeProperty('--drift-y1');
+            item.style.removeProperty('--drift-x2');
+            item.style.removeProperty('--drift-y2');
+            item.style.removeProperty('--drift-x3');
+            item.style.removeProperty('--drift-y3');
+        });
+        const ghostItems = ghostListEl.querySelectorAll('.ghost-item');
+        ghostItems.forEach(item => {
+            item.classList.remove('drifting');
+            item.style.animationName = '';
+            item.style.animationDuration = '';
+            item.style.animationDelay = '';
+            item.style.animationTimingFunction = '';
+            item.style.animationIterationCount = '';
+            item.style.animationDirection = '';
+            item.style.removeProperty('--drift-x1');
+            item.style.removeProperty('--drift-y1');
+            item.style.removeProperty('--drift-x2');
+            item.style.removeProperty('--drift-y2');
+            item.style.removeProperty('--drift-x3');
+            item.style.removeProperty('--drift-y3');
+        });
+    }
+
+    // --- Text morphing ---
+    function morphRandomTaskText() {
+        if (!dreaming) return;
+        const textEls = list.querySelectorAll('.todo-text');
+        if (textEls.length === 0) return;
+
+        const randIdx = Math.floor(Math.random() * textEls.length);
+        const el = textEls[randIdx];
+        const dataI = el.dataset.i;
+
+        // Store original if not already stored
+        if (!(dataI in dreamMorphedTexts)) {
+            dreamMorphedTexts[dataI] = el.innerHTML;
+        }
+
+        // Get current displayed text content (not the original data)
+        let currentText = el.textContent;
+        if (currentText.length === 0) return;
+
+        // Pick a random character position and replace with a dream glyph
+        const charIdx = Math.floor(Math.random() * currentText.length);
+        const glyph = dreamGlyphs[Math.floor(Math.random() * dreamGlyphs.length)];
+        const morphed = currentText.substring(0, charIdx) + glyph + currentText.substring(charIdx + 1);
+
+        el.textContent = morphed;
+    }
+
+    function restoreMorphedTexts() {
+        const textEls = list.querySelectorAll('.todo-text');
+        textEls.forEach(el => {
+            const dataI = el.dataset.i;
+            if (dataI in dreamMorphedTexts) {
+                el.innerHTML = dreamMorphedTexts[dataI];
+            }
+        });
+    }
+
+    // --- Hue rotation ---
+    const body = document.body;
+
+    function animateDreamHue() {
+        if (!dreaming) return;
+        const elapsed = performance.now() - dreamHueStart;
+        // Full rotation over 30 seconds
+        const deg = (elapsed / 30000) * 360;
+        body.style.filter = `hue-rotate(${deg % 360}deg)`;
+        dreamHueRAF = requestAnimationFrame(animateDreamHue);
+    }
+
+    // --- Dream murmuring ---
+    function showDreamMurmur() {
+        if (!dreaming) return;
+        // Fade out
+        dreamMurmurEl.classList.remove('visible');
+        setTimeout(() => {
+            const msg = dreamMurmurs[Math.floor(Math.random() * dreamMurmurs.length)];
+            dreamMurmurEl.textContent = msg;
+            dreamMurmurEl.classList.add('visible');
+        }, 1000); // 1s fade out, then show new
+    }
+
+    // --- Dream drone ---
+    function startDreamDrone() {
+        if (!soundOn || droneOsc) return;
+        try {
+            const c = getAudio();
+
+            // Main drone oscillator
+            droneOsc = c.createOscillator();
+            droneOsc.type = 'sine';
+            droneOsc.frequency.setValueAtTime(80, c.currentTime);
+
+            // Gain node for the drone
+            droneGain = c.createGain();
+            droneGain.gain.setValueAtTime(0, c.currentTime);
+            // Fade in over 3 seconds to barely audible
+            droneGain.gain.linearRampToValueAtTime(0.025, c.currentTime + 3);
+
+            // LFO for slow volume modulation
+            droneLfo = c.createOscillator();
+            droneLfo.type = 'sine';
+            droneLfo.frequency.setValueAtTime(0.15, c.currentTime); // Very slow modulation
+
+            const lfoGain = c.createGain();
+            lfoGain.gain.setValueAtTime(0.012, c.currentTime);
+
+            droneLfo.connect(lfoGain);
+            lfoGain.connect(droneGain.gain);
+
+            droneOsc.connect(droneGain);
+            droneGain.connect(c.destination);
+
+            droneOsc.start();
+            droneLfo.start();
+
+            // Store lfoGain for cleanup
+            droneOsc._lfoGain = lfoGain;
+        } catch (e) {
+            // Audio context might not be available
+        }
+    }
+
+    function stopDreamDrone() {
+        if (!droneOsc) return;
+        try {
+            const c = getAudio();
+            // Fade out over 0.5 seconds
+            droneGain.gain.cancelScheduledValues(c.currentTime);
+            droneGain.gain.setValueAtTime(droneGain.gain.value, c.currentTime);
+            droneGain.gain.linearRampToValueAtTime(0, c.currentTime + 0.5);
+
+            const osc = droneOsc;
+            const lfo = droneLfo;
+            setTimeout(() => {
+                try { osc.stop(); } catch(e) {}
+                try { lfo.stop(); } catch(e) {}
+            }, 600);
+        } catch(e) {}
+
+        droneOsc = null;
+        droneLfo = null;
+        droneGain = null;
+    }
+
+    // =========================================================================
+    // EVENT LISTENERS
+    // =========================================================================
+
+    // Search
+    searchInput.addEventListener('input', () => {
+        searchQuery = searchInput.value.trim();
+        focusedIndex = -1;
+        render();
+    });
+
+    // Priority selector
+    priorityBtns.forEach(btn => btn.addEventListener('click', () => {
+        currentPriority = btn.dataset.p;
+        priorityBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }));
+
+    // Drag and drop with particle trail
+    let lastDragX = 0, lastDragY = 0, dragTrailCounter = 0;
+
+    list.addEventListener('dragstart', (e) => {
+        const li = e.target.closest('.todo-item');
+        if (!li) return;
+        dragSrcIndex = parseInt(li.dataset.idx);
+        li.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    });
+
+    list.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const li = e.target.closest('.todo-item');
+        list.querySelectorAll('.todo-item').forEach(el => el.classList.remove('drag-over'));
+        if (li) li.classList.add('drag-over');
+
+        dragTrailCounter++;
+        if (dragTrailCounter % 4 === 0) {
+            spawnDragTrail(e.clientX, e.clientY);
+        }
+    });
+
+    list.addEventListener('dragleave', (e) => {
+        const li = e.target.closest('.todo-item');
+        if (li) li.classList.remove('drag-over');
+    });
+
+    list.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const li = e.target.closest('.todo-item');
+        if (!li || dragSrcIndex === null) return;
+        const di = parseInt(li.dataset.idx);
+        if (dragSrcIndex === di) return;
+        const [m] = todos.splice(dragSrcIndex, 1);
+        todos.splice(di, 0, m);
+        dragSrcIndex = null;
+        dragTrailCounter = 0;
+        const rect = li.getBoundingClientRect();
+        spawnParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, 8, getAccentColor(), {
+            spread: 3, life: 30, decay: 1
+        });
+        save(); render();
+    });
+
+    list.addEventListener('dragend', () => {
+        dragSrcIndex = null;
+        dragTrailCounter = 0;
+        list.querySelectorAll('.todo-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
+    });
+
+    // Add button
+    $('addBtn').addEventListener('click', addTodo);
+
+    // Input keydown
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') addTodo();
+        if (e.key === 'ArrowDown' && !input.value) {
+            e.preventDefault(); input.blur(); focusedIndex = 0; sfx.navigate(); render();
+        }
+    });
+
+    // List click interactions
+    list.addEventListener('click', (e) => {
+        const t = e.target;
+        const i = parseInt(t.dataset.i);
+        if (isNaN(i)) return;
+
+        if (t.classList.contains('todo-check')) {
+            const wasDone = todos[i].done;
+            todos[i].done = !wasDone;
+            if (!wasDone) {
+                sfx.complete();
+                spawnCompleteParticles(t);
+                showComment('taskCompleted');
+            } else {
+                sfx.uncomplete();
+            }
+            save(); render();
+        } else if (t.classList.contains('todo-delete')) {
+            deleteTodo(i, t.closest('.todo-item'));
+        } else if (t.classList.contains('todo-priority-cycle')) {
+            todos[i].priority = cyclePriority(todos[i].priority);
+            sfx.priority(todos[i].priority);
+            spawnPriorityParticles(t, todos[i].priority);
+            save(); render();
+        }
+    });
+
+    // Double-click to edit
+    list.addEventListener('dblclick', (e) => {
+        if (!e.target.classList.contains('todo-text')) return;
+        editingIndex = parseInt(e.target.dataset.i);
+        render();
+    });
+
+    // Edit keydown
+    list.addEventListener('keydown', (e) => {
+        if (!e.target.classList.contains('todo-text-edit')) return;
+        const i = parseInt(e.target.dataset.i);
+        if (e.key === 'Enter') commitEdit(i, e.target.value);
+        else if (e.key === 'Escape') { editingIndex = -1; render(); }
+    });
+
+    // Edit blur
+    list.addEventListener('focusout', (e) => {
+        if (!e.target.classList.contains('todo-text-edit')) return;
+        commitEdit(parseInt(e.target.dataset.i), e.target.value);
+    });
+
+    // Filter buttons
+    filterBtns.forEach(btn => btn.addEventListener('click', () => {
+        filter = btn.dataset.filter;
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        focusedIndex = -1;
+        render();
+    }));
+
+    // Clear done
+    clearDoneBtn.addEventListener('click', () => {
+        const snap = { todos: JSON.parse(JSON.stringify(todos)), ghosts: JSON.parse(JSON.stringify(ghosts)) };
+        const c = todos.filter(t => t.done).length;
+        todos.filter(t => t.done).forEach(t => {
+            ghosts.push({ text: t.text, deletedAt: Date.now() });
+        });
+        if (ghosts.length > 10) ghosts = ghosts.slice(-10);
+        todos = todos.filter(t => !t.done);
+        focusedIndex = -1;
+        save(); render();
+        sfx.delete();
+        showToast(`Cleared ${c} done task${c !== 1 ? 's' : ''}`, snap);
+        showComment('taskDeleted');
+        spawnDeleteParticles(progressBar);
+    });
+
+    // =========================================================================
+    // KEYBOARD NAVIGATION
+    // =========================================================================
+    document.addEventListener('keydown', (e) => {
+        // Zen mode shortcuts
+        if (zenMode) {
+            if (e.key === 'z' || e.key === 'Z' || e.key === 'Escape') {
+                e.preventDefault(); toggleZen(); return;
+            }
+            if (e.key === 'ArrowLeft') { e.preventDefault(); zenIndex--; renderZen(); sfx.navigate(); return; }
+            if (e.key === 'ArrowRight') { e.preventDefault(); zenIndex++; renderZen(); sfx.navigate(); return; }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const active = getActiveTodos();
+                if (active.length === 0) return;
+                const t = active[zenIndex];
+                const idx = todos.indexOf(t);
+                todos[idx].done = !todos[idx].done;
+                if (todos[idx].done) {
+                    sfx.complete();
+                    spawnCompleteParticles(zenCheck);
+                    showComment('taskCompleted');
+                } else { sfx.uncomplete(); }
+                save(); renderZen(); render();
+                return;
+            }
+            return;
+        }
+
+        // Search field
+        if (e.target === searchInput) {
+            if (e.key === 'Escape') {
+                searchInput.value = ''; searchQuery = ''; searchInput.blur(); render();
+            }
+            return;
+        }
+
+        // Don't capture when typing in inputs
+        if (e.target.tagName === 'INPUT') return;
+        if (editingIndex >= 0) return;
+
+        if (e.key === '/') { e.preventDefault(); searchInput.focus(); return; }
+
+        // Z for zen mode
+        if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); toggleZen(); return; }
+
+        // G for purge ghosts
+        if (e.key === 'g' || e.key === 'G') { e.preventDefault(); purgeGhosts(); return; }
+
+        const visible = filtered();
+        if (visible.length === 0) return;
+
+        if (e.key === 'ArrowDown' || e.key === 'j') {
+            e.preventDefault();
+            focusedIndex = Math.min(focusedIndex + 1, visible.length - 1);
+            sfx.navigate(); render();
+        } else if (e.key === 'ArrowUp' || e.key === 'k') {
+            e.preventDefault(); sfx.navigate();
+            if (focusedIndex <= 0) { focusedIndex = -1; render(); input.focus(); }
+            else { focusedIndex--; render(); }
+        } else if (e.key === 'Enter' && focusedIndex >= 0) {
+            e.preventDefault();
+            const t = visible[focusedIndex];
+            const idx = todos.indexOf(t);
+            const wasDone = t.done;
+            todos[idx].done = !wasDone;
+            if (!wasDone) {
+                sfx.complete();
+                const items = list.querySelectorAll('.todo-item');
+                if (items[focusedIndex]) {
+                    const check = items[focusedIndex].querySelector('.todo-check');
+                    spawnCompleteParticles(check);
+                }
+                showComment('taskCompleted');
+            } else { sfx.uncomplete(); }
+            save(); render();
+        } else if ((e.key === 'Delete' || e.key === 'Backspace') && focusedIndex >= 0) {
+            e.preventDefault();
+            const items = list.querySelectorAll('.todo-item');
+            deleteTodo(todos.indexOf(visible[focusedIndex]), items[focusedIndex]);
+        } else if (e.key === 'e' && focusedIndex >= 0) {
+            e.preventDefault();
+            editingIndex = todos.indexOf(visible[focusedIndex]);
+            render();
+        } else if (e.key === 'p' && focusedIndex >= 0) {
+            e.preventDefault();
+            const t = visible[focusedIndex];
+            const idx = todos.indexOf(t);
+            todos[idx].priority = cyclePriority(todos[idx].priority);
+            sfx.priority(todos[idx].priority);
+            const items = list.querySelectorAll('.todo-item');
+            if (items[focusedIndex]) {
+                const btn = items[focusedIndex].querySelector('.todo-priority-cycle');
+                spawnPriorityParticles(btn, todos[idx].priority);
+            }
+            save(); render();
+        } else if (e.key === 'Escape') {
+            focusedIndex = -1; render();
+        }
+    });
+
+    // =========================================================================
+    // INITIAL RENDER + PERIODIC REFRESH
+    // =========================================================================
+    render();
+    showComment(); // initial personality comment
+
+    // Refresh decay visuals and time theme periodically
+    setInterval(() => { render(); applyTimeTheme(); }, 60000);
+
+    // Periodic ambient personality comments
+    setInterval(() => {
+        if (!zenMode && !dreaming) showComment();
+    }, 30000);
+    </script>
+</body>
+</html>
