@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>todooo v025</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#1a1a2e;--card:#16213e;--accent:#7c83ff;--text:#e8e8e8;--border:#2a2a4e;
+--done:#666;--pri-high:#ff6b6b;--pri-med:#ffd93d;--pri-low:#6bcf7f;
+--shadow:0 4px 12px rgba(0,0,0,.3);--radius:8px;
+}
+body{font:15px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;background:var(--bg);color:var(--text);transition:all .3s;overflow-x:hidden}
+body.dawn{--bg:#2a3d66;--card:#1f2d4d;--accent:#ffa07a}
+body.morning{--bg:#3a5a78;--card:#2d4a65;--accent:#87ceeb}
+body.afternoon{--bg:#f0e68c;--card:#fffacd;--accent:#ff8c00;--text:#333;--border:#ddd;--done:#999}
+body.evening{--bg:#4a306d;--card:#3a2558;--accent:#da70d6}
+body.night{--bg:#0d1117;--card:#161b22;--accent:#58a6ff}
+.container{max-width:680px;margin:60px auto;padding:0 20px;position:relative;z-index:1}
+h1{font-size:48px;text-align:center;margin-bottom:8px;color:var(--accent);text-shadow:0 0 20px var(--accent);user-select:none}
+.sentient{text-align:center;font-size:13px;color:var(--accent);opacity:.7;margin-bottom:24px;font-style:italic;min-height:20px}
+.input-wrap{position:relative;margin-bottom:24px}
+#new-task{width:100%;padding:16px 20px;font:inherit;background:var(--card);color:var(--text);border:2px solid var(--border);border-radius:var(--radius);outline:0;transition:all .2s}
+#new-task:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,131,255,.1)}
+#new-task::placeholder{color:var(--done)}
+.controls{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.filters{display:flex;gap:8px}
+.filters button,.btn{padding:8px 16px;font:inherit;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:all .2s}
+.filters button:hover,.btn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+.filters button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.count{margin-left:auto;color:var(--done);font-size:13px}
+.progress-wrap{height:4px;background:var(--border);border-radius:2px;margin-bottom:20px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),#00ff88);width:0;transition:width .4s}
+.search-wrap{position:relative;margin-bottom:16px}
+#search{width:100%;padding:10px 16px;font:inherit;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);outline:0}
+#search:focus{border-color:var(--accent)}
+.tasks{list-style:none}
+.task{background:var(--card);border-left:4px solid transparent;border-radius:var(--radius);padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);cursor:move;transition:all .3s;position:relative;overflow:hidden}
+.task.pri-high{border-left-color:var(--pri-high)}
+.task.pri-med{border-left-color:var(--pri-med)}
+.task.pri-low{border-left-color:var(--pri-low)}
+.task.done .text{text-decoration:line-through;color:var(--done)}
+.task.selected{box-shadow:0 0 0 2px var(--accent)}
+.task.slide-in{animation:slideIn .3s}
+.task.fade-out{animation:fadeOut .3s forwards}
+.task.shake{animation:shake .3s}
+@keyframes slideIn{from{transform:translateX(-100%);opacity:0}}
+@keyframes fadeOut{to{transform:translateX(100%);opacity:0}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.task .check{width:20px;height:20px;border:2px solid var(--border);border-radius:50%;cursor:pointer;flex-shrink:0;position:relative;transition:all .2s}
+.task.done .check{background:var(--accent);border-color:var(--accent)}
+.task.done .check::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
+.task .text{flex:1;word-break:break-word}
+.task .age{font-size:11px;color:var(--done);margin-left:auto;flex-shrink:0}
+.task .pri-badge{font-size:10px;padding:2px 6px;border-radius:3px;text-transform:uppercase;font-weight:700;flex-shrink:0}
+.task .pri-badge.high{background:var(--pri-high);color:#fff}
+.task .pri-badge.med{background:var(--pri-med);color:#333}
+.task .pri-badge.low{background:var(--pri-low);color:#fff}
+.task .del{padding:4px 10px;background:#ff4444;color:#fff;border:0;border-radius:4px;cursor:pointer;opacity:0;transition:opacity .2s;flex-shrink:0}
+.task:hover .del{opacity:1}
+.task input.edit{flex:1;padding:8px;background:var(--bg);color:var(--text);border:1px solid var(--accent);border-radius:4px;font:inherit;outline:0}
+.ghost{opacity:.2;pointer-events:none;position:relative}
+.ghost::after{content:'GHOST';position:absolute;top:8px;right:8px;font-size:9px;color:var(--accent);background:var(--bg);padding:2px 6px;border-radius:3px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:12px 24px;border-radius:var(--radius);box-shadow:var(--shadow);display:none;align-items:center;gap:12px;z-index:1000}
+.toast.show{display:flex;animation:toastIn .3s}
+@keyframes toastIn{from{transform:translate(-50%,100%)}}
+.toast button{padding:6px 12px;background:var(--accent);border:0;border-radius:4px;color:#fff;cursor:pointer;font:inherit}
+.sound-toggle,.term-btn{position:fixed;top:20px;right:20px;width:40px;height:40px;border-radius:50%;background:var(--card);border:2px solid var(--border);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all .2s;z-index:10}
+.term-btn{right:70px}
+.sound-toggle:hover,.term-btn:hover{background:var(--accent);border-color:var(--accent)}
+.sound-toggle.off{opacity:.4}
+canvas{position:fixed;inset:0;pointer-events:none;z-index:0}
+.confetti-canvas{z-index:999;pointer-events:none}
+body.dream{animation:dreamDrift 20s infinite ease-in-out}
+body.dream .container{animation:dreamFloat 15s infinite ease-in-out}
+body.dream h1{filter:hue-rotate(360deg);animation:hueShift 10s infinite linear}
+@keyframes dreamDrift{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+@keyframes dreamFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes hueShift{to{filter:hue-rotate(0deg)}}
+body.chaos-1 .container{animation:tremor .1s infinite}
+body.chaos-2 .container{animation:tremor .05s infinite}
+body.chaos-3 .task{background:linear-gradient(135deg,var(--card) 0%,var(--card) 45%,#ff000022 50%,var(--card) 55%,var(--card) 100%);background-size:20px 20px}
+body.chaos-4 h1{animation:glitch .3s infinite}
+@keyframes tremor{0%,100%{transform:translate(0,0)}25%{transform:translate(-2px,1px)}50%{transform:translate(1px,-1px)}75%{transform:translate(-1px,-2px)}}
+@keyframes glitch{0%,100%{transform:translate(0)}33%{transform:translate(-3px,2px)}66%{transform:translate(3px,-2px)}}
+body.shattered{opacity:0;transform:scale(1.2) rotate(5deg);transition:all .6s}
+.zen-mode{position:fixed;inset:0;background:var(--bg);z-index:1000;display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px}
+.zen-mode.active{display:flex}
+.zen-mode .zen-task{max-width:600px;width:100%;background:var(--card);padding:40px;border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,.4);font-size:24px;text-align:center}
+.pet{position:fixed;bottom:20px;left:20px;width:100px;height:120px;z-index:10;cursor:pointer}
+.pet-body{width:60px;height:60px;background:var(--accent);border-radius:50%;position:absolute;bottom:20px;left:20px;box-shadow:0 4px 8px rgba(0,0,0,.3)}
+.pet-eye{width:8px;height:8px;background:#000;border-radius:50%;position:absolute;top:20px}
+.pet-eye.left{left:15px}
+.pet-eye.right{right:15px}
+.pet-mouth{width:20px;height:10px;border:2px solid #000;border-top:0;border-radius:0 0 10px 10px;position:absolute;bottom:15px;left:50%;transform:translateX(-50%)}
+.pet-stats{position:absolute;top:0;left:0;font-size:10px;background:var(--card);padding:4px 8px;border-radius:4px;white-space:nowrap;opacity:0;transition:opacity .2s}
+.pet:hover .pet-stats{opacity:1}
+.pet-leg{width:12px;height:25px;background:var(--accent);position:absolute;bottom:0;border-radius:0 0 6px 6px}
+.pet-leg.left{left:18px}
+.pet-leg.right{right:18px}
+.pet.happy{animation:petBounce 1s infinite}
+.pet.sad .pet-mouth{transform:translateX(-50%) rotate(180deg)}
+@keyframes petBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.highlight{background:#ffff0044;border-radius:2px;padding:0 2px}
+.terminal{position:fixed;inset:0;background:#0a0a0a;color:#00ff41;font-family:'Courier New',monospace;font-size:14px;z-index:2000;display:none;flex-direction:column;overflow:hidden}
+.terminal.active{display:flex}
+.terminal::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,255,65,.03) 0px,transparent 1px,transparent 2px,rgba(0,255,65,.03) 3px);pointer-events:none;z-index:1}
+.terminal::after{content:'';position:absolute;inset:0;background:radial-gradient(circle,transparent 60%,rgba(0,0,0,.7) 100%);pointer-events:none;z-index:1}
+.term-output{flex:1;overflow-y:auto;padding:20px;white-space:pre-wrap;word-wrap:break-word;position:relative;z-index:2}
+.term-line{margin-bottom:4px;text-shadow:0 0 5px #00ff4144}
+.term-error{color:#ff4444}
+.term-success{color:#00ff88}
+.term-info{color:#00aa33}
+.term-index{color:#ffff00}
+.term-prompt-wrap{padding:12px 20px;border-top:1px solid #00ff4144;display:flex;align-items:center;gap:8px;position:relative;z-index:2}
+.term-prompt{color:#00ff41;text-shadow:0 0 5px #00ff4144}
+.term-input{flex:1;background:transparent;border:0;color:#00ff41;font:inherit;outline:0;text-shadow:0 0 5px #00ff4144}
+.term-cursor{display:inline-block;width:8px;height:16px;background:#00ff41;animation:blink 1s infinite;margin-left:2px;box-shadow:0 0 5px #00ff4144}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+.matrix-overlay{position:fixed;inset:0;background:#000;z-index:2001;display:none;overflow:hidden}
+.matrix-overlay.active{display:block}
+.matrix-col{position:absolute;top:0;font-family:'Courier New',monospace;font-size:14px;color:#00ff41;text-shadow:0 0 8px #00ff41;white-space:pre;line-height:14px;animation:matrixFall linear infinite}
+@keyframes matrixFall{to{transform:translateY(100vh)}}
+</style>
+</head>
+<body>
+<canvas id="particles"></canvas>
+<canvas class="confetti-canvas" id="confetti"></canvas>
+<button class="sound-toggle" id="sound-toggle">🔊</button>
+<button class="term-btn" id="term-btn">`</button>
+<div class="container">
+<h1>todooo</h1>
+<div class="sentient" id="sentient"></div>
+<div class="input-wrap">
+<input type="text" id="new-task" placeholder="What needs to be done?" autocomplete="off">
+</div>
+<div class="controls">
+<div class="filters">
+<button class="active" data-filter="all">All</button>
+<button data-filter="active">Active</button>
+<button data-filter="done">Done</button>
+</div>
+<button class="btn" id="clear-done">Clear Done</button>
+<div class="count" id="count"></div>
+</div>
+<div class="progress-wrap"><div class="progress-bar" id="progress"></div></div>
+<div class="search-wrap">
+<input type="text" id="search" placeholder="Search tasks... (or press /)">
+</div>
+<ul class="tasks" id="tasks"></ul>
+</div>
+<div class="toast" id="toast">
+<span id="toast-msg"></span>
+<button id="undo-btn">Undo</button>
+</div>
+<div class="zen-mode" id="zen">
+<div class="zen-task" id="zen-task">Press Z to exit zen mode</div>
+</div>
+<div class="pet" id="pet">
+<div class="pet-stats" id="pet-stats"></div>
+<div class="pet-body">
+<div class="pet-eye left"></div>
+<div class="pet-eye right"></div>
+<div class="pet-mouth"></div>
+</div>
+<div class="pet-leg left"></div>
+<div class="pet-leg right"></div>
+</div>
+<div class="terminal" id="terminal">
+<div class="term-output" id="term-output"></div>
+<div class="term-prompt-wrap">
+<span class="term-prompt">todooo&gt;</span>
+<input type="text" class="term-input" id="term-input" autocomplete="off">
+<span class="term-cursor"></span>
+</div>
+</div>
+<div class="matrix-overlay" id="matrix"></div>
+<script>
+const STORAGE_KEY='todooo-025';
+let tasks=[],ghosts=[],selectedIndex=-1,filter='all',searchQuery='',undoStack=null,soundEnabled=true,chaos=0,lastActivity=Date.now(),dreamMode=false,zenMode=false;
+let pet={hunger:50,happiness:70,level:1,xp:0,lastFed:Date.now()};
+let termHistory=[],termHistoryIndex=-1;
+const audio=new(window.AudioContext||window.webkitAudioContext)();
+
+function playSound(type){
+if(!soundEnabled)return;
+const now=audio.currentTime;
+const osc=audio.createOscillator(),gain=audio.createGain();
+osc.connect(gain);gain.connect(audio.destination);
+if(type==='click'){
+const noise=audio.createBufferSource();
+const buf=audio.createBuffer(1,220,44100),data=buf.getChannelData(0);
+for(let i=0;i<220;i++)data[i]=Math.random()*2-1;
+noise.buffer=buf;noise.connect(gain);
+gain.gain.setValueAtTime(.05,now);gain.gain.exponentialRampToValueAtTime(.01,now+.005);
+noise.start(now);noise.stop(now+.005);
+}else if(type==='enter'){
+osc.frequency.setValueAtTime(800,now);osc.frequency.exponentialRampToValueAtTime(400,now+.05);
+gain.gain.setValueAtTime(.1,now);gain.gain.exponentialRampToValueAtTime(.01,now+.05);
+osc.start(now);osc.stop(now+.05);
+}else if(type==='error'){
+osc.type='sawtooth';osc.frequency.setValueAtTime(150,now);
+gain.gain.setValueAtTime(.15,now);gain.gain.exponentialRampToValueAtTime(.01,now+.15);
+osc.start(now);osc.stop(now+.15);
+}else if(type==='success'){
+osc.frequency.setValueAtTime(600,now);osc.frequency.exponentialRampToValueAtTime(800,now+.1);
+gain.gain.setValueAtTime(.1,now);gain.gain.exponentialRampToValueAtTime(.01,now+.1);
+osc.start(now);osc.stop(now+.1);
+}else if(type==='delete'){
+osc.type='sawtooth';osc.frequency.setValueAtTime(300,now);osc.frequency.exponentialRampToValueAtTime(50,now+.2);
+gain.gain.setValueAtTime(.15,now);gain.gain.exponentialRampToValueAtTime(.01,now+.2);
+osc.start(now);osc.stop(now+.2);
+}else if(type==='complete'){
+[600,750,900].forEach((f,i)=>{
+const o=audio.createOscillator(),g=audio.createGain();
+o.connect(g);g.connect(audio.destination);
+o.frequency.setValueAtTime(f,now+i*.05);
+g.gain.setValueAtTime(.08,now+i*.05);g.gain.exponentialRampToValueAtTime(.01,now+i*.05+.1);
+o.start(now+i*.05);o.stop(now+i*.05+.1);
+});
+}
+}
+
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify({tasks,ghosts,pet}))}
+function load(){
+const data=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
+tasks=data.tasks||[];ghosts=data.ghosts||[];
+pet=data.pet||{hunger:50,happiness:70,level:1,xp:0,lastFed:Date.now()};
+}
+
+function addTask(text,priority='none'){
+const task={id:Date.now(),text,done:false,priority,createdAt:Date.now()};
+tasks.unshift(task);save();render();
+playSound('success');
+updatePet('xp',5);
+}
+
+function toggleTask(id){
+const task=tasks.find(t=>t.id===id);
+if(!task)return;
+task.done=!task.done;save();render();
+playSound(task.done?'complete':'click');
+updatePet('xp',task.done?10:0);
+if(tasks.filter(t=>!t.done).length===0&&tasks.length>0)launchConfetti();
+}
+
+function deleteTask(id,noGhost=false){
+const idx=tasks.findIndex(t=>t.id===id);
+if(idx===-1)return;
+const task=tasks.splice(idx,1)[0];
+if(!noGhost&&!task.done)ghosts.push({...task,deletedAt:Date.now()});
+save();render();playSound('delete');
+}
+
+function editTask(id,newText){
+const task=tasks.find(t=>t.id===id);
+if(task){task.text=newText;save();render()}
+}
+
+function setPriority(id,pri){
+const task=tasks.find(t=>t.id===id);
+if(task){task.priority=pri;save();render()}
+}
+
+function clearCompleted(){
+tasks=tasks.filter(t=>!t.done);save();render();playSound('success')
+}
+
+function purgeGhosts(){ghosts=[];save();render();playSound('success')}
+
+function showUndo(msg,action){
+document.getElementById('toast-msg').textContent=msg;
+document.getElementById('toast').classList.add('show');
+undoStack=action;
+setTimeout(()=>{
+document.getElementById('toast').classList.remove('show');
+undoStack=null;
+},4000);
+}
+
+function undo(){
+if(undoStack){undoStack();undoStack=null;document.getElementById('toast').classList.remove('show')}
+}
+
+function getFiltered(){
+let list=tasks.filter(t=>{
+if(filter==='active')return!t.done;
+if(filter==='done')return t.done;
+return true;
+});
+if(searchQuery){
+list=list.filter(t=>t.text.toLowerCase().includes(searchQuery.toLowerCase()));
+}
+return list;
+}
+
+function highlightText(text){
+if(!searchQuery)return text;
+const re=new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`,'gi');
+return text.replace(re,'<span class="highlight">$1</span>');
+}
+
+function formatAge(ms){
+const sec=Math.floor(ms/1000),min=Math.floor(sec/60),hr=Math.floor(min/60),day=Math.floor(hr/24);
+if(day>0)return day+'d';
+if(hr>0)return hr+'h';
+if(min>0)return min+'m';
+return sec+'s';
+}
+
+function render(){
+const list=getFiltered();
+const html=list.map((t,i)=>{
+const age=Date.now()-t.createdAt;
+const opacity=Math.max(.4,1-age/864e5);
+const priBadge=t.priority!=='none'?`<span class="pri-badge ${t.priority}">${t.priority}</span>`:'';
+return`<li class="task slide-in pri-${t.priority}${t.done?' done':''}${i===selectedIndex?' selected':''}" data-id="${t.id}" draggable="true" style="opacity:${opacity}">
+<div class="check"></div>
+<div class="text">${highlightText(t.text)}</div>
+${priBadge}
+<span class="age">${formatAge(age)}</span>
+<button class="del">×</button>
+</li>`;
+}).join('');
+const ghostHtml=ghosts.map(g=>`<li class="task ghost" data-id="${g.id}">
+<div class="check"></div>
+<div class="text">${g.text}</div>
+</li>`).join('');
+document.getElementById('tasks').innerHTML=html+ghostHtml;
+const active=tasks.filter(t=>!t.done).length;
+document.getElementById('count').textContent=`${active} item${active===1?'':'s'} left`;
+const progress=tasks.length?((tasks.length-active)/tasks.length)*100:0;
+document.getElementById('progress').style.width=progress+'%';
+updateSentient();
+attachListeners();
+}
+
+function attachListeners(){
+document.querySelectorAll('.task:not(.ghost)').forEach((el,i)=>{
+const id=+el.dataset.id;
+el.querySelector('.check').onclick=()=>toggleTask(id);
+el.querySelector('.del').onclick=e=>{e.stopPropagation();deleteTask(id)};
+el.ondblclick=e=>{
+if(e.target.classList.contains('text')){
+const task=tasks.find(t=>t.id===id);
+const input=document.createElement('input');
+input.className='edit';input.value=task.text;
+e.target.replaceWith(input);
+input.focus();input.select();
+input.onblur=()=>{editTask(id,input.value);render()};
+input.onkeydown=ev=>{
+if(ev.key==='Enter'){editTask(id,input.value);render()}
+if(ev.key==='Escape')render();
+};
+}
+};
+el.onclick=()=>{selectedIndex=i};
+el.ondragstart=e=>{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',i)};
+el.ondragover=e=>{e.preventDefault();e.dataTransfer.dropEffect='move'};
+el.ondrop=e=>{
+e.preventDefault();
+const from=+e.dataTransfer.getData('text/plain');
+const to=getFiltered().findIndex(t=>t.id===id);
+if(from!==to){
+const item=tasks.splice(tasks.indexOf(getFiltered()[from]),1)[0];
+const toIdx=tasks.indexOf(getFiltered()[to]);
+tasks.splice(toIdx,0,item);
+save();render();
+}
+};
+});
+}
+
+function updateSentient(){
+const active=tasks.filter(t=>!t.done).length;
+const total=tasks.length;
+const msgs=[
+[()=>total===0,'Awaiting purpose...'],
+[()=>active===0&&total>0,'Achievement unlocked: Productivity achieved.'],
+[()=>active>10,'Overwhelming. Try zen mode? (Z)'],
+[()=>tasks.some(t=>Date.now()-t.createdAt>604800000),'Ancient tasks detected. They yearn for completion.'],
+[()=>chaos>50,'Systems integrity compromised. Repair recommended.'],
+[()=>pet.happiness<30,'Your pet seems sad. Maybe feed it?'],
+[()=>searchQuery,'Searching... I see patterns in the chaos.'],
+[()=>true,'I catalog your intentions.']
+];
+const msg=msgs.find(([cond])=>cond());
+document.getElementById('sentient').textContent=msg?msg[1]:'';
+}
+
+function updateTimeTheme(){
+const hr=new Date().getHours();
+const themes=['night','night','night','night','night','dawn','dawn','morning','morning','morning','afternoon','afternoon','afternoon','afternoon','afternoon','evening','evening','evening','night','night','night','night','night','night'];
+document.body.className=themes[hr]+(dreamMode?' dream':'')+(zenMode?' zen':'');
+for(let i=1;i<=4;i++)document.body.classList.remove('chaos-'+i);
+if(chaos>0)document.body.classList.add('chaos-'+Math.min(4,Math.ceil(chaos/25)));
+}
+
+function checkDream(){
+if(Date.now()-lastActivity>60000&&!dreamMode){
+dreamMode=true;updateTimeTheme();
+const murmur=audio.createOscillator(),gain=audio.createGain();
+murmur.type='sine';murmur.frequency.setValueAtTime(100,audio.currentTime);
+murmur.connect(gain);gain.connect(audio.destination);
+gain.gain.setValueAtTime(.02,audio.currentTime);
+murmur.start();
+setTimeout(()=>{gain.gain.exponentialRampToValueAtTime(.01,audio.currentTime+2);murmur.stop(audio.currentTime+2)},10000);
+}
+}
+
+function resetActivity(){lastActivity=Date.now();dreamMode=false;updateTimeTheme()}
+
+function toggleZen(){
+zenMode=!zenMode;
+if(zenMode){
+const active=tasks.find(t=>!t.done);
+document.getElementById('zen-task').textContent=active?active.text:'No active tasks. Peace.';
+document.getElementById('zen').classList.add('active');
+}else{
+document.getElementById('zen').classList.remove('active');
+}
+updateTimeTheme();
+}
+
+function updatePet(type,val){
+if(type==='xp'){pet.xp+=val;if(pet.xp>=100){pet.level++;pet.xp=0;pet.happiness=Math.min(100,pet.happiness+20);playSound('success')}}
+if(type==='feed'){pet.hunger=Math.max(0,pet.hunger-30);pet.happiness=Math.min(100,pet.happiness+10);pet.lastFed=Date.now();save()}
+const el=document.getElementById('pet');
+const stats=`Lv${pet.level} H:${Math.floor(pet.hunger)} ♥:${Math.floor(pet.happiness)}`;
+document.getElementById('pet-stats').textContent=stats;
+el.className='pet'+(pet.happiness>60?' happy':pet.happiness<40?' sad':'');
+}
+
+function petTick(){
+const elapsed=Date.now()-pet.lastFed;
+pet.hunger=Math.min(100,pet.hunger+elapsed/60000);
+pet.happiness=Math.max(0,pet.happiness-(pet.hunger/100)*5);
+pet.lastFed=Date.now();
+save();updatePet('',0);
+}
+
+document.getElementById('pet').onclick=()=>updatePet('feed',0);
+
+function launchConfetti(){
+const canvas=document.getElementById('confetti');
+const ctx=canvas.getContext('2d');
+canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+const particles=[];
+for(let i=0;i<150;i++){
+particles.push({x:Math.random()*canvas.width,y:-20,vx:Math.random()*4-2,vy:Math.random()*3+2,color:`hsl(${Math.random()*360},70%,60%)`,size:Math.random()*6+2});
+}
+function animate(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+particles.forEach((p,i)=>{
+p.x+=p.vx;p.y+=p.vy;p.vy+=.1;
+ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size);
+if(p.y>canvas.height)particles.splice(i,1);
+});
+if(particles.length)requestAnimationFrame(animate);
+}
+animate();
+}
+
+const particleCanvas=document.getElementById('particles');
+const pCtx=particleCanvas.getContext('2d');
+particleCanvas.width=window.innerWidth;particleCanvas.height=window.innerHeight;
+const particles=[];
+for(let i=0;i<50;i++){
+particles.push({x:Math.random()*particleCanvas.width,y:Math.random()*particleCanvas.height,vx:Math.random()*.5-.25,vy:Math.random()*.5-.25,size:Math.random()*2+1,alpha:Math.random()*.3+.1});
+}
+function animateParticles(){
+pCtx.clearRect(0,0,particleCanvas.width,particleCanvas.height);
+particles.forEach(p=>{
+p.x+=p.vx;p.y+=p.vy;
+if(p.x<0||p.x>particleCanvas.width)p.vx*=-1;
+if(p.y<0||p.y>particleCanvas.height)p.vy*=-1;
+pCtx.fillStyle=`rgba(124,131,255,${p.alpha})`;
+pCtx.beginPath();pCtx.arc(p.x,p.y,p.size,0,Math.PI*2);pCtx.fill();
+});
+requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+document.addEventListener('click',e=>{
+for(let i=0;i<10;i++){
+particles.push({x:e.clientX,y:e.clientY,vx:Math.random()*4-2,vy:Math.random()*4-2,size:Math.random()*3+1,alpha:.6});
+}
+setTimeout(()=>particles.splice(0,10),1000);
+});
+
+window.addEventListener('resize',()=>{
+particleCanvas.width=window.innerWidth;particleCanvas.height=window.innerHeight;
+});
+
+document.getElementById('new-task').onkeydown=e=>{
+if(e.key==='Enter'&&e.target.value.trim()){
+addTask(e.target.value.trim());
+e.target.value='';
+}
+};
+
+document.querySelectorAll('.filters button').forEach(btn=>{
+btn.onclick=()=>{
+document.querySelectorAll('.filters button').forEach(b=>b.classList.remove('active'));
+btn.classList.add('active');
+filter=btn.dataset.filter;
+render();
+};
+});
+
+document.getElementById('clear-done').onclick=clearCompleted;
+document.getElementById('undo-btn').onclick=undo;
+document.getElementById('sound-toggle').onclick=e=>{
+soundEnabled=!soundEnabled;
+e.target.classList.toggle('off',!soundEnabled);
+e.target.textContent=soundEnabled?'🔊':'🔇';
+};
+
+document.getElementById('search').oninput=e=>{searchQuery=e.target.value;render()};
+
+document.addEventListener('keydown',e=>{
+if(document.activeElement.tagName==='INPUT'&&document.activeElement.id!=='search')return;
+resetActivity();
+if(e.key==='j'||e.key==='ArrowDown'){e.preventDefault();selectedIndex=Math.min(selectedIndex+1,getFiltered().length-1);render()}
+if(e.key==='k'||e.key==='ArrowUp'){e.preventDefault();selectedIndex=Math.max(selectedIndex-1,-1);render()}
+if(e.key==='Enter'&&selectedIndex>=0){e.preventDefault();toggleTask(getFiltered()[selectedIndex].id)}
+if(e.key==='Delete'&&selectedIndex>=0){e.preventDefault();deleteTask(getFiltered()[selectedIndex].id)}
+if(e.key==='e'&&selectedIndex>=0){
+e.preventDefault();
+const task=getFiltered()[selectedIndex];
+const newText=prompt('Edit task:',task.text);
+if(newText)editTask(task.id,newText);
+}
+if(e.key==='p'&&selectedIndex>=0){
+e.preventDefault();
+const task=getFiltered()[selectedIndex];
+const pri=prompt('Priority (none/low/med/high):',task.priority);
+if(['none','low','med','high'].includes(pri))setPriority(task.id,pri);
+}
+if(e.key==='/'&&document.activeElement.id!=='search'){e.preventDefault();document.getElementById('search').focus()}
+if(e.key==='Escape'){document.getElementById('search').blur();searchQuery='';document.getElementById('search').value='';selectedIndex=-1;render()}
+if(e.key==='g'||e.key==='G'){e.preventDefault();purgeGhosts()}
+if(e.key==='z'||e.key==='Z'){e.preventDefault();toggleZen()}
+if(e.key==='`'){e.preventDefault();toggleTerminal()}
+});
+
+document.addEventListener('mousemove',resetActivity);
+document.addEventListener('click',resetActivity);
+
+setInterval(checkDream,5000);
+setInterval(()=>{
+updateTimeTheme();
+petTick();
+if(Math.random()<.01)chaos=Math.max(0,chaos-1);
+},1000);
+
+document.addEventListener('keydown',e=>{
+if(e.ctrlKey&&e.shiftKey&&e.key==='X'){
+chaos=Math.min(100,chaos+10);
+if(chaos>=100){
+document.body.classList.add('shattered');
+setTimeout(()=>{
+document.body.classList.remove('shattered');
+chaos=0;updateTimeTheme();
+},600);
+}
+updateTimeTheme();
+}
+if(e.ctrlKey&&e.shiftKey&&e.key==='R'){chaos=0;updateTimeTheme()}
+});
+
+const termEl=document.getElementById('terminal');
+const termOutput=document.getElementById('term-output');
+const termInput=document.getElementById('term-input');
+let termActive=false;
+
+function toggleTerminal(){
+termActive=!termActive;
+termEl.classList.toggle('active',termActive);
+if(termActive){
+termOutput.innerHTML='';
+typewriter('todooo v025\n',()=>{
+typewriter('type \'help\' for commands\n',()=>{
+termInput.focus();
+});
+});
+}
+}
+
+document.getElementById('term-btn').onclick=toggleTerminal;
+
+function typewriter(text,callback){
+let i=0;
+const interval=setInterval(()=>{
+if(i<text.length){
+termOutput.innerHTML+=text[i]==='\n'?'<br>':text[i];
+termOutput.scrollTop=termOutput.scrollHeight;
+i++;
+}else{
+clearInterval(interval);
+if(callback)callback();
+}
+},30);
+}
+
+function termPrint(text,cls=''){
+const line=document.createElement('div');
+line.className='term-line '+(cls||'');
+line.innerHTML=text.replace(/\n/g,'<br>');
+termOutput.appendChild(line);
+termOutput.scrollTop=termOutput.scrollHeight;
+}
+
+function termExec(cmd){
+const orig=cmd;
+termHistory.push(cmd);
+if(termHistory.length>20)termHistory.shift();
+termHistoryIndex=-1;
+cmd=cmd.trim().toLowerCase();
+const parts=orig.trim().split(/\s+/);
+const command=parts[0].toLowerCase();
+const args=parts.slice(1);
+termPrint('todooo&gt; '+orig,'term-info');
+if(command==='help'){
+termPrint('Commands:\n  help, ls [active|done], add &lt;text&gt;, done &lt;n&gt;, undo &lt;n&gt;, rm &lt;n&gt;, edit &lt;n&gt; &lt;text&gt;\n  pri &lt;n&gt; &lt;high|med|low|none&gt;, grep &lt;query&gt;, clear, stats, history\n  ghosts, purge, pet, exit, neofetch, matrix','term-success');
+playSound('success');
+}else if(command==='ls'){
+const f=args[0]||'all';
+let list=tasks;
+if(f==='active')list=tasks.filter(t=>!t.done);
+if(f==='done')list=tasks.filter(t=>t.done);
+if(list.length===0){termPrint('No tasks.','term-info');return}
+list.forEach((t,i)=>{
+termPrint(`<span class="term-index">[${i+1}]</span> [${t.done?'x':' '}] ${t.text} <span class="term-info">(${t.priority})</span>`);
+});
+playSound('success');
+}else if(command==='add'){
+const text=parts.slice(1).join(' ');
+if(!text){termPrint('Usage: add &lt;text&gt;','term-error');playSound('error');return}
+addTask(text);
+termPrint('Task added.','term-success');
+playSound('success');
+}else if(command==='done'||command==='complete'){
+const n=parseInt(args[0]);
+if(isNaN(n)||n<1||n>tasks.length){termPrint('Invalid task number.','term-error');playSound('error');return}
+toggleTask(tasks[n-1].id);
+termPrint('Task toggled.','term-success');
+}else if(command==='undo'){
+const n=parseInt(args[0]);
+if(isNaN(n)||n<1||n>tasks.length){termPrint('Invalid task number.','term-error');playSound('error');return}
+toggleTask(tasks[n-1].id);
+termPrint('Task uncompleted.','term-success');
+}else if(command==='rm'||command==='delete'){
+const n=parseInt(args[0]);
+if(isNaN(n)||n<1||n>tasks.length){termPrint('Invalid task number.','term-error');playSound('error');return}
+deleteTask(tasks[n-1].id);
+termPrint('Task deleted.','term-success');
+}else if(command==='edit'){
+const n=parseInt(args[0]);
+const text=parts.slice(2).join(' ');
+if(isNaN(n)||n<1||n>tasks.length||!text){termPrint('Usage: edit &lt;n&gt; &lt;text&gt;','term-error');playSound('error');return}
+editTask(tasks[n-1].id,text);
+termPrint('Task edited.','term-success');
+playSound('success');
+}else if(command==='pri'){
+const n=parseInt(args[0]);
+const pri=args[1]?.toLowerCase();
+if(isNaN(n)||n<1||n>tasks.length||!['none','low','med','high'].includes(pri)){termPrint('Usage: pri &lt;n&gt; high|med|low|none','term-error');playSound('error');return}
+setPriority(tasks[n-1].id,pri);
+termPrint('Priority set.','term-success');
+playSound('success');
+}else if(command==='grep'||command==='search'){
+const query=parts.slice(1).join(' ');
+if(!query){termPrint('Usage: grep &lt;query&gt;','term-error');playSound('error');return}
+const results=tasks.filter(t=>t.text.toLowerCase().includes(query.toLowerCase()));
+if(results.length===0){termPrint('No matches.','term-info');return}
+results.forEach((t,i)=>{
+const idx=tasks.indexOf(t)+1;
+termPrint(`<span class="term-index">[${idx}]</span> ${t.text}`);
+});
+playSound('success');
+}else if(command==='clear'||command==='cls'){
+termOutput.innerHTML='';
+playSound('click');
+}else if(command==='stats'){
+const total=tasks.length;
+const active=tasks.filter(t=>!t.done).length;
+const done=total-active;
+const pct=total?(done/total*100).toFixed(1):0;
+const oldest=tasks.length?tasks.reduce((a,b)=>a.createdAt<b.createdAt?a:b):null;
+termPrint(`Total: ${total} | Active: ${active} | Done: ${done} (${pct}%)`,'term-success');
+if(oldest)termPrint(`Oldest: ${oldest.text} (${formatAge(Date.now()-oldest.createdAt)} ago)`,'term-info');
+playSound('success');
+}else if(command==='history'){
+if(termHistory.length===0){termPrint('No history.','term-info');return}
+termHistory.forEach((h,i)=>termPrint(`${i+1}. ${h}`));
+playSound('success');
+}else if(command==='ghosts'){
+if(ghosts.length===0){termPrint('No ghosts.','term-info');return}
+ghosts.forEach((g,i)=>termPrint(`<span class="term-index">[${i+1}]</span> ${g.text}`));
+playSound('success');
+}else if(command==='purge'){
+purgeGhosts();
+termPrint('Ghosts purged.','term-success');
+}else if(command==='pet'){
+termPrint(`Level: ${pet.level} | Hunger: ${Math.floor(pet.hunger)} | Happiness: ${Math.floor(pet.happiness)} | XP: ${pet.xp}/100`,'term-success');
+playSound('success');
+}else if(command==='exit'||command==='quit'){
+toggleTerminal();
+playSound('click');
+}else if(command==='neofetch'){
+termPrint(`
+  _____         _
+ |_   _|__   __| | ___   ___   ___
+   | |/ _ \\ / _\` |/ _ \\ / _ \\ / _ \\
+   | | (_) | (_| | (_) | (_) | (_) |
+   |_|\\___/ \\__,_|\\___/ \\___/ \\___/
+
+  Version: 025
+  Tasks: ${tasks.length} | Active: ${tasks.filter(t=>!t.done).length}
+  Chaos: ${chaos}/100 | Pet Lv: ${pet.level}
+`,'term-success');
+playSound('success');
+}else if(command==='matrix'){
+showMatrix();
+}else{
+termPrint(`Unknown command: ${command}. Type 'help' for commands.`,'term-error');
+playSound('error');
+}
+}
+
+termInput.addEventListener('keydown',e=>{
+if(e.key==='Enter'){
+const cmd=termInput.value.trim();
+if(cmd){
+playSound('enter');
+termExec(cmd);
+}
+termInput.value='';
+}else if(e.key==='ArrowUp'){
+e.preventDefault();
+if(termHistory.length>0){
+if(termHistoryIndex===-1)termHistoryIndex=termHistory.length-1;
+else termHistoryIndex=Math.max(0,termHistoryIndex-1);
+termInput.value=termHistory[termHistoryIndex]||'';
+}
+}else if(e.key==='ArrowDown'){
+e.preventDefault();
+if(termHistoryIndex!==-1){
+termHistoryIndex++;
+if(termHistoryIndex>=termHistory.length){
+termHistoryIndex=-1;
+termInput.value='';
+}else{
+termInput.value=termHistory[termHistoryIndex]||'';
+}
+}
+}else if(e.key==='Tab'){
+e.preventDefault();
+const val=termInput.value.toLowerCase();
+const cmds=['help','ls','add','done','complete','undo','rm','delete','edit','pri','grep','search','clear','cls','stats','history','ghosts','purge','pet','exit','quit','neofetch','matrix'];
+const match=cmds.find(c=>c.startsWith(val));
+if(match)termInput.value=match;
+playSound('click');
+}else{
+playSound('click');
+}
+});
+
+function showMatrix(){
+const overlay=document.getElementById('matrix');
+overlay.classList.add('active');
+overlay.innerHTML='';
+const cols=Math.floor(window.innerWidth/14);
+for(let i=0;i<cols;i++){
+const col=document.createElement('div');
+col.className='matrix-col';
+col.style.left=i*14+'px';
+let text='';
+for(let j=0;j<50;j++){
+text+=String.fromCharCode(0x30A0+Math.floor(Math.random()*96))+'\n';
+}
+col.textContent=text;
+col.style.animationDuration=(Math.random()*2+2)+'s';
+overlay.appendChild(col);
+}
+playSound('success');
+setTimeout(()=>{
+overlay.classList.remove('active');
+overlay.innerHTML='';
+},3000);
+}
+
+load();
+render();
+updateTimeTheme();
+updatePet('',0);
+</script>
+</body>
+</html>

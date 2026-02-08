@@ -102,8 +102,18 @@ function partitionJobs(work, detailedYears = null) {
 }
 
 /**
- * Filter skills by profile name (using tags, like jobs)
- * Skills appear if their tags array includes the profile name
+ * Get the tags array for a profile from config
+ * @param {string} profileName - Profile name (e.g., "qa-lead")
+ * @returns {Array} Array of tag strings, or empty array if not found
+ */
+function getProfileTags(profileName) {
+    if (!profileName) return [];
+    return RESUME_CONFIG.profiles?.[profileName]?.tags || [];
+}
+
+/**
+ * Filter skills by profile (using tag overlap with profile's tags array)
+ * Skills appear if any of their tags overlap with the profile's tags array
  * Special case: "all" profile shows all skills regardless of tags
  * @param {Array} skills - Array of skill objects from resumeJSON
  * @param {string|null} profileName - Profile name to filter by (e.g., "qa-lead", "all")
@@ -112,16 +122,17 @@ function partitionJobs(work, detailedYears = null) {
 function filterSkillsByProfile(skills, profileName) {
     if (!profileName) return skills;
     if (profileName.toLowerCase() === 'all') return skills;
-    const profileLower = profileName.toLowerCase();
+    const profileTags = getProfileTags(profileName);
+    if (profileTags.length === 0) return skills;
     return skills.filter(skill => {
         if (!skill.tags || skill.tags.length === 0) return false;
-        return skill.tags.some(tag => tag.toLowerCase() === profileLower);
+        return skill.tags.some(tag => profileTags.includes(tag));
     });
 }
 
 /**
- * Filter work entries by profile name
- * Jobs appear if their tags array includes the profile name
+ * Filter work entries by profile (using tag overlap with profile's tags array)
+ * Jobs appear if any of their tags overlap with the profile's tags array
  * Special case: "all" profile shows all jobs regardless of tags
  * @param {Array} work - Array of work entries from resumeJSON
  * @param {string|null} profileName - Profile name to filter by (e.g., "qa-lead", "all")
@@ -131,10 +142,11 @@ function filterWorkByProfile(work, profileName) {
     if (!profileName) return work;
     // "all" profile shows everything
     if (profileName.toLowerCase() === 'all') return work;
-    const profileLower = profileName.toLowerCase();
+    const profileTags = getProfileTags(profileName);
+    if (profileTags.length === 0) return work;
     return work.filter(job => {
         if (!job.tags || job.tags.length === 0) return false;
-        return job.tags.some(tag => tag.toLowerCase() === profileLower);
+        return job.tags.some(tag => profileTags.includes(tag));
     });
 }
 

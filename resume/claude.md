@@ -29,9 +29,10 @@ Common functions live in `js/resume-utils.js`:
 - `getActiveProfile()` - Get active profile config from URL or default
 - `getSummary()` - Get profile-specific summary text
 - `getLabel()` - Get profile-specific label/title text
-- `filterWorkByProfile()` - Filter jobs by profile name (matches job tags)
+- `getProfileTags()` - Get the tags array for a profile from config
+- `filterWorkByProfile()` - Filter jobs by tag overlap with profile's tags array
 - `filterWorkByYears()` - Filter jobs by date range
-- `filterSkillsByProfile()` - Filter skill categories by profile name (matches skill tags)
+- `filterSkillsByProfile()` - Filter skill categories by tag overlap with profile's tags array
 - `partitionJobs()` - Split jobs into recent (full detail) and earlier (condensed)
 - `oxfordComma()` - Format arrays as sentences
 - `formatDate()` - Format date strings
@@ -77,12 +78,17 @@ The `resumeJSON` object follows a modified JSON Resume schema:
 - `skills` - Array of skill category objects
 - `languages` - Array of language objects
 
+### Profile Tags
+Each profile in `resume-config.js` has a `tags` array listing which tags it includes. Jobs and skills appear in a profile if any of their tags overlap with the profile's tags array. The `"all"` profile shows everything regardless of tags.
+
+Tag vocabulary: `qa-lead`, `business-analyst`, `instructor`, `event-host`, `design`, `security`, `administrative`
+
 ### Job Tags
 Each job in `work` array should have a `tags` array for filtering:
 ```javascript
 {
   name: "Company",
-  tags: ["healthcare", "lead", "startup"]
+  tags: ["qa-lead", "business-analyst"]
 }
 ```
 

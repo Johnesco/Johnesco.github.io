@@ -659,7 +659,10 @@
 
             // Filter by profile tags (unless "all")
             if (profileName !== 'all') {
-                jobs = jobs.filter(job => job.tags?.includes(profileName));
+                const profileTags = RESUME_CONFIG.profiles[profileName]?.tags || [];
+                jobs = jobs.filter(job =>
+                    job.tags?.some(tag => profileTags.includes(tag))
+                );
             }
 
             // Additive model: total visible = workYears + additionalYears
@@ -732,8 +735,9 @@
         // Count skills matching profile
         function countSkillsForProfile(profileName) {
             if (profileName === 'all') return resumeJSON.skills.length;
+            const profileTags = RESUME_CONFIG.profiles[profileName]?.tags || [];
             return resumeJSON.skills.filter(skill =>
-                skill.tags?.includes(profileName)
+                skill.tags?.some(tag => profileTags.includes(tag))
             ).length;
         }
 

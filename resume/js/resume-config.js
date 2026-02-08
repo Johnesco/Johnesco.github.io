@@ -22,8 +22,9 @@ const RESUME_CONFIG = {
     defaultProfile: "qa-lead",
 
     // Role profiles - everything is profile-driven
-    // Jobs and skills appear in a profile if their tags array includes the profile name
-    // "all" profile shows everything regardless of tags
+    // Each profile has a `tags` array listing which tags it includes
+    // Jobs/skills appear if any of their tags overlap with the profile's tags array
+    // "all" profile shows everything regardless of tags (no tags array needed)
     // The defaultProfile setting above determines which profile is used when no ?profile= is specified
     //
     // Additive model:
@@ -41,6 +42,7 @@ const RESUME_CONFIG = {
             skillsFormat: "tags"
         },
         "qa-lead": {
+            tags: ["qa-lead"],
             summaryKey: "qa-lead",
             labelKey: "qa-lead",
             // 10 years full detail + 10 more years condensed = 20 total
@@ -50,6 +52,7 @@ const RESUME_CONFIG = {
             skillsFormat: "list"
         },
         "business-analyst": {
+            tags: ["business-analyst"],
             summaryKey: "business-analyst",
             labelKey: "business-analyst",
             workHistoryYears: 30,
@@ -57,6 +60,7 @@ const RESUME_CONFIG = {
             skillsFormat: "list"
         },
         "instructor": {
+            tags: ["instructor"],
             summaryKey: "instructor",
             labelKey: "instructor",
             workHistoryYears: 99,

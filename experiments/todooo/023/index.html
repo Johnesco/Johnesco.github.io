@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todooo 023 - Tamagotchi Edition</title>
+<style>
+:root {
+  --bg:#1a1a2e; --card:#16213e; --text:#e8e8e8; --accent:#7c83ff; --danger:#ff6b6b;
+  --success:#51cf66; --warn:#ffd43b; --dawn:#ffb5a7; --morning:#fef3bd; --afternoon:#e0f7fa;
+  --evening:#d7b4f3; --night:#1a1a2e; --time-bg:var(--dawn); --time-glow:#ff9a76;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family:'Segoe UI',sans-serif; background:var(--bg); color:var(--text);
+  min-height:100vh; padding:2rem; position:relative; overflow-x:hidden;
+  transition:filter 1s, transform 0.3s;
+}
+body.dream { animation:dreamHue 30s infinite linear; }
+@keyframes dreamHue { to { filter:hue-rotate(360deg); } }
+body.chaos { animation:tremor 0.1s infinite; }
+@keyframes tremor { 0%,100%{transform:translate(0,0);} 25%{transform:translate(-2px,2px);} 75%{transform:translate(2px,-2px);} }
+#canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:50; pointer-events:none; }
+.container { max-width:650px; margin:0 auto; position:relative; z-index:100; }
+h1 { text-align:center; font-size:3rem; margin-bottom:0.5rem; color:var(--accent); text-shadow:0 0 20px var(--accent); }
+.personality { text-align:center; font-style:italic; opacity:0.7; margin-bottom:2rem; font-size:0.9rem; }
+.card {
+  background:var(--card); border-radius:12px; padding:2rem; box-shadow:0 8px 32px rgba(0,0,0,0.3);
+  backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.1); position:relative;
+}
+.card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg,var(--accent),var(--success),var(--warn)); opacity:0;
+  transition:opacity 0.3s;
+}
+.card.all-done::before { opacity:1; animation:progressPulse 2s infinite; }
+@keyframes progressPulse { 0%,100%{opacity:0.5;} 50%{opacity:1;} }
+.input-row { display:flex; gap:0.5rem; margin-bottom:1.5rem; }
+#taskInput {
+  flex:1; padding:0.75rem; background:var(--bg); border:2px solid rgba(255,255,255,0.1);
+  border-radius:8px; color:var(--text); font-size:1rem; transition:all 0.3s;
+}
+#taskInput:focus { outline:none; border-color:var(--accent); box-shadow:0 0 10px var(--accent); }
+button {
+  padding:0.75rem 1.5rem; background:var(--accent); color:#fff; border:none;
+  border-radius:8px; cursor:pointer; font-size:1rem; transition:all 0.3s;
+}
+button:hover { background:var(--success); transform:translateY(-2px); }
+button.danger { background:var(--danger); }
+button.small { padding:0.4rem 0.8rem; font-size:0.85rem; }
+.controls { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem; }
+.filters button { margin:0 0.25rem; background:transparent; border:1px solid var(--accent); color:var(--accent); padding:0.5rem 1rem; }
+.filters button.active { background:var(--accent); color:#fff; }
+.task-list { list-style:none; }
+.task {
+  background:rgba(255,255,255,0.05); margin:0.5rem 0; padding:1rem; border-radius:8px;
+  display:flex; align-items:center; gap:0.75rem; cursor:pointer; transition:all 0.3s;
+  border-left:4px solid transparent; position:relative;
+}
+.task:hover { background:rgba(255,255,255,0.1); transform:translateX(4px); }
+.task.selected { background:rgba(124,131,255,0.2); box-shadow:0 0 15px var(--accent); }
+.task.completed { opacity:0.6; text-decoration:line-through; }
+.task.completed .task-text { color:var(--success); }
+.task.slide-in { animation:slideIn 0.3s ease-out; }
+@keyframes slideIn { from{opacity:0;transform:translateX(-20px);} to{opacity:1;transform:translateX(0);} }
+.task.fade-out { animation:fadeOut 0.3s ease-out forwards; }
+@keyframes fadeOut { to{opacity:0;transform:translateX(20px);} }
+.task.ghost { opacity:0.2; pointer-events:none; animation:ghostFade 3s ease-out forwards; }
+@keyframes ghostFade { to{opacity:0;} }
+.task.dream { animation:drift 10s infinite ease-in-out; }
+@keyframes drift {
+  0%,100%{transform:translate(0,0) rotate(0deg);}
+  25%{transform:translate(10px,-10px) rotate(1deg);}
+  50%{transform:translate(-10px,10px) rotate(-1deg);}
+  75%{transform:translate(-10px,-10px) rotate(1deg);}
+}
+.task[data-priority="low"] { border-left-color:var(--success); }
+.task[data-priority="medium"] { border-left-color:var(--warn); }
+.task[data-priority="high"] { border-left-color:var(--danger); }
+.task.aged-1 { opacity:0.9; }
+.task.aged-2 { opacity:0.8; }
+.task.aged-3 { opacity:0.7; filter:grayscale(0.2); }
+.task.aged-4 { opacity:0.6; filter:grayscale(0.4); }
+.task.aged-5 { opacity:0.5; filter:grayscale(0.6); }
+.drag-over { background:rgba(124,131,255,0.3); }
+input[type="checkbox"] {
+  width:20px; height:20px; cursor:pointer; accent-color:var(--accent);
+  flex-shrink:0;
+}
+.task-text {
+  flex:1; font-size:1rem; word-break:break-word;
+}
+.task-text.editing {
+  background:var(--bg); border:2px solid var(--accent); border-radius:4px;
+  padding:0.25rem 0.5rem; outline:none;
+}
+.task-actions { display:flex; gap:0.5rem; opacity:0; transition:opacity 0.3s; }
+.task:hover .task-actions { opacity:1; }
+.priority-badge {
+  font-size:0.7rem; padding:0.2rem 0.5rem; border-radius:4px;
+  background:rgba(255,255,255,0.1); text-transform:uppercase; flex-shrink:0;
+}
+.search-box {
+  width:100%; padding:0.75rem; background:var(--bg); border:2px solid rgba(255,255,255,0.1);
+  border-radius:8px; color:var(--text); font-size:0.95rem; margin-bottom:1rem;
+}
+.search-box:focus { outline:none; border-color:var(--success); }
+.highlight { background:yellow; color:#000; padding:0 2px; border-radius:2px; }
+.progress-bar {
+  height:6px; background:rgba(255,255,255,0.1); border-radius:3px; margin-bottom:1rem;
+  overflow:hidden; position:relative;
+}
+.progress-fill {
+  height:100%; background:linear-gradient(90deg,var(--accent),var(--success));
+  transition:width 0.5s; border-radius:3px;
+}
+.toast {
+  position:fixed; bottom:2rem; right:2rem; background:var(--card); padding:1rem 1.5rem;
+  border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.3); z-index:1000;
+  display:flex; align-items:center; gap:1rem; animation:toastIn 0.3s;
+}
+@keyframes toastIn { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
+.sound-toggle {
+  position:fixed; top:2rem; right:2rem; width:40px; height:40px;
+  background:var(--accent); border-radius:50%; display:flex; align-items:center;
+  justify-content:center; cursor:pointer; z-index:1000; transition:all 0.3s;
+}
+.sound-toggle:hover { transform:scale(1.1); }
+.sound-toggle.muted { background:var(--danger); }
+.zen-mode .task-list { display:flex; flex-direction:column; align-items:center; }
+.zen-mode .task { display:none; }
+.zen-mode .task.selected { display:flex; font-size:1.5rem; padding:2rem; max-width:100%; }
+.confetti { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:999; }
+.confetti-piece {
+  position:absolute; width:10px; height:10px; background:var(--accent);
+  animation:confettiFall 3s linear forwards;
+}
+@keyframes confettiFall {
+  to { transform:translateY(100vh) rotate(720deg); opacity:0; }
+}
+.crack {
+  position:absolute; background:var(--danger); opacity:0.3; pointer-events:none;
+  animation:crackGrow 0.5s ease-out;
+}
+@keyframes crackGrow { from{transform:scale(0);} to{transform:scale(1);} }
+#pet {
+  position:fixed; bottom:20px; left:20px; z-index:1000; cursor:pointer;
+  transition:transform 0.3s;
+}
+#pet:hover { transform:scale(1.1); }
+.pet-body {
+  width:80px; height:80px; background:var(--accent); border-radius:50%;
+  position:relative; animation:bounce 2s infinite ease-in-out;
+}
+@keyframes bounce {
+  0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);}
+}
+body.dream .pet-body { animation:bounce 2s infinite ease-in-out, dreamHue 30s infinite linear; }
+body.chaos .pet-body { animation:bounce 2s infinite ease-in-out, shake 0.2s infinite; }
+@keyframes shake { 0%,100%{transform:rotate(0deg);} 25%{transform:rotate(-5deg);} 75%{transform:rotate(5deg);} }
+.pet-eye {
+  position:absolute; width:8px; height:8px; background:#fff; border-radius:50%;
+  top:25px; transition:all 0.3s;
+}
+.pet-eye.left { left:22px; }
+.pet-eye.right { right:22px; }
+.pet-eye.sleeping { height:2px; border-radius:2px; }
+.pet-mouth {
+  position:absolute; width:30px; height:15px; border:3px solid #fff;
+  border-top:none; border-radius:0 0 30px 30px; top:45px; left:25px;
+  transition:all 0.3s;
+}
+.pet-mouth.neutral { border-radius:0; height:3px; }
+.pet-mouth.hungry { border-radius:50%; width:15px; height:15px; border:3px solid #fff; left:32.5px; top:42px; }
+.pet-mouth.sad { border:3px solid #fff; border-bottom:none; border-radius:30px 30px 0 0; }
+.pet-ears {
+  position:absolute; width:20px; height:30px; background:var(--accent);
+  border-radius:50% 50% 0 0; top:-15px; opacity:0; transition:opacity 0.3s;
+}
+.pet-ears.left { left:-5px; transform:rotate(-20deg); }
+.pet-ears.right { right:-5px; transform:rotate(20deg); }
+.pet-ears.show { opacity:1; }
+.pet-legs {
+  position:absolute; width:15px; height:25px; background:var(--accent);
+  border-radius:0 0 15px 15px; bottom:-20px; opacity:0; transition:opacity 0.3s;
+}
+.pet-legs.left { left:10px; }
+.pet-legs.right { right:10px; }
+.pet-legs.show { opacity:1; }
+.pet-arms {
+  position:absolute; width:12px; height:30px; background:var(--accent);
+  border-radius:12px; top:25px; opacity:0; transition:opacity 0.3s;
+}
+.pet-arms.left { left:-15px; transform:rotate(-30deg); }
+.pet-arms.right { right:-15px; transform:rotate(30deg); }
+.pet-arms.show { opacity:1; }
+.pet-crown {
+  position:absolute; top:-25px; left:25px; opacity:0; transition:opacity 0.3s;
+}
+.pet-crown.show { opacity:1; }
+.crown-point {
+  width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent;
+  border-bottom:15px solid var(--warn); display:inline-block; margin:0 2px;
+}
+.pet-tooltip {
+  position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
+  background:var(--card); padding:0.75rem; border-radius:8px; white-space:nowrap;
+  box-shadow:0 4px 12px rgba(0,0,0,0.3); margin-bottom:10px; opacity:0;
+  pointer-events:none; transition:opacity 0.3s; font-size:0.85rem;
+}
+#pet:hover .pet-tooltip { opacity:1; }
+.stat-bar {
+  height:8px; background:rgba(255,255,255,0.2); border-radius:4px; margin:4px 0;
+  overflow:hidden; position:relative;
+}
+.stat-fill {
+  height:100%; border-radius:4px; transition:width 0.3s;
+}
+.stat-fill.hunger { background:var(--success); }
+.stat-fill.happiness { background:var(--warn); }
+@media(max-width:768px) {
+  body { padding:1rem; }
+  h1 { font-size:2rem; }
+  .controls { flex-direction:column; align-items:stretch; }
+  .filters { display:flex; justify-content:center; }
+  #pet { transform:scale(0.8); }
+}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div class="sound-toggle" id="soundToggle" title="Toggle Sound">♪</div>
+<div class="container">
+  <h1>Todooo</h1>
+  <p class="personality" id="personality">I'm watching...</p>
+  <div class="card" id="mainCard">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search tasks... (press /)">
+    <div class="input-row">
+      <input type="text" id="taskInput" placeholder="What needs to be done?" autocomplete="off">
+      <button id="addBtn">Add</button>
+    </div>
+    <div class="controls">
+      <div class="filters">
+        <button class="active" data-filter="all">All</button>
+        <button data-filter="active">Active</button>
+        <button data-filter="done">Done</button>
+      </div>
+      <div>
+        <span id="itemCount">0 items</span>
+        <button class="small danger" id="clearBtn">Clear Done</button>
+      </div>
+    </div>
+    <ul class="task-list" id="taskList"></ul>
+  </div>
+</div>
+<div id="pet">
+  <div class="pet-body">
+    <div class="pet-ears left"><div class="pet-ears right"></div></div>
+    <div class="pet-eye left"></div>
+    <div class="pet-eye right"></div>
+    <div class="pet-mouth"></div>
+    <div class="pet-arms left"></div>
+    <div class="pet-arms right"></div>
+    <div class="pet-legs left"></div>
+    <div class="pet-legs right"></div>
+    <div class="pet-crown">
+      <span class="crown-point"></span>
+      <span class="crown-point"></span>
+      <span class="crown-point"></span>
+    </div>
+  </div>
+  <div class="pet-tooltip">
+    <div>Level: <span id="petLevel">1</span></div>
+    <div>Hunger: <span id="petHunger">100</span>/100
+      <div class="stat-bar"><div class="stat-fill hunger" id="hungerBar"></div></div>
+    </div>
+    <div>Happiness: <span id="petHappiness">100</span>/100
+      <div class="stat-bar"><div class="stat-fill happiness" id="happyBar"></div></div>
+    </div>
+  </div>
+</div>
+<script>
+const STORAGE_KEY = 'todooo-023';
+const PET_KEY = 'todooo-023-pet';
+let tasks = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let petData = JSON.parse(localStorage.getItem(PET_KEY) || '{"hunger":100,"happiness":100,"level":1,"totalFed":0,"lastUpdate":' + Date.now() + '}');
+let selectedIndex = -1;
+let currentFilter = 'all';
+let searchQuery = '';
+let undoStack = [];
+let soundEnabled = true;
+let zenMode = false;
+let dreamMode = false;
+let chaosLevel = 0;
+let idleTimer = null;
+let audioCtx = null;
+let particles = [];
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playSound(freq, duration, type = 'sine') {
+  if (!soundEnabled) return;
+  initAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+function updatePet() {
+  const now = Date.now();
+  const elapsed = now - petData.lastUpdate;
+  const minutesPassed = elapsed / (1000 * 60);
+  const hungerLoss = Math.floor(minutesPassed / 5);
+  petData.hunger = Math.max(0, petData.hunger - hungerLoss);
+  petData.lastUpdate = now;
+
+  const levels = [0, 5, 15, 30, 50];
+  for (let i = levels.length - 1; i >= 0; i--) {
+    if (petData.totalFed >= levels[i]) {
+      petData.level = i + 1;
+      break;
+    }
+  }
+
+  savePet();
+  renderPet();
+}
+
+function feedPet(hunger, happiness) {
+  petData.hunger = Math.min(100, petData.hunger + hunger);
+  petData.happiness = Math.min(100, petData.happiness + happiness);
+  if (hunger > 0) petData.totalFed++;
+  petData.lastUpdate = Date.now();
+  savePet();
+  renderPet();
+}
+
+function renderPet() {
+  const { hunger, happiness, level } = petData;
+  document.getElementById('petLevel').textContent = level;
+  document.getElementById('petHunger').textContent = hunger;
+  document.getElementById('petHappiness').textContent = happiness;
+  document.getElementById('hungerBar').style.width = hunger + '%';
+  document.getElementById('happyBar').style.width = happiness + '%';
+
+  const eyes = document.querySelectorAll('.pet-eye');
+  const mouth = document.querySelector('.pet-mouth');
+
+  if (dreamMode) {
+    eyes.forEach(e => e.classList.add('sleeping'));
+  } else {
+    eyes.forEach(e => e.classList.remove('sleeping'));
+  }
+
+  mouth.className = 'pet-mouth';
+  if (hunger > 70 && happiness > 70) {
+    mouth.classList.add('happy');
+  } else if (hunger < 30) {
+    mouth.classList.add('hungry');
+    if (soundEnabled && Math.random() > 0.98) playSound(200, 0.1, 'triangle');
+  } else if (happiness < 30) {
+    mouth.classList.add('sad');
+  } else {
+    mouth.classList.add('neutral');
+  }
+
+  const ears = document.querySelectorAll('.pet-ears');
+  const legs = document.querySelectorAll('.pet-legs');
+  const arms = document.querySelectorAll('.pet-arms');
+  const crown = document.querySelector('.pet-crown');
+
+  ears.forEach(e => e.classList.toggle('show', level >= 2));
+  legs.forEach(e => e.classList.toggle('show', level >= 3));
+  arms.forEach(e => e.classList.toggle('show', level >= 4));
+  crown.classList.toggle('show', level >= 5);
+}
+
+function savePet() {
+  localStorage.setItem(PET_KEY, JSON.stringify(petData));
+}
+
+function saveTasks() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+function addTask(text, priority = 'none') {
+  const task = {
+    id: Date.now(),
+    text,
+    completed: false,
+    priority,
+    createdAt: Date.now()
+  };
+  tasks.push(task);
+  saveTasks();
+  feedPet(0, 2);
+  playSound(440, 0.1);
+  burstParticles(canvas.width / 2, canvas.height / 2, 10);
+  render();
+  updateChaos(-5);
+}
+
+function toggleTask(id) {
+  const task = tasks.find(t => t.id === id);
+  if (task) {
+    undoStack.push({ type: 'toggle', task: { ...task } });
+    task.completed = !task.completed;
+    saveTasks();
+    if (task.completed) {
+      feedPet(15, 10);
+      playSound(523, 0.15);
+      playSound(659, 0.15);
+    } else {
+      playSound(392, 0.1);
+    }
+    render();
+    updateChaos(-3);
+  }
+}
+
+function deleteTask(id) {
+  const index = tasks.findIndex(t => t.id === id);
+  if (index !== -1) {
+    const task = tasks[index];
+    undoStack.push({ type: 'delete', task: { ...task }, index });
+    tasks.splice(index, 1);
+    saveTasks();
+    feedPet(5, -5);
+    playSound(330, 0.1, 'sawtooth');
+    render();
+    showToast('Task deleted', true);
+    createGhost(task);
+    updateChaos(5);
+  }
+}
+
+function updateTask(id, text) {
+  const task = tasks.find(t => t.id === id);
+  if (task) {
+    task.text = text;
+    saveTasks();
+    playSound(494, 0.1);
+    render();
+  }
+}
+
+function setPriority(id, priority) {
+  const task = tasks.find(t => t.id === id);
+  if (task) {
+    task.priority = priority;
+    saveTasks();
+    render();
+  }
+}
+
+function clearCompleted() {
+  const completed = tasks.filter(t => t.completed);
+  if (completed.length > 0) {
+    tasks = tasks.filter(t => !t.completed);
+    saveTasks();
+    playSound(262, 0.2, 'square');
+    render();
+    updateChaos(completed.length * 2);
+  }
+}
+
+function undo() {
+  const action = undoStack.pop();
+  if (!action) return;
+  if (action.type === 'delete') {
+    tasks.splice(action.index, 0, action.task);
+  } else if (action.type === 'toggle') {
+    const task = tasks.find(t => t.id === action.task.id);
+    if (task) task.completed = action.task.completed;
+  }
+  saveTasks();
+  playSound(587, 0.1);
+  render();
+}
+
+function showToast(message, showUndo = false) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `<span>${message}</span>`;
+  if (showUndo) {
+    const btn = document.createElement('button');
+    btn.className = 'small';
+    btn.textContent = 'Undo';
+    btn.onclick = () => { undo(); toast.remove(); };
+    toast.appendChild(btn);
+  }
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+function createGhost(task) {
+  const ghostTasks = JSON.parse(localStorage.getItem('todooo-023-ghosts') || '[]');
+  ghostTasks.push({ ...task, ghostedAt: Date.now() });
+  localStorage.setItem('todooo-023-ghosts', JSON.stringify(ghostTasks));
+  render();
+}
+
+function purgeGhosts() {
+  localStorage.removeItem('todooo-023-ghosts');
+  playSound(220, 0.3, 'sawtooth');
+  render();
+}
+
+function getFilteredTasks() {
+  let filtered = tasks;
+  if (currentFilter === 'active') filtered = tasks.filter(t => !t.completed);
+  if (currentFilter === 'done') filtered = tasks.filter(t => t.completed);
+
+  if (searchQuery) {
+    filtered = filtered.filter(t => t.text.toLowerCase().includes(searchQuery.toLowerCase()));
+  }
+
+  return filtered;
+}
+
+function highlightText(text) {
+  if (!searchQuery) return text;
+  const regex = new RegExp(`(${searchQuery})`, 'gi');
+  return text.replace(regex, '<span class="highlight">$1</span>');
+}
+
+function getTaskAge(createdAt) {
+  const days = (Date.now() - createdAt) / (1000 * 60 * 60 * 24);
+  if (days < 1) return 0;
+  if (days < 3) return 1;
+  if (days < 7) return 2;
+  if (days < 14) return 3;
+  if (days < 30) return 4;
+  return 5;
+}
+
+function render() {
+  const filtered = getFilteredTasks();
+  const list = document.getElementById('taskList');
+  const existing = Array.from(list.children);
+
+  filtered.forEach((task, index) => {
+    let li = existing.find(el => el.dataset.id == task.id);
+    if (!li) {
+      li = document.createElement('li');
+      li.className = 'task slide-in';
+      li.dataset.id = task.id;
+      li.draggable = true;
+      li.innerHTML = `
+        <input type="checkbox" ${task.completed ? 'checked' : ''}>
+        <div class="task-text" contenteditable="false">${highlightText(task.text)}</div>
+        <div class="task-actions">
+          <select class="priority-select">
+            <option value="none">-</option>
+            <option value="low">L</option>
+            <option value="medium">M</option>
+            <option value="high">H</option>
+          </select>
+          <button class="small danger">×</button>
+        </div>
+      `;
+      list.appendChild(li);
+
+      li.querySelector('input[type="checkbox"]').addEventListener('change', () => toggleTask(task.id));
+      li.querySelector('.task-text').addEventListener('dblclick', e => {
+        e.target.contentEditable = true;
+        e.target.classList.add('editing');
+        e.target.focus();
+        document.execCommand('selectAll', false, null);
+      });
+      li.querySelector('.task-text').addEventListener('blur', e => {
+        e.target.contentEditable = false;
+        e.target.classList.remove('editing');
+        updateTask(task.id, e.target.textContent.trim());
+      });
+      li.querySelector('.task-text').addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.target.blur();
+        }
+        if (e.key === 'Escape') {
+          e.target.textContent = task.text;
+          e.target.blur();
+        }
+      });
+      li.querySelector('.priority-select').addEventListener('change', e => setPriority(task.id, e.target.value));
+      li.querySelector('.small.danger').addEventListener('click', e => {
+        e.stopPropagation();
+        li.classList.add('fade-out');
+        setTimeout(() => deleteTask(task.id), 300);
+      });
+
+      li.addEventListener('dragstart', e => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', task.id);
+        li.style.opacity = '0.5';
+      });
+      li.addEventListener('dragend', () => { li.style.opacity = '1'; });
+      li.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        li.classList.add('drag-over');
+      });
+      li.addEventListener('dragleave', () => li.classList.remove('drag-over'));
+      li.addEventListener('drop', e => {
+        e.preventDefault();
+        li.classList.remove('drag-over');
+        const draggedId = parseInt(e.dataTransfer.getData('text/plain'));
+        const draggedIndex = tasks.findIndex(t => t.id === draggedId);
+        const dropIndex = tasks.findIndex(t => t.id === task.id);
+        if (draggedIndex !== -1 && dropIndex !== -1) {
+          const [draggedTask] = tasks.splice(draggedIndex, 1);
+          tasks.splice(dropIndex, 0, draggedTask);
+          saveTasks();
+          render();
+        }
+      });
+    }
+
+    li.className = 'task';
+    if (task.completed) li.classList.add('completed');
+    li.classList.add('aged-' + getTaskAge(task.createdAt));
+    li.dataset.priority = task.priority;
+    if (index === selectedIndex) li.classList.add('selected');
+    if (dreamMode) li.classList.add('dream');
+
+    li.querySelector('.priority-select').value = task.priority;
+    li.querySelector('.task-text').innerHTML = highlightText(task.text);
+  });
+
+  existing.forEach(el => {
+    if (!filtered.find(t => t.dataset && t.id == el.dataset.id)) {
+      el.remove();
+    }
+  });
+
+  const ghosts = JSON.parse(localStorage.getItem('todooo-023-ghosts') || '[]');
+  ghosts.forEach(ghost => {
+    if (Date.now() - ghost.ghostedAt < 3000) {
+      const li = document.createElement('li');
+      li.className = 'task ghost';
+      li.innerHTML = `<div class="task-text">${ghost.text}</div>`;
+      list.appendChild(li);
+    }
+  });
+
+  const activeCount = tasks.filter(t => !t.completed).length;
+  document.getElementById('itemCount').textContent = `${activeCount} item${activeCount !== 1 ? 's' : ''}`;
+
+  const progress = tasks.length > 0 ? (tasks.filter(t => t.completed).length / tasks.length) * 100 : 0;
+  document.getElementById('progressFill').style.width = progress + '%';
+
+  if (tasks.length > 0 && activeCount === 0) {
+    document.getElementById('mainCard').classList.add('all-done');
+    if (!document.querySelector('.confetti')) {
+      createConfetti();
+      playSound(523, 0.1);
+      playSound(659, 0.1);
+      playSound(784, 0.2);
+    }
+  } else {
+    document.getElementById('mainCard').classList.remove('all-done');
+  }
+
+  updatePersonality();
+}
+
+function updatePersonality() {
+  const personalities = [
+    { cond: () => tasks.length === 0, text: "So empty... so quiet... waiting..." },
+    { cond: () => tasks.every(t => t.completed), text: "Perfection achieved. I'm almost... proud?" },
+    { cond: () => tasks.filter(t => !t.completed).length > 10, text: "Ambitious, aren't we? Or just drowning?" },
+    { cond: () => tasks.some(t => getTaskAge(t.createdAt) > 4), text: "Some tasks grow old here... forgotten dreams..." },
+    { cond: () => searchQuery, text: "Searching for meaning in the chaos..." },
+    { cond: () => zenMode, text: "Ahh... focus. One breath, one task." },
+    { cond: () => dreamMode, text: "Drifting... floating... between worlds..." },
+    { cond: () => chaosLevel > 60, text: "Everything falls apart eventually..." },
+    { cond: () => petData.hunger < 30, text: "Your companion hungers... don't neglect them." },
+    { cond: () => petData.level >= 5, text: "Your companion has become magnificent!" },
+    { cond: () => true, text: "I see everything you do..." }
+  ];
+
+  const match = personalities.find(p => p.cond());
+  document.getElementById('personality').textContent = match.text;
+}
+
+function createConfetti() {
+  const container = document.createElement('div');
+  container.className = 'confetti';
+  for (let i = 0; i < 50; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = ['#7c83ff', '#51cf66', '#ffd43b', '#ff6b6b'][Math.floor(Math.random() * 4)];
+    piece.style.animationDelay = Math.random() * 2 + 's';
+    container.appendChild(piece);
+  }
+  document.body.appendChild(container);
+  setTimeout(() => container.remove(), 3000);
+}
+
+function setTimeTheme() {
+  const hour = new Date().getHours();
+  let theme = 'night';
+  if (hour >= 5 && hour < 8) theme = 'dawn';
+  else if (hour >= 8 && hour < 12) theme = 'morning';
+  else if (hour >= 12 && hour < 17) theme = 'afternoon';
+  else if (hour >= 17 && hour < 21) theme = 'evening';
+
+  const themes = {
+    dawn: { bg: '#ffb5a7', glow: '#ff9a76' },
+    morning: { bg: '#fef3bd', glow: '#ffd93d' },
+    afternoon: { bg: '#e0f7fa', glow: '#4dd0e1' },
+    evening: { bg: '#d7b4f3', glow: '#b47fd6' },
+    night: { bg: '#1a1a2e', glow: '#7c83ff' }
+  };
+
+  document.documentElement.style.setProperty('--time-bg', themes[theme].bg);
+  document.documentElement.style.setProperty('--time-glow', themes[theme].glow);
+}
+
+function updateChaos(delta) {
+  chaosLevel = Math.max(0, Math.min(100, chaosLevel + delta));
+
+  if (chaosLevel >= 10) {
+    document.body.classList.add('chaos');
+  } else {
+    document.body.classList.remove('chaos');
+  }
+
+  if (chaosLevel >= 30 && Math.random() > 0.95) {
+    createCrack();
+  }
+
+  if (chaosLevel >= 90 && Math.random() > 0.99) {
+    shatter();
+  }
+
+  if (chaosLevel > 0) {
+    setTimeout(() => updateChaos(-1), 1000);
+  }
+}
+
+function createCrack() {
+  const crack = document.createElement('div');
+  crack.className = 'crack';
+  crack.style.width = Math.random() * 200 + 50 + 'px';
+  crack.style.height = '2px';
+  crack.style.top = Math.random() * window.innerHeight + 'px';
+  crack.style.left = Math.random() * window.innerWidth + 'px';
+  crack.style.transform = `rotate(${Math.random() * 360}deg)`;
+  document.body.appendChild(crack);
+  setTimeout(() => crack.remove(), 2000);
+}
+
+function shatter() {
+  playSound(150, 0.5, 'sawtooth');
+  for (let i = 0; i < 20; i++) {
+    setTimeout(() => createCrack(), i * 50);
+  }
+  setTimeout(() => {
+    chaosLevel = 0;
+    document.body.classList.remove('chaos');
+    showToast('Reality repaired itself...');
+  }, 2000);
+}
+
+function burstParticles(x, y, count) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 4,
+      vy: (Math.random() - 0.5) * 4,
+      life: 1,
+      color: `hsl(${Math.random() * 360}, 70%, 60%)`
+    });
+  }
+}
+
+function animateParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (Math.random() > 0.95) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: (Math.random() - 0.5) * 0.5,
+      life: 1,
+      color: 'rgba(124,131,255,0.3)'
+    });
+  }
+
+  particles = particles.filter(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= 0.01;
+
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = p.life;
+    ctx.fillRect(p.x, p.y, 3, 3);
+
+    return p.life > 0;
+  });
+
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(animateParticles);
+}
+
+function resetIdleTimer() {
+  clearTimeout(idleTimer);
+  if (dreamMode) {
+    dreamMode = false;
+    document.body.classList.remove('dream');
+    render();
+  }
+  idleTimer = setTimeout(() => {
+    dreamMode = true;
+    document.body.classList.add('dream');
+    document.getElementById('personality').textContent = 'murmur... whisper... drift...';
+    render();
+  }, 60000);
+}
+
+document.getElementById('addBtn').addEventListener('click', () => {
+  const input = document.getElementById('taskInput');
+  const text = input.value.trim();
+  if (text) {
+    addTask(text);
+    input.value = '';
+  }
+});
+
+document.getElementById('taskInput').addEventListener('keypress', e => {
+  if (e.key === 'Enter') {
+    document.getElementById('addBtn').click();
+  }
+});
+
+document.querySelectorAll('.filters button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    render();
+  });
+});
+
+document.getElementById('clearBtn').addEventListener('click', clearCompleted);
+
+document.getElementById('searchBox').addEventListener('input', e => {
+  searchQuery = e.target.value;
+  render();
+});
+
+document.getElementById('soundToggle').addEventListener('click', e => {
+  soundEnabled = !soundEnabled;
+  e.target.classList.toggle('muted');
+  e.target.textContent = soundEnabled ? '♪' : '🔇';
+});
+
+document.getElementById('pet').addEventListener('click', () => {
+  playSound(600, 0.1);
+  burstParticles(100, window.innerHeight - 100, 15);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.contentEditable === 'true') {
+    if (e.key === 'Escape') e.target.blur();
+    return;
+  }
+
+  const filtered = getFilteredTasks();
+
+  if (e.key === '/') {
+    e.preventDefault();
+    document.getElementById('searchBox').focus();
+  } else if (e.key === 'j' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    selectedIndex = Math.min(filtered.length - 1, selectedIndex + 1);
+    render();
+  } else if (e.key === 'k' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    selectedIndex = Math.max(0, selectedIndex - 1);
+    render();
+  } else if (e.key === 'Enter' && selectedIndex >= 0) {
+    toggleTask(filtered[selectedIndex].id);
+  } else if (e.key === 'Delete' && selectedIndex >= 0) {
+    const task = filtered[selectedIndex];
+    const li = document.querySelector(`[data-id="${task.id}"]`);
+    if (li) li.classList.add('fade-out');
+    setTimeout(() => deleteTask(task.id), 300);
+  } else if (e.key.toLowerCase() === 'e' && selectedIndex >= 0) {
+    const task = filtered[selectedIndex];
+    const li = document.querySelector(`[data-id="${task.id}"]`);
+    if (li) li.querySelector('.task-text').dispatchEvent(new Event('dblclick'));
+  } else if (e.key.toLowerCase() === 'p' && selectedIndex >= 0) {
+    const task = filtered[selectedIndex];
+    const priorities = ['none', 'low', 'medium', 'high'];
+    const current = priorities.indexOf(task.priority);
+    const next = priorities[(current + 1) % priorities.length];
+    setPriority(task.id, next);
+  } else if (e.key === 'Escape') {
+    selectedIndex = -1;
+    document.getElementById('searchBox').value = '';
+    searchQuery = '';
+    render();
+  } else if (e.key.toLowerCase() === 'g') {
+    purgeGhosts();
+  } else if (e.key.toLowerCase() === 'z') {
+    zenMode = !zenMode;
+    document.body.classList.toggle('zen-mode');
+    if (zenMode && selectedIndex === -1) selectedIndex = 0;
+    render();
+  } else if (e.key.toLowerCase() === 'z' && e.ctrlKey) {
+    e.preventDefault();
+    undo();
+  }
+});
+
+document.addEventListener('mousemove', e => {
+  if (Math.random() > 0.98) {
+    burstParticles(e.clientX, e.clientY, 2);
+  }
+  resetIdleTimer();
+});
+
+document.addEventListener('click', resetIdleTimer);
+document.addEventListener('keypress', resetIdleTimer);
+
+setTimeTheme();
+setInterval(setTimeTheme, 60000);
+updatePet();
+setInterval(updatePet, 60000);
+render();
+animateParticles();
+resetIdleTimer();
+</script>
+</body>
+</html>
