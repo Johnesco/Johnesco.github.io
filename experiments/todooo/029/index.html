@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo 029 - Adversarial Mode</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: filter 0.3s;
+}
+body.shake { animation: shake 0.5s; }
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0); }
+  10%, 30%, 50%, 70%, 90% { transform: translate(-5px, 5px); }
+  20%, 40%, 60%, 80% { transform: translate(5px, -5px); }
+}
+body.invert { filter: invert(1); }
+body.vignette::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 100px rgba(255,0,0,0.3);
+  z-index: 9999;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  transition: transform 0.3s;
+}
+.container.rotate { transform: rotate(2deg); }
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: #16213e;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  position: relative;
+}
+.score { font-size: 24px; font-weight: bold; }
+.score.you { color: #4ade80; }
+.score.app { color: #ef4444; }
+.timer {
+  font-size: 20px;
+  color: #7c83ff;
+  text-align: center;
+  font-weight: bold;
+}
+.difficulty {
+  text-align: center;
+  font-size: 14px;
+  padding: 5px 15px;
+  border-radius: 20px;
+  margin-top: 5px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.diff-0 { background: #10b981; color: #000; }
+.diff-1 { background: #f59e0b; color: #000; }
+.diff-2 { background: #ef4444; color: #fff; }
+.diff-3 { background: #dc2626; color: #fff; }
+.diff-4 { background: #991b1b; color: #fff; animation: pulse 1s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+.app-avatar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 40px;
+  transition: transform 0.3s;
+}
+.app-avatar.bounce { animation: bounce 0.5s; }
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.intro, .victory, .defeat {
+  background: #16213e;
+  padding: 40px;
+  border-radius: 10px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.intro h1 { font-size: 32px; margin-bottom: 20px; color: #7c83ff; }
+.intro p { font-size: 18px; line-height: 1.6; margin-bottom: 15px; }
+.countdown {
+  font-size: 72px;
+  color: #ef4444;
+  font-weight: bold;
+  margin: 20px 0;
+}
+
+.commentary {
+  position: fixed;
+  top: 140px;
+  right: 20px;
+  background: rgba(22, 33, 62, 0.95);
+  padding: 15px 20px;
+  border-radius: 10px;
+  border: 2px solid #7c83ff;
+  max-width: 300px;
+  font-size: 14px;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 10000;
+  pointer-events: none;
+}
+.commentary.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.commentary::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  right: 30px;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 10px solid #7c83ff;
+}
+
+.add-task {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  background: #16213e;
+  padding: 20px;
+  border-radius: 10px;
+}
+.add-task input {
+  flex: 1;
+  padding: 12px;
+  background: #1a1a2e;
+  border: 2px solid #7c83ff;
+  border-radius: 5px;
+  color: #e0e0e0;
+  font-size: 16px;
+}
+.add-task button {
+  padding: 12px 24px;
+  background: #7c83ff;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+.add-task button:hover { background: #6366f1; }
+
+.task-list {
+  background: #16213e;
+  padding: 20px;
+  border-radius: 10px;
+  min-height: 400px;
+  position: relative;
+}
+
+.task {
+  background: #1a1a2e;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  transition: transform 0.3s, box-shadow 0.3s;
+  position: relative;
+  cursor: pointer;
+}
+.task:hover { transform: translateX(5px); }
+.task.dodging {
+  transition: transform 0.2s ease-out;
+  z-index: 100;
+}
+.task.floating {
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+.task.shielded {
+  border: 3px solid #3b82f6;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  animation: shield-pulse 2s infinite;
+}
+@keyframes shield-pulse {
+  0%, 100% { border-color: #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+  50% { border-color: #fff; box-shadow: 0 0 30px rgba(255, 255, 255, 0.8); }
+}
+.task.decoy {
+  font-family: 'Segoe UI', sans-serif;
+  letter-spacing: 0.5px;
+}
+.task.decoy-revealed {
+  background: #7f1d1d !important;
+  border: 2px solid #ef4444;
+}
+.task.boss {
+  background: #450a0a;
+  border: 3px solid #dc2626;
+  padding: 20px;
+  font-size: 18px;
+  box-shadow: 0 0 30px rgba(220, 38, 38, 0.6);
+}
+
+.checkbox-wrapper {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.checkbox {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #7c83ff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  position: relative;
+}
+.checkbox.hidden { opacity: 0; pointer-events: none; }
+.checkbox:hover { background: rgba(124, 131, 255, 0.2); }
+.task.completed .checkbox {
+  background: #7c83ff;
+  border-color: #7c83ff;
+}
+.task.completed .checkbox::after {
+  content: '✓';
+  position: absolute;
+  color: #fff;
+  font-size: 18px;
+  top: -2px;
+  left: 3px;
+}
+
+.task-text {
+  flex: 1;
+  font-size: 16px;
+  transition: opacity 0.2s;
+}
+.task.completed .task-text {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+.task-text.scrambled {
+  letter-spacing: 2px;
+  font-style: italic;
+}
+
+.shield-indicator {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 12px;
+  color: #3b82f6;
+  font-weight: bold;
+}
+
+.health-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: #3b82f6;
+  transition: width 0.3s;
+}
+
+.priority-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6b7280;
+  flex-shrink: 0;
+}
+
+.powerups {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 15px;
+  background: rgba(22, 33, 62, 0.95);
+  padding: 15px 25px;
+  border-radius: 50px;
+  border: 2px solid #7c83ff;
+  z-index: 1000;
+}
+.powerup {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  background: #1a1a2e;
+  border: 2px solid #7c83ff;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+.powerup:hover:not(.locked):not(.cooldown) {
+  transform: scale(1.1);
+  background: #7c83ff;
+}
+.powerup.locked {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.powerup.cooldown {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.powerup-icon {
+  font-size: 24px;
+}
+.powerup-key {
+  font-size: 10px;
+  color: #7c83ff;
+  margin-top: 2px;
+}
+.powerup-cooldown {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: conic-gradient(rgba(0,0,0,0.8) var(--progress), transparent var(--progress));
+  pointer-events: none;
+}
+
+.toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(22, 33, 62, 0.98);
+  padding: 20px 40px;
+  border-radius: 10px;
+  border: 3px solid #ef4444;
+  font-size: 24px;
+  font-weight: bold;
+  z-index: 10001;
+  animation: toast-appear 0.5s;
+}
+@keyframes toast-appear {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10002;
+}
+.modal-content {
+  background: #16213e;
+  padding: 40px;
+  border-radius: 10px;
+  border: 3px solid #7c83ff;
+  max-width: 500px;
+  text-align: center;
+}
+.modal-content h2 {
+  font-size: 28px;
+  margin-bottom: 20px;
+  color: #7c83ff;
+}
+.modal-content p {
+  font-size: 18px;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+.modal-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+.modal-buttons button {
+  padding: 12px 30px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.2s;
+}
+.modal-buttons button:hover { transform: scale(1.05); }
+.modal-buttons .accept {
+  background: #10b981;
+  color: #000;
+}
+.modal-buttons .decline {
+  background: #ef4444;
+  color: #fff;
+}
+
+.crash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000;
+  color: #0f0;
+  font-family: 'Courier New', monospace;
+  padding: 50px;
+  z-index: 10003;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.victory h1, .defeat h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+  color: #7c83ff;
+}
+.victory p, .defeat p {
+  font-size: 20px;
+  margin: 10px 0;
+}
+.victory button, .defeat button {
+  margin-top: 30px;
+  padding: 15px 40px;
+  font-size: 18px;
+  background: #7c83ff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.victory button:hover, .defeat button:hover {
+  background: #6366f1;
+}
+
+.fireworks {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 9998;
+}
+.firework {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation: firework-explode 1s ease-out forwards;
+}
+@keyframes firework-explode {
+  0% { transform: translate(0, 0); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)); opacity: 0; }
+}
+
+.hidden { display: none !important; }
+
+.sound-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #16213e;
+  border: 2px solid #7c83ff;
+  color: #e0e0e0;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 20px;
+  z-index: 1001;
+  transition: transform 0.2s;
+}
+.sound-toggle:hover { transform: scale(1.1); }
+
+.lag-cursor {
+  position: fixed;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(124, 131, 255, 0.3);
+  pointer-events: none;
+  z-index: 10004;
+  transition: left 0.15s, top 0.15s;
+}
+</style>
+</head>
+<body>
+
+<button class="sound-toggle" onclick="toggleSound()">🔊</button>
+<div class="lag-cursor hidden" id="lagCursor"></div>
+
+<div class="container">
+  <div class="intro" id="intro">
+    <h1>ADVERSARIAL TODO</h1>
+    <p>Welcome. I am your todo app.</p>
+    <p>I do NOT want you to finish your tasks.</p>
+    <p>Let's play.</p>
+    <div class="countdown" id="countdown"></div>
+  </div>
+
+  <div class="header hidden" id="header">
+    <div class="score you">YOU: <span id="playerScore">0</span></div>
+    <div>
+      <div class="timer" id="timer">00:00</div>
+      <div class="difficulty" id="difficulty"></div>
+    </div>
+    <div class="score app">APP: <span id="appScore">0</span></div>
+    <div class="app-avatar" id="avatar">😊</div>
+  </div>
+
+  <div class="commentary" id="commentary"></div>
+
+  <div class="add-task hidden" id="addTaskSection">
+    <input type="text" id="taskInput" placeholder="Add your own task (if you dare)..." />
+    <button onclick="addTask()">ADD</button>
+  </div>
+
+  <div class="task-list hidden" id="taskList"></div>
+</div>
+
+<div class="powerups hidden" id="powerups">
+  <div class="powerup locked" id="freezePower" onclick="usePowerup('freeze')">
+    <div class="powerup-icon">❄️</div>
+    <div class="powerup-key">F</div>
+    <div class="powerup-cooldown" style="--progress: 0%"></div>
+  </div>
+  <div class="powerup locked" id="revealPower" onclick="usePowerup('reveal')">
+    <div class="powerup-icon">👁️</div>
+    <div class="powerup-key">R</div>
+    <div class="powerup-cooldown" style="--progress: 0%"></div>
+  </div>
+  <div class="powerup locked" id="forcePower" onclick="usePowerup('force')">
+    <div class="powerup-icon">⚡</div>
+    <div class="powerup-key">X</div>
+    <div class="powerup-cooldown" style="--progress: 0%"></div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'todooo-029';
+const DIFFICULTIES = ['DOCILE', 'ANNOYED', 'AGGRESSIVE', 'DESPERATE', 'ENRAGED'];
+const AVATARS = ['😊', '😤', '😡', '🤬', '😢'];
+
+let gameState = {
+  tasks: [],
+  playerScore: 0,
+  appScore: 0,
+  difficulty: 0,
+  startTime: null,
+  gameActive: false,
+  frozen: false,
+  powerups: { freeze: false, reveal: false, force: false },
+  cooldowns: { freeze: 0, reveal: 0, force: 0 }
+};
+
+let audioContext, soundEnabled = true;
+let timers = { swap: null, spawn: null, shuffle: null };
+
+const STARTER_TASKS = [
+  "Try to complete me",
+  "I dare you",
+  "You can't catch me",
+  "I'm not going anywhere",
+  "Good luck with this one"
+];
+
+const COMMENTARY = {
+  0: ["Let's see how long you last.", "I'm ready. Are you?", "This should be interesting."],
+  1: ["Oh. You completed one.", "That was my favorite...", "I worked hard on that task layout.", "Hmm."],
+  2: ["Stop that.", "I JUST organized those.", "Do you enjoy destroying things?", "Rude."],
+  3: ["NOW I'm angry.", "You think this is a GAME?", "Oh wait, it is.", "FINE. I didn't even LIKE that task.", "Reinforcements incoming!"],
+  4: ["PLEASE stop.", "I'm BEGGING you.", "What did my tasks ever do to you?", "This isn't fair. You have HANDS.", "I'm running out of tasks to defend..."],
+  5: ["NOOOOOO!", "This is my last stand!", "You won't take them ALL!", "I'M NOT DONE YET!", "NEVER SURRENDER!"]
+};
+
+function initAudio() {
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playSound(type) {
+  if (!soundEnabled || !audioContext) return;
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
+
+  const now = audioContext.currentTime;
+  gain.gain.setValueAtTime(0.3, now);
+
+  switch(type) {
+    case 'complete':
+      osc.frequency.setValueAtTime(523, now);
+      osc.frequency.exponentialRampToValueAtTime(784, now + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc.start(now);
+      osc.stop(now + 0.15);
+      break;
+    case 'spawn':
+      osc.frequency.setValueAtTime(196, now);
+      osc.frequency.exponentialRampToValueAtTime(147, now + 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+      osc.start(now);
+      osc.stop(now + 0.2);
+      break;
+    case 'decoy':
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(200, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      osc.start(now);
+      osc.stop(now + 0.1);
+      break;
+    case 'shield':
+      osc.frequency.setValueAtTime(800, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+      osc.start(now);
+      osc.stop(now + 0.05);
+      break;
+    case 'shieldBreak':
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(400, now + 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+      osc.start(now);
+      osc.stop(now + 0.2);
+      break;
+    case 'dodge':
+      osc.frequency.setValueAtTime(400, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+      osc.start(now);
+      osc.stop(now + 0.08);
+      break;
+    case 'powerup':
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc.start(now);
+      osc.stop(now + 0.15);
+      break;
+  }
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  document.querySelector('.sound-toggle').textContent = soundEnabled ? '🔊' : '🔇';
+}
+
+function showCommentary(text) {
+  const elem = document.getElementById('commentary');
+  elem.textContent = text;
+  elem.classList.add('show');
+  document.getElementById('avatar').classList.add('bounce');
+  setTimeout(() => {
+    elem.classList.remove('show');
+    document.getElementById('avatar').classList.remove('bounce');
+  }, 3000);
+}
+
+function getRandomCommentary(difficulty) {
+  const comments = COMMENTARY[difficulty] || COMMENTARY[0];
+  return comments[Math.floor(Math.random() * comments.length)];
+}
+
+function updateDifficulty() {
+  const score = gameState.playerScore;
+  let diff = 0;
+  if (score >= 19) diff = 4;
+  else if (score >= 13) diff = 3;
+  else if (score >= 8) diff = 2;
+  else if (score >= 4) diff = 1;
+
+  if (diff !== gameState.difficulty) {
+    gameState.difficulty = diff;
+    const diffElem = document.getElementById('difficulty');
+    diffElem.textContent = DIFFICULTIES[diff];
+    diffElem.className = 'difficulty diff-' + diff;
+    document.getElementById('avatar').textContent = AVATARS[diff];
+
+    if (diff >= 2) document.body.classList.add('vignette');
+    if (diff >= 3) document.querySelector('.container').classList.add('rotate');
+    if (diff === 4) {
+      document.body.classList.add('shake');
+      setTimeout(() => document.body.classList.remove('shake'), 500);
+      showLagCursor();
+    }
+
+    clearTimers();
+    setupTimers();
+
+    if (diff === 1) unlockPowerup('freeze');
+    if (diff === 2) unlockPowerup('reveal');
+    if (diff === 3) unlockPowerup('force');
+  }
+}
+
+function unlockPowerup(type) {
+  if (!gameState.powerups[type]) {
+    gameState.powerups[type] = true;
+    document.getElementById(type + 'Power').classList.remove('locked');
+    showToast('POWER UNLOCKED: ' + type.toUpperCase() + '!');
+  }
+}
+
+function usePowerup(type) {
+  if (!gameState.powerups[type] || gameState.cooldowns[type] > 0) return;
+
+  playSound('powerup');
+
+  if (type === 'freeze') {
+    gameState.frozen = true;
+    gameState.cooldowns.freeze = 30;
+    showToast('TASKS FROZEN!');
+    setTimeout(() => {
+      gameState.frozen = false;
+      showToast('Freeze ended');
+    }, 5000);
+  } else if (type === 'reveal') {
+    gameState.cooldowns.reveal = 20;
+    showToast('DECOYS REVEALED!');
+    gameState.tasks.forEach((task, i) => {
+      if (task.decoy) {
+        const elem = document.querySelector(`[data-id="${task.id}"]`);
+        if (elem) elem.classList.add('decoy-revealed');
+      }
+    });
+    setTimeout(() => {
+      document.querySelectorAll('.decoy-revealed').forEach(el => el.classList.remove('decoy-revealed'));
+    }, 3000);
+  } else if (type === 'force') {
+    gameState.cooldowns.force = 45;
+    const incompleteTasks = gameState.tasks.filter(t => !t.completed && !t.decoy);
+    if (incompleteTasks.length > 0) {
+      const target = incompleteTasks[0];
+      completeTask(target.id, true);
+      showToast('FORCE COMPLETE!');
+    }
+  }
+
+  startCooldown(type);
+}
+
+function startCooldown(type) {
+  const duration = type === 'freeze' ? 30000 : type === 'reveal' ? 20000 : 45000;
+  const interval = setInterval(() => {
+    gameState.cooldowns[type]--;
+    const progress = (gameState.cooldowns[type] / (duration / 1000)) * 100;
+    const elem = document.getElementById(type + 'Power');
+    elem.querySelector('.powerup-cooldown').style.setProperty('--progress', progress + '%');
+
+    if (gameState.cooldowns[type] <= 0) {
+      clearInterval(interval);
+      elem.classList.remove('cooldown');
+      elem.querySelector('.powerup-cooldown').style.setProperty('--progress', '0%');
+    } else {
+      elem.classList.add('cooldown');
+    }
+  }, 1000);
+}
+
+function showToast(text) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = text;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 1500);
+}
+
+function showLagCursor() {
+  const cursor = document.getElementById('lagCursor');
+  cursor.classList.remove('hidden');
+  document.addEventListener('mousemove', updateLagCursor);
+}
+
+function updateLagCursor(e) {
+  const cursor = document.getElementById('lagCursor');
+  cursor.style.left = e.clientX - 15 + 'px';
+  cursor.style.top = e.clientY - 15 + 'px';
+}
+
+function startGame() {
+  initAudio();
+  let count = 3;
+  const countdownElem = document.getElementById('countdown');
+
+  const countInterval = setInterval(() => {
+    if (count > 0) {
+      countdownElem.textContent = count;
+      count--;
+    } else {
+      clearInterval(countInterval);
+      countdownElem.textContent = 'GO!';
+      setTimeout(() => {
+        document.getElementById('intro').classList.add('hidden');
+        document.getElementById('header').classList.remove('hidden');
+        document.getElementById('addTaskSection').classList.remove('hidden');
+        document.getElementById('taskList').classList.remove('hidden');
+        document.getElementById('powerups').classList.remove('hidden');
+
+        gameState.gameActive = true;
+        gameState.startTime = Date.now();
+
+        STARTER_TASKS.forEach(text => createTask(text));
+        render();
+        setupTimers();
+        startTimer();
+        showCommentary(getRandomCommentary(0));
+      }, 500);
+    }
+  }, 1000);
+}
+
+function createTask(text, isBoss = false, isDecoy = false) {
+  const task = {
+    id: Date.now() + Math.random(),
+    text: text,
+    originalText: text,
+    completed: false,
+    decoy: isDecoy,
+    boss: isBoss,
+    shield: 0
+  };
+
+  if (gameState.difficulty >= 2 && Math.random() < 0.3 && !isDecoy) {
+    task.shield = isBoss ? 5 : 3;
+  }
+
+  gameState.tasks.push(task);
+  if (!isDecoy) {
+    gameState.appScore++;
+    updateScore();
+  }
+  return task;
+}
+
+function addTask() {
+  const input = document.getElementById('taskInput');
+  const text = input.value.trim();
+  if (text) {
+    createTask(text);
+    input.value = '';
+    render();
+    playSound('spawn');
+  }
+}
+
+function completeTask(id, force = false) {
+  const task = gameState.tasks.find(t => t.id === id);
+  if (!task || task.completed) return;
+
+  if (task.decoy) {
+    playSound('decoy');
+    showToast('DECOY!');
+    gameState.appScore++;
+    updateScore();
+    showCommentary("Ha! Decoy!");
+    task.completed = true;
+    setTimeout(() => {
+      gameState.tasks = gameState.tasks.filter(t => t.id !== id);
+      render();
+    }, 500);
+    return;
+  }
+
+  if (!force && task.shield > 0) {
+    task.shield--;
+    playSound('shield');
+    if (task.shield === 0) {
+      playSound('shieldBreak');
+      showToast('SHIELD BROKEN!');
+    }
+    render();
+    return;
+  }
+
+  task.completed = true;
+  gameState.playerScore++;
+  updateScore();
+  updateDifficulty();
+  playSound('complete');
+
+  showCommentary(getRandomCommentary(gameState.difficulty));
+
+  if (gameState.difficulty >= 2 && Math.random() < 0.4) {
+    setTimeout(() => {
+      createTask('Clone of: ' + task.text);
+      createTask('Clone of: ' + task.text);
+      render();
+      showToast('TASK CLONED!');
+      playSound('spawn');
+    }, 500);
+  }
+
+  setTimeout(() => {
+    gameState.tasks = gameState.tasks.filter(t => t.id !== id);
+    render();
+    checkWinCondition();
+  }, 300);
+
+  render();
+}
+
+function setupTimers() {
+  const diff = gameState.difficulty;
+
+  if (diff >= 0) {
+    const swapDelay = diff === 0 ? 8000 : diff === 1 ? 4000 : diff === 2 ? 3000 : 2000;
+    timers.swap = setInterval(() => {
+      if (!gameState.frozen && gameState.tasks.length > 1) {
+        swapTasks();
+      }
+    }, swapDelay);
+  }
+
+  if (diff >= 1) {
+    timers.spawn = setInterval(() => {
+      if (gameState.gameActive) {
+        const isDecoy = diff >= 2 && Math.random() < 0.3;
+        const text = isDecoy ?
+          generateDecoyTask() :
+          'Task #' + (gameState.tasks.length + 1);
+        createTask(text, false, isDecoy);
+        render();
+        playSound('spawn');
+        showToast(isDecoy ? 'Decoy spawned!' : 'Reinforcements!');
+      }
+    }, 20000);
+  }
+
+  if (diff >= 3) {
+    timers.shuffle = setInterval(() => {
+      if (!gameState.frozen) {
+        gameState.tasks.sort(() => Math.random() - 0.5);
+        render();
+      }
+    }, 10000);
+
+    if (Math.random() < 0.3) {
+      setTimeout(() => showFakeCrash(), Math.random() * 30000 + 10000);
+    }
+
+    if (Math.random() < 0.2) {
+      setTimeout(() => showNegotiationModal(), Math.random() * 20000 + 15000);
+    }
+  }
+
+  if (diff >= 4) {
+    setInterval(() => {
+      if (gameState.gameActive) {
+        document.body.classList.add('shake');
+        setTimeout(() => document.body.classList.remove('shake'), 500);
+      }
+    }, 8000);
+
+    setInterval(() => {
+      if (gameState.gameActive && Math.random() < 0.3) {
+        document.body.classList.add('invert');
+        setTimeout(() => document.body.classList.remove('invert'), 500);
+      }
+    }, 5000);
+  }
+}
+
+function clearTimers() {
+  Object.values(timers).forEach(timer => clearInterval(timer));
+}
+
+function swapTasks() {
+  if (gameState.tasks.length < 2) return;
+  const i = Math.floor(Math.random() * gameState.tasks.length);
+  const j = Math.floor(Math.random() * gameState.tasks.length);
+  if (i !== j) {
+    [gameState.tasks[i], gameState.tasks[j]] = [gameState.tasks[j], gameState.tasks[i]];
+    render();
+  }
+}
+
+function generateDecoyTask() {
+  const real = ['Complete', 'Finish', 'Do', 'Task', 'Important'];
+  const shuffled = real.map(w => w.split('').sort(() => Math.random() - 0.5).join(''));
+  return shuffled[Math.floor(Math.random() * shuffled.length)] + ' this';
+}
+
+function showFakeCrash() {
+  const crash = document.createElement('div');
+  crash.className = 'crash-screen';
+  crash.innerHTML = `
+    <h1>FATAL ERROR</h1>
+    <p>Error Code: TOO_MANY_COMPLETIONS</p>
+    <p>The application has encountered an unexpected error.</p>
+    <p>Rebooting in 2 seconds...</p>
+  `;
+  document.body.appendChild(crash);
+  setTimeout(() => crash.remove(), 2000);
+}
+
+function showNegotiationModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h2>NEGOTIATION</h2>
+      <p>Listen. I'll make you a deal.</p>
+      <p>Complete THIS task instead, and I'll let you have 2 others for free.</p>
+      <p>Deal?</p>
+      <div class="modal-buttons">
+        <button class="accept" onclick="acceptDeal()">ACCEPT</button>
+        <button class="decline" onclick="declineDeal()">DECLINE</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+function acceptDeal() {
+  document.querySelector('.modal').remove();
+  const incomplete = gameState.tasks.filter(t => !t.completed && !t.decoy);
+  if (incomplete.length >= 3) {
+    completeTask(incomplete[0].id, true);
+    completeTask(incomplete[1].id, true);
+    completeTask(incomplete[2].id, true);
+    showToast('Deal accepted!');
+    showCommentary("A fair trade.");
+  }
+}
+
+function declineDeal() {
+  document.querySelector('.modal').remove();
+  showCommentary("Your loss.");
+}
+
+function handleTaskClick(e, id) {
+  if (e.target.classList.contains('checkbox') || e.target.classList.contains('checkbox-wrapper')) {
+    completeTask(id);
+  }
+}
+
+function handleTaskHover(e, id) {
+  if (gameState.frozen) return;
+
+  const task = gameState.tasks.find(t => t.id === id);
+  if (!task || task.completed) return;
+
+  const elem = e.currentTarget;
+  const checkbox = elem.querySelector('.checkbox');
+
+  if (gameState.difficulty >= 1 && Math.random() < 0.3) {
+    checkbox.classList.add('hidden');
+    setTimeout(() => checkbox.classList.remove('hidden'), 1500);
+  }
+
+  if (gameState.difficulty >= 2) {
+    const rect = elem.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const nearCheckbox = mouseX < 100;
+
+    if (nearCheckbox && Math.random() < 0.6) {
+      const container = document.getElementById('taskList');
+      const containerRect = container.getBoundingClientRect();
+      const maxX = containerRect.width - rect.width;
+      const maxY = containerRect.height - rect.height;
+
+      const newX = Math.random() * maxX;
+      const newY = Math.random() * maxY;
+
+      elem.style.position = 'absolute';
+      elem.style.left = newX + 'px';
+      elem.style.top = newY + 'px';
+      elem.classList.add('dodging');
+
+      playSound('dodge');
+
+      setTimeout(() => {
+        elem.style.position = 'relative';
+        elem.style.left = '0';
+        elem.style.top = '0';
+        elem.classList.remove('dodging');
+      }, 1000);
+    }
+  }
+}
+
+function render() {
+  const list = document.getElementById('taskList');
+  list.innerHTML = '';
+
+  gameState.tasks.forEach(task => {
+    const div = document.createElement('div');
+    div.className = 'task';
+    div.dataset.id = task.id;
+
+    if (task.completed) div.classList.add('completed');
+    if (task.decoy) div.classList.add('decoy');
+    if (task.boss) div.classList.add('boss');
+    if (task.shield > 0) div.classList.add('shielded');
+    if (gameState.difficulty >= 3 && !task.completed) div.classList.add('floating');
+
+    div.onclick = (e) => handleTaskClick(e, task.id);
+    div.onmouseenter = (e) => handleTaskHover(e, task.id);
+
+    const checkboxWrapper = document.createElement('div');
+    checkboxWrapper.className = 'checkbox-wrapper';
+    const checkbox = document.createElement('div');
+    checkbox.className = 'checkbox';
+    checkboxWrapper.appendChild(checkbox);
+
+    const text = document.createElement('div');
+    text.className = 'task-text';
+    text.textContent = task.text;
+
+    const dot = document.createElement('div');
+    dot.className = 'priority-dot';
+
+    div.appendChild(checkboxWrapper);
+    div.appendChild(text);
+    div.appendChild(dot);
+
+    if (task.shield > 0) {
+      const shield = document.createElement('div');
+      shield.className = 'shield-indicator';
+      shield.textContent = '🛡️ ' + task.shield;
+      div.appendChild(shield);
+
+      const health = document.createElement('div');
+      health.className = 'health-bar';
+      health.style.width = ((task.shield / (task.boss ? 5 : 3)) * 100) + '%';
+      div.appendChild(health);
+    }
+
+    list.appendChild(div);
+  });
+}
+
+function updateScore() {
+  document.getElementById('playerScore').textContent = gameState.playerScore;
+  document.getElementById('appScore').textContent = gameState.appScore;
+
+  if (gameState.tasks.filter(t => !t.completed).length >= 30) {
+    endGame(false);
+  }
+}
+
+function startTimer() {
+  setInterval(() => {
+    if (gameState.gameActive && gameState.startTime) {
+      const elapsed = Math.floor((Date.now() - gameState.startTime) / 1000);
+      const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+      const secs = (elapsed % 60).toString().padStart(2, '0');
+      document.getElementById('timer').textContent = mins + ':' + secs;
+    }
+  }, 1000);
+}
+
+function checkWinCondition() {
+  const incomplete = gameState.tasks.filter(t => !t.completed && !t.decoy);
+  if (incomplete.length === 0 && gameState.gameActive) {
+    if (gameState.difficulty >= 4 && gameState.playerScore >= 19) {
+      showToast('Wait... one more thing!');
+      setTimeout(() => {
+        for (let i = 0; i < 3; i++) {
+          createTask('FINAL BOSS TASK ' + (i + 1), true);
+        }
+        render();
+
+        setTimeout(() => {
+          const stillIncomplete = gameState.tasks.filter(t => !t.completed && !t.decoy);
+          if (stillIncomplete.length === 0) {
+            endGame(true);
+          }
+        }, 10000);
+      }, 1000);
+    } else {
+      endGame(true);
+    }
+  }
+}
+
+function endGame(victory) {
+  gameState.gameActive = false;
+  clearTimers();
+
+  const elapsed = Math.floor((Date.now() - gameState.startTime) / 1000);
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+
+  const container = document.querySelector('.container');
+  container.innerHTML = '';
+
+  if (victory) {
+    const div = document.createElement('div');
+    div.className = 'victory';
+    div.innerHTML = `
+      <h1>VICTORY!</h1>
+      <p>You completed all tasks!</p>
+      <p>Final Score: YOU ${gameState.playerScore} - ${gameState.appScore} APP</p>
+      <p>Time: ${mins}m ${secs}s</p>
+      <p style="margin-top: 30px; font-style: italic;">"GG. Well played."</p>
+      <p style="margin-top: 10px; color: #7c83ff;">"The app will remember this."</p>
+      <button onclick="location.reload()">NEW GAME (N)</button>
+    `;
+    container.appendChild(div);
+
+    createFireworks();
+  } else {
+    const div = document.createElement('div');
+    div.className = 'defeat';
+    div.innerHTML = `
+      <h1>APP WINS!</h1>
+      <p>You were overwhelmed by tasks!</p>
+      <p>Final Score: YOU ${gameState.playerScore} - ${gameState.appScore} APP</p>
+      <p>Time: ${mins}m ${secs}s</p>
+      <p style="margin-top: 30px; font-style: italic;">"I think you have enough tasks now. Don't you?"</p>
+      <button onclick="location.reload()">TRY AGAIN (N)</button>
+    `;
+    container.appendChild(div);
+  }
+}
+
+function createFireworks() {
+  const container = document.createElement('div');
+  container.className = 'fireworks';
+  document.body.appendChild(container);
+
+  for (let i = 0; i < 50; i++) {
+    setTimeout(() => {
+      const x = Math.random() * window.innerWidth;
+      const y = Math.random() * window.innerHeight;
+
+      for (let j = 0; j < 20; j++) {
+        const firework = document.createElement('div');
+        firework.className = 'firework';
+        firework.style.left = x + 'px';
+        firework.style.top = y + 'px';
+        firework.style.background = `hsl(${Math.random() * 360}, 100%, 60%)`;
+
+        const angle = (j / 20) * Math.PI * 2;
+        const distance = 50 + Math.random() * 100;
+        firework.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+        firework.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+
+        container.appendChild(firework);
+        setTimeout(() => firework.remove(), 1000);
+      }
+    }, i * 100);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'f' || e.key === 'F') usePowerup('freeze');
+  if (e.key === 'r' || e.key === 'R') usePowerup('reveal');
+  if (e.key === 'x' || e.key === 'X') usePowerup('force');
+  if (e.key === 'n' || e.key === 'N') location.reload();
+  if (e.key === 'Enter' && document.getElementById('taskInput') === document.activeElement) addTask();
+});
+
+window.addEventListener('load', () => {
+  setTimeout(startGame, 1000);
+});
+</script>
+
+</body>
+</html>

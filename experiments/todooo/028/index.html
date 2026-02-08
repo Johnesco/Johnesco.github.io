@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo 028 - Living Organisms</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0a0a1e;
+  color: #e0e0e0;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+#canvas {
+  display: block;
+  cursor: crosshair;
+}
+#controls {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  background: rgba(26, 26, 46, 0.9);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(124, 131, 255, 0.3);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 10px;
+  z-index: 100;
+}
+#taskInput {
+  flex: 1;
+  max-width: 400px;
+  padding: 8px 12px;
+  background: #16213e;
+  border: 1px solid #7c83ff;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 14px;
+}
+#taskInput::placeholder { color: #888; }
+#taskInput:focus { outline: none; border-color: #a0a5ff; }
+select, button {
+  padding: 8px 12px;
+  background: #16213e;
+  border: 1px solid #7c83ff;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 14px;
+  cursor: pointer;
+}
+button:hover { background: #1a2647; }
+button:active { background: #0f1629; }
+#stats {
+  position: fixed;
+  top: 60px;
+  right: 10px;
+  background: rgba(22, 33, 62, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(124, 131, 255, 0.4);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 11px;
+  line-height: 1.6;
+  min-width: 180px;
+  z-index: 100;
+}
+#stats .label { color: #7c83ff; font-weight: bold; }
+#stats .value { color: #e0e0e0; }
+#popGraph {
+  margin-top: 8px;
+  height: 30px;
+  background: rgba(10, 10, 30, 0.5);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+#tooltip {
+  position: fixed;
+  background: rgba(22, 33, 62, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid #7c83ff;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 11px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 1000;
+  max-width: 250px;
+}
+#tooltip.visible { opacity: 1; }
+.trait { color: #fbbf24; font-size: 10px; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="controls">
+  <input type="text" id="taskInput" placeholder="Enter a new task..." />
+  <select id="prioritySelect">
+    <option value="none">No Priority</option>
+    <option value="low">Low</option>
+    <option value="med">Medium</option>
+    <option value="high">High</option>
+  </select>
+  <button id="addBtn">Add Task</button>
+  <button id="soundToggle">Sound: ON</button>
+</div>
+<div id="stats">
+  <div><span class="label">Population:</span> <span class="value" id="popCount">0</span> / <span class="value" id="totalCount">0</span></div>
+  <div><span class="label">Generations:</span> <span class="value" id="maxGen">0</span></div>
+  <div><span class="label">Oldest:</span> <span class="value" id="oldest">-</span></div>
+  <div><span class="label">Completed:</span> <span class="value" id="completed">0</span></div>
+  <div><span class="label">Births:</span> <span class="value" id="births">0</span></div>
+  <div><span class="label">Deaths:</span> <span class="value" id="deaths">0</span></div>
+  <canvas id="popGraph" width="160" height="30"></canvas>
+</div>
+<div id="tooltip"></div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+const taskInput = document.getElementById('taskInput');
+const prioritySelect = document.getElementById('prioritySelect');
+const addBtn = document.getElementById('addBtn');
+const soundToggle = document.getElementById('soundToggle');
+
+let W, H, organisms = [], particles = [], ghosts = [], selected = null;
+let stats = { totalEver: 0, completed: 0, births: 0, deaths: 0 };
+let popHistory = [];
+let time = 0, soundEnabled = true, zoom = 1, offsetX = 0, offsetY = 0;
+let audioCtx, ambientNode, ambientGain;
+let dragging = null, dragOffset = { x: 0, y: 0 };
+let lastSave = Date.now();
+
+const PRIORITY_COLORS = {
+  none: '#7c83ff',
+  low: '#4ade80',
+  med: '#fbbf24',
+  high: '#f87171'
+};
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+class Organism {
+  constructor(name, priority, x, y, generation = 1, traits = null, age = 0) {
+    this.id = Math.random().toString(36).substr(2, 9);
+    this.name = name;
+    this.priority = priority;
+    this.x = x || Math.random() * W;
+    this.y = y || Math.random() * H;
+    this.vx = (Math.random() - 0.5) * 2;
+    this.vy = (Math.random() - 0.5) * 2;
+    this.generation = generation;
+    this.age = age;
+    this.createdAt = Date.now() - age * 1000;
+    this.lastReproduction = this.createdAt;
+    this.traits = traits || {
+      speed: 0.5 + Math.random() * 1.5,
+      size: 0.8 + Math.random() * 0.5,
+      sociability: Math.random(),
+      fertility: Math.random(),
+      lifespan: 300 + Math.random() * 300
+    };
+    this.baseSize = 30;
+    this.blinkTimer = 0;
+    this.blinking = false;
+    this.dying = false;
+    this.dyingProgress = 0;
+    this.spawnProgress = 0;
+    this.energyPulse = 0;
+    this.parentLink = null;
+    this.parentLinkAge = 0;
+  }
+
+  update(dt) {
+    this.age = (Date.now() - this.createdAt) / 1000;
+    if (this.spawnProgress < 1) this.spawnProgress += dt * 3;
+    if (this.energyPulse > 0) this.energyPulse -= dt * 2;
+
+    const lifeRatio = this.age / this.traits.lifespan;
+    if (lifeRatio >= 1 && !this.dying) {
+      this.startDying();
+    }
+    if (this.dying) {
+      this.dyingProgress += dt * 0.1;
+      if (this.dyingProgress >= 1) return true;
+    }
+
+    this.blinkTimer += dt;
+    if (this.blinkTimer > 3 + Math.random() * 2) {
+      this.blinking = true;
+      setTimeout(() => this.blinking = false, 150);
+      this.blinkTimer = 0;
+    }
+
+    const neighbors = organisms.filter(o => o !== this && this.distTo(o) < 120);
+    let sepX = 0, sepY = 0, alignX = 0, alignY = 0, cohX = 0, cohY = 0;
+    let sepCount = 0, alignCount = 0, cohCount = 0;
+
+    neighbors.forEach(o => {
+      const d = this.distTo(o);
+      if (d < 40) {
+        sepX += (this.x - o.x) / d;
+        sepY += (this.y - o.y) / d;
+        sepCount++;
+      }
+      if (d < 80) {
+        alignX += o.vx;
+        alignY += o.vy;
+        alignCount++;
+      }
+      if (d < 120) {
+        cohX += o.x;
+        cohY += o.y;
+        cohCount++;
+      }
+    });
+
+    const social = this.traits.sociability;
+    if (sepCount > 0) {
+      this.vx += (sepX / sepCount) * 0.5;
+      this.vy += (sepY / sepCount) * 0.5;
+    }
+    if (alignCount > 0 && social > 0.3) {
+      this.vx += ((alignX / alignCount) - this.vx) * 0.05 * social;
+      this.vy += ((alignY / alignCount) - this.vy) * 0.05 * social;
+    }
+    if (cohCount > 0 && social > 0.3) {
+      const cx = cohX / cohCount;
+      const cy = cohY / cohCount;
+      this.vx += (cx - this.x) * 0.002 * social;
+      this.vy += (cy - this.y) * 0.002 * social;
+    }
+
+    const wanderStrength = 1 - social * 0.5;
+    this.vx += Math.sin(time * 0.3 + this.id.charCodeAt(0)) * 0.03 * wanderStrength;
+    this.vy += Math.cos(time * 0.5 + this.id.charCodeAt(1)) * 0.03 * wanderStrength;
+
+    const margin = 50;
+    if (this.x < margin) this.vx += (margin - this.x) * 0.01;
+    if (this.x > W - margin) this.vx += (W - margin - this.x) * 0.01;
+    if (this.y < margin + 50) this.vy += (margin + 50 - this.y) * 0.01;
+    if (this.y > H - margin) this.vy += (H - margin - this.y) * 0.01;
+
+    const speedMult = lifeRatio > 0.8 ? 1 - (lifeRatio - 0.8) * 2 : 1;
+    const maxSpeed = this.traits.speed * speedMult;
+    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+    if (speed > maxSpeed) {
+      this.vx = (this.vx / speed) * maxSpeed;
+      this.vy = (this.vy / speed) * maxSpeed;
+    }
+
+    this.x += this.vx;
+    this.y += this.vy;
+
+    if (this.parentLink) {
+      this.parentLinkAge += dt;
+    }
+
+    if (!this.dying && this.age > 120 && Date.now() - this.lastReproduction > 30000) {
+      if (organisms.length < 30 && Math.random() < this.traits.fertility * 0.01) {
+        this.reproduce();
+      }
+    }
+
+    return false;
+  }
+
+  distTo(o) {
+    const dx = this.x - o.x;
+    const dy = this.y - o.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  startDying() {
+    this.dying = true;
+    stats.deaths++;
+    setTimeout(() => ghosts.push({ x: this.x, y: this.y, size: this.getSize(), age: 0 }), 10000);
+    playSound('death');
+  }
+
+  reproduce() {
+    this.lastReproduction = Date.now();
+    const mutations = {
+      speed: this.traits.speed * (0.85 + Math.random() * 0.3),
+      size: this.traits.size * (0.85 + Math.random() * 0.3),
+      sociability: Math.max(0, Math.min(1, this.traits.sociability + (Math.random() - 0.5) * 0.3)),
+      fertility: Math.max(0, Math.min(1, this.traits.fertility + (Math.random() - 0.5) * 0.3)),
+      lifespan: this.traits.lifespan * (0.85 + Math.random() * 0.3)
+    };
+    const suffixes = ['Jr', 'II', 'mini-', 'sub-', 'baby '];
+    const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+    const childName = suffix.includes('-') ? suffix + this.name : this.name + ' ' + suffix;
+
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 40;
+    const child = new Organism(
+      childName,
+      this.priority,
+      this.x + Math.cos(angle) * dist,
+      this.y + Math.sin(angle) * dist,
+      this.generation + 1,
+      mutations,
+      0
+    );
+    child.parentLink = this.id;
+    organisms.push(child);
+    stats.births++;
+    stats.totalEver++;
+
+    this.energyPulse = 1;
+    for (let i = 0; i < 10; i++) {
+      particles.push({
+        x: this.x,
+        y: this.y,
+        vx: (Math.random() - 0.5) * 3,
+        vy: (Math.random() - 0.5) * 3,
+        life: 1,
+        color: PRIORITY_COLORS[this.priority],
+        size: 3
+      });
+    }
+    playSound('birth');
+    saveState();
+  }
+
+  complete() {
+    stats.completed++;
+    for (let i = 0; i < 30; i++) {
+      particles.push({
+        x: this.x,
+        y: this.y,
+        vx: (Math.random() - 0.5) * 4,
+        vy: (Math.random() - 0.5) * 4 - 2,
+        life: 1,
+        color: '#4ade80',
+        size: 4
+      });
+    }
+    organisms.forEach(o => {
+      if (o !== this && this.distTo(o) < 100) {
+        o.energyPulse = 0.5;
+      }
+    });
+    playSound('complete');
+    saveState();
+  }
+
+  getSize() {
+    const ageFactor = Math.min(1, this.age / 60);
+    return this.baseSize * this.traits.size * ageFactor * this.spawnProgress;
+  }
+
+  draw() {
+    const size = this.getSize();
+    const alpha = this.dying ? 1 - this.dyingProgress : 1;
+    const pulse = this.energyPulse > 0 ? 1 + this.energyPulse * 0.2 : 1;
+
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.3;
+    const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, size * 1.5 * pulse);
+    gradient.addColorStop(0, PRIORITY_COLORS[this.priority] + '44');
+    gradient.addColorStop(1, PRIORITY_COLORS[this.priority] + '00');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(this.x - size * 1.5 * pulse, this.y - size * 1.5 * pulse, size * 3 * pulse, size * 3 * pulse);
+    ctx.restore();
+
+    const lifeRatio = this.age / this.traits.lifespan;
+    const desaturation = lifeRatio > 0.8 ? (lifeRatio - 0.8) * 5 : 0;
+    let color = PRIORITY_COLORS[this.priority];
+    if (desaturation > 0) {
+      const gray = Math.floor(128 + desaturation * 50);
+      color = `rgb(${gray}, ${gray}, ${gray})`;
+    }
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    const points = 8;
+    for (let i = 0; i < points; i++) {
+      const angle = (i / points) * Math.PI * 2;
+      const r = size * pulse * (0.9 + Math.sin(angle * 3 + time * 2) * 0.1);
+      const x = this.x + Math.cos(angle) * r;
+      const y = this.y + Math.sin(angle) * r;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    if (selected === this) {
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    const eyeCount = Math.min(3, Math.floor(this.generation / 3) + 1);
+    ctx.fillStyle = '#0a0a1e';
+    for (let i = 0; i < eyeCount; i++) {
+      const offsetX = (i - (eyeCount - 1) / 2) * 8;
+      const eyeSize = this.blinking ? 1 : 4;
+      ctx.beginPath();
+      ctx.arc(this.x + offsetX, this.y - 5, eyeSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (this.generation === 1) {
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('★', this.x, this.y - size - 5);
+    }
+
+    ctx.fillStyle = '#e0e0e0';
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(this.name.length > 15 ? this.name.substr(0, 15) + '...' : this.name, this.x, this.y + size + 12);
+
+    ctx.fillStyle = '#888';
+    ctx.font = '8px Arial';
+    ctx.fillText(`Gen ${this.generation}`, this.x, this.y + size + 22);
+
+    ctx.restore();
+  }
+}
+
+function addOrganism(name, priority) {
+  if (!name.trim()) return;
+  const org = new Organism(name.trim(), priority);
+  organisms.push(org);
+  stats.totalEver++;
+  playSound('spawn');
+  saveState();
+  taskInput.value = '';
+}
+
+function updateParticles(dt) {
+  particles = particles.filter(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.1;
+    p.life -= dt;
+
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+
+    return p.life > 0;
+  });
+}
+
+function updateGhosts(dt) {
+  ghosts = ghosts.filter(g => {
+    g.age += dt;
+    if (g.age > 5) return false;
+
+    ctx.globalAlpha = 1 - g.age / 5;
+    ctx.strokeStyle = '#7c83ff';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(g.x, g.y, g.size, 0, Math.PI * 2);
+    ctx.stroke();
+
+    return true;
+  });
+}
+
+function drawBackground() {
+  ctx.fillStyle = '#0a0a1e';
+  ctx.fillRect(0, 0, W, H);
+
+  const pop = organisms.length;
+  if (pop > 20) {
+    const intensity = (pop - 20) / 10;
+    const gradient = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H));
+    gradient.addColorStop(0, `rgba(124, 83, 255, ${intensity * 0.05})`);
+    gradient.addColorStop(1, 'rgba(10, 10, 30, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  ctx.fillStyle = '#1a1a3e';
+  const gridSize = 40;
+  for (let x = 0; x < W; x += gridSize) {
+    for (let y = 60; y < H; y += gridSize) {
+      if (Math.random() > 0.7) {
+        ctx.beginPath();
+        ctx.arc(x, y, 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  const nebulaTime = time * 0.1;
+  for (let i = 0; i < 3; i++) {
+    const x = W / 2 + Math.sin(nebulaTime + i) * W * 0.3;
+    const y = H / 2 + Math.cos(nebulaTime + i * 1.3) * H * 0.3;
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, 200);
+    gradient.addColorStop(0, `rgba(${100 + i * 30}, ${80 + i * 20}, 255, 0.02)`);
+    gradient.addColorStop(1, 'rgba(10, 10, 30, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - 200, y - 200, 400, 400);
+  }
+}
+
+function drawParentLinks() {
+  organisms.forEach(child => {
+    if (child.parentLink && child.parentLinkAge < 30) {
+      const parent = organisms.find(o => o.id === child.parentLink);
+      if (parent) {
+        ctx.globalAlpha = 1 - child.parentLinkAge / 30;
+        ctx.strokeStyle = PRIORITY_COLORS[child.priority];
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(parent.x, parent.y);
+        ctx.lineTo(child.x, child.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+  });
+}
+
+function updateStats() {
+  document.getElementById('popCount').textContent = organisms.length;
+  document.getElementById('totalCount').textContent = stats.totalEver;
+  document.getElementById('completed').textContent = stats.completed;
+  document.getElementById('births').textContent = stats.births;
+  document.getElementById('deaths').textContent = stats.deaths;
+
+  const maxGen = organisms.reduce((max, o) => Math.max(max, o.generation), 0);
+  document.getElementById('maxGen').textContent = maxGen;
+
+  const oldest = organisms.reduce((old, o) => o.age > old.age ? o : old, { age: 0, name: '-' });
+  document.getElementById('oldest').textContent = oldest.name === '-' ? '-' : `${oldest.name} (${Math.floor(oldest.age)}s)`;
+
+  popHistory.push(organisms.length);
+  if (popHistory.length > 60) popHistory.shift();
+
+  const graphCanvas = document.getElementById('popGraph');
+  const gctx = graphCanvas.getContext('2d');
+  gctx.clearRect(0, 0, 160, 30);
+  gctx.strokeStyle = '#7c83ff';
+  gctx.lineWidth = 1.5;
+  gctx.beginPath();
+  const max = Math.max(...popHistory, 1);
+  popHistory.forEach((pop, i) => {
+    const x = (i / (popHistory.length - 1)) * 160;
+    const y = 30 - (pop / max) * 28;
+    if (i === 0) gctx.moveTo(x, y);
+    else gctx.lineTo(x, y);
+  });
+  gctx.stroke();
+}
+
+function initAudio() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  ambientGain = audioCtx.createGain();
+  ambientGain.gain.value = 0.02;
+  ambientGain.connect(audioCtx.destination);
+
+  ambientNode = audioCtx.createOscillator();
+  ambientNode.type = 'sine';
+  ambientNode.frequency.value = 60;
+  ambientNode.connect(ambientGain);
+  ambientNode.start();
+}
+
+function playSound(type) {
+  if (!soundEnabled || !audioCtx) return;
+
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  if (type === 'spawn') {
+    osc.frequency.setValueAtTime(400, now);
+    osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } else if (type === 'complete') {
+    osc.type = 'white';
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+    osc.start(now);
+    osc.stop(now + 0.3);
+  } else if (type === 'death') {
+    osc.frequency.setValueAtTime(200, now);
+    osc.frequency.exponentialRampToValueAtTime(50, now + 0.4);
+    gain.gain.setValueAtTime(0.02, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+    osc.start(now);
+    osc.stop(now + 0.4);
+  } else if (type === 'birth') {
+    osc.frequency.setValueAtTime(300, now);
+    osc.frequency.setValueAtTime(320, now + 0.05);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  }
+}
+
+function updateAmbient() {
+  if (!ambientNode) return;
+  const pop = organisms.length;
+  const targetFreq = 60 + pop * 2;
+  ambientNode.frequency.setValueAtTime(targetFreq, audioCtx.currentTime);
+}
+
+let lastTime = performance.now();
+function animate(currentTime) {
+  const dt = Math.min((currentTime - lastTime) / 1000, 0.1);
+  lastTime = currentTime;
+  time += dt;
+
+  drawBackground();
+  ctx.globalAlpha = 1;
+
+  organisms = organisms.filter(o => !o.update(dt));
+
+  drawParentLinks();
+  updateGhosts(dt);
+  organisms.forEach(o => o.draw());
+  updateParticles(dt);
+
+  if (Date.now() - lastSave > 10000) {
+    saveState();
+    lastSave = Date.now();
+  }
+
+  if (Math.floor(time) % 2 === 0) {
+    updateStats();
+    updateAmbient();
+  }
+
+  requestAnimationFrame(animate);
+}
+
+function saveState() {
+  const data = {
+    organisms: organisms.map(o => ({
+      name: o.name,
+      priority: o.priority,
+      x: o.x,
+      y: o.y,
+      generation: o.generation,
+      traits: o.traits,
+      age: o.age,
+      parentLink: o.parentLink
+    })),
+    stats,
+    timestamp: Date.now()
+  };
+  localStorage.setItem('todooo-028', JSON.stringify(data));
+}
+
+function loadState() {
+  const saved = localStorage.getItem('todooo-028');
+  if (!saved) return;
+
+  try {
+    const data = JSON.parse(saved);
+    const elapsed = (Date.now() - data.timestamp) / 1000;
+
+    data.organisms.forEach(o => {
+      const org = new Organism(o.name, o.priority, o.x, o.y, o.generation, o.traits, o.age + elapsed);
+      org.parentLink = o.parentLink;
+      organisms.push(org);
+    });
+
+    stats = data.stats || { totalEver: organisms.length, completed: 0, births: 0, deaths: 0 };
+  } catch (e) {
+    console.error('Failed to load state:', e);
+  }
+}
+
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  if (dragging) {
+    dragging.x = mx - dragOffset.x;
+    dragging.y = my - dragOffset.y;
+    return;
+  }
+
+  const hovered = organisms.find(o => {
+    const dx = o.x - mx;
+    const dy = o.y - my;
+    return Math.sqrt(dx * dx + dy * dy) < o.getSize();
+  });
+
+  if (hovered) {
+    tooltip.innerHTML = `
+      <strong>${hovered.name}</strong><br>
+      Priority: ${hovered.priority}<br>
+      Age: ${Math.floor(hovered.age)}s / ${Math.floor(hovered.traits.lifespan)}s<br>
+      Generation: ${hovered.generation}<br>
+      <div class="trait">Speed: ${hovered.traits.speed.toFixed(2)}</div>
+      <div class="trait">Size: ${hovered.traits.size.toFixed(2)}</div>
+      <div class="trait">Sociability: ${hovered.traits.sociability.toFixed(2)}</div>
+      <div class="trait">Fertility: ${hovered.traits.fertility.toFixed(2)}</div>
+    `;
+    tooltip.style.left = e.clientX + 10 + 'px';
+    tooltip.style.top = e.clientY + 10 + 'px';
+    tooltip.classList.add('visible');
+  } else {
+    tooltip.classList.remove('visible');
+  }
+});
+
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  const clicked = organisms.find(o => {
+    const dx = o.x - mx;
+    const dy = o.y - my;
+    return Math.sqrt(dx * dx + dy * dy) < o.getSize();
+  });
+
+  if (clicked) {
+    if (e.button === 2) {
+      organisms = organisms.filter(o => o !== clicked);
+      for (let i = 0; i < 15; i++) {
+        particles.push({
+          x: clicked.x,
+          y: clicked.y,
+          vx: (Math.random() - 0.5) * 5,
+          vy: (Math.random() - 0.5) * 5,
+          life: 1,
+          color: '#f87171',
+          size: 3
+        });
+      }
+      selected = null;
+      saveState();
+      return;
+    }
+
+    if (selected === clicked) {
+      clicked.complete();
+      organisms = organisms.filter(o => o !== clicked);
+      selected = null;
+    } else {
+      selected = clicked;
+      dragging = clicked;
+      dragOffset.x = mx - clicked.x;
+      dragOffset.y = my - clicked.y;
+    }
+  } else {
+    selected = null;
+  }
+});
+
+canvas.addEventListener('mouseup', () => {
+  if (dragging) {
+    dragging = null;
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  tooltip.classList.remove('visible');
+  dragging = null;
+});
+
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+canvas.addEventListener('dblclick', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  organisms.forEach(o => {
+    const dx = o.x - mx;
+    const dy = o.y - my;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 200) {
+      o.vx += (dx / dist) * 5;
+      o.vy += (dy / dist) * 5;
+    }
+  });
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && selected) {
+    selected.complete();
+    organisms = organisms.filter(o => o !== selected);
+    selected = null;
+  }
+});
+
+addBtn.addEventListener('click', () => {
+  addOrganism(taskInput.value, prioritySelect.value);
+});
+
+taskInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    addOrganism(taskInput.value, prioritySelect.value);
+  }
+});
+
+soundToggle.addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  soundToggle.textContent = 'Sound: ' + (soundEnabled ? 'ON' : 'OFF');
+  if (soundEnabled && !audioCtx) {
+    initAudio();
+  }
+});
+
+loadState();
+updateStats();
+animate(performance.now());
+</script>
+</body>
+</html>

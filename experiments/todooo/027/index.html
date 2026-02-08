@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo v027 - Self-Destructing Source</title>
+<style id="dynamic-styles">
+/* STYLE_1 */ body { background: #1a1a2e; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 0; min-height: 100vh; }
+/* STYLE_2 */ .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+/* STYLE_3 */ header { margin-bottom: 2rem; }
+/* STYLE_4 */ h1 { font-size: 2.5rem; margin: 0 0 1rem 0; color: #7c83ff; font-weight: 700; letter-spacing: -0.02em; }
+/* STYLE_5 */ .destruction-meter { background: #16213e; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 0.5rem; position: relative; }
+/* STYLE_6 */ .destruction-fill { height: 100%; background: linear-gradient(90deg, #7c83ff 0%, #ff4444 100%); width: 0%; transition: width 0.5s ease; }
+/* STYLE_7 */ .destruction-count { font-size: 0.9rem; opacity: 0.7; font-weight: 500; }
+/* STYLE_8 */ .section { background: #16213e; border-radius: 8px; margin-bottom: 1rem; overflow: hidden; }
+/* STYLE_9 */ .section-header { padding: 1rem 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; transition: background 0.2s; }
+/* STYLE_10 */ .section-header:hover { background: rgba(124, 131, 255, 0.1); }
+/* STYLE_11 */ .section-title { display: flex; align-items: center; gap: 0.75rem; font-weight: 600; font-size: 1.1rem; }
+/* STYLE_12 */ .section-badge { font-size: 0.7rem; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+/* STYLE_13 */ .badge-style { background: #7c83ff; color: #1a1a2e; }
+/* STYLE_14 */ .badge-structure { background: #ff6b6b; color: #1a1a2e; }
+/* STYLE_15 */ .badge-behavior { background: #4ecdc4; color: #1a1a2e; }
+/* STYLE_16 */ .section-count { font-size: 0.85rem; opacity: 0.6; }
+/* STYLE_17 */ .section-expand { font-size: 1.2rem; transition: transform 0.3s; }
+/* STYLE_18 */ .section-expand.expanded { transform: rotate(180deg); }
+/* STYLE_19 */ .section-tasks { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+/* STYLE_20 */ .section-tasks.expanded { max-height: 2000px; }
+/* STYLE_21 */ .task { padding: 0.75rem 1.5rem; border-top: 1px solid rgba(124, 131, 255, 0.1); display: flex; align-items: flex-start; gap: 1rem; transition: all 0.3s; }
+/* STYLE_22 */ .task:hover { background: rgba(124, 131, 255, 0.05); }
+/* STYLE_23 */ .task.destroyed { opacity: 0.4; text-decoration: line-through; }
+/* STYLE_24 */ .checkbox-wrapper { flex-shrink: 0; padding-top: 0.25rem; }
+/* STYLE_25 */ .checkbox { width: 20px; height: 20px; border: 2px solid #7c83ff; border-radius: 50%; cursor: pointer; transition: all 0.2s; position: relative; }
+/* STYLE_26 */ .checkbox:hover { border-color: #9da4ff; box-shadow: 0 0 8px rgba(124, 131, 255, 0.4); }
+/* STYLE_27 */ .checkbox.checked { background: #7c83ff; }
+/* STYLE_28 */ .checkbox.checked::after { content: '✓'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #1a1a2e; font-size: 14px; font-weight: bold; }
+/* STYLE_29 */ .checkbox.final-task { border-color: #ffdd57; box-shadow: 0 0 12px rgba(255, 221, 87, 0.6); animation: pulse 2s infinite; }
+/* STYLE_30 */ @keyframes pulse { 0%, 100% { box-shadow: 0 0 12px rgba(255, 221, 87, 0.6); } 50% { box-shadow: 0 0 20px rgba(255, 221, 87, 0.9); } }
+/* STYLE_31 */ .task-content { flex: 1; }
+/* STYLE_32 */ .task-code { font-family: 'Courier New', monospace; font-size: 0.85rem; background: rgba(0, 0, 0, 0.3); padding: 0.5rem 0.75rem; border-radius: 4px; margin-bottom: 0.5rem; border-left: 3px solid #7c83ff; }
+/* STYLE_33 */ .task-code .keyword { color: #ff79c6; }
+/* STYLE_34 */ .task-code .property { color: #8be9fd; }
+/* STYLE_35 */ .task-code .value { color: #f1fa8c; }
+/* STYLE_36 */ .task-desc { font-size: 0.85rem; opacity: 0.7; }
+/* STYLE_37 */ .glitch { animation: glitch 0.3s ease; }
+/* STYLE_38 */ @keyframes glitch { 0%, 100% { transform: translateX(0); opacity: 1; } 25% { transform: translateX(-5px); opacity: 0.8; } 50% { transform: translateX(5px); opacity: 0.6; } 75% { transform: translateX(-3px); opacity: 0.9; } }
+/* STYLE_39 */ .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.1) 2px, rgba(0, 0, 0, 0.1) 4px); opacity: 0; transition: opacity 0.5s; z-index: 1000; }
+/* STYLE_40 */ .scanlines.active { opacity: 1; }
+/* STYLE_41 */ .endgame { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: none; align-items: center; justify-content: center; z-index: 2000; }
+/* STYLE_42 */ .endgame-message { font-size: 2rem; color: #7c83ff; text-align: center; animation: fadeOut 3s forwards; }
+/* STYLE_43 */ @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+/* STYLE_44 */ .rebuild-link { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #7c83ff; color: #1a1a2e; padding: 0.75rem 2rem; border-radius: 8px; text-decoration: none; font-weight: 600; opacity: 0; animation: fadeIn 0.5s forwards; cursor: pointer; border: none; font-size: 1rem; }
+/* STYLE_45 */ .rebuild-link:hover { background: #9da4ff; }
+/* STYLE_46 */ @keyframes fadeIn { to { opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="container">
+  <header>
+    <h1>todooo v027</h1>
+    <div class="destruction-meter">
+      <div class="destruction-fill"></div>
+    </div>
+    <div class="destruction-count">0% destroyed</div>
+  </header>
+  <div id="sections-container"></div>
+</div>
+<div class="endgame">
+  <div class="endgame-message">Nothing left. Not even me.</div>
+</div>
+<script>
+const STORAGE_KEY = 'todooo-027';
+const audioContext = typeof AudioContext !== 'undefined' ? new AudioContext() : null;
+
+// Parse source code into tasks
+const sourceTasks = [
+  // STYLE SECTION
+  { id: 'STYLE_1', section: 'STYLE', code: 'body { background: #1a1a2e; color: #e0e0e0; ... }', desc: 'Base body styling - background and text color', type: 'css' },
+  { id: 'STYLE_2', section: 'STYLE', code: '.container { max-width: 900px; margin: 0 auto; ... }', desc: 'Container centering and width', type: 'css' },
+  { id: 'STYLE_3', section: 'STYLE', code: 'header { margin-bottom: 2rem; }', desc: 'Header spacing', type: 'css' },
+  { id: 'STYLE_4', section: 'STYLE', code: 'h1 { font-size: 2.5rem; color: #7c83ff; ... }', desc: 'Main title styling', type: 'css' },
+  { id: 'STYLE_5', section: 'STYLE', code: '.destruction-meter { background: #16213e; ... }', desc: 'Destruction meter container', type: 'css' },
+  { id: 'STYLE_6', section: 'STYLE', code: '.destruction-fill { background: linear-gradient(...); ... }', desc: 'Destruction meter fill gradient', type: 'css' },
+  { id: 'STYLE_7', section: 'STYLE', code: '.destruction-count { font-size: 0.9rem; opacity: 0.7; }', desc: 'Destruction percentage text', type: 'css' },
+  { id: 'STYLE_8', section: 'STYLE', code: '.section { background: #16213e; border-radius: 8px; ... }', desc: 'Section card styling', type: 'css' },
+  { id: 'STYLE_9', section: 'STYLE', code: '.section-header { padding: 1rem 1.5rem; display: flex; ... }', desc: 'Section header layout', type: 'css' },
+  { id: 'STYLE_10', section: 'STYLE', code: '.section-header:hover { background: rgba(...); }', desc: 'Section header hover effect', type: 'css' },
+  { id: 'STYLE_11', section: 'STYLE', code: '.section-title { display: flex; align-items: center; ... }', desc: 'Section title flexbox layout', type: 'css' },
+  { id: 'STYLE_12', section: 'STYLE', code: '.section-badge { padding: 0.25rem 0.5rem; ... }', desc: 'Section badge styling', type: 'css' },
+  { id: 'STYLE_13', section: 'STYLE', code: '.badge-style { background: #7c83ff; }', desc: 'STYLE badge color', type: 'css' },
+  { id: 'STYLE_14', section: 'STYLE', code: '.badge-structure { background: #ff6b6b; }', desc: 'STRUCTURE badge color', type: 'css' },
+  { id: 'STYLE_15', section: 'STYLE', code: '.badge-behavior { background: #4ecdc4; }', desc: 'BEHAVIOR badge color', type: 'css' },
+  { id: 'STYLE_16', section: 'STYLE', code: '.section-count { font-size: 0.85rem; opacity: 0.6; }', desc: 'Section task count styling', type: 'css' },
+  { id: 'STYLE_17', section: 'STYLE', code: '.section-expand { transition: transform 0.3s; }', desc: 'Section expand arrow styling', type: 'css' },
+  { id: 'STYLE_18', section: 'STYLE', code: '.section-expand.expanded { transform: rotate(180deg); }', desc: 'Expanded arrow rotation', type: 'css' },
+  { id: 'STYLE_19', section: 'STYLE', code: '.section-tasks { max-height: 0; overflow: hidden; ... }', desc: 'Collapsible section animation', type: 'css' },
+  { id: 'STYLE_20', section: 'STYLE', code: '.section-tasks.expanded { max-height: 2000px; }', desc: 'Expanded section height', type: 'css' },
+  { id: 'STYLE_21', section: 'STYLE', code: '.task { padding: 0.75rem 1.5rem; display: flex; ... }', desc: 'Individual task layout', type: 'css' },
+  { id: 'STYLE_22', section: 'STYLE', code: '.task:hover { background: rgba(...); }', desc: 'Task hover effect', type: 'css' },
+  { id: 'STYLE_23', section: 'STYLE', code: '.task.destroyed { opacity: 0.4; text-decoration: line-through; }', desc: 'Destroyed task appearance', type: 'css' },
+  { id: 'STYLE_24', section: 'STYLE', code: '.checkbox-wrapper { flex-shrink: 0; }', desc: 'Checkbox wrapper layout', type: 'css' },
+  { id: 'STYLE_25', section: 'STYLE', code: '.checkbox { width: 20px; height: 20px; border-radius: 50%; ... }', desc: 'Checkbox circular shape and border', type: 'css' },
+  { id: 'STYLE_26', section: 'STYLE', code: '.checkbox:hover { border-color: #9da4ff; box-shadow: ...; }', desc: 'Checkbox hover glow', type: 'css' },
+  { id: 'STYLE_27', section: 'STYLE', code: '.checkbox.checked { background: #7c83ff; }', desc: 'Checked checkbox background', type: 'css' },
+  { id: 'STYLE_28', section: 'STYLE', code: '.checkbox.checked::after { content: "✓"; ... }', desc: 'Checkbox checkmark symbol', type: 'css' },
+  { id: 'STYLE_29', section: 'STYLE', code: '.checkbox.final-task { border-color: #ffdd57; ... }', desc: 'Final task special glow', type: 'css' },
+  { id: 'STYLE_30', section: 'STYLE', code: '@keyframes pulse { ... }', desc: 'Pulse animation for final task', type: 'css' },
+  { id: 'STYLE_31', section: 'STYLE', code: '.task-content { flex: 1; }', desc: 'Task content flex layout', type: 'css' },
+  { id: 'STYLE_32', section: 'STYLE', code: '.task-code { font-family: "Courier New"; background: rgba(0,0,0,0.3); ... }', desc: 'Code snippet styling', type: 'css' },
+  { id: 'STYLE_33', section: 'STYLE', code: '.task-code .keyword { color: #ff79c6; }', desc: 'Code keyword syntax color', type: 'css' },
+  { id: 'STYLE_34', section: 'STYLE', code: '.task-code .property { color: #8be9fd; }', desc: 'Code property syntax color', type: 'css' },
+  { id: 'STYLE_35', section: 'STYLE', code: '.task-code .value { color: #f1fa8c; }', desc: 'Code value syntax color', type: 'css' },
+  { id: 'STYLE_36', section: 'STYLE', code: '.task-desc { font-size: 0.85rem; opacity: 0.7; }', desc: 'Task description styling', type: 'css' },
+  { id: 'STYLE_37', section: 'STYLE', code: '.glitch { animation: glitch 0.3s ease; }', desc: 'Glitch animation class', type: 'css' },
+  { id: 'STYLE_38', section: 'STYLE', code: '@keyframes glitch { ... }', desc: 'Glitch keyframes definition', type: 'css' },
+  { id: 'STYLE_39', section: 'STYLE', code: '.scanlines { background: repeating-linear-gradient(...); ... }', desc: 'CRT scanlines overlay effect', type: 'css' },
+  { id: 'STYLE_40', section: 'STYLE', code: '.scanlines.active { opacity: 1; }', desc: 'Visible scanlines state', type: 'css' },
+  { id: 'STYLE_41', section: 'STYLE', code: '.endgame { position: fixed; background: #000; ... }', desc: 'Endgame fullscreen overlay', type: 'css' },
+  { id: 'STYLE_42', section: 'STYLE', code: '.endgame-message { font-size: 2rem; animation: fadeOut ...; }', desc: 'Endgame message styling', type: 'css' },
+  { id: 'STYLE_43', section: 'STYLE', code: '@keyframes fadeOut { ... }', desc: 'Fade out animation', type: 'css' },
+  { id: 'STYLE_44', section: 'STYLE', code: '.rebuild-link { background: #7c83ff; padding: ...; }', desc: 'Rebuild button styling', type: 'css' },
+  { id: 'STYLE_45', section: 'STYLE', code: '.rebuild-link:hover { background: #9da4ff; }', desc: 'Rebuild button hover', type: 'css' },
+  { id: 'STYLE_46', section: 'STYLE', code: '@keyframes fadeIn { ... }', desc: 'Fade in animation', type: 'css' },
+
+  // STRUCTURE SECTION
+  { id: 'STRUCT_1', section: 'STRUCTURE', code: '<header>', desc: 'Main header element', type: 'html', element: 'header' },
+  { id: 'STRUCT_2', section: 'STRUCTURE', code: '<h1>todooo v027</h1>', desc: 'Page title', type: 'html', element: 'h1' },
+  { id: 'STRUCT_3', section: 'STRUCTURE', code: '<div class="destruction-meter">', desc: 'Destruction meter container', type: 'html', selector: '.destruction-meter' },
+  { id: 'STRUCT_4', section: 'STRUCTURE', code: '<div class="destruction-fill">', desc: 'Destruction meter fill bar', type: 'html', selector: '.destruction-fill' },
+  { id: 'STRUCT_5', section: 'STRUCTURE', code: '<div class="destruction-count">', desc: 'Destruction percentage display', type: 'html', selector: '.destruction-count' },
+  { id: 'STRUCT_6', section: 'STRUCTURE', code: '<div class="scanlines">', desc: 'CRT scanlines overlay', type: 'html', selector: '.scanlines' },
+  { id: 'STRUCT_7', section: 'STRUCTURE', code: '<div class="container">', desc: 'Main container wrapper', type: 'html', selector: '.container' },
+
+  // BEHAVIOR SECTION
+  { id: 'BEHAV_1', section: 'BEHAVIOR', code: 'loadState()', desc: 'Load destroyed state from localStorage', type: 'js', func: 'loadState' },
+  { id: 'BEHAV_2', section: 'BEHAVIOR', code: 'saveState()', desc: 'Save destroyed state to localStorage', type: 'js', func: 'saveState' },
+  { id: 'BEHAV_3', section: 'BEHAVIOR', code: 'renderSections()', desc: 'Render all task sections to DOM', type: 'js', func: 'renderSections' },
+  { id: 'BEHAV_4', section: 'BEHAVIOR', code: 'toggleSection()', desc: 'Expand/collapse section accordion', type: 'js', func: 'toggleSection' },
+  { id: 'BEHAV_5', section: 'BEHAVIOR', code: 'updateDestructionMeter()', desc: 'Update destruction percentage and meter', type: 'js', func: 'updateDestructionMeter' },
+  { id: 'BEHAV_6', section: 'BEHAVIOR', code: 'destroyCSS()', desc: 'Remove CSS rule from stylesheet', type: 'js', func: 'destroyCSS' },
+  { id: 'BEHAV_7', section: 'BEHAVIOR', code: 'destroyHTML()', desc: 'Remove HTML element from DOM', type: 'js', func: 'destroyHTML' },
+  { id: 'BEHAV_8', section: 'BEHAVIOR', code: 'destroyJS()', desc: 'Disable JavaScript function', type: 'js', func: 'destroyJS' },
+  { id: 'BEHAV_9', section: 'BEHAVIOR', code: 'playDestructionSound()', desc: 'Play descending tone on destruction', type: 'js', func: 'playDestructionSound' },
+  { id: 'BEHAV_10', section: 'BEHAVIOR', code: 'applyGlitchEffect()', desc: 'Trigger visual glitch animation', type: 'js', func: 'applyGlitchEffect' },
+  { id: 'BEHAV_11', section: 'BEHAVIOR', code: 'updateScanlines()', desc: 'Intensify scanlines based on destruction', type: 'js', func: 'updateScanlines' },
+  { id: 'BEHAV_12', section: 'BEHAVIOR', code: 'checkEndgame()', desc: 'Check if all tasks destroyed', type: 'js', func: 'checkEndgame' },
+  { id: 'BEHAV_13', section: 'BEHAVIOR', code: 'showEndgame()', desc: 'Display final destruction message', type: 'js', func: 'showEndgame' },
+  { id: 'BEHAV_14', section: 'BEHAVIOR', code: 'rebuild()', desc: 'Reset app to initial state', type: 'js', func: 'rebuild' },
+  { id: 'BEHAV_15', section: 'BEHAVIOR', code: 'toggleComplete()', desc: 'THE FUNCTION YOU ARE USING RIGHT NOW', type: 'js', func: 'toggleComplete', isFinal: true },
+];
+
+let destroyedState = {};
+let functionStates = {};
+
+// Initialize function states
+sourceTasks.filter(t => t.type === 'js').forEach(t => {
+  functionStates[t.func] = true;
+});
+
+function loadState() {
+  if (!functionStates.loadState) return;
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      destroyedState = JSON.parse(saved);
+      applyDestroyedState();
+    }
+  } catch (e) {
+    console.error('Failed to load state:', e);
+  }
+}
+
+function saveState() {
+  if (!functionStates.saveState) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(destroyedState));
+  } catch (e) {
+    console.error('Failed to save state:', e);
+  }
+}
+
+function applyDestroyedState() {
+  Object.keys(destroyedState).forEach(taskId => {
+    if (destroyedState[taskId]) {
+      const task = sourceTasks.find(t => t.id === taskId);
+      if (task) {
+        executeDestruction(task, true);
+      }
+    }
+  });
+}
+
+function renderSections() {
+  if (!functionStates.renderSections) return;
+
+  const container = document.getElementById('sections-container');
+  if (!container) return;
+
+  const sections = ['STYLE', 'STRUCTURE', 'BEHAVIOR'];
+  const badges = { STYLE: 'badge-style', STRUCTURE: 'badge-structure', BEHAVIOR: 'badge-behavior' };
+
+  container.innerHTML = sections.map(section => {
+    const tasks = sourceTasks.filter(t => t.section === section);
+    const destroyedCount = tasks.filter(t => destroyedState[t.id]).length;
+
+    return `
+      <div class="section">
+        <div class="section-header" onclick="toggleSection('${section}')">
+          <div class="section-title">
+            <span class="section-badge ${badges[section]}">${section}</span>
+            <span>${section.toLowerCase()}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <span class="section-count">${destroyedCount}/${tasks.length}</span>
+            <span class="section-expand" id="expand-${section}">▼</span>
+          </div>
+        </div>
+        <div class="section-tasks" id="tasks-${section}">
+          ${tasks.map(task => renderTask(task)).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  updateDestructionMeter();
+}
+
+function renderTask(task) {
+  const isDestroyed = destroyedState[task.id];
+  const isFinal = task.isFinal;
+
+  return `
+    <div class="task ${isDestroyed ? 'destroyed' : ''}" id="task-${task.id}">
+      <div class="checkbox-wrapper">
+        <div class="checkbox ${isDestroyed ? 'checked' : ''} ${isFinal ? 'final-task' : ''}"
+             onclick="toggleComplete('${task.id}')"
+             id="checkbox-${task.id}"></div>
+      </div>
+      <div class="task-content">
+        <div class="task-code">${highlightCode(task.code)}</div>
+        <div class="task-desc">${task.desc}</div>
+      </div>
+    </div>
+  `;
+}
+
+function highlightCode(code) {
+  return code
+    .replace(/\b(function|const|let|var|return|if|else|for|while|class|new|import|export)\b/g, '<span class="keyword">$1</span>')
+    .replace(/\b([a-z-]+):/g, '<span class="property">$1</span>:')
+    .replace(/(#[0-9a-fA-F]{3,8}|'[^']*'|"[^"]*"|\d+(?:px|rem|%)?)/g, '<span class="value">$1</span>');
+}
+
+function toggleSection(section) {
+  if (!functionStates.toggleSection) return;
+
+  const tasksDiv = document.getElementById(`tasks-${section}`);
+  const expandIcon = document.getElementById(`expand-${section}`);
+
+  if (!tasksDiv || !expandIcon) return;
+
+  const isExpanded = tasksDiv.classList.contains('expanded');
+
+  if (isExpanded) {
+    tasksDiv.classList.remove('expanded');
+    expandIcon.classList.remove('expanded');
+  } else {
+    tasksDiv.classList.add('expanded');
+    expandIcon.classList.add('expanded');
+  }
+}
+
+function toggleComplete(taskId) {
+  if (!functionStates.toggleComplete) return;
+
+  const task = sourceTasks.find(t => t.id === taskId);
+  if (!task) return;
+
+  const isDestroyed = destroyedState[taskId];
+
+  if (!isDestroyed) {
+    destroyedState[taskId] = true;
+    executeDestruction(task);
+    playDestructionSound();
+    applyGlitchEffect(taskId);
+    saveState();
+    updateDestructionMeter();
+    updateScanlines();
+
+    // Update UI
+    const taskEl = document.getElementById(`task-${taskId}`);
+    const checkboxEl = document.getElementById(`checkbox-${taskId}`);
+    if (taskEl) taskEl.classList.add('destroyed');
+    if (checkboxEl) checkboxEl.classList.add('checked');
+
+    // Update section count
+    const sectionTasks = sourceTasks.filter(t => t.section === task.section);
+    const destroyedCount = sectionTasks.filter(t => destroyedState[t.id]).length;
+    const countEl = document.querySelector(`#tasks-${task.section}`).parentElement.querySelector('.section-count');
+    if (countEl) countEl.textContent = `${destroyedCount}/${sectionTasks.length}`;
+
+    // Check if this is the final task
+    if (task.isFinal) {
+      setTimeout(() => {
+        functionStates.toggleComplete = false;
+        showEndgame();
+      }, 500);
+    } else {
+      checkEndgame();
+    }
+  }
+}
+
+function executeDestruction(task, silent = false) {
+  if (task.type === 'css') {
+    destroyCSS(task.id);
+  } else if (task.type === 'html') {
+    destroyHTML(task);
+  } else if (task.type === 'js') {
+    destroyJS(task.func);
+  }
+}
+
+function destroyCSS(styleId) {
+  if (!functionStates.destroyCSS) return;
+
+  const styleSheet = document.getElementById('dynamic-styles');
+  if (!styleSheet || !styleSheet.sheet) return;
+
+  const rules = Array.from(styleSheet.sheet.cssRules || []);
+  const ruleIndex = rules.findIndex(rule => rule.cssText.includes(`/* ${styleId} */`));
+
+  if (ruleIndex !== -1) {
+    try {
+      styleSheet.sheet.deleteRule(ruleIndex);
+    } catch (e) {
+      console.error('Failed to delete CSS rule:', e);
+    }
+  }
+}
+
+function destroyHTML(task) {
+  if (!functionStates.destroyHTML) return;
+
+  let element;
+  if (task.element) {
+    element = document.querySelector(task.element);
+  } else if (task.selector) {
+    element = document.querySelector(task.selector);
+  }
+
+  if (element && element.parentNode) {
+    element.parentNode.removeChild(element);
+  }
+}
+
+function destroyJS(funcName) {
+  if (!functionStates.destroyJS) return;
+  if (funcName) {
+    functionStates[funcName] = false;
+  }
+}
+
+function updateDestructionMeter() {
+  if (!functionStates.updateDestructionMeter) return;
+
+  const totalTasks = sourceTasks.length;
+  const destroyedCount = Object.values(destroyedState).filter(v => v).length;
+  const percentage = Math.round((destroyedCount / totalTasks) * 100);
+
+  const fillEl = document.querySelector('.destruction-fill');
+  const countEl = document.querySelector('.destruction-count');
+
+  if (fillEl) fillEl.style.width = `${percentage}%`;
+  if (countEl) countEl.textContent = `${percentage}% destroyed`;
+}
+
+function playDestructionSound() {
+  if (!functionStates.playDestructionSound || !audioContext) return;
+
+  try {
+    const destroyedCount = Object.values(destroyedState).filter(v => v).length;
+    const frequency = 800 - (destroyedCount * 10);
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.frequency.value = Math.max(frequency, 100);
+    oscillator.type = 'sine';
+
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  } catch (e) {
+    console.error('Audio error:', e);
+  }
+}
+
+function applyGlitchEffect(taskId) {
+  if (!functionStates.applyGlitchEffect) return;
+
+  const taskEl = document.getElementById(`task-${taskId}`);
+  if (taskEl) {
+    taskEl.classList.add('glitch');
+    setTimeout(() => {
+      taskEl.classList.remove('glitch');
+    }, 300);
+  }
+}
+
+function updateScanlines() {
+  if (!functionStates.updateScanlines) return;
+
+  const scanlines = document.querySelector('.scanlines');
+  if (!scanlines) return;
+
+  const destroyedCount = Object.values(destroyedState).filter(v => v).length;
+  const percentage = destroyedCount / sourceTasks.length;
+
+  if (percentage > 0.5) {
+    scanlines.classList.add('active');
+    scanlines.style.opacity = (percentage - 0.5) * 2;
+  }
+}
+
+function checkEndgame() {
+  if (!functionStates.checkEndgame) return;
+
+  const allDestroyed = sourceTasks.every(t => destroyedState[t.id] || t.isFinal);
+
+  if (allDestroyed) {
+    showEndgame();
+  }
+}
+
+function showEndgame() {
+  if (!functionStates.showEndgame) return;
+
+  const endgame = document.querySelector('.endgame');
+  if (endgame) {
+    endgame.style.display = 'flex';
+
+    setTimeout(() => {
+      const rebuildBtn = document.createElement('button');
+      rebuildBtn.className = 'rebuild-link';
+      rebuildBtn.textContent = 'Rebuild';
+      rebuildBtn.onclick = rebuild;
+      document.body.appendChild(rebuildBtn);
+    }, 5000);
+  }
+}
+
+function rebuild() {
+  if (!functionStates.rebuild) return;
+
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+// Keyboard shortcut
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'r' || e.key === 'R') {
+    if (Object.keys(destroyedState).length > 0) {
+      if (confirm('Rebuild the application? This will reset all destruction.')) {
+        rebuild();
+      }
+    }
+  }
+});
+
+// Initialize
+loadState();
+renderSections();
+
+// Expand first section by default
+setTimeout(() => {
+  toggleSection('STYLE');
+}, 100);
+</script>
+</body>
+</html>
