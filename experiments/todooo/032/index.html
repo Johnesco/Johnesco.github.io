@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo 032 - Procedural UI</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: system-ui, -apple-system, sans-serif;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+.seed-display {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+  text-align: right;
+  transition: all 0.3s ease;
+}
+.seed-number {
+  font-family: 'Courier New', monospace;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.seed-hint {
+  font-size: 11px;
+  opacity: 0.5;
+  margin-top: 4px;
+}
+.seed-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+.seed-input {
+  width: 100px;
+  padding: 4px 8px;
+  font-family: 'Courier New', monospace;
+  border: 1px solid;
+  background: transparent;
+  transition: all 0.3s ease;
+}
+.seed-btn {
+  padding: 4px 12px;
+  cursor: pointer;
+  border: 1px solid;
+  background: transparent;
+  transition: all 0.3s ease;
+}
+.seed-btn:hover { opacity: 0.7; }
+.app-header {
+  transition: all 0.3s ease;
+  margin-bottom: 20px;
+}
+.app-title {
+  transition: all 0.3s ease;
+  font-size: 32px;
+  font-weight: bold;
+}
+.task-input-wrapper {
+  transition: all 0.3s ease;
+  margin-bottom: 16px;
+}
+.task-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid;
+  background: transparent;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+.task-input::placeholder { opacity: 0.5; }
+.filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+}
+.filter-btn {
+  padding: 8px 16px;
+  cursor: pointer;
+  border: 1px solid;
+  background: transparent;
+  transition: all 0.3s ease;
+}
+.filter-btn.active { opacity: 1; }
+.filter-btn:not(.active) { opacity: 0.5; }
+.filter-btn:hover { opacity: 0.8; }
+.task-list {
+  transition: all 0.3s ease;
+  min-height: 100px;
+}
+.task-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.task-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  border: 2px solid;
+  background: transparent;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+  position: relative;
+}
+.task-checkbox::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.2s ease;
+  font-size: 14px;
+}
+.task-checkbox.checked::after {
+  transform: translate(-50%, -50%) scale(1);
+}
+.task-text {
+  flex: 1;
+  padding: 0 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  word-break: break-word;
+}
+.task-text.completed {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+.task-delete {
+  padding: 4px 8px;
+  cursor: pointer;
+  border: 1px solid;
+  background: transparent;
+  opacity: 0.5;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+.task-delete:hover { opacity: 1; }
+.task-edit {
+  flex: 1;
+  padding: 0 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid;
+  font-size: inherit;
+  font-family: inherit;
+}
+.stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+.clear-completed {
+  padding: 6px 12px;
+  cursor: pointer;
+  border: 1px solid;
+  background: transparent;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+.clear-completed:hover { opacity: 1; }
+.gallery {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+.gallery.visible { display: flex; }
+.gallery-content {
+  background: #222;
+  padding: 30px;
+  border-radius: 8px;
+  max-width: 800px;
+  width: 100%;
+  color: #fff;
+}
+.gallery-title {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.gallery-item {
+  aspect-ratio: 1;
+  border: 2px solid #444;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+.gallery-item:hover {
+  border-color: #888;
+  transform: scale(1.05);
+}
+.gallery-seed {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+.saved-seeds {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+}
+.saved-seeds-title {
+  font-size: 14px;
+  margin-bottom: 12px;
+  opacity: 0.7;
+}
+.saved-seeds-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.saved-seed {
+  font-family: 'Courier New', monospace;
+  padding: 6px 12px;
+  background: #333;
+  border: 1px solid #555;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+.saved-seed:hover {
+  background: #444;
+}
+.gallery-close {
+  padding: 8px 16px;
+  background: #444;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.gallery-close:hover { background: #555; }
+.fade-out { opacity: 0 !important; }
+.fade-in { animation: fadeIn 0.3s ease forwards; }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+</style>
+</head>
+<body>
+<div class="seed-display">
+  <div class="seed-number" id="seedDisplay" title="Click to copy">Seed: <span id="seedValue">123456</span></div>
+  <div class="seed-hint">Spacebar or G for gallery</div>
+  <div class="seed-controls">
+    <input type="text" class="seed-input" id="seedInput" placeholder="000000" maxlength="6">
+    <button class="seed-btn" id="randomSeed">Random</button>
+    <button class="seed-btn" id="saveSeed">Save</button>
+  </div>
+</div>
+
+<div class="container" id="app">
+  <div class="app-header">
+    <h1 class="app-title">todooo</h1>
+  </div>
+
+  <div class="task-input-wrapper" id="inputWrapper">
+    <input type="text" class="task-input" id="taskInput" placeholder="What needs to be done?">
+  </div>
+
+  <div class="filters" id="filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="active">Active</button>
+    <button class="filter-btn" data-filter="completed">Done</button>
+  </div>
+
+  <div class="task-list" id="taskList"></div>
+
+  <div class="stats" id="stats">
+    <span id="taskCount">0 tasks</span>
+    <button class="clear-completed" id="clearCompleted">Clear completed</button>
+  </div>
+</div>
+
+<div class="gallery" id="gallery">
+  <div class="gallery-content">
+    <h2 class="gallery-title">Seed Gallery</h2>
+    <div class="gallery-grid" id="galleryGrid"></div>
+    <div class="saved-seeds">
+      <div class="saved-seeds-title">Saved Seeds</div>
+      <div class="saved-seeds-list" id="savedSeedsList"></div>
+    </div>
+    <button class="gallery-close" id="galleryClose">Close (ESC)</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'todooo-032';
+const SEED_KEY = 'todooo-032-seed';
+const SAVED_SEEDS_KEY = 'todooo-032-saved-seeds';
+
+let todos = [];
+let currentFilter = 'all';
+let currentSeed = 123456;
+let editingId = null;
+
+// Seeded PRNG (mulberry32)
+function mulberry32(a) {
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+
+// Seed random generator
+let random;
+function seedRandom(seed) {
+  random = mulberry32(seed);
+}
+
+// Random utilities
+function randomInt(min, max) {
+  return Math.floor(random() * (max - min + 1)) + min;
+}
+
+function randomFloat(min, max) {
+  return random() * (max - min) + min;
+}
+
+function randomChoice(arr) {
+  return arr[Math.floor(random() * arr.length)];
+}
+
+// HSL to hex
+function hslToHex(h, s, l) {
+  l /= 100;
+  const a = s * Math.min(l, 1 - l) / 100;
+  const f = n => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+// Generate design from seed
+function generateDesign(seed) {
+  seedRandom(seed);
+
+  // Color palette
+  const baseHue = randomInt(0, 360);
+  const bgLightness = randomInt(8, 15);
+  const bgSaturation = randomInt(20, 40);
+  const bgColor = hslToHex(baseHue, bgSaturation, bgLightness);
+  const cardColor = hslToHex(baseHue, bgSaturation, bgLightness + randomInt(3, 8));
+
+  const accentHue = (baseHue + randomInt(120, 240)) % 360;
+  const accentColor = hslToHex(accentHue, randomInt(60, 90), randomInt(45, 65));
+
+  const textHue = (baseHue + 180) % 360;
+  const textColor = hslToHex(textHue, randomInt(10, 30), randomInt(75, 90));
+
+  const secondaryHue = (accentHue + randomInt(-30, 30)) % 360;
+  const secondaryColor = hslToHex(secondaryHue, randomInt(50, 80), randomInt(50, 70));
+
+  // Typography
+  const fontStacks = [
+    "'Courier New', monospace",
+    "Georgia, serif",
+    "system-ui, sans-serif",
+    "cursive",
+    "fantasy",
+    "monospace",
+    "'Arial', sans-serif",
+    "'Times New Roman', serif"
+  ];
+  const bodyFont = randomChoice(fontStacks);
+  const titleFont = random() > 0.5 ? bodyFont : randomChoice(fontStacks);
+  const fontSize = randomInt(14, 20);
+  const fontWeight = randomChoice([300, 400, 500, 600, 700]);
+  const letterSpacing = randomFloat(-0.5, 2);
+  const lineHeight = randomFloat(1.2, 1.8);
+  const textTransform = randomChoice(['none', 'none', 'uppercase', 'lowercase']);
+
+  // Layout
+  const alignment = randomChoice(['left', 'center', 'right']);
+  const maxWidth = randomInt(400, 700);
+  const padding = randomInt(8, 24);
+  const gap = randomInt(2, 16);
+  const inputPosition = randomChoice(['top', 'bottom']);
+  const listStyle = randomChoice(['vertical', 'vertical', 'grid']);
+
+  // Shapes
+  const borderRadius = randomChoice([0, randomInt(2, 8), randomInt(12, 24), 50]);
+  const borderWidth = randomInt(0, 3);
+  const borderStyle = randomChoice(['solid', 'solid', 'dashed', 'dotted', 'double']);
+  const checkboxShape = randomChoice(['square', 'circle', 'diamond']);
+  const buttonStyle = randomChoice(['rect', 'pill', 'minimal']);
+
+  // Animations
+  const addAnim = randomChoice(['slideLeft', 'slideRight', 'slideTop', 'slideBottom', 'scaleUp', 'fadeIn']);
+  const completeAnim = randomChoice(['strikethrough', 'fadeAccent', 'shrink']);
+  const deleteAnim = randomChoice(['fall', 'flyOut', 'fade']);
+  const hoverEffect = randomChoice(['glow', 'lift', 'colorShift', 'scale']);
+  const idleAnim = randomChoice(['none', 'none', 'none', 'breathe', 'sway']);
+
+  // Decorative
+  const bgPattern = randomChoice(['none', 'none', 'dots', 'lines', 'grid', 'diagonal', 'circles']);
+  const patternOpacity = randomFloat(0.02, 0.08);
+  const headerDecor = randomChoice(['none', 'underline', 'overline', 'border']);
+  const separator = randomChoice(['none', 'line', 'dots', 'gradient']);
+  const accentPlacement = randomChoice(['left', 'top', 'bottom', 'none']);
+
+  return {
+    colors: { bgColor, cardColor, accentColor, textColor, secondaryColor },
+    typography: { bodyFont, titleFont, fontSize, fontWeight, letterSpacing, lineHeight, textTransform },
+    layout: { alignment, maxWidth, padding, gap, inputPosition, listStyle },
+    shapes: { borderRadius, borderWidth, borderStyle, checkboxShape, buttonStyle },
+    animations: { addAnim, completeAnim, deleteAnim, hoverEffect, idleAnim },
+    decorative: { bgPattern, patternOpacity, headerDecor, separator, accentPlacement }
+  };
+}
+
+// Apply design
+function applyDesign(design) {
+  const { colors, typography, layout, shapes, animations, decorative } = design;
+
+  // Body
+  document.body.style.background = colors.bgColor;
+  document.body.style.color = colors.textColor;
+  document.body.style.fontFamily = typography.bodyFont;
+  document.body.style.fontSize = typography.fontSize + 'px';
+  document.body.style.fontWeight = typography.fontWeight;
+  document.body.style.letterSpacing = typography.letterSpacing + 'px';
+  document.body.style.lineHeight = typography.lineHeight;
+  document.body.style.textTransform = typography.textTransform;
+
+  // Background pattern
+  let patternBg = '';
+  if (decorative.bgPattern === 'dots') {
+    patternBg = `radial-gradient(circle, ${colors.textColor} 1px, transparent 1px)`;
+    document.body.style.backgroundSize = '20px 20px';
+  } else if (decorative.bgPattern === 'lines') {
+    patternBg = `repeating-linear-gradient(0deg, transparent, transparent 10px, ${colors.textColor} 10px, ${colors.textColor} 11px)`;
+  } else if (decorative.bgPattern === 'grid') {
+    patternBg = `linear-gradient(${colors.textColor} 1px, transparent 1px), linear-gradient(90deg, ${colors.textColor} 1px, transparent 1px)`;
+    document.body.style.backgroundSize = '20px 20px';
+  } else if (decorative.bgPattern === 'diagonal') {
+    patternBg = `repeating-linear-gradient(45deg, transparent, transparent 10px, ${colors.textColor} 10px, ${colors.textColor} 11px)`;
+  } else if (decorative.bgPattern === 'circles') {
+    patternBg = `radial-gradient(circle, transparent 5px, ${colors.textColor} 5px, ${colors.textColor} 6px, transparent 6px)`;
+    document.body.style.backgroundSize = '30px 30px';
+  }
+
+  if (patternBg) {
+    const beforeEl = document.querySelector('body::before');
+    document.body.style.backgroundImage = patternBg;
+    const sheet = document.styleSheets[0];
+    const rules = Array.from(sheet.cssRules);
+    const beforeRule = rules.find(r => r.selectorText === 'body::before');
+    if (beforeRule) {
+      beforeRule.style.opacity = decorative.patternOpacity;
+    }
+  }
+
+  // Container
+  const container = document.getElementById('app');
+  container.style.maxWidth = layout.maxWidth + 'px';
+  container.style.padding = layout.padding + 'px';
+  container.style.margin = '0 auto';
+  container.style.textAlign = layout.alignment;
+
+  // Title
+  const title = document.querySelector('.app-title');
+  title.style.fontFamily = typography.titleFont;
+  title.style.color = colors.accentColor;
+
+  if (decorative.headerDecor === 'underline') {
+    title.style.borderBottom = `2px solid ${colors.accentColor}`;
+    title.style.paddingBottom = '8px';
+  } else if (decorative.headerDecor === 'overline') {
+    title.style.borderTop = `2px solid ${colors.accentColor}`;
+    title.style.paddingTop = '8px';
+  } else if (decorative.headerDecor === 'border') {
+    title.style.border = `2px solid ${colors.accentColor}`;
+    title.style.padding = '8px 16px';
+    title.style.borderRadius = shapes.borderRadius + 'px';
+  }
+
+  // Input
+  const input = document.querySelector('.task-input');
+  input.style.background = colors.cardColor;
+  input.style.color = colors.textColor;
+  input.style.borderColor = colors.accentColor;
+  input.style.borderWidth = shapes.borderWidth + 'px';
+  input.style.borderStyle = shapes.borderStyle;
+  input.style.borderRadius = shapes.borderRadius + 'px';
+  input.style.padding = layout.padding + 'px';
+
+  // Filters
+  const filters = document.querySelectorAll('.filter-btn');
+  filters.forEach(btn => {
+    btn.style.background = colors.cardColor;
+    btn.style.color = colors.textColor;
+    btn.style.borderColor = colors.accentColor;
+    btn.style.borderWidth = shapes.borderWidth + 'px';
+    btn.style.borderStyle = shapes.borderStyle;
+
+    if (shapes.buttonStyle === 'pill') {
+      btn.style.borderRadius = '50px';
+    } else if (shapes.buttonStyle === 'minimal') {
+      btn.style.border = 'none';
+      btn.style.borderBottom = `1px solid ${colors.accentColor}`;
+      btn.style.borderRadius = '0';
+    } else {
+      btn.style.borderRadius = shapes.borderRadius + 'px';
+    }
+
+    if (btn.classList.contains('active')) {
+      btn.style.background = colors.accentColor;
+      btn.style.color = colors.bgColor;
+    }
+  });
+
+  // Task list
+  const taskList = document.getElementById('taskList');
+  if (layout.listStyle === 'grid') {
+    taskList.style.display = 'grid';
+    taskList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
+    taskList.style.gap = layout.gap + 'px';
+  } else {
+    taskList.style.display = 'block';
+  }
+
+  // Task items
+  const tasks = document.querySelectorAll('.task-item');
+  tasks.forEach((task, idx) => {
+    task.style.background = colors.cardColor;
+    task.style.borderColor = colors.accentColor;
+    task.style.borderWidth = shapes.borderWidth + 'px';
+    task.style.borderStyle = shapes.borderStyle;
+    task.style.borderRadius = shapes.borderRadius + 'px';
+    task.style.padding = layout.padding + 'px';
+    task.style.marginBottom = layout.gap + 'px';
+
+    // Accent placement
+    if (decorative.accentPlacement === 'left') {
+      task.style.borderLeft = `4px solid ${colors.accentColor}`;
+    } else if (decorative.accentPlacement === 'top') {
+      task.style.borderTop = `4px solid ${colors.accentColor}`;
+    } else if (decorative.accentPlacement === 'bottom') {
+      task.style.borderBottom = `4px solid ${colors.accentColor}`;
+    }
+
+    // Separator
+    if (decorative.separator === 'line' && idx > 0) {
+      task.style.borderTop = `1px solid ${colors.textColor}`;
+    }
+  });
+
+  // Checkboxes
+  const checkboxes = document.querySelectorAll('.task-checkbox');
+  checkboxes.forEach(cb => {
+    cb.style.borderColor = colors.accentColor;
+    cb.style.color = colors.accentColor;
+
+    if (shapes.checkboxShape === 'circle') {
+      cb.style.borderRadius = '50%';
+    } else if (shapes.checkboxShape === 'diamond') {
+      cb.style.borderRadius = '0';
+      cb.style.transform = 'rotate(45deg)';
+    } else {
+      cb.style.borderRadius = shapes.borderRadius + 'px';
+    }
+
+    if (cb.classList.contains('checked')) {
+      cb.style.background = colors.accentColor;
+    }
+  });
+
+  // Buttons
+  const buttons = document.querySelectorAll('.task-delete, .clear-completed, .seed-btn');
+  buttons.forEach(btn => {
+    btn.style.background = colors.cardColor;
+    btn.style.color = colors.textColor;
+    btn.style.borderColor = colors.secondaryColor;
+    btn.style.borderWidth = shapes.borderWidth + 'px';
+    btn.style.borderStyle = shapes.borderStyle;
+
+    if (shapes.buttonStyle === 'pill') {
+      btn.style.borderRadius = '50px';
+    } else if (shapes.buttonStyle === 'minimal') {
+      btn.style.border = 'none';
+      btn.style.borderBottom = `1px solid ${colors.secondaryColor}`;
+      btn.style.borderRadius = '0';
+    } else {
+      btn.style.borderRadius = shapes.borderRadius + 'px';
+    }
+  });
+
+  // Seed display
+  const seedDisplay = document.querySelector('.seed-display');
+  seedDisplay.style.color = colors.accentColor;
+  seedDisplay.style.fontFamily = typography.bodyFont;
+
+  const seedInput = document.getElementById('seedInput');
+  seedInput.style.background = colors.cardColor;
+  seedInput.style.color = colors.textColor;
+  seedInput.style.borderColor = colors.accentColor;
+  seedInput.style.borderRadius = shapes.borderRadius + 'px';
+
+  // Stats
+  const stats = document.getElementById('stats');
+  stats.style.borderColor = colors.accentColor;
+  stats.style.color = colors.textColor;
+
+  // Input position
+  if (layout.inputPosition === 'bottom') {
+    const inputWrapper = document.getElementById('inputWrapper');
+    container.appendChild(inputWrapper);
+  }
+}
+
+// Transition to new seed
+function transitionToSeed(newSeed) {
+  const elements = document.querySelectorAll('.container, .seed-display');
+  elements.forEach(el => el.classList.add('fade-out'));
+
+  setTimeout(() => {
+    currentSeed = newSeed;
+    document.getElementById('seedValue').textContent = String(newSeed).padStart(6, '0');
+    window.location.hash = `seed=${newSeed}`;
+    localStorage.setItem(SEED_KEY, newSeed);
+
+    const design = generateDesign(newSeed);
+    applyDesign(design);
+
+    elements.forEach(el => {
+      el.classList.remove('fade-out');
+      el.classList.add('fade-in');
+    });
+
+    setTimeout(() => {
+      elements.forEach(el => el.classList.remove('fade-in'));
+    }, 300);
+  }, 200);
+}
+
+// Initialize seed
+function initSeed() {
+  const hash = window.location.hash.slice(1);
+  const params = new URLSearchParams(hash);
+  const seedParam = params.get('seed');
+
+  if (seedParam) {
+    currentSeed = parseInt(seedParam);
+  } else {
+    const saved = localStorage.getItem(SEED_KEY);
+    currentSeed = saved ? parseInt(saved) : 123456;
+  }
+
+  document.getElementById('seedValue').textContent = String(currentSeed).padStart(6, '0');
+  const design = generateDesign(currentSeed);
+  applyDesign(design);
+}
+
+// Random seed
+function randomSeed() {
+  return Math.floor(Math.random() * 1000000);
+}
+
+// Load todos
+function loadTodos() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  todos = saved ? JSON.parse(saved) : [];
+}
+
+// Save todos
+function saveTodos() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+}
+
+// Add todo
+function addTodo(text) {
+  if (!text.trim()) return;
+  todos.push({
+    id: Date.now(),
+    text: text.trim(),
+    completed: false
+  });
+  saveTodos();
+  render();
+}
+
+// Toggle todo
+function toggleTodo(id) {
+  const todo = todos.find(t => t.id === id);
+  if (todo) {
+    todo.completed = !todo.completed;
+    saveTodos();
+    render();
+  }
+}
+
+// Delete todo
+function deleteTodo(id) {
+  todos = todos.filter(t => t.id !== id);
+  saveTodos();
+  render();
+}
+
+// Edit todo
+function editTodo(id, newText) {
+  const todo = todos.find(t => t.id === id);
+  if (todo && newText.trim()) {
+    todo.text = newText.trim();
+    saveTodos();
+  }
+  editingId = null;
+  render();
+}
+
+// Clear completed
+function clearCompleted() {
+  todos = todos.filter(t => !t.completed);
+  saveTodos();
+  render();
+}
+
+// Filter todos
+function getFilteredTodos() {
+  if (currentFilter === 'active') return todos.filter(t => !t.completed);
+  if (currentFilter === 'completed') return todos.filter(t => t.completed);
+  return todos;
+}
+
+// Render
+function render() {
+  const filtered = getFilteredTodos();
+  const taskList = document.getElementById('taskList');
+
+  taskList.innerHTML = filtered.map(todo => {
+    if (editingId === todo.id) {
+      return `
+        <div class="task-item" data-id="${todo.id}">
+          <input type="text" class="task-edit" value="${todo.text}" data-id="${todo.id}">
+        </div>
+      `;
+    }
+    return `
+      <div class="task-item" data-id="${todo.id}">
+        <div class="task-checkbox ${todo.completed ? 'checked' : ''}" data-id="${todo.id}"></div>
+        <div class="task-text ${todo.completed ? 'completed' : ''}" data-id="${todo.id}">${todo.text}</div>
+        <button class="task-delete" data-id="${todo.id}">×</button>
+      </div>
+    `;
+  }).join('');
+
+  // Update count
+  const activeCount = todos.filter(t => !t.completed).length;
+  document.getElementById('taskCount').textContent = `${activeCount} ${activeCount === 1 ? 'task' : 'tasks'}`;
+
+  // Re-apply design to new elements
+  const design = generateDesign(currentSeed);
+  applyDesign(design);
+
+  // Focus edit input if editing
+  if (editingId) {
+    const editInput = document.querySelector('.task-edit');
+    if (editInput) {
+      editInput.focus();
+      editInput.select();
+    }
+  }
+}
+
+// Gallery
+function openGallery() {
+  const gallery = document.getElementById('gallery');
+  const grid = document.getElementById('galleryGrid');
+
+  // Generate random previews
+  const seeds = [];
+  for (let i = 0; i < 6; i++) {
+    seeds.push(randomSeed());
+  }
+
+  grid.innerHTML = seeds.map(seed => {
+    const design = generateDesign(seed);
+    return `
+      <div class="gallery-item" data-seed="${seed}" style="background: ${design.colors.bgColor}; border-color: ${design.colors.accentColor};">
+        <div style="padding: 12px; color: ${design.colors.textColor}; font-family: ${design.typography.bodyFont}; font-size: 12px;">
+          <div style="margin-bottom: 4px; color: ${design.colors.accentColor};">todooo</div>
+          <div style="width: 100%; height: 4px; background: ${design.colors.cardColor}; margin: 4px 0; border-radius: ${design.shapes.borderRadius}px;"></div>
+          <div style="width: 80%; height: 4px; background: ${design.colors.cardColor}; margin: 4px 0; border-radius: ${design.shapes.borderRadius}px;"></div>
+          <div style="width: 60%; height: 4px; background: ${design.colors.cardColor}; margin: 4px 0; border-radius: ${design.shapes.borderRadius}px;"></div>
+        </div>
+        <div class="gallery-seed">${String(seed).padStart(6, '0')}</div>
+      </div>
+    `;
+  }).join('');
+
+  // Show saved seeds
+  updateSavedSeeds();
+
+  gallery.classList.add('visible');
+}
+
+function closeGallery() {
+  document.getElementById('gallery').classList.remove('visible');
+}
+
+function saveSeedToList(seed) {
+  let saved = localStorage.getItem(SAVED_SEEDS_KEY);
+  saved = saved ? JSON.parse(saved) : [];
+  if (!saved.includes(seed)) {
+    saved.push(seed);
+    localStorage.setItem(SAVED_SEEDS_KEY, JSON.stringify(saved));
+    updateSavedSeeds();
+  }
+}
+
+function updateSavedSeeds() {
+  let saved = localStorage.getItem(SAVED_SEEDS_KEY);
+  saved = saved ? JSON.parse(saved) : [];
+
+  const list = document.getElementById('savedSeedsList');
+  if (saved.length === 0) {
+    list.innerHTML = '<div style="opacity: 0.5; font-size: 12px;">No saved seeds yet</div>';
+  } else {
+    list.innerHTML = saved.map(seed =>
+      `<div class="saved-seed" data-seed="${seed}">${String(seed).padStart(6, '0')}</div>`
+    ).join('');
+  }
+}
+
+// Event listeners
+document.getElementById('taskInput').addEventListener('keypress', e => {
+  if (e.key === 'Enter') {
+    addTodo(e.target.value);
+    e.target.value = '';
+  }
+});
+
+document.getElementById('taskList').addEventListener('click', e => {
+  const id = parseInt(e.target.dataset.id);
+  if (!id) return;
+
+  if (e.target.classList.contains('task-checkbox')) {
+    toggleTodo(id);
+  } else if (e.target.classList.contains('task-delete')) {
+    deleteTodo(id);
+  } else if (e.target.classList.contains('task-text')) {
+    editingId = id;
+    render();
+  }
+});
+
+document.getElementById('taskList').addEventListener('keypress', e => {
+  if (e.key === 'Enter' && e.target.classList.contains('task-edit')) {
+    const id = parseInt(e.target.dataset.id);
+    editTodo(id, e.target.value);
+  }
+});
+
+document.getElementById('taskList').addEventListener('blur', e => {
+  if (e.target.classList.contains('task-edit')) {
+    const id = parseInt(e.target.dataset.id);
+    editTodo(id, e.target.value);
+  }
+}, true);
+
+document.getElementById('filters').addEventListener('click', e => {
+  if (e.target.classList.contains('filter-btn')) {
+    currentFilter = e.target.dataset.filter;
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    e.target.classList.add('active');
+    render();
+  }
+});
+
+document.getElementById('clearCompleted').addEventListener('click', clearCompleted);
+
+document.getElementById('randomSeed').addEventListener('click', () => {
+  transitionToSeed(randomSeed());
+});
+
+document.getElementById('seedInput').addEventListener('keypress', e => {
+  if (e.key === 'Enter') {
+    const value = e.target.value.trim();
+    if (value.length === 6 && /^\d+$/.test(value)) {
+      transitionToSeed(parseInt(value));
+      e.target.value = '';
+    }
+  }
+});
+
+document.getElementById('seedDisplay').addEventListener('click', () => {
+  const seed = String(currentSeed).padStart(6, '0');
+  navigator.clipboard.writeText(seed);
+  alert(`Seed ${seed} copied!`);
+});
+
+document.getElementById('saveSeed').addEventListener('click', () => {
+  saveSeedToList(currentSeed);
+  alert('Seed saved!');
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === ' ' && e.target.tagName !== 'INPUT') {
+    e.preventDefault();
+    transitionToSeed(randomSeed());
+  } else if (e.key === 'g' && e.target.tagName !== 'INPUT') {
+    openGallery();
+  } else if (e.key === 'Escape') {
+    closeGallery();
+  }
+});
+
+document.getElementById('galleryClose').addEventListener('click', closeGallery);
+
+document.getElementById('gallery').addEventListener('click', e => {
+  if (e.target.id === 'gallery') {
+    closeGallery();
+  }
+
+  const item = e.target.closest('.gallery-item, .saved-seed');
+  if (item) {
+    const seed = parseInt(item.dataset.seed);
+    transitionToSeed(seed);
+    closeGallery();
+  }
+});
+
+// Initialize
+loadTodos();
+initSeed();
+render();
+
+// Special seeds
+if (currentSeed === 0) {
+  // Pure minimalist override
+  document.body.style.background = '#fff';
+  document.body.style.color = '#000';
+  document.body.style.fontFamily = 'system-ui, sans-serif';
+  document.querySelector('.app-title').style.color = '#000';
+} else if (currentSeed === 999999) {
+  // Maximum chaos override
+  document.body.style.background = '#ff00ff';
+  document.body.style.animation = 'rainbow 2s infinite';
+}
+</script>
+</html>

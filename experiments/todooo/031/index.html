@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo 031 - Time Travel</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.todo-section {
+  height: 70%;
+  overflow-y: auto;
+  padding: 2rem;
+  position: relative;
+}
+
+.todo-section.replay-mode::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(0deg, rgba(124, 131, 255, 0.02) 0px, rgba(124, 131, 255, 0.02) 2px, transparent 2px, transparent 4px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.todo-section.replay-mode {
+  filter: hue-rotate(5deg) saturate(0.95);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+h1 {
+  font-size: 2.5rem;
+  color: #7c83ff;
+  margin-bottom: 0.5rem;
+}
+
+.live-indicator {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #00ff88;
+  color: #1a1a2e;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  margin-left: 1rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.live-indicator.active {
+  opacity: 1;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.input-container {
+  max-width: 600px;
+  margin: 0 auto 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+#taskInput {
+  width: 100%;
+  padding: 1rem;
+  background: #16213e;
+  border: 2px solid #7c83ff;
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 1rem;
+  outline: none;
+}
+
+#taskInput::placeholder {
+  color: #666;
+}
+
+.tasks {
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.task {
+  background: #16213e;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.3s;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.task.removing {
+  animation: slideOut 0.3s ease-out forwards;
+}
+
+@keyframes slideOut {
+  to {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+
+.task.ghost {
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.task.about-to-delete {
+  box-shadow: inset 0 0 20px rgba(255, 0, 0, 0.2);
+}
+
+.task.completed {
+  opacity: 0.6;
+}
+
+.task.completed .task-text {
+  text-decoration: line-through;
+}
+
+.priority-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.priority-dot:hover {
+  transform: scale(1.3);
+}
+
+.priority-dot.none {
+  background: #444;
+}
+
+.priority-dot.low {
+  background: #4CAF50;
+}
+
+.priority-dot.med {
+  background: #FF9800;
+}
+
+.priority-dot.high {
+  background: #F44336;
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.task-text {
+  flex: 1;
+  color: #e0e0e0;
+  word-break: break-word;
+}
+
+.task-text[contenteditable="true"] {
+  outline: 1px solid #7c83ff;
+  padding: 0.25rem;
+  border-radius: 4px;
+}
+
+.delete-btn {
+  background: #f44336;
+  border: none;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.delete-btn:hover {
+  opacity: 1;
+}
+
+.timeline-section {
+  height: 30%;
+  background: #12122a;
+  border-top: 2px solid #7c83ff;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 2rem;
+  position: relative;
+}
+
+.timeline-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+.timeline-span {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.timeline-container {
+  flex: 1;
+  position: relative;
+  margin: 1rem 0;
+}
+
+.timeline-track {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #2a2a4e;
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+
+.timeline-branches {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.branch-track {
+  position: absolute;
+  top: 30%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  opacity: 0.4;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.branch-track:hover {
+  opacity: 0.7;
+}
+
+.timeline-pips {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 20px;
+  transform: translateY(-50%);
+}
+
+.pip {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.pip:hover {
+  transform: translate(-50%, -50%) scale(1.5);
+}
+
+.pip.add { background: #4CAF50; }
+.pip.complete { background: #2196F3; }
+.pip.uncomplete { background: #03A9F4; }
+.pip.delete { background: #F44336; }
+.pip.edit { background: #FFC107; }
+.pip.priority { background: #9C27B0; }
+
+.pip-tooltip {
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #16213e;
+  padding: 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.pip:hover .pip-tooltip {
+  opacity: 1;
+}
+
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #7c83ff;
+  transform: translateX(-50%);
+  cursor: grab;
+  z-index: 5;
+}
+
+.playhead:active {
+  cursor: grabbing;
+}
+
+.playhead-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  background: #7c83ff;
+  border-radius: 50%;
+  border: 2px solid #12122a;
+}
+
+.branch-point {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #FFD700;
+  font-size: 1rem;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.control-btn {
+  background: #16213e;
+  border: 1px solid #7c83ff;
+  color: #e0e0e0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+  min-width: 40px;
+}
+
+.control-btn:hover {
+  background: #7c83ff;
+  transform: scale(1.05);
+}
+
+.control-btn:active {
+  transform: scale(0.95);
+}
+
+.speed-control {
+  background: #16213e;
+  border: 1px solid #7c83ff;
+  color: #7c83ff;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  min-width: 60px;
+  text-align: center;
+}
+
+.speed-control:hover {
+  background: #1f2a4a;
+}
+
+.branch-indicator {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.75rem;
+  color: #FFD700;
+  background: rgba(255, 215, 0, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.branch-indicator.active {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .todo-section {
+    padding: 1rem;
+  }
+
+  .controls {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .control-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.9rem;
+    min-width: 35px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="todo-section" id="todoSection">
+    <div class="header">
+      <h1>todooo 031<span class="live-indicator" id="liveIndicator">LIVE</span></h1>
+    </div>
+
+    <div class="input-container">
+      <input type="text" id="taskInput" placeholder="Add a new task... (press Enter)" autocomplete="off">
+    </div>
+
+    <div class="tasks" id="taskList"></div>
+
+    <div class="branch-indicator" id="branchIndicator">Branch Timeline</div>
+  </div>
+
+  <div class="timeline-section">
+    <div class="timeline-info">
+      <span id="timeDisplay">No history yet</span>
+      <span id="actionCount">Action 0 of 0</span>
+    </div>
+    <div class="timeline-span" id="timeSpan">No actions recorded</div>
+
+    <div class="timeline-container">
+      <svg class="timeline-branches" id="branchSvg"></svg>
+      <div class="timeline-track"></div>
+      <div class="timeline-pips" id="timelinePips"></div>
+      <div class="playhead" id="playhead">
+        <div class="playhead-handle"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="control-btn" id="jumpStart" title="Jump to beginning (Home)">⏮</button>
+      <button class="control-btn" id="stepBack" title="Step back (Left arrow)">◀</button>
+      <button class="control-btn" id="playBackward" title="Play backward">⏪</button>
+      <button class="control-btn" id="playPause" title="Play/Pause (Space)">⏸</button>
+      <button class="control-btn" id="playForward" title="Play forward">⏩</button>
+      <button class="control-btn" id="stepForward" title="Step forward (Right arrow)">▶</button>
+      <button class="control-btn" id="jumpEnd" title="Jump to present (End)">⏭</button>
+      <div class="speed-control" id="speedControl">1x</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'todooo-031';
+const SPEEDS = [0.5, 1, 2, 5, 10];
+let currentSpeedIndex = 1;
+let soundEnabled = true;
+
+class TimeTravel {
+  constructor() {
+    this.mainTimeline = [];
+    this.branches = [];
+    this.currentBranch = null;
+    this.playheadPosition = 0;
+    this.isPlaying = false;
+    this.playDirection = 1;
+    this.playInterval = null;
+    this.tasks = new Map();
+    this.taskCounter = 0;
+
+    this.load();
+    this.setupEventListeners();
+    this.renderTimeline();
+    this.reconstructState();
+    this.render();
+  }
+
+  setupEventListeners() {
+    document.getElementById('taskInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && e.target.value.trim()) {
+        this.addTask(e.target.value.trim());
+        e.target.value = '';
+      }
+    });
+
+    const playhead = document.getElementById('playhead');
+    let isDragging = false;
+
+    playhead.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      this.pause();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        const container = document.querySelector('.timeline-container');
+        const rect = container.getBoundingClientRect();
+        const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+        const percent = x / rect.width;
+        const timeline = this.getCurrentTimeline();
+        const newPos = Math.floor(percent * timeline.length);
+        this.scrubTo(newPos);
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    document.getElementById('jumpStart').addEventListener('click', () => this.scrubTo(0));
+    document.getElementById('jumpEnd').addEventListener('click', () => this.scrubToPresent());
+    document.getElementById('stepBack').addEventListener('click', () => this.step(-1));
+    document.getElementById('stepForward').addEventListener('click', () => this.step(1));
+    document.getElementById('playBackward').addEventListener('click', () => this.play(-1));
+    document.getElementById('playForward').addEventListener('click', () => this.play(1));
+    document.getElementById('playPause').addEventListener('click', () => this.togglePlayPause());
+    document.getElementById('speedControl').addEventListener('click', () => this.cycleSpeed());
+
+    document.addEventListener('keydown', (e) => {
+      if (e.target.id === 'taskInput') return;
+      if (e.target.contentEditable === 'true') return;
+
+      switch(e.key) {
+        case 'ArrowLeft':
+          this.step(e.shiftKey ? -10 : -1);
+          e.preventDefault();
+          break;
+        case 'ArrowRight':
+          this.step(e.shiftKey ? 10 : 1);
+          e.preventDefault();
+          break;
+        case ' ':
+          this.togglePlayPause();
+          e.preventDefault();
+          break;
+        case 'Home':
+          this.scrubTo(0);
+          e.preventDefault();
+          break;
+        case 'End':
+          this.scrubToPresent();
+          e.preventDefault();
+          break;
+        case '1': case '2': case '3': case '4': case '5':
+          currentSpeedIndex = parseInt(e.key) - 1;
+          this.updateSpeedDisplay();
+          break;
+      }
+    });
+  }
+
+  addTask(text) {
+    const id = `task-${++this.taskCounter}-${Date.now()}`;
+    this.recordAction({
+      type: 'add',
+      timestamp: Date.now(),
+      taskId: id,
+      taskText: text,
+      details: {}
+    });
+  }
+
+  completeTask(id, completed) {
+    this.recordAction({
+      type: completed ? 'complete' : 'uncomplete',
+      timestamp: Date.now(),
+      taskId: id,
+      taskText: this.tasks.get(id)?.text || '',
+      details: {}
+    });
+  }
+
+  deleteTask(id) {
+    this.recordAction({
+      type: 'delete',
+      timestamp: Date.now(),
+      taskId: id,
+      taskText: this.tasks.get(id)?.text || '',
+      details: {}
+    });
+  }
+
+  editTask(id, newText) {
+    const oldText = this.tasks.get(id)?.text || '';
+    this.recordAction({
+      type: 'edit',
+      timestamp: Date.now(),
+      taskId: id,
+      taskText: newText,
+      details: { oldText, newText }
+    });
+  }
+
+  setPriority(id, priority) {
+    const oldPriority = this.tasks.get(id)?.priority || 'none';
+    this.recordAction({
+      type: 'priority',
+      timestamp: Date.now(),
+      taskId: id,
+      taskText: this.tasks.get(id)?.text || '',
+      details: { oldPriority, newPriority: priority }
+    });
+  }
+
+  recordAction(action) {
+    const timeline = this.getCurrentTimeline();
+    const isAtPresent = this.playheadPosition === timeline.length;
+
+    if (!isAtPresent) {
+      this.createBranch();
+    }
+
+    if (this.currentBranch) {
+      this.currentBranch.actions.push(action);
+    } else {
+      this.mainTimeline.push(action);
+    }
+
+    this.playheadPosition++;
+    this.applyAction(action);
+    this.save();
+    this.renderTimeline();
+    this.render();
+    this.playSound('tick');
+  }
+
+  createBranch() {
+    const branchPoint = this.playheadPosition;
+    const parentTimeline = this.currentBranch ? this.currentBranch.actions : this.mainTimeline;
+
+    const newBranch = {
+      id: Date.now(),
+      branchPoint,
+      actions: [],
+      parentBranch: this.currentBranch,
+      abandoned: parentTimeline.slice(branchPoint)
+    };
+
+    this.branches.push(newBranch);
+    this.currentBranch = newBranch;
+
+    if (this.branches.length > 5) {
+      this.branches.shift();
+    }
+
+    this.showBranchIndicator();
+  }
+
+  getCurrentTimeline() {
+    if (this.currentBranch) {
+      const base = this.currentBranch.parentBranch ?
+        this.currentBranch.parentBranch.actions.slice(0, this.currentBranch.branchPoint) :
+        this.mainTimeline.slice(0, this.currentBranch.branchPoint);
+      return [...base, ...this.currentBranch.actions];
+    }
+    return this.mainTimeline;
+  }
+
+  scrubTo(position) {
+    const timeline = this.getCurrentTimeline();
+    position = Math.max(0, Math.min(position, timeline.length));
+
+    if (position === this.playheadPosition) return;
+
+    const diff = Math.abs(position - this.playheadPosition);
+    if (diff > 5) {
+      this.playSound('whoosh');
+    }
+
+    this.playheadPosition = position;
+    this.reconstructState();
+    this.renderTimeline();
+    this.render();
+  }
+
+  scrubToPresent() {
+    this.currentBranch = null;
+    const timeline = this.getCurrentTimeline();
+    this.scrubTo(timeline.length);
+  }
+
+  step(direction) {
+    this.pause();
+    this.scrubTo(this.playheadPosition + direction);
+    this.playSound('tick');
+  }
+
+  play(direction) {
+    this.playDirection = direction;
+    if (this.isPlaying && this.playDirection === direction) {
+      this.pause();
+      return;
+    }
+
+    this.isPlaying = true;
+    const speed = SPEEDS[currentSpeedIndex];
+    const interval = 1000 / speed;
+
+    clearInterval(this.playInterval);
+    this.playInterval = setInterval(() => {
+      const timeline = this.getCurrentTimeline();
+      const newPos = this.playheadPosition + this.playDirection;
+
+      if (newPos < 0 || newPos > timeline.length) {
+        this.pause();
+        return;
+      }
+
+      this.scrubTo(newPos);
+      this.playSound('tick');
+    }, interval);
+
+    this.updatePlayPauseButton();
+  }
+
+  pause() {
+    this.isPlaying = false;
+    clearInterval(this.playInterval);
+    this.updatePlayPauseButton();
+  }
+
+  togglePlayPause() {
+    if (this.isPlaying) {
+      this.pause();
+    } else {
+      this.play(1);
+    }
+  }
+
+  cycleSpeed() {
+    currentSpeedIndex = (currentSpeedIndex + 1) % SPEEDS.length;
+    this.updateSpeedDisplay();
+    if (this.isPlaying) {
+      this.play(this.playDirection);
+    }
+  }
+
+  updateSpeedDisplay() {
+    document.getElementById('speedControl').textContent = `${SPEEDS[currentSpeedIndex]}x`;
+  }
+
+  updatePlayPauseButton() {
+    document.getElementById('playPause').textContent = this.isPlaying ? '⏸' : '▶';
+  }
+
+  reconstructState() {
+    this.tasks.clear();
+    const timeline = this.getCurrentTimeline();
+    const actionsToApply = timeline.slice(0, this.playheadPosition);
+
+    actionsToApply.forEach(action => {
+      this.applyAction(action, true);
+    });
+  }
+
+  applyAction(action, silent = false) {
+    switch(action.type) {
+      case 'add':
+        this.tasks.set(action.taskId, {
+          id: action.taskId,
+          text: action.taskText,
+          completed: false,
+          priority: 'none'
+        });
+        break;
+      case 'complete':
+        if (this.tasks.has(action.taskId)) {
+          this.tasks.get(action.taskId).completed = true;
+        }
+        break;
+      case 'uncomplete':
+        if (this.tasks.has(action.taskId)) {
+          this.tasks.get(action.taskId).completed = false;
+        }
+        break;
+      case 'delete':
+        this.tasks.delete(action.taskId);
+        break;
+      case 'edit':
+        if (this.tasks.has(action.taskId)) {
+          this.tasks.get(action.taskId).text = action.details.newText;
+        }
+        break;
+      case 'priority':
+        if (this.tasks.has(action.taskId)) {
+          this.tasks.get(action.taskId).priority = action.details.newPriority;
+        }
+        break;
+    }
+  }
+
+  render() {
+    const taskList = document.getElementById('taskList');
+    const existingTaskIds = new Set(Array.from(taskList.children).map(el => el.dataset.id));
+    const currentTaskIds = new Set(this.tasks.keys());
+
+    existingTaskIds.forEach(id => {
+      if (!currentTaskIds.has(id)) {
+        const el = taskList.querySelector(`[data-id="${id}"]`);
+        if (el) {
+          el.classList.add('removing');
+          setTimeout(() => el.remove(), 300);
+        }
+      }
+    });
+
+    const sortedTasks = Array.from(this.tasks.values()).sort((a, b) => {
+      const timeline = this.getCurrentTimeline();
+      const aIndex = timeline.findIndex(action => action.taskId === a.id && action.type === 'add');
+      const bIndex = timeline.findIndex(action => action.taskId === b.id && action.type === 'add');
+      return aIndex - bIndex;
+    });
+
+    sortedTasks.forEach(task => {
+      let taskEl = taskList.querySelector(`[data-id="${task.id}"]`);
+
+      if (!taskEl) {
+        taskEl = document.createElement('div');
+        taskEl.className = 'task';
+        taskEl.dataset.id = task.id;
+        taskEl.innerHTML = `
+          <div class="priority-dot ${task.priority}"></div>
+          <input type="checkbox" class="checkbox" ${task.completed ? 'checked' : ''}>
+          <div class="task-text">${this.escapeHtml(task.text)}</div>
+          <button class="delete-btn">×</button>
+        `;
+        taskList.appendChild(taskEl);
+
+        const priorityDot = taskEl.querySelector('.priority-dot');
+        priorityDot.addEventListener('click', () => {
+          if (this.isAtPresent()) {
+            const priorities = ['none', 'low', 'med', 'high'];
+            const currentIndex = priorities.indexOf(task.priority);
+            const newPriority = priorities[(currentIndex + 1) % priorities.length];
+            this.setPriority(task.id, newPriority);
+          }
+        });
+
+        const checkbox = taskEl.querySelector('.checkbox');
+        checkbox.addEventListener('change', () => {
+          if (this.isAtPresent()) {
+            this.completeTask(task.id, checkbox.checked);
+          } else {
+            checkbox.checked = task.completed;
+          }
+        });
+
+        const taskText = taskEl.querySelector('.task-text');
+        taskText.addEventListener('dblclick', () => {
+          if (this.isAtPresent()) {
+            taskText.contentEditable = 'true';
+            taskText.focus();
+            const range = document.createRange();
+            range.selectNodeContents(taskText);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+        });
+
+        taskText.addEventListener('blur', () => {
+          taskText.contentEditable = 'false';
+          const newText = taskText.textContent.trim();
+          if (newText && newText !== task.text) {
+            this.editTask(task.id, newText);
+          } else {
+            taskText.textContent = task.text;
+          }
+        });
+
+        taskText.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            taskText.blur();
+          }
+        });
+
+        const deleteBtn = taskEl.querySelector('.delete-btn');
+        deleteBtn.addEventListener('click', () => {
+          if (this.isAtPresent()) {
+            this.deleteTask(task.id);
+          }
+        });
+      }
+
+      taskEl.querySelector('.checkbox').checked = task.completed;
+      taskEl.querySelector('.task-text').textContent = task.text;
+      taskEl.querySelector('.priority-dot').className = `priority-dot ${task.priority}`;
+      taskEl.classList.toggle('completed', task.completed);
+      taskEl.classList.remove('ghost', 'about-to-delete');
+    });
+
+    this.renderGhostPreviews();
+    this.updateLiveIndicator();
+    this.updateReplayMode();
+  }
+
+  renderGhostPreviews() {
+    const timeline = this.getCurrentTimeline();
+    const nextActions = timeline.slice(this.playheadPosition, this.playheadPosition + 3);
+
+    nextActions.forEach(action => {
+      if (action.type === 'add') {
+        const taskList = document.getElementById('taskList');
+        if (!taskList.querySelector(`[data-id="${action.taskId}"]`)) {
+          const ghostEl = document.createElement('div');
+          ghostEl.className = 'task ghost';
+          ghostEl.dataset.id = action.taskId;
+          ghostEl.innerHTML = `
+            <div class="priority-dot none"></div>
+            <input type="checkbox" class="checkbox">
+            <div class="task-text">${this.escapeHtml(action.taskText)}</div>
+            <button class="delete-btn">×</button>
+          `;
+          taskList.appendChild(ghostEl);
+        }
+      } else if (action.type === 'delete') {
+        const taskEl = document.querySelector(`[data-id="${action.taskId}"]`);
+        if (taskEl && !taskEl.classList.contains('ghost')) {
+          taskEl.classList.add('about-to-delete');
+        }
+      }
+    });
+  }
+
+  renderTimeline() {
+    const timeline = this.getCurrentTimeline();
+    const pipsContainer = document.getElementById('timelinePips');
+    pipsContainer.innerHTML = '';
+
+    timeline.forEach((action, index) => {
+      const pip = document.createElement('div');
+      pip.className = `pip ${action.type}`;
+      pip.style.left = `${(index / Math.max(timeline.length - 1, 1)) * 100}%`;
+
+      const tooltip = document.createElement('div');
+      tooltip.className = 'pip-tooltip';
+      tooltip.textContent = this.getActionDescription(action);
+      pip.appendChild(tooltip);
+
+      pip.addEventListener('click', () => {
+        this.pause();
+        this.scrubTo(index + 1);
+      });
+
+      pipsContainer.appendChild(pip);
+    });
+
+    this.updatePlayheadPosition();
+    this.updateTimeDisplay();
+    this.renderBranches();
+  }
+
+  renderBranches() {
+    const svg = document.getElementById('branchSvg');
+    svg.innerHTML = '';
+
+    if (this.branches.length === 0) return;
+
+    const container = svg.parentElement;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    svg.setAttribute('width', width);
+    svg.setAttribute('height', height);
+
+    this.branches.forEach((branch, index) => {
+      const timeline = this.mainTimeline;
+      const branchX = (branch.branchPoint / Math.max(timeline.length, 1)) * width;
+      const branchY = height * 0.3;
+      const mainY = height * 0.5;
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      const d = `M ${branchX} ${mainY} Q ${branchX + 20} ${(mainY + branchY) / 2} ${branchX + 40} ${branchY}`;
+      path.setAttribute('d', d);
+      path.setAttribute('stroke', `hsl(${index * 60}, 50%, 50%)`);
+      path.setAttribute('stroke-width', '2');
+      path.setAttribute('fill', 'none');
+      path.setAttribute('opacity', '0.4');
+      svg.appendChild(path);
+
+      const diamond = document.createElement('div');
+      diamond.className = 'branch-point';
+      diamond.textContent = '◆';
+      diamond.style.left = `${branchX}px`;
+      svg.parentElement.appendChild(diamond);
+    });
+  }
+
+  updatePlayheadPosition() {
+    const timeline = this.getCurrentTimeline();
+    const playhead = document.getElementById('playhead');
+    const percent = timeline.length > 0 ? (this.playheadPosition / timeline.length) * 100 : 0;
+    playhead.style.left = `${percent}%`;
+  }
+
+  updateTimeDisplay() {
+    const timeline = this.getCurrentTimeline();
+    const timeDisplay = document.getElementById('timeDisplay');
+    const actionCount = document.getElementById('actionCount');
+    const timeSpan = document.getElementById('timeSpan');
+
+    if (timeline.length === 0) {
+      timeDisplay.textContent = 'No history yet';
+      actionCount.textContent = 'Action 0 of 0';
+      timeSpan.textContent = 'No actions recorded';
+      return;
+    }
+
+    const currentAction = timeline[this.playheadPosition - 1];
+    if (currentAction) {
+      timeDisplay.textContent = this.formatTimestamp(currentAction.timestamp);
+    } else {
+      timeDisplay.textContent = 'Before first action';
+    }
+
+    actionCount.textContent = `Action ${this.playheadPosition} of ${timeline.length}`;
+
+    const firstTime = timeline[0].timestamp;
+    const lastTime = timeline[timeline.length - 1].timestamp;
+    const span = this.formatTimeSpan(lastTime - firstTime);
+    timeSpan.textContent = `Spanning ${span}`;
+  }
+
+  updateLiveIndicator() {
+    const isLive = this.isAtPresent();
+    document.getElementById('liveIndicator').classList.toggle('active', isLive);
+  }
+
+  updateReplayMode() {
+    const isLive = this.isAtPresent();
+    document.getElementById('todoSection').classList.toggle('replay-mode', !isLive);
+  }
+
+  showBranchIndicator() {
+    const indicator = document.getElementById('branchIndicator');
+    indicator.classList.add('active');
+    setTimeout(() => indicator.classList.remove('active'), 3000);
+  }
+
+  isAtPresent() {
+    const timeline = this.getCurrentTimeline();
+    return this.playheadPosition === timeline.length && !this.currentBranch;
+  }
+
+  getActionDescription(action) {
+    const type = action.type.charAt(0).toUpperCase() + action.type.slice(1);
+    return `${type}: ${action.taskText}`;
+  }
+
+  formatTimestamp(timestamp) {
+    const now = Date.now();
+    const diff = now - timestamp;
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    if (minutes > 0) return `${minutes}m ago`;
+    if (seconds > 0) return `${seconds}s ago`;
+
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  }
+
+  formatTimeSpan(ms) {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''}`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''}`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+    return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+  }
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  playSound(type) {
+    if (!soundEnabled) return;
+
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    switch(type) {
+      case 'tick':
+        oscillator.frequency.value = 800;
+        gainNode.gain.value = 0.05;
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.02);
+        break;
+      case 'whoosh':
+        oscillator.frequency.value = 400;
+        gainNode.gain.value = 0.03;
+        oscillator.start();
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+        oscillator.stop(audioContext.currentTime + 0.1);
+        break;
+    }
+  }
+
+  save() {
+    const data = {
+      mainTimeline: this.mainTimeline,
+      branches: this.branches,
+      taskCounter: this.taskCounter
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  load() {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (data) {
+      try {
+        const parsed = JSON.parse(data);
+        this.mainTimeline = parsed.mainTimeline || [];
+        this.branches = parsed.branches || [];
+        this.taskCounter = parsed.taskCounter || 0;
+        this.playheadPosition = this.mainTimeline.length;
+      } catch (e) {
+        console.error('Failed to load data:', e);
+      }
+    }
+  }
+}
+
+const app = new TimeTravel();
+</script>
+
+</body>
+</html>

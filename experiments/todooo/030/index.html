@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo 030 - Physics Playground</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #1a1a2e;
+  color: #fff;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+#canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+#topBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(26, 26, 46, 0.95);
+  border-bottom: 1px solid rgba(124, 131, 255, 0.3);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 10px;
+  pointer-events: auto;
+}
+#taskInput {
+  flex: 1;
+  max-width: 400px;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(124, 131, 255, 0.3);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+}
+#taskInput:focus {
+  border-color: #7c83ff;
+  background: rgba(255, 255, 255, 0.08);
+}
+#addBtn {
+  padding: 10px 20px;
+  background: #7c83ff;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#addBtn:hover { background: #6a73ee; }
+.priorityDot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+.priorityDot:hover { transform: scale(1.15); }
+.priorityDot.selected { border-color: #fff; box-shadow: 0 0 8px currentColor; }
+#topRight {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  pointer-events: auto;
+  font-size: 14px;
+}
+#soundToggle {
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(124, 131, 255, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.2s;
+}
+#soundToggle:hover { background: rgba(255, 255, 255, 0.15); }
+#taskCount { opacity: 0.7; }
+#freezeInd {
+  display: none;
+  font-size: 18px;
+  animation: pulse 1s infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+#controls {
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  font-size: 11px;
+  opacity: 0.5;
+  line-height: 1.6;
+}
+#actionMenu {
+  position: absolute;
+  display: none;
+  background: rgba(20, 20, 35, 0.98);
+  border: 1px solid rgba(124, 131, 255, 0.4);
+  border-radius: 10px;
+  padding: 8px;
+  gap: 6px;
+  flex-direction: column;
+  pointer-events: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+.menuBtn {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(124, 131, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: center;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.menuBtn:hover { background: rgba(124, 131, 255, 0.2); border-color: #7c83ff; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="hud">
+  <div id="topBar">
+    <input type="text" id="taskInput" placeholder="What needs to be done?" maxlength="60">
+    <button id="addBtn">Add</button>
+    <div class="priorityDot selected" data-priority="0" style="background: #7c83ff;" title="None"></div>
+    <div class="priorityDot" data-priority="1" style="background: #4ade80;" title="Low"></div>
+    <div class="priorityDot" data-priority="2" style="background: #fbbf24;" title="Medium"></div>
+    <div class="priorityDot" data-priority="3" style="background: #f87171;" title="High"></div>
+  </div>
+  <div id="topRight">
+    <div id="soundToggle" title="Toggle sound">🔊</div>
+    <div id="taskCount">0 tasks</div>
+    <div id="freezeInd">❄️</div>
+  </div>
+  <div id="controls">
+    S = Shake | F = Freeze | W = Sort by weight | G = Drop floor<br>
+    Click = Select | Drag = Throw | Right-click = Change priority
+  </div>
+  <div id="actionMenu">
+    <div class="menuBtn" id="completeBtn">✓ Complete</div>
+    <div class="menuBtn" id="deleteBtn">✕ Delete</div>
+    <div class="menuBtn" id="priorityBtn">Priority</div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const taskInput = document.getElementById('taskInput');
+const addBtn = document.getElementById('addBtn');
+const priorityDots = document.querySelectorAll('.priorityDot');
+const soundToggle = document.getElementById('soundToggle');
+const taskCount = document.getElementById('taskCount');
+const freezeInd = document.getElementById('freezeInd');
+const actionMenu = document.getElementById('actionMenu');
+const completeBtn = document.getElementById('completeBtn');
+const deleteBtn = document.getElementById('deleteBtn');
+const priorityBtn = document.getElementById('priorityBtn');
+
+let width, height;
+let tasks = [];
+let particles = [];
+let selectedTask = null;
+let draggedTask = null;
+let dragOffset = { x: 0, y: 0 };
+let lastMousePos = { x: 0, y: 0 };
+let mouseVel = { x: 0, y: 0 };
+let currentPriority = 0;
+let frozen = false;
+let floorActive = true;
+let floorTimer = 0;
+let soundEnabled = true;
+let audioCtx = null;
+let lastTime = performance.now();
+
+const COLORS = ['#7c83ff', '#4ade80', '#fbbf24', '#f87171'];
+const PRIORITY_NAMES = ['None', 'Low', 'Medium', 'High'];
+const GRAVITY = 400;
+const RESTITUTION = 0.4;
+const FRICTION = 0.95;
+const AIR_DRAG = 0.999;
+const FLOOR_HEIGHT = 40;
+const WALL_MARGIN = 10;
+
+function resize() {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  canvas.width = width;
+  canvas.height = height;
+}
+
+class Task {
+  constructor(text, priority, x, y) {
+    this.text = text;
+    this.priority = priority;
+    this.x = x || width / 2;
+    this.y = y || 100;
+    this.vx = (Math.random() - 0.5) * 50;
+    this.vy = 0;
+    this.rotation = 0;
+    this.angularVel = 0;
+    this.width = Math.max(80, Math.min(200, text.length * 8 + 40));
+    this.height = 40;
+    this.mass = priority + 1;
+    this.color = COLORS[priority];
+    this.alpha = 1;
+    this.squash = 1;
+    this.floating = false;
+    this.id = Date.now() + Math.random();
+  }
+
+  update(dt) {
+    if (frozen && !this.floating) return;
+
+    if (this.floating) {
+      this.vy -= 150 * dt;
+      this.alpha -= 0.5 * dt;
+      this.x += this.vx * dt;
+      this.y += this.vy * dt;
+      this.rotation += this.angularVel * dt;
+      if (this.alpha <= 0) return true;
+      return false;
+    }
+
+    this.vy += GRAVITY * dt;
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.rotation += this.angularVel * dt;
+
+    this.vx *= AIR_DRAG;
+    this.vy *= AIR_DRAG;
+    this.angularVel *= 0.98;
+
+    // Wall collision
+    const halfW = this.width / 2;
+    if (this.x - halfW < WALL_MARGIN) {
+      this.x = WALL_MARGIN + halfW;
+      this.vx = Math.abs(this.vx) * RESTITUTION;
+      playSound('bounce', this.mass);
+    }
+    if (this.x + halfW > width - WALL_MARGIN) {
+      this.x = width - WALL_MARGIN - halfW;
+      this.vx = -Math.abs(this.vx) * RESTITUTION;
+      playSound('bounce', this.mass);
+    }
+
+    // Floor collision
+    const halfH = this.height / 2;
+    if (floorActive && this.y + halfH > height - FLOOR_HEIGHT) {
+      this.y = height - FLOOR_HEIGHT - halfH;
+      if (Math.abs(this.vy) > 50) {
+        this.vy = -this.vy * RESTITUTION;
+        this.squash = 0.85;
+        playSound('bounce', this.mass);
+        spawnParticles(this.x, height - FLOOR_HEIGHT, 3);
+      } else {
+        this.vy = 0;
+        this.vx *= FRICTION;
+        this.angularVel *= 0.9;
+      }
+    }
+
+    // Ceiling
+    if (this.y - halfH < 60) {
+      this.y = 60 + halfH;
+      this.vy = Math.abs(this.vy) * RESTITUTION;
+    }
+
+    this.squash += (1 - this.squash) * 0.2;
+
+    return false;
+  }
+
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation);
+
+    const w = this.width;
+    const h = this.height * this.squash;
+
+    // Shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = this.vx * 0.05;
+    ctx.shadowOffsetY = this.vy * 0.05 + 4;
+
+    // Body
+    ctx.fillStyle = this.color;
+    if (selectedTask === this) {
+      ctx.shadowColor = this.color;
+      ctx.shadowBlur = 20;
+    }
+    roundRect(ctx, -w/2, -h/2, w, h, 8, true, false);
+
+    // Text
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const maxWidth = w - 16;
+    let displayText = this.text;
+    const metrics = ctx.measureText(displayText);
+    if (metrics.width > maxWidth) {
+      while (ctx.measureText(displayText + '...').width > maxWidth && displayText.length > 0) {
+        displayText = displayText.slice(0, -1);
+      }
+      displayText += '...';
+    }
+    ctx.fillText(displayText, 0, 0);
+
+    ctx.restore();
+  }
+
+  contains(px, py) {
+    const dx = px - this.x;
+    const dy = py - this.y;
+    const cos = Math.cos(-this.rotation);
+    const sin = Math.sin(-this.rotation);
+    const localX = dx * cos - dy * sin;
+    const localY = dx * sin + dy * cos;
+    return Math.abs(localX) < this.width / 2 && Math.abs(localY) < this.height / 2;
+  }
+
+  complete() {
+    this.floating = true;
+    this.mass = 0.1;
+    playSound('complete');
+  }
+
+  shatter() {
+    playSound('delete');
+    for (let i = 0; i < 8; i++) {
+      particles.push({
+        x: this.x + (Math.random() - 0.5) * this.width,
+        y: this.y + (Math.random() - 0.5) * this.height,
+        vx: (Math.random() - 0.5) * 200,
+        vy: Math.random() * -200,
+        size: Math.random() * 8 + 4,
+        color: this.color,
+        alpha: 1,
+        life: 2,
+        rotation: Math.random() * Math.PI * 2,
+        angularVel: (Math.random() - 0.5) * 10
+      });
+    }
+  }
+}
+
+function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+  if (fill) ctx.fill();
+  if (stroke) ctx.stroke();
+}
+
+function spawnParticles(x, y, count) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: x + (Math.random() - 0.5) * 20,
+      y: y,
+      vx: (Math.random() - 0.5) * 100,
+      vy: Math.random() * -50 - 20,
+      size: Math.random() * 3 + 1,
+      color: '#888',
+      alpha: 0.6,
+      life: 1,
+      rotation: 0,
+      angularVel: 0
+    });
+  }
+}
+
+function checkCollisions() {
+  for (let i = 0; i < tasks.length; i++) {
+    for (let j = i + 1; j < tasks.length; j++) {
+      const a = tasks[i];
+      const b = tasks[j];
+      if (a.floating || b.floating) continue;
+
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const minDist = (a.width + b.width) / 2;
+
+      if (dist < minDist) {
+        const angle = Math.atan2(dy, dx);
+        const overlap = minDist - dist;
+
+        const totalMass = a.mass + b.mass;
+        const aMove = overlap * (b.mass / totalMass);
+        const bMove = overlap * (a.mass / totalMass);
+
+        a.x -= Math.cos(angle) * aMove;
+        a.y -= Math.sin(angle) * aMove;
+        b.x += Math.cos(angle) * bMove;
+        b.y += Math.sin(angle) * bMove;
+
+        const relVelX = b.vx - a.vx;
+        const relVelY = b.vy - a.vy;
+        const velAlongNormal = relVelX * Math.cos(angle) + relVelY * Math.sin(angle);
+
+        if (velAlongNormal < 0) continue;
+
+        const impulse = (2 * velAlongNormal) / totalMass;
+        a.vx += impulse * b.mass * Math.cos(angle) * RESTITUTION;
+        a.vy += impulse * b.mass * Math.sin(angle) * RESTITUTION;
+        b.vx -= impulse * a.mass * Math.cos(angle) * RESTITUTION;
+        b.vy -= impulse * a.mass * Math.sin(angle) * RESTITUTION;
+
+        a.angularVel += (Math.random() - 0.5) * 2;
+        b.angularVel += (Math.random() - 0.5) * 2;
+
+        if (Math.abs(velAlongNormal) > 50) {
+          playSound('collision');
+        }
+      }
+    }
+  }
+}
+
+function update() {
+  const now = performance.now();
+  const dt = Math.min((now - lastTime) / 1000, 0.033);
+  lastTime = now;
+
+  if (!frozen) {
+    checkCollisions();
+  }
+
+  tasks = tasks.filter(task => {
+    const remove = task.update(dt);
+    return !remove;
+  });
+
+  particles = particles.filter(p => {
+    p.vy += GRAVITY * dt * 0.5;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.rotation += p.angularVel * dt;
+    p.life -= dt;
+    p.alpha = Math.max(0, p.life / 2);
+    return p.life > 0;
+  });
+
+  if (!floorActive) {
+    floorTimer -= dt;
+    if (floorTimer <= 0) {
+      floorActive = true;
+    }
+  }
+}
+
+function draw() {
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, width, height);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(124, 131, 255, 0.05)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < width; x += 40) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+    ctx.stroke();
+  }
+  for (let y = 60; y < height; y += 40) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+  }
+
+  // Floor
+  if (floorActive) {
+    const grad = ctx.createLinearGradient(0, height - FLOOR_HEIGHT, 0, height);
+    grad.addColorStop(0, 'rgba(124, 131, 255, 0.1)');
+    grad.addColorStop(1, 'rgba(124, 131, 255, 0.3)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, height - FLOOR_HEIGHT, width, FLOOR_HEIGHT);
+  }
+
+  // Particles
+  particles.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = p.alpha;
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rotation);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+    ctx.restore();
+  });
+
+  // Tasks
+  tasks.forEach(task => task.draw());
+
+  // Freeze tint
+  if (frozen) {
+    ctx.fillStyle = 'rgba(100, 150, 255, 0.05)';
+    ctx.fillRect(0, 0, width, height);
+  }
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function addTask(text = null) {
+  const input = text || taskInput.value.trim();
+  if (!input) return;
+
+  const task = new Task(input, currentPriority, width / 2 + (Math.random() - 0.5) * 100, 80);
+  tasks.push(task);
+  taskInput.value = '';
+  updateTaskCount();
+  saveTasks();
+  playSound('drop', task.mass);
+}
+
+function updateTaskCount() {
+  const active = tasks.filter(t => !t.floating).length;
+  taskCount.textContent = `${active} task${active !== 1 ? 's' : ''}`;
+}
+
+function saveTasks() {
+  const data = tasks.filter(t => !t.floating).map(t => ({
+    text: t.text,
+    priority: t.priority,
+    x: t.x,
+    y: t.y,
+    vx: t.vx,
+    vy: t.vy,
+    rotation: t.rotation
+  }));
+  localStorage.setItem('todooo-030', JSON.stringify(data));
+}
+
+function loadTasks() {
+  const data = localStorage.getItem('todooo-030');
+  if (!data) return;
+  try {
+    const saved = JSON.parse(data);
+    saved.forEach(item => {
+      const task = new Task(item.text, item.priority, item.x, item.y);
+      task.vx = item.vx || 0;
+      task.vy = item.vy || 0;
+      task.rotation = item.rotation || 0;
+      tasks.push(task);
+    });
+    updateTaskCount();
+  } catch (e) {
+    console.error('Load failed:', e);
+  }
+}
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playSound(type, mass = 1) {
+  if (!soundEnabled || !audioCtx) return;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  const now = audioCtx.currentTime;
+
+  switch (type) {
+    case 'bounce':
+    case 'drop':
+      osc.frequency.value = 200 / mass;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      osc.start(now);
+      osc.stop(now + 0.1);
+      break;
+    case 'complete':
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.exponentialRampToValueAtTime(800, now + 0.3);
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.3);
+      break;
+    case 'delete':
+      osc.frequency.value = 100;
+      osc.type = 'sawtooth';
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc.start(now);
+      osc.stop(now + 0.15);
+      break;
+    case 'collision':
+      osc.frequency.value = 150;
+      osc.type = 'square';
+      gain.gain.setValueAtTime(0.03, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+      osc.start(now);
+      osc.stop(now + 0.05);
+      break;
+    case 'shake':
+      osc.frequency.value = 50;
+      osc.type = 'sawtooth';
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+      osc.start(now);
+      osc.stop(now + 0.4);
+      break;
+    case 'whoosh':
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.exponentialRampToValueAtTime(50, now + 0.5);
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+      osc.start(now);
+      osc.stop(now + 0.5);
+      break;
+  }
+}
+
+function shake() {
+  playSound('shake');
+  tasks.forEach(t => {
+    if (!t.floating) {
+      t.vx += (Math.random() - 0.5) * 400;
+      t.vy += (Math.random() - 0.5) * 400;
+      t.angularVel += (Math.random() - 0.5) * 10;
+    }
+  });
+}
+
+function sortByWeight() {
+  tasks.forEach(t => {
+    if (!t.floating) {
+      const force = (4 - t.mass) * 200;
+      t.vy -= force;
+    }
+  });
+}
+
+function toggleFreeze() {
+  frozen = !frozen;
+  freezeInd.style.display = frozen ? 'block' : 'none';
+}
+
+function dropFloor() {
+  floorActive = false;
+  floorTimer = 3;
+  playSound('whoosh');
+}
+
+function showActionMenu(task, x, y) {
+  selectedTask = task;
+  actionMenu.style.left = x + 'px';
+  actionMenu.style.top = y + 'px';
+  actionMenu.style.display = 'flex';
+}
+
+function hideActionMenu() {
+  actionMenu.style.display = 'none';
+  selectedTask = null;
+}
+
+// Events
+window.addEventListener('resize', resize);
+
+canvas.addEventListener('mousedown', e => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  lastMousePos = { x, y };
+
+  if (e.button === 2) {
+    for (let i = tasks.length - 1; i >= 0; i--) {
+      if (tasks[i].contains(x, y) && !tasks[i].floating) {
+        tasks[i].priority = (tasks[i].priority + 1) % 4;
+        tasks[i].color = COLORS[tasks[i].priority];
+        tasks[i].mass = tasks[i].priority + 1;
+        saveTasks();
+        e.preventDefault();
+        return;
+      }
+    }
+  } else {
+    for (let i = tasks.length - 1; i >= 0; i--) {
+      if (tasks[i].contains(x, y) && !tasks[i].floating) {
+        draggedTask = tasks[i];
+        dragOffset = { x: x - tasks[i].x, y: y - tasks[i].y };
+        hideActionMenu();
+        return;
+      }
+    }
+    hideActionMenu();
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  if (draggedTask) {
+    const newX = x - dragOffset.x;
+    const newY = y - dragOffset.y;
+    mouseVel.x = (newX - draggedTask.x) * 10;
+    mouseVel.y = (newY - draggedTask.y) * 10;
+    draggedTask.x = newX;
+    draggedTask.y = newY;
+    draggedTask.vx = 0;
+    draggedTask.vy = 0;
+    draggedTask.rotation = 0;
+    draggedTask.angularVel = 0;
+  }
+
+  lastMousePos = { x, y };
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (draggedTask) {
+    draggedTask.vx = mouseVel.x;
+    draggedTask.vy = mouseVel.y;
+    draggedTask = null;
+    mouseVel = { x: 0, y: 0 };
+    saveTasks();
+  }
+});
+
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  for (let i = tasks.length - 1; i >= 0; i--) {
+    if (tasks[i].contains(x, y) && !tasks[i].floating) {
+      showActionMenu(tasks[i], e.clientX, e.clientY);
+      return;
+    }
+  }
+});
+
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+completeBtn.addEventListener('click', () => {
+  if (selectedTask) {
+    selectedTask.complete();
+    hideActionMenu();
+    saveTasks();
+  }
+});
+
+deleteBtn.addEventListener('click', () => {
+  if (selectedTask) {
+    selectedTask.shatter();
+    tasks = tasks.filter(t => t !== selectedTask);
+    hideActionMenu();
+    updateTaskCount();
+    saveTasks();
+  }
+});
+
+priorityBtn.addEventListener('click', () => {
+  if (selectedTask) {
+    selectedTask.priority = (selectedTask.priority + 1) % 4;
+    selectedTask.color = COLORS[selectedTask.priority];
+    selectedTask.mass = selectedTask.priority + 1;
+    hideActionMenu();
+    saveTasks();
+  }
+});
+
+addBtn.addEventListener('click', () => addTask());
+
+taskInput.addEventListener('keypress', e => {
+  if (e.key === 'Enter') addTask();
+});
+
+priorityDots.forEach(dot => {
+  dot.addEventListener('click', () => {
+    priorityDots.forEach(d => d.classList.remove('selected'));
+    dot.classList.add('selected');
+    currentPriority = parseInt(dot.dataset.priority);
+  });
+});
+
+soundToggle.addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
+  if (soundEnabled) initAudio();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.target === taskInput) return;
+
+  switch (e.key.toLowerCase()) {
+    case 's': shake(); break;
+    case 'f': toggleFreeze(); break;
+    case 'w': sortByWeight(); break;
+    case 'g': dropFloor(); break;
+  }
+});
+
+document.addEventListener('click', e => {
+  if (!actionMenu.contains(e.target) && e.target.id !== 'canvas') {
+    hideActionMenu();
+  }
+});
+
+// Init
+resize();
+initAudio();
+loadTasks();
+loop();
+setInterval(() => {
+  updateTaskCount();
+  saveTasks();
+}, 2000);
+</script>
+</body>
+</html>
