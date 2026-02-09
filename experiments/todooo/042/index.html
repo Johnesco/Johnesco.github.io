@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo 042 - growth</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body, html { width: 100%; height: 100%; overflow: hidden; background: #050508; font-family: 'Courier New', monospace; }
+canvas { display: block; cursor: crosshair; }
+#info { position: fixed; bottom: 20px; left: 20px; color: rgba(255,255,255,0.3); font-size: 11px; line-height: 1.6; transition: opacity 0.5s; pointer-events: none; }
+#info.hidden { opacity: 0; }
+#soundToggle { position: fixed; top: 20px; right: 20px; width: 24px; height: 24px; cursor: pointer; opacity: 0.3; transition: opacity 0.3s; }
+#soundToggle:hover { opacity: 0.7; }
+#soundToggle svg { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="info"></div>
+<div id="soundToggle" title="Toggle Sound">
+  <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2">
+    <path id="soundIcon" d="M11 5L6 9H2v6h4l5 4V5z M15.54 8.46a5 5 0 010 7.07"/>
+  </svg>
+</div>
+<script>
+const STORAGE_KEY = 'todooo-042';
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const infoDiv = document.getElementById('info');
+const soundToggle = document.getElementById('soundToggle');
+const soundIcon = document.getElementById('soundIcon');
+
+let width, height, cx, cy;
+let nodes = [];
+let tendrils = [];
+let visits = [];
+let visitCount = 0;
+let prngSeed = Date.now();
+let mouseSeeds = [];
+let mouseInfluence = [];
+let audioContext, masterGain, oscillators = [];
+let soundEnabled = false;
+let zoom = 1, panX = 0, panY = 0;
+let mouseX = 0, mouseY = 0, lastMouseMove = Date.now();
+let isDrawing = false;
+let drawPath = [];
+
+function resize() {
+  width = canvas.width = window.innerWidth;
+  height = canvas.height = window.innerHeight;
+  cx = width / 2;
+  cy = height / 2;
+}
+
+// Seeded PRNG (mulberry32)
+function mulberry32(a) {
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+
+let random = mulberry32(prngSeed);
+
+function saveState() {
+  const state = {
+    nodes,
+    tendrils,
+    visits,
+    visitCount,
+    prngSeed,
+    lastVisit: Date.now()
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadState() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    const state = JSON.parse(saved);
+    nodes = state.nodes || [];
+    tendrils = state.tendrils || [];
+    visits = state.visits || [];
+    visitCount = state.visitCount || 0;
+    prngSeed = state.prngSeed || Date.now();
+    return state.lastVisit || null;
+  }
+  return null;
+}
+
+function initFirstVisit() {
+  visitCount = 1;
+  prngSeed = Date.now();
+  random = mulberry32(prngSeed);
+
+  // Create the seed node at center
+  nodes.push({
+    x: 0, y: 0,
+    generation: 0,
+    color: '#2244aa',
+    connections: [],
+    size: 8,
+    birthVisit: 1,
+    phase: random() * Math.PI * 2
+  });
+
+  visits.push({
+    timestamp: Date.now(),
+    duration: 0,
+    mouseSeeds: [],
+    mouseInfluence: []
+  });
+}
+
+function colorForGeneration(gen, maxGen) {
+  const palette = [
+    [34, 68, 170],    // #2244aa deep blue
+    [102, 51, 204],   // #6633cc purple
+    [68, 136, 187],   // teal
+    [85, 187, 136],   // green-teal
+    [187, 170, 85],   // gold
+    [221, 204, 170]   // warm white
+  ];
+
+  const t = Math.min(gen / Math.max(maxGen, 1), 1);
+  const idx = t * (palette.length - 1);
+  const i = Math.floor(idx);
+  const f = idx - i;
+
+  if (i >= palette.length - 1) return `rgb(${palette[palette.length-1].join(',')})`;
+
+  const c1 = palette[i];
+  const c2 = palette[i + 1];
+  const r = Math.round(c1[0] + (c2[0] - c1[0]) * f);
+  const g = Math.round(c1[1] + (c2[1] - c1[1]) * f);
+  const b = Math.round(c1[2] + (c2[2] - c1[2]) * f);
+
+  return `rgb(${r},${g},${b})`;
+}
+
+function calculateGrowthSteps(elapsedMs) {
+  const minutes = elapsedMs / 60000;
+  if (minutes < 1) return Math.floor(minutes * 5); // Very short: 0-5 steps
+  if (minutes < 60) return Math.floor(5 + minutes * 0.5); // < 1hr: 5-35 steps
+  if (minutes < 1440) return Math.floor(35 + (minutes / 60) * 5); // < 1day: 35-155 steps
+  if (minutes < 10080) return Math.floor(155 + (minutes / 1440) * 20); // < 1week: 155-295 steps
+  return Math.floor(295 + Math.min((minutes / 1440 - 7) * 10, 200)); // 7+ days: 295-495 steps
+}
+
+function distance(x1, y1, x2, y2) {
+  return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+}
+
+function growStructure(steps, animated = false) {
+  const growthTendrils = [];
+  const growthNodes = [];
+  const maxGen = Math.max(...nodes.map(n => n.generation), 0);
+
+  for (let step = 0; step < steps; step++) {
+    // Find active growth tips (newest nodes with few connections)
+    const tips = nodes.filter(n => n.connections.length < 4).slice(-Math.max(5, Math.floor(nodes.length * 0.2)));
+
+    if (tips.length === 0) break;
+
+    const tip = tips[Math.floor(random() * tips.length)];
+
+    // Calculate growth direction
+    let angle = random() * Math.PI * 2;
+
+    // If tip has connections, bias away from them
+    if (tip.connections.length > 0) {
+      const lastConn = nodes.find(n => n.connections.includes(nodes.indexOf(tip)));
+      if (lastConn) {
+        angle = Math.atan2(tip.y - lastConn.y, tip.x - lastConn.x) + (random() - 0.5) * Math.PI * 0.5;
+      }
+    }
+
+    // Apply influence from mouse seeds
+    for (const seed of mouseSeeds) {
+      const dist = distance(tip.x, tip.y, seed.x, seed.y);
+      if (dist < 200) {
+        const seedAngle = Math.atan2(seed.y - tip.y, seed.x - tip.x);
+        const influence = (200 - dist) / 200;
+        angle = angle * (1 - influence * 0.3) + seedAngle * influence * 0.3;
+      }
+    }
+
+    const length = 15 + random() * 25;
+    const newGen = tip.generation + 1;
+
+    const newNode = {
+      x: tip.x + Math.cos(angle) * length,
+      y: tip.y + Math.sin(angle) * length,
+      generation: newGen,
+      color: colorForGeneration(newGen, maxGen + steps * 0.1),
+      connections: [],
+      size: 3 + random() * 3,
+      birthVisit: visitCount,
+      phase: random() * Math.PI * 2
+    };
+
+    // Check for nearby nodes to connect to
+    let connected = false;
+    for (let i = nodes.length - 1; i >= Math.max(0, nodes.length - 50); i--) {
+      const other = nodes[i];
+      if (other === tip) continue;
+      const dist = distance(newNode.x, newNode.y, other.x, other.y);
+      if (dist < 30 && random() < 0.3) {
+        tip.connections.push(i);
+        other.connections.push(nodes.length + growthNodes.length);
+        connected = true;
+        break;
+      }
+    }
+
+    if (!connected) {
+      tip.connections.push(nodes.length + growthNodes.length);
+      newNode.connections.push(nodes.indexOf(tip));
+    }
+
+    // Create tendril with curve
+    const midX = (tip.x + newNode.x) / 2 + (random() - 0.5) * 20;
+    const midY = (tip.y + newNode.y) / 2 + (random() - 0.5) * 20;
+
+    const tendril = {
+      startNode: nodes.indexOf(tip),
+      endNode: nodes.length + growthNodes.length,
+      controlPoints: [{x: midX, y: midY}],
+      thickness: 1 + random() * 1.5,
+      color: newNode.color,
+      birthVisit: visitCount
+    };
+
+    growthTendrils.push(tendril);
+    growthNodes.push(newNode);
+
+    // Branching
+    if (random() < 0.15 && tip.connections.length < 3) {
+      const branchAngle = angle + (random() < 0.5 ? 1 : -1) * (Math.PI / 4 + random() * Math.PI / 4);
+      const branchLength = length * (0.6 + random() * 0.3);
+
+      const branchNode = {
+        x: tip.x + Math.cos(branchAngle) * branchLength,
+        y: tip.y + Math.sin(branchAngle) * branchLength,
+        generation: newGen,
+        color: colorForGeneration(newGen, maxGen + steps * 0.1),
+        connections: [nodes.indexOf(tip)],
+        size: 2 + random() * 2,
+        birthVisit: visitCount,
+        phase: random() * Math.PI * 2
+      };
+
+      tip.connections.push(nodes.length + growthNodes.length);
+
+      const branchMidX = (tip.x + branchNode.x) / 2 + (random() - 0.5) * 15;
+      const branchMidY = (tip.y + branchNode.y) / 2 + (random() - 0.5) * 15;
+
+      growthTendrils.push({
+        startNode: nodes.indexOf(tip),
+        endNode: nodes.length + growthNodes.length,
+        controlPoints: [{x: branchMidX, y: branchMidY}],
+        thickness: 0.8 + random() * 1,
+        color: branchNode.color,
+        birthVisit: visitCount
+      });
+
+      growthNodes.push(branchNode);
+    }
+  }
+
+  if (animated && growthTendrils.length > 0) {
+    animateGrowth(growthTendrils, growthNodes);
+  } else {
+    tendrils.push(...growthTendrils);
+    nodes.push(...growthNodes);
+  }
+}
+
+function animateGrowth(newTendrils, newNodes) {
+  const duration = Math.min(15000, Math.max(5000, newTendrils.length * 20));
+  const startTime = Date.now();
+
+  function animate() {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const count = Math.floor(newTendrils.length * progress);
+
+    // Add newly grown elements
+    while (tendrils.length < nodes.length - newNodes.length + count) {
+      const idx = tendrils.length - (nodes.length - newNodes.length);
+      if (idx >= 0 && idx < newTendrils.length) {
+        tendrils.push(newTendrils[idx]);
+        if (idx < newNodes.length) {
+          nodes.push(newNodes[idx]);
+        }
+      } else break;
+    }
+
+    render();
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      // Ensure all are added
+      tendrils.push(...newTendrils.slice(count));
+      nodes.push(...newNodes.slice(count));
+      saveState();
+      updateSound();
+    }
+  }
+
+  animate();
+}
+
+function worldToScreen(wx, wy) {
+  return {
+    x: cx + (wx + panX) * zoom,
+    y: cy + (wy + panY) * zoom
+  };
+}
+
+function screenToWorld(sx, sy) {
+  return {
+    x: (sx - cx) / zoom - panX,
+    y: (sy - cy) / zoom - panY
+  };
+}
+
+function render() {
+  ctx.fillStyle = '#050508';
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.save();
+
+  // Draw tendrils
+  for (const t of tendrils) {
+    const startNode = nodes[t.startNode];
+    const endNode = nodes[t.endNode];
+    if (!startNode || !endNode) continue;
+
+    const start = worldToScreen(startNode.x, startNode.y);
+    const end = worldToScreen(endNode.x, endNode.y);
+
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+
+    if (t.controlPoints && t.controlPoints.length > 0) {
+      const cp = worldToScreen(t.controlPoints[0].x, t.controlPoints[0].y);
+      ctx.quadraticCurveTo(cp.x, cp.y, end.x, end.y);
+    } else {
+      ctx.lineTo(end.x, end.y);
+    }
+
+    const age = visitCount - t.birthVisit;
+    const alpha = Math.max(0.2, 1 - age * 0.05);
+
+    ctx.strokeStyle = t.color.replace('rgb', 'rgba').replace(')', `,${alpha})`);
+    ctx.lineWidth = t.thickness * zoom;
+    ctx.stroke();
+
+    // Mouse hover glow
+    const mouseWorld = screenToWorld(mouseX, mouseY);
+    const distToMouse = Math.min(
+      distance(startNode.x, startNode.y, mouseWorld.x, mouseWorld.y),
+      distance(endNode.x, endNode.y, mouseWorld.x, mouseWorld.y)
+    );
+
+    if (distToMouse < 100) {
+      const glowAlpha = (100 - distToMouse) / 100 * 0.3;
+      ctx.strokeStyle = t.color.replace('rgb', 'rgba').replace(')', `,${glowAlpha})`);
+      ctx.lineWidth = (t.thickness + 2) * zoom;
+      ctx.stroke();
+    }
+  }
+
+  // Draw nodes
+  const time = Date.now() / 1000;
+  for (const node of nodes) {
+    const pos = worldToScreen(node.x, node.y);
+    const pulse = 0.6 + Math.sin(time * 2 + node.phase) * 0.4;
+    const age = visitCount - node.birthVisit;
+    const alpha = Math.max(0.3, 1 - age * 0.03);
+
+    // Mouse hover pulse faster
+    const mouseWorld = screenToWorld(mouseX, mouseY);
+    const distToMouse = distance(node.x, node.y, mouseWorld.x, mouseWorld.y);
+    const hoverBoost = distToMouse < 80 ? (80 - distToMouse) / 80 * 2 : 0;
+    const finalPulse = Math.min(pulse + hoverBoost, 1);
+
+    // Glow
+    const gradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, node.size * zoom * 2);
+    gradient.addColorStop(0, node.color.replace('rgb', 'rgba').replace(')', `,${alpha * finalPulse})`));
+    gradient.addColorStop(1, node.color.replace('rgb', 'rgba').replace(')', ',0)'));
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, node.size * zoom * 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Core
+    ctx.fillStyle = node.color.replace('rgb', 'rgba').replace(')', `,${alpha})`);
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, node.size * zoom * finalPulse, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Draw mouse seeds
+  for (const seed of mouseSeeds) {
+    const pos = worldToScreen(seed.x, seed.y);
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 5 * zoom, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Draw path being drawn
+  if (isDrawing && drawPath.length > 1) {
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < drawPath.length; i++) {
+      const pos = worldToScreen(drawPath[i].x, drawPath[i].y);
+      if (i === 0) ctx.moveTo(pos.x, pos.y);
+      else ctx.lineTo(pos.x, pos.y);
+    }
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  // Hide info after inactivity
+  if (Date.now() - lastMouseMove > 5000) {
+    infoDiv.classList.add('hidden');
+  } else {
+    infoDiv.classList.remove('hidden');
+  }
+}
+
+function formatDuration(ms) {
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `${days}d ${hours % 24}h`;
+  if (hours > 0) return `${hours}h ${minutes % 60}m`;
+  if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+  return `${seconds}s`;
+}
+
+function updateInfo(awayTime = 0) {
+  infoDiv.innerHTML = `Visit ${visitCount}<br>Away ${formatDuration(awayTime)}<br>Growth: ${nodes.length} nodes`;
+}
+
+function initAudio() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioContext.createGain();
+    masterGain.gain.value = 0.1;
+    masterGain.connect(audioContext.destination);
+
+    // Create harmonic oscillators based on growth
+    const baseFreq = 110; // A2
+    const harmonics = [1, 1.5, 2, 2.5, 3, 4];
+
+    for (let i = 0; i < Math.min(6, Math.floor(nodes.length / 20) + 1); i++) {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.value = baseFreq * harmonics[i % harmonics.length];
+
+      gain.gain.value = 0.03 / (i + 1);
+
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.start();
+
+      oscillators.push({osc, gain, baseFreq: osc.frequency.value});
+    }
+  }
+}
+
+function updateSound() {
+  if (!soundEnabled || !audioContext) return;
+
+  // Adjust harmonics based on node count
+  const targetOscCount = Math.min(6, Math.floor(nodes.length / 20) + 1);
+
+  while (oscillators.length < targetOscCount) {
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const baseFreq = 110;
+    const harmonics = [1, 1.5, 2, 2.5, 3, 4];
+
+    osc.type = 'sine';
+    osc.frequency.value = baseFreq * harmonics[oscillators.length % harmonics.length];
+
+    gain.gain.value = 0.03 / (oscillators.length + 1);
+
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start();
+
+    oscillators.push({osc, gain, baseFreq: osc.frequency.value});
+  }
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+
+  if (soundEnabled) {
+    initAudio();
+    updateSound();
+    soundIcon.setAttribute('d', 'M11 5L6 9H2v6h4l5 4V5z M15.54 8.46a5 5 0 010 7.07');
+  } else {
+    if (audioContext) {
+      masterGain.gain.value = 0;
+    }
+    soundIcon.setAttribute('d', 'M11 5L6 9H2v6h4l5 4V5z M23 9l-6 6 M17 9l6 6');
+  }
+}
+
+// Mouse interaction
+canvas.addEventListener('mousemove', (e) => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  lastMouseMove = Date.now();
+
+  if (isDrawing) {
+    const world = screenToWorld(mouseX, mouseY);
+    if (drawPath.length === 0 || distance(world.x, world.y, drawPath[drawPath.length-1].x, drawPath[drawPath.length-1].y) > 10) {
+      drawPath.push(world);
+    }
+  }
+});
+
+canvas.addEventListener('click', (e) => {
+  if (!isDrawing) {
+    const world = screenToWorld(e.clientX, e.clientY);
+    mouseSeeds.push(world);
+    saveState();
+  }
+});
+
+canvas.addEventListener('mousedown', (e) => {
+  if (e.button === 0) {
+    isDrawing = true;
+    drawPath = [screenToWorld(e.clientX, e.clientY)];
+  }
+});
+
+canvas.addEventListener('mouseup', (e) => {
+  if (e.button === 0 && isDrawing) {
+    isDrawing = false;
+    if (drawPath.length > 5) {
+      // Sample path into influence points
+      for (let i = 0; i < drawPath.length; i += 5) {
+        mouseInfluence.push(drawPath[i]);
+      }
+      mouseSeeds.push(...mouseInfluence.slice(-3)); // Add last few as seeds too
+    }
+    drawPath = [];
+    saveState();
+  }
+});
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  zoom *= delta;
+  zoom = Math.max(0.1, Math.min(zoom, 5));
+});
+
+soundToggle.addEventListener('click', toggleSound);
+
+// Animation loop
+function animate() {
+  render();
+  requestAnimationFrame(animate);
+}
+
+// Initialize
+resize();
+window.addEventListener('resize', resize);
+
+const lastVisit = loadState();
+
+if (!lastVisit) {
+  initFirstVisit();
+  updateInfo(0);
+} else {
+  visitCount++;
+  const awayTime = Date.now() - lastVisit;
+  const steps = calculateGrowthSteps(awayTime);
+
+  visits.push({
+    timestamp: Date.now(),
+    duration: awayTime,
+    mouseSeeds: [],
+    mouseInfluence: []
+  });
+
+  updateInfo(awayTime);
+
+  if (steps > 0) {
+    prngSeed = (prngSeed + awayTime) % 2147483647;
+    random = mulberry32(prngSeed);
+    growStructure(steps, true);
+  } else {
+    saveState();
+  }
+}
+
+animate();
+
+// Save on page unload
+window.addEventListener('beforeunload', () => {
+  saveState();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo 041 - Darkroom</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Courier New', monospace;
+  background: radial-gradient(ellipse at top, #1a0808 0%, #0a0505 60%);
+  min-height: 100vh;
+  color: #cc3333;
+  overflow-x: hidden;
+  position: relative;
+}
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(139,26,26,0.15) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 1;
+}
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent 0px, rgba(0,0,0,0.03) 1px, transparent 2px),
+    repeating-linear-gradient(90deg, transparent 0px, rgba(0,0,0,0.03) 1px, transparent 2px);
+  pointer-events: none;
+  opacity: 0.3;
+  z-index: 2;
+}
+#safelight {
+  position: fixed;
+  top: 20px;
+  right: 40px;
+  width: 60px;
+  height: 40px;
+  background: radial-gradient(ellipse at center, #cc3333 0%, #8b1a1a 40%, transparent 70%);
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: flicker 4s ease-in-out infinite;
+  z-index: 3;
+  box-shadow: 0 0 30px rgba(204,51,51,0.4);
+}
+@keyframes flicker {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.5; }
+  25%, 75% { opacity: 0.65; }
+}
+#clothesline {
+  position: fixed;
+  top: 120px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(to right, transparent 0%, #4a3333 5%, #4a3333 95%, transparent 100%);
+  z-index: 4;
+}
+.clip {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 12px solid #333;
+  top: -6px;
+}
+#fixed-area {
+  position: fixed;
+  top: 130px;
+  left: 40px;
+  right: 40px;
+  min-height: 150px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 10px;
+}
+#developing-area {
+  margin-top: 300px;
+  padding: 40px;
+  min-height: 400px;
+  position: relative;
+  z-index: 5;
+}
+#developing-area::before {
+  content: 'DEVELOPER';
+  position: absolute;
+  top: 10px;
+  left: 40px;
+  font-size: 11px;
+  color: #8b6914;
+  opacity: 0.3;
+  letter-spacing: 2px;
+}
+#developing-area::after {
+  content: '';
+  position: absolute;
+  top: 50px;
+  left: 40px;
+  right: 40px;
+  bottom: 40px;
+  background: radial-gradient(ellipse at center, rgba(139,105,20,0.08) 0%, transparent 70%);
+  pointer-events: none;
+  animation: liquid-ripple 8s ease-in-out infinite;
+}
+@keyframes liquid-ripple {
+  0%, 100% { transform: scale(1); opacity: 0.08; }
+  50% { transform: scale(1.05); opacity: 0.12; }
+}
+#tasks-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  position: relative;
+  z-index: 2;
+}
+.print {
+  width: 180px;
+  height: 120px;
+  background: #f5f5f0;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  border-radius: 2px;
+}
+.print.developing {
+  animation: sway 3s ease-in-out infinite;
+}
+.print.fixed {
+  background: #f5f0e8;
+  cursor: default;
+  animation: hang-sway 5s ease-in-out infinite;
+}
+@keyframes sway {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  25% { transform: rotate(-1deg) translateY(-2px); }
+  75% { transform: rotate(1deg) translateY(-2px); }
+}
+@keyframes hang-sway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+.print:hover:not(.fixed) {
+  transform: scale(1.05) !important;
+}
+.print-inner {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(240,240,235,0.9) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  position: relative;
+  overflow: hidden;
+}
+.print-text {
+  font-size: 12px;
+  color: #1a1a1a;
+  text-align: center;
+  word-wrap: break-word;
+  z-index: 2;
+  position: relative;
+  transition: opacity 0.5s ease, filter 0.5s ease;
+  max-height: 100%;
+  overflow: hidden;
+}
+.print.priority-low { border: 8px solid #d5ead5; }
+.print.priority-med { border: 8px solid #ead5c5; }
+.print.priority-high { border: 8px solid #ead5d5; }
+.timer-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: #8b6914;
+  transition: width 0.5s linear;
+  z-index: 1;
+}
+.print.fixed .timer-bar {
+  display: none;
+}
+.watermark {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  font-size: 24px;
+  color: rgba(139,105,20,0.2);
+  font-weight: bold;
+  z-index: 3;
+  display: none;
+}
+.print.fixed .watermark {
+  display: block;
+}
+.chemical-wash {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent 0%, rgba(139,105,20,0.4) 50%, transparent 100%);
+  z-index: 10;
+  pointer-events: none;
+}
+.print.fixing .chemical-wash {
+  animation: wash 0.8s ease-out forwards;
+}
+@keyframes wash {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+.print.overexposing .print-text {
+  animation: overexpose 0.6s ease-out forwards;
+}
+@keyframes overexpose {
+  0% { opacity: 1; filter: brightness(1); }
+  50% { opacity: 0.3; filter: brightness(3); }
+  100% { opacity: 0; filter: brightness(5); }
+}
+.print.overexposing {
+  animation: crumple 0.8s ease-out forwards;
+}
+@keyframes crumple {
+  0% { transform: scale(1) rotate(0deg); opacity: 1; }
+  60% { transform: scale(0.9) rotate(5deg); opacity: 0.5; }
+  100% { transform: scale(0.3) rotate(15deg); opacity: 0; }
+}
+.not-ready-flash {
+  animation: flash-red 0.3s ease-out;
+}
+@keyframes flash-red {
+  0%, 100% { box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+  50% { box-shadow: 0 0 20px rgba(204,51,51,0.8); }
+}
+#input-area {
+  position: fixed;
+  bottom: 40px;
+  left: 40px;
+  background: rgba(20,10,10,0.8);
+  padding: 20px;
+  border: 1px solid #8b1a1a;
+  border-radius: 4px;
+  z-index: 10;
+  backdrop-filter: blur(5px);
+}
+#input-area h3 {
+  font-size: 11px;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+  color: #8b6914;
+  opacity: 0.7;
+}
+#task-input {
+  width: 300px;
+  padding: 8px;
+  background: rgba(30,20,20,0.9);
+  border: 1px solid #8b1a1a;
+  color: #cc3333;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  border-radius: 2px;
+  outline: none;
+}
+#task-input::placeholder {
+  color: #663333;
+}
+#priority-select {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+#priority-select label {
+  font-size: 10px;
+  color: #8b6914;
+}
+#priority-select select {
+  padding: 4px 8px;
+  background: rgba(30,20,20,0.9);
+  border: 1px solid #8b1a1a;
+  color: #cc3333;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  border-radius: 2px;
+  outline: none;
+}
+#stats {
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  background: rgba(20,10,10,0.8);
+  padding: 15px 20px;
+  border: 1px solid #8b1a1a;
+  border-radius: 4px;
+  z-index: 10;
+  font-size: 11px;
+  color: #8b6914;
+  text-align: right;
+  backdrop-filter: blur(5px);
+}
+#stats div {
+  margin: 4px 0;
+}
+#clock {
+  position: fixed;
+  top: 40px;
+  left: 40px;
+  width: 80px;
+  height: 80px;
+  border: 3px solid #4a3333;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #1a0f0f 0%, #0f0808 100%);
+  z-index: 10;
+}
+.clock-hand {
+  position: absolute;
+  background: #8b1a1a;
+  transform-origin: bottom center;
+  left: 50%;
+  bottom: 50%;
+}
+#hour-hand {
+  width: 3px;
+  height: 20px;
+  margin-left: -1.5px;
+}
+#minute-hand {
+  width: 2px;
+  height: 28px;
+  margin-left: -1px;
+}
+#second-hand {
+  width: 1px;
+  height: 30px;
+  margin-left: -0.5px;
+  background: #cc3333;
+}
+.clock-center {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #cc3333;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+#sound-toggle {
+  position: fixed;
+  top: 140px;
+  right: 40px;
+  background: rgba(20,10,10,0.8);
+  border: 1px solid #8b1a1a;
+  color: #8b6914;
+  padding: 8px 12px;
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+  cursor: pointer;
+  border-radius: 2px;
+  z-index: 10;
+  backdrop-filter: blur(5px);
+}
+#sound-toggle:hover {
+  background: rgba(30,15,15,0.9);
+  border-color: #cc3333;
+}
+</style>
+</head>
+<body>
+<div id="safelight"></div>
+<div id="clothesline"></div>
+<div id="clock">
+  <div id="hour-hand" class="clock-hand"></div>
+  <div id="minute-hand" class="clock-hand"></div>
+  <div id="second-hand" class="clock-hand"></div>
+  <div class="clock-center"></div>
+</div>
+<button id="sound-toggle">SOUND: OFF</button>
+<div id="fixed-area"></div>
+<div id="developing-area">
+  <div id="tasks-container"></div>
+</div>
+<div id="input-area">
+  <h3>PRINT ORDER</h3>
+  <input type="text" id="task-input" placeholder="Enter task description..." maxlength="100">
+  <div id="priority-select">
+    <label>PAPER TYPE:</label>
+    <select id="priority">
+      <option value="">Standard</option>
+      <option value="low">Grade I (Low)</option>
+      <option value="med">Grade II (Med)</option>
+      <option value="high">Grade III (High)</option>
+    </select>
+  </div>
+</div>
+<div id="stats">
+  <div id="stat-developing">Developing: 0</div>
+  <div id="stat-fixed">Fixed: 0</div>
+  <div id="stat-total">Total: 0</div>
+</div>
+<script>
+const STORAGE_KEY = 'todooo-041';
+const DEVELOP_TIME = 30000; // 30 seconds
+
+let tasks = [];
+let audioContext = null;
+let soundEnabled = false;
+
+// Audio functions
+function initAudio() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playSound(type) {
+  if (!soundEnabled || !audioContext) return;
+
+  const now = audioContext.currentTime;
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  const filter = audioContext.createBiquadFilter();
+
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioContext.destination);
+
+  if (type === 'fix') {
+    // Liquid pour - noise with sweep
+    const buffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.5, audioContext.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.3;
+    }
+    const noise = audioContext.createBufferSource();
+    noise.buffer = buffer;
+    const noiseGain = audioContext.createGain();
+    const noiseFilter = audioContext.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.setValueAtTime(800, now);
+    noiseFilter.frequency.exponentialRampToValueAtTime(200, now + 0.5);
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(audioContext.destination);
+    noiseGain.gain.setValueAtTime(0.1, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+    noise.start(now);
+    noise.stop(now + 0.5);
+  } else if (type === 'delete') {
+    // Fizzing - high freq noise burst
+    const buffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.3, audioContext.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.4;
+    }
+    const noise = audioContext.createBufferSource();
+    noise.buffer = buffer;
+    const noiseGain = audioContext.createGain();
+    const noiseFilter = audioContext.createBiquadFilter();
+    noiseFilter.type = 'highpass';
+    noiseFilter.frequency.value = 2000;
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(audioContext.destination);
+    noiseGain.gain.setValueAtTime(0.08, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+    noise.start(now);
+    noise.stop(now + 0.3);
+  } else if (type === 'bubble') {
+    // Occasional bubble
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.exponentialRampToValueAtTime(80, now + 0.1);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  }
+}
+
+// Toggle sound
+document.getElementById('sound-toggle').addEventListener('click', () => {
+  initAudio();
+  soundEnabled = !soundEnabled;
+  document.getElementById('sound-toggle').textContent = `SOUND: ${soundEnabled ? 'ON' : 'OFF'}`;
+});
+
+// Clock
+function updateClock() {
+  const now = new Date();
+  const hours = now.getHours() % 12;
+  const minutes = now.getMinutes();
+  const seconds = now.getSeconds();
+
+  const hourDeg = (hours * 30) + (minutes * 0.5);
+  const minuteDeg = minutes * 6;
+  const secondDeg = seconds * 6;
+
+  document.getElementById('hour-hand').style.transform = `rotate(${hourDeg}deg)`;
+  document.getElementById('minute-hand').style.transform = `rotate(${minuteDeg}deg)`;
+  document.getElementById('second-hand').style.transform = `rotate(${secondDeg}deg)`;
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+
+// Task management
+function createTask(text, priority = '') {
+  const task = {
+    id: Date.now() + Math.random(),
+    text,
+    priority,
+    startTime: Date.now(),
+    fixed: false
+  };
+  tasks.push(task);
+  saveTasks();
+  renderTask(task);
+  updateStats();
+}
+
+function renderTask(task) {
+  const print = document.createElement('div');
+  print.className = `print ${task.fixed ? 'fixed' : 'developing'} ${task.priority ? 'priority-' + task.priority : ''}`;
+  print.dataset.id = task.id;
+
+  // Random rotation for developing prints
+  if (!task.fixed) {
+    const rotation = (Math.random() - 0.5) * 6;
+    print.style.transform = `rotate(${rotation}deg)`;
+  }
+
+  print.innerHTML = `
+    <div class="print-inner">
+      <div class="print-text"></div>
+      <div class="timer-bar"></div>
+      <div class="watermark">✓</div>
+      <div class="chemical-wash"></div>
+    </div>
+  `;
+
+  const textEl = print.querySelector('.print-text');
+  textEl.textContent = task.text;
+
+  // Calculate development progress
+  if (!task.fixed) {
+    updateDevelopment(print, task);
+
+    print.addEventListener('click', () => fixTask(task.id, print));
+    print.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      deleteTask(task.id, print);
+    });
+  }
+
+  // Add to appropriate area
+  if (task.fixed) {
+    document.getElementById('fixed-area').appendChild(print);
+
+    // Add clip to clothesline
+    const clip = document.createElement('div');
+    clip.className = 'clip';
+    const clipPos = (tasks.filter(t => t.fixed).length - 1) * 200 + 100;
+    clip.style.left = clipPos + 'px';
+    document.getElementById('clothesline').appendChild(clip);
+  } else {
+    document.getElementById('tasks-container').appendChild(print);
+  }
+}
+
+function updateDevelopment(print, task) {
+  const elapsed = Date.now() - task.startTime;
+  const progress = Math.min(elapsed / DEVELOP_TIME, 1);
+
+  const textEl = print.querySelector('.print-text');
+  const timerBar = print.querySelector('.timer-bar');
+
+  // Development stages
+  if (progress < 0.17) {
+    // 0-5s: blank
+    textEl.style.opacity = '0';
+    textEl.style.filter = 'blur(10px)';
+  } else if (progress < 0.5) {
+    // 5-15s: faint grey shapes
+    const op = (progress - 0.17) / 0.33 * 0.2;
+    textEl.style.opacity = op;
+    textEl.style.filter = `blur(${8 - op * 40}px)`;
+  } else if (progress < 0.83) {
+    // 15-25s: becoming legible
+    const op = 0.2 + (progress - 0.5) / 0.33 * 0.4;
+    textEl.style.opacity = op;
+    textEl.style.filter = `blur(${4 - (op - 0.2) * 10}px)`;
+  } else {
+    // 25-30s: fully developed
+    const op = 0.6 + (progress - 0.83) / 0.17 * 0.4;
+    textEl.style.opacity = op;
+    textEl.style.filter = `blur(${Math.max(0, (1 - op) * 5)}px)`;
+  }
+
+  timerBar.style.width = (progress * 100) + '%';
+
+  if (progress < 1 && !task.fixed) {
+    setTimeout(() => updateDevelopment(print, task), 500);
+  } else if (progress >= 1) {
+    textEl.style.opacity = '1';
+    textEl.style.filter = 'blur(0)';
+
+    // Random bubble sound
+    if (Math.random() < 0.1) {
+      playSound('bubble');
+    }
+  }
+}
+
+function fixTask(id, print) {
+  const task = tasks.find(t => t.id === id);
+  if (!task || task.fixed) return;
+
+  const elapsed = Date.now() - task.startTime;
+  if (elapsed < DEVELOP_TIME) {
+    // Not ready
+    print.classList.add('not-ready-flash');
+    setTimeout(() => print.classList.remove('not-ready-flash'), 300);
+    return;
+  }
+
+  // Fix the print
+  playSound('fix');
+  print.classList.add('fixing');
+
+  setTimeout(() => {
+    task.fixed = true;
+    saveTasks();
+    print.remove();
+    renderTask(task);
+    updateStats();
+  }, 800);
+}
+
+function deleteTask(id, print) {
+  playSound('delete');
+  print.classList.add('overexposing');
+
+  setTimeout(() => {
+    tasks = tasks.filter(t => t.id !== id);
+    saveTasks();
+    print.remove();
+    updateStats();
+
+    // Remove clip if fixed
+    const clips = document.querySelectorAll('.clip');
+    if (clips.length > tasks.filter(t => t.fixed).length) {
+      clips[clips.length - 1].remove();
+    }
+  }, 800);
+}
+
+function updateStats() {
+  const developing = tasks.filter(t => !t.fixed).length;
+  const fixed = tasks.filter(t => t.fixed).length;
+  document.getElementById('stat-developing').textContent = `Developing: ${developing}`;
+  document.getElementById('stat-fixed').textContent = `Fixed: ${fixed}`;
+  document.getElementById('stat-total').textContent = `Total: ${tasks.length}`;
+}
+
+function saveTasks() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+function loadTasks() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    tasks = JSON.parse(saved);
+    tasks.forEach(task => renderTask(task));
+    updateStats();
+  }
+}
+
+// Input handling
+document.getElementById('task-input').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter' && e.target.value.trim()) {
+    const priority = document.getElementById('priority').value;
+    createTask(e.target.value.trim(), priority);
+    e.target.value = '';
+    document.getElementById('priority').value = '';
+  }
+});
+
+// Delete key handling
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Delete') {
+    const focused = document.activeElement;
+    if (focused.classList.contains('print') && !focused.classList.contains('fixed')) {
+      const id = parseFloat(focused.dataset.id);
+      deleteTask(id, focused);
+    }
+  }
+});
+
+// Load on start
+loadTasks();
+
+// Ambient bubbles
+setInterval(() => {
+  if (Math.random() < 0.2 && tasks.some(t => !t.fixed)) {
+    playSound('bubble');
+  }
+}, 5000);
+</script>
+</body>
+</html>

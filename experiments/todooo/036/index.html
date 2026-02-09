@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo 036 - Multiplayer Tabs</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #1a1a2e;
+  color: #eee;
+  overflow: hidden;
+  height: 100vh;
+}
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+header {
+  background: #16213e;
+  padding: 1rem 1.5rem;
+  border-bottom: 2px solid #7c83ff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+.player-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 2px solid rgba(255,255,255,0.3);
+}
+.presence {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+}
+.presence-dots {
+  display: flex;
+  gap: 0.3rem;
+}
+.presence-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  opacity: 0.7;
+  transition: all 0.3s;
+}
+.presence-dot.pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 1; }
+}
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+.todo-container {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  position: relative;
+}
+.hint {
+  text-align: center;
+  color: #7c83ff;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+.input-section {
+  margin-bottom: 2rem;
+  position: relative;
+}
+.input-wrapper {
+  position: relative;
+}
+input {
+  width: 100%;
+  padding: 1rem;
+  background: #16213e;
+  border: 2px solid #7c83ff;
+  border-radius: 8px;
+  color: #eee;
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(124, 131, 255, 0.3);
+}
+.typing-indicator {
+  position: absolute;
+  top: 100%;
+  left: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.typing-indicator.active {
+  opacity: 1;
+}
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: typing 1.4s infinite;
+}
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-8px); }
+}
+.ghost-text {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  color: rgba(255,255,255,0.3);
+  pointer-events: none;
+  font-size: 1rem;
+}
+.todos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.todo-item {
+  background: #16213e;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s;
+  position: relative;
+  border-left: 3px solid transparent;
+}
+.todo-item.flash {
+  animation: flash 0.5s;
+}
+@keyframes flash {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+.todo-item.fade-out {
+  animation: fadeOut 0.3s forwards;
+}
+@keyframes fadeOut {
+  to { opacity: 0; transform: translateX(-20px); }
+}
+.todo-item.recent-edit {
+  border-left-width: 3px;
+  animation: fadeLeftBorder 3s forwards;
+}
+@keyframes fadeLeftBorder {
+  to { border-left-color: transparent !important; }
+}
+.checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #7c83ff;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+.checkbox.checked {
+  background: #7c83ff;
+}
+.checkbox.checked::after {
+  content: '✓';
+  position: absolute;
+  top: -2px;
+  left: 2px;
+  color: white;
+  font-size: 14px;
+}
+.todo-text {
+  flex: 1;
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+.todo-item.completed .todo-text {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+.todo-text[contenteditable="true"] {
+  outline: 2px solid #7c83ff;
+  padding: 0.25rem;
+  border-radius: 4px;
+}
+.delete-btn {
+  background: #d63031;
+  color: white;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  opacity: 0;
+  transition: all 0.3s;
+}
+.todo-item:hover .delete-btn {
+  opacity: 1;
+}
+.delete-btn:hover {
+  background: #ff4757;
+}
+.action-indicator {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  opacity: 0;
+  animation: indicatorFade 2s forwards;
+}
+@keyframes indicatorFade {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.activity-panel {
+  width: 250px;
+  background: #16213e;
+  border-left: 2px solid #7c83ff;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s;
+}
+.activity-panel.hidden {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+.activity-header {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(124, 131, 255, 0.3);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.activity-feed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+.activity-item {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: rgba(255,255,255,0.05);
+  border-left: 3px solid;
+  animation: slideIn 0.3s;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.activity-time {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  margin-top: 0.25rem;
+}
+.cursor {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  transition: all 0.1s ease-out;
+}
+.cursor-arrow {
+  width: 0;
+  height: 0;
+  border-left: 12px solid;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+.cursor-label {
+  position: absolute;
+  top: 20px;
+  left: 15px;
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.cursor-trail {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9998;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  opacity: 0.3;
+}
+.notification {
+  position: fixed;
+  top: 5rem;
+  right: 2rem;
+  background: #16213e;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  border: 2px solid;
+  animation: notifSlide 3s forwards;
+  z-index: 10000;
+  font-size: 0.9rem;
+}
+@keyframes notifSlide {
+  0% { transform: translateX(400px); }
+  10%, 90% { transform: translateX(0); }
+  100% { transform: translateX(400px); opacity: 0; }
+}
+.sound-toggle {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  background: #16213e;
+  border: 2px solid #7c83ff;
+  color: #eee;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  z-index: 1000;
+}
+.sound-toggle:hover {
+  background: #7c83ff;
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="identity">
+      <span>You are Player</span>
+      <span class="player-dot" id="myDot"></span>
+    </div>
+    <div class="presence">
+      <span id="tabCount">1 tab connected</span>
+      <div class="presence-dots" id="presenceDots"></div>
+    </div>
+  </header>
+
+  <div class="main-content">
+    <div class="todo-container">
+      <div class="hint" id="hint">Open another tab to collaborate!</div>
+
+      <div class="input-section">
+        <div class="input-wrapper">
+          <input type="text" id="taskInput" placeholder="Add a new task...">
+          <div class="ghost-text" id="ghostText"></div>
+        </div>
+        <div class="typing-indicator" id="typingIndicator">
+          <div class="typing-dot"></div>
+          <span id="typingText"></span>
+        </div>
+      </div>
+
+      <div class="todos" id="todos"></div>
+    </div>
+
+    <div class="activity-panel" id="activityPanel">
+      <div class="activity-header">Activity Feed</div>
+      <div class="activity-feed" id="activityFeed"></div>
+    </div>
+  </div>
+</div>
+
+<button class="sound-toggle" id="soundToggle">Sound: ON</button>
+
+<script>
+const STORAGE_KEY = 'todooo-036';
+const CHANNEL_NAME = 'todooo-036-sync';
+const COLORS = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a78bfa', '#fb923c', '#34d399', '#f472b6', '#60a5fa'];
+
+// State
+let myId = Math.random().toString(36).substr(2, 9);
+let myColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+let todos = [];
+let peers = new Map();
+let soundEnabled = true;
+let cursorPositions = new Map();
+let activityLog = [];
+let lastCursorUpdate = 0;
+
+// BroadcastChannel
+const channel = new BroadcastChannel(CHANNEL_NAME);
+
+// DOM
+const taskInput = document.getElementById('taskInput');
+const todosEl = document.getElementById('todos');
+const myDot = document.getElementById('myDot');
+const presenceDots = document.getElementById('presenceDots');
+const tabCount = document.getElementById('tabCount');
+const hint = document.getElementById('hint');
+const activityFeed = document.getElementById('activityFeed');
+const activityPanel = document.getElementById('activityPanel');
+const typingIndicator = document.getElementById('typingIndicator');
+const typingText = document.getElementById('typingText');
+const ghostText = document.getElementById('ghostText');
+const soundToggle = document.getElementById('soundToggle');
+
+// Initialize
+myDot.style.backgroundColor = myColor;
+taskInput.style.borderColor = myColor;
+
+// Load from localStorage
+function loadTodos() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  todos = stored ? JSON.parse(stored) : [];
+  renderTodos();
+}
+
+// Save to localStorage
+function saveTodos() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+}
+
+// Render todos
+function renderTodos() {
+  todosEl.innerHTML = '';
+  todos.forEach(todo => {
+    const div = document.createElement('div');
+    div.className = 'todo-item' + (todo.completed ? ' completed' : '');
+    div.dataset.id = todo.id;
+
+    const checkbox = document.createElement('div');
+    checkbox.className = 'checkbox' + (todo.completed ? ' checked' : '');
+    checkbox.onclick = () => toggleTodo(todo.id);
+
+    const text = document.createElement('div');
+    text.className = 'todo-text';
+    text.textContent = todo.text;
+    text.ondblclick = () => editTodo(todo.id);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.onclick = () => deleteTodo(todo.id);
+
+    div.appendChild(checkbox);
+    div.appendChild(text);
+    div.appendChild(deleteBtn);
+    todosEl.appendChild(div);
+  });
+}
+
+// Add todo
+function addTodo(text, broadcast = true) {
+  const todo = {
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+    text,
+    completed: false
+  };
+  todos.push(todo);
+  saveTodos();
+  renderTodos();
+
+  if (broadcast) {
+    channel.postMessage({ type: 'add', task: todo, sender: myId });
+    addActivity('added', text, myColor);
+  }
+}
+
+// Toggle todo
+function toggleTodo(id, broadcast = true) {
+  const todo = todos.find(t => t.id === id);
+  if (!todo) return;
+
+  todo.completed = !todo.completed;
+  saveTodos();
+  renderTodos();
+
+  if (broadcast) {
+    channel.postMessage({ type: 'toggle', id, sender: myId });
+    addActivity(todo.completed ? 'completed' : 'uncompleted', todo.text, myColor);
+  }
+}
+
+// Delete todo
+function deleteTodo(id, broadcast = true) {
+  const todo = todos.find(t => t.id === id);
+  if (!todo) return;
+
+  const el = document.querySelector(`[data-id="${id}"]`);
+  if (el) {
+    el.classList.add('fade-out');
+    setTimeout(() => {
+      todos = todos.filter(t => t.id !== id);
+      saveTodos();
+      renderTodos();
+    }, 300);
+  }
+
+  if (broadcast) {
+    channel.postMessage({ type: 'delete', id, sender: myId });
+    addActivity('deleted', todo.text, myColor);
+  }
+}
+
+// Edit todo
+function editTodo(id) {
+  const todo = todos.find(t => t.id === id);
+  if (!todo) return;
+
+  const el = document.querySelector(`[data-id="${id}"] .todo-text`);
+  if (!el) return;
+
+  const originalText = todo.text;
+  el.contentEditable = true;
+  el.focus();
+
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+
+  const finish = () => {
+    el.contentEditable = false;
+    const newText = el.textContent.trim();
+    if (newText && newText !== originalText) {
+      todo.text = newText;
+      saveTodos();
+      channel.postMessage({ type: 'edit', id, text: newText, sender: myId });
+      addActivity('edited', newText, myColor);
+    } else {
+      el.textContent = originalText;
+    }
+  };
+
+  el.onblur = finish;
+  el.onkeydown = e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      finish();
+    }
+    if (e.key === 'Escape') {
+      el.textContent = originalText;
+      el.blur();
+    }
+  };
+}
+
+// Activity log
+function addActivity(action, text, color) {
+  const icons = { added: '🔴', completed: '🟢', uncompleted: '🔵', deleted: '🟣', edited: '🟡', joined: '🟢', left: '🔴' };
+  const item = {
+    action,
+    text,
+    color,
+    time: Date.now(),
+    icon: icons[action] || '⚪'
+  };
+
+  activityLog.unshift(item);
+  if (activityLog.length > 50) activityLog.pop();
+  renderActivity();
+}
+
+function renderActivity() {
+  activityFeed.innerHTML = '';
+  activityLog.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'activity-item';
+    div.style.borderLeftColor = item.color;
+
+    const msg = item.action === 'joined' ? 'Player joined' :
+                item.action === 'left' ? 'Player left' :
+                `${item.action} "${item.text}"`;
+
+    const timeAgo = formatTimeAgo(item.time);
+    div.innerHTML = `
+      <div>${item.icon} ${msg}</div>
+      <div class="activity-time">${timeAgo}</div>
+    `;
+    activityFeed.appendChild(div);
+  });
+}
+
+function formatTimeAgo(timestamp) {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ago`;
+}
+
+// Update activity times
+setInterval(() => {
+  if (activityLog.length > 0) renderActivity();
+}, 10000);
+
+// Presence
+function updatePresence() {
+  const count = peers.size + 1;
+  tabCount.textContent = `${count} tab${count === 1 ? '' : 's'} connected`;
+  hint.style.display = count === 1 ? 'block' : 'none';
+
+  presenceDots.innerHTML = '';
+  peers.forEach((peer, id) => {
+    const dot = document.createElement('div');
+    dot.className = 'presence-dot';
+    dot.style.backgroundColor = peer.color;
+    if (Date.now() - peer.lastSeen < 3000) {
+      dot.classList.add('pulse');
+    }
+    presenceDots.appendChild(dot);
+  });
+}
+
+// Cursors
+function updateCursor(id, x, y, color) {
+  let cursor = document.getElementById(`cursor-${id}`);
+  if (!cursor) {
+    cursor = document.createElement('div');
+    cursor.id = `cursor-${id}`;
+    cursor.className = 'cursor';
+    cursor.innerHTML = `
+      <div class="cursor-arrow" style="border-left-color: ${color}"></div>
+      <div class="cursor-label">Tab</div>
+    `;
+    document.body.appendChild(cursor);
+  }
+
+  cursor.style.left = x + 'px';
+  cursor.style.top = y + 'px';
+
+  // Trail effect
+  createTrail(x, y, color);
+}
+
+function createTrail(x, y, color) {
+  const trail = document.createElement('div');
+  trail.className = 'cursor-trail';
+  trail.style.left = x + 'px';
+  trail.style.top = y + 'px';
+  trail.style.backgroundColor = color;
+  document.body.appendChild(trail);
+
+  setTimeout(() => trail.remove(), 300);
+}
+
+function removeCursor(id) {
+  const cursor = document.getElementById(`cursor-${id}`);
+  if (cursor) cursor.remove();
+}
+
+// BroadcastChannel handlers
+channel.onmessage = (e) => {
+  const { type, sender } = e.data;
+  if (sender === myId) return;
+
+  switch (type) {
+    case 'sync':
+      if (e.data.request) {
+        channel.postMessage({ type: 'sync', todos, sender: myId });
+      } else if (e.data.todos) {
+        todos = e.data.todos;
+        saveTodos();
+        renderTodos();
+      }
+      break;
+
+    case 'add':
+      todos.push(e.data.task);
+      saveTodos();
+      renderTodos();
+      flashItem(e.data.task.id, peers.get(sender)?.color || '#fff');
+      addActivity('added', e.data.task.text, peers.get(sender)?.color || '#fff');
+      playSound('add');
+      break;
+
+    case 'toggle':
+      const toggleTodo = todos.find(t => t.id === e.data.id);
+      if (toggleTodo) {
+        toggleTodo.completed = !toggleTodo.completed;
+        saveTodos();
+        renderTodos();
+        flashItem(e.data.id, peers.get(sender)?.color || '#fff');
+        addActivity(toggleTodo.completed ? 'completed' : 'uncompleted', toggleTodo.text, peers.get(sender)?.color || '#fff');
+        playSound('toggle');
+      }
+      break;
+
+    case 'delete':
+      const delTodo = todos.find(t => t.id === e.data.id);
+      if (delTodo) {
+        addActivity('deleted', delTodo.text, peers.get(sender)?.color || '#fff');
+        deleteTodo(e.data.id, false);
+      }
+      break;
+
+    case 'edit':
+      const editTodo = todos.find(t => t.id === e.data.id);
+      if (editTodo) {
+        editTodo.text = e.data.text;
+        saveTodos();
+        renderTodos();
+        const el = document.querySelector(`[data-id="${e.data.id}"]`);
+        if (el) {
+          el.style.borderLeftColor = peers.get(sender)?.color || '#fff';
+          el.classList.add('recent-edit');
+        }
+        addActivity('edited', e.data.text, peers.get(sender)?.color || '#fff');
+      }
+      break;
+
+    case 'cursor':
+      updateCursor(sender, e.data.x, e.data.y, e.data.color);
+      if (!peers.has(sender)) {
+        peers.set(sender, { color: e.data.color, lastSeen: Date.now() });
+        updatePresence();
+      } else {
+        peers.get(sender).lastSeen = Date.now();
+      }
+      break;
+
+    case 'join':
+      peers.set(sender, { color: e.data.color, lastSeen: Date.now() });
+      updatePresence();
+      addActivity('joined', '', e.data.color);
+      showNotification('Player joined', e.data.color);
+      playSound('join');
+      channel.postMessage({ type: 'sync', todos, sender: myId });
+      break;
+
+    case 'leave':
+      peers.delete(sender);
+      removeCursor(sender);
+      updatePresence();
+      addActivity('left', '', '#888');
+      playSound('leave');
+      break;
+
+    case 'typing':
+      if (e.data.text) {
+        ghostText.textContent = e.data.text;
+        typingIndicator.classList.add('active');
+        typingIndicator.querySelector('.typing-dot').style.backgroundColor = peers.get(sender)?.color || '#fff';
+        typingText.textContent = 'typing...';
+        typingText.style.color = peers.get(sender)?.color || '#fff';
+      } else {
+        typingIndicator.classList.remove('active');
+        ghostText.textContent = '';
+      }
+      break;
+  }
+};
+
+// Flash animation
+function flashItem(id, color) {
+  const el = document.querySelector(`[data-id="${id}"]`);
+  if (el) {
+    el.classList.add('flash');
+    const indicator = document.createElement('div');
+    indicator.className = 'action-indicator';
+    indicator.style.backgroundColor = color;
+    el.appendChild(indicator);
+    setTimeout(() => el.classList.remove('flash'), 500);
+  }
+}
+
+// Notifications
+function showNotification(text, color) {
+  const notif = document.createElement('div');
+  notif.className = 'notification';
+  notif.style.borderColor = color;
+  notif.textContent = text;
+  document.body.appendChild(notif);
+  setTimeout(() => notif.remove(), 3000);
+}
+
+// Sound
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(type) {
+  if (!soundEnabled) return;
+
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+
+  gainNode.gain.value = 0.1;
+
+  switch (type) {
+    case 'add':
+      oscillator.frequency.value = 800;
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.1);
+      break;
+    case 'toggle':
+      oscillator.frequency.value = 600;
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.08);
+      break;
+    case 'join':
+      oscillator.frequency.value = 500;
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.1);
+      setTimeout(() => {
+        const osc2 = audioContext.createOscillator();
+        const gain2 = audioContext.createGain();
+        osc2.connect(gain2);
+        gain2.connect(audioContext.destination);
+        gain2.gain.value = 0.1;
+        osc2.frequency.value = 700;
+        osc2.start();
+        osc2.stop(audioContext.currentTime + 0.1);
+      }, 100);
+      break;
+    case 'leave':
+      oscillator.frequency.value = 700;
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.1);
+      setTimeout(() => {
+        const osc2 = audioContext.createOscillator();
+        const gain2 = audioContext.createGain();
+        osc2.connect(gain2);
+        gain2.connect(audioContext.destination);
+        gain2.gain.value = 0.1;
+        osc2.frequency.value = 500;
+        osc2.start();
+        osc2.stop(audioContext.currentTime + 0.1);
+      }, 100);
+      break;
+  }
+}
+
+// Input handler
+taskInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && taskInput.value.trim()) {
+    addTodo(taskInput.value.trim());
+    taskInput.value = '';
+    ghostText.textContent = '';
+    channel.postMessage({ type: 'typing', text: '', sender: myId });
+    playSound('add');
+  }
+});
+
+taskInput.addEventListener('input', () => {
+  channel.postMessage({ type: 'typing', text: taskInput.value, sender: myId });
+});
+
+// Mouse movement
+document.addEventListener('mousemove', (e) => {
+  const now = Date.now();
+  if (now - lastCursorUpdate < 50) return;
+  lastCursorUpdate = now;
+
+  channel.postMessage({
+    type: 'cursor',
+    x: e.clientX,
+    y: e.clientY,
+    color: myColor,
+    sender: myId
+  });
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'a' && !e.ctrlKey && !e.metaKey && document.activeElement !== taskInput) {
+    activityPanel.classList.toggle('hidden');
+  }
+});
+
+// Sound toggle
+soundToggle.addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  soundToggle.textContent = `Sound: ${soundEnabled ? 'ON' : 'OFF'}`;
+});
+
+// Cleanup on close
+window.addEventListener('beforeunload', () => {
+  channel.postMessage({ type: 'leave', sender: myId });
+});
+
+// Peer cleanup
+setInterval(() => {
+  const now = Date.now();
+  peers.forEach((peer, id) => {
+    if (now - peer.lastSeen > 10000) {
+      peers.delete(id);
+      removeCursor(id);
+      updatePresence();
+    }
+  });
+}, 5000);
+
+// Initialize
+loadTodos();
+channel.postMessage({ type: 'join', color: myColor, sender: myId });
+channel.postMessage({ type: 'sync', request: true, sender: myId });
+updatePresence();
+</script>
+</body>
+</html>

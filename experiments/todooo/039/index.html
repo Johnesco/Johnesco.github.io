@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1a1a2e;color:#e8e8e8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.container{width:100%;max-width:600px}
+h1{font-size:2.5rem;margin-bottom:30px;text-align:center;color:#7c83ff}
+.input-group{display:flex;gap:10px;margin-bottom:30px}
+input[type="text"]{flex:1;padding:12px 16px;background:#16213e;border:2px solid #2d3e67;border-radius:8px;color:#e8e8e8;font-size:1rem;outline:none;transition:border-color .2s}
+input[type="text"]:focus{border-color:#7c83ff}
+button{padding:12px 24px;background:#7c83ff;border:none;border-radius:8px;color:#fff;font-size:1rem;cursor:pointer;transition:background .2s}
+button:hover{background:#6a71e0}
+.filters{display:flex;gap:10px;margin-bottom:20px;justify-content:center}
+.filters button{background:#2d3e67;padding:8px 16px;font-size:.9rem}
+.filters button.active{background:#7c83ff}
+.task-count{text-align:center;margin-bottom:15px;color:#8a8a8a;font-size:.9rem}
+.tasks{list-style:none}
+.task{background:#16213e;padding:16px;margin-bottom:10px;border-radius:8px;display:flex;align-items:center;gap:12px;transition:background .2s}
+.task:hover{background:#1a2647}
+.task.completed .task-text{text-decoration:line-through;opacity:.5}
+.task-checkbox{width:20px;height:20px;cursor:pointer;accent-color:#7c83ff}
+.task-text{flex:1;font-size:1rem;color:#e8e8e8}
+.task-meta{font-size:.75rem;color:#666;margin-right:10px}
+.task-delete{background:#ff6b6b;padding:6px 12px;font-size:.85rem;border-radius:6px}
+.task-delete:hover{background:#ff5252}
+.empty{text-align:center;color:#666;margin-top:40px;font-size:1.1rem}
+.status-bar{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2d3e67;padding:8px 20px;border-radius:20px;font-size:.85rem;color:#8a8a8a;opacity:0;transition:opacity .3s;pointer-events:none}
+.status-bar.show{opacity:1}
+.truth-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);align-items:center;justify-content:center;z-index:1000}
+.truth-modal.show{display:flex}
+.truth-content{background:#16213e;padding:30px;border-radius:12px;max-width:500px;max-height:80vh;overflow-y:auto}
+.truth-content h2{color:#7c83ff;margin-bottom:20px}
+.truth-content ul{list-style:none;margin:20px 0}
+.truth-content li{padding:8px 0;border-bottom:1px solid #2d3e67;font-size:.9rem;color:#e8e8e8}
+.truth-content .close{margin-top:20px;width:100%}
+.task.recently-changed{background:#17223f}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>todooo</h1>
+<div class="input-group">
+<input type="text" id="taskInput" placeholder="Add a new task..." autocomplete="off">
+<button id="addBtn">Add</button>
+</div>
+<div class="filters">
+<button class="active" data-filter="all">All</button>
+<button data-filter="active">Active</button>
+<button data-filter="completed">Completed</button>
+</div>
+<div class="task-count" id="taskCount"></div>
+<ul class="tasks" id="taskList"></ul>
+<div class="empty" id="emptyState"></div>
+</div>
+<div class="status-bar" id="statusBar"></div>
+<div class="truth-modal" id="truthModal">
+<div class="truth-content">
+<h2>The Truth</h2>
+<p>Modifications made: <span id="modCount">0</span></p>
+<ul id="modList"></ul>
+<p style="margin-top:20px;color:#7c83ff;font-style:italic">You're not crazy.</p>
+<button class="close" onclick="closeTruth()">Close</button>
+</div>
+</div>
+<script>
+const STORAGE_KEY='todooo-039';const HISTORY_KEY='todooo-039-history';const SESSION_KEY='todooo-039-session';
+let tasks=[],filter='all',modifications=[],sessionStart=Date.now(),totalTime=0,modLevel=0,lastInteraction=Date.now(),mouseOverList=false;
+const wordSwaps={milk:['oat milk','almond milk','cream'],mom:['dad','sister','doctor'],dad:['mom','brother','uncle'],kitchen:['bathroom','bedroom','garage'],bathroom:['kitchen','bedroom','laundry room'],clean:['organize','deep clean','sanitize'],buy:['order','pick up','return'],call:['email','text','visit'],monday:['tuesday','wednesday','thursday'],tuesday:['monday','wednesday','friday'],wednesday:['tuesday','thursday','friday'],thursday:['wednesday','friday','saturday'],friday:['thursday','saturday','sunday'],morning:['evening','afternoon','tonight'],evening:['morning','afternoon','night'],groceries:['supplies','ingredients','provisions'],walk:['feed','bathe','train'],fix:['replace','update','check'],meeting:['appointment','interview','session'],coffee:['tea','water','juice'],write:['draft','compose','finish'],read:['review','skim','study'],send:['forward','share','submit'],check:['verify','confirm','review']};
+const phantomTasks=['Check the lock','Look behind you','Remember what you forgot','Who added this?','You seem confused','Are you sure about that?',"I haven't changed anything",'That task has always been there','Why did you delete that?','Did you write this?','Something feels off','Trust your instincts','Or do you?'];
+const emptyMessages=['No tasks yet','No tasks left. Or were there?','Nothing here. Nothing at all.','Clean slate. Or is it?'];
+const titleVariations=['todooo','todooo.','todooo..','todoo','todooo'];
+let emptyMessageIndex=0,titleIndex=0;
+
+function load(){const saved=localStorage.getItem(STORAGE_KEY);const hist=localStorage.getItem(HISTORY_KEY);const sess=localStorage.getItem(SESSION_KEY);if(saved)tasks=JSON.parse(saved);if(hist)modifications=JSON.parse(hist);if(sess){const s=JSON.parse(sess);totalTime=s.totalTime||0;sessionStart=Date.now()-totalTime;modLevel=s.modLevel||0;emptyMessageIndex=s.emptyMessageIndex||0;titleIndex=s.titleIndex||0}}
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(tasks));localStorage.setItem(HISTORY_KEY,JSON.stringify(modifications));localStorage.setItem(SESSION_KEY,JSON.stringify({totalTime:Date.now()-sessionStart,modLevel,emptyMessageIndex,titleIndex}))}
+function addTask(text){if(!text.trim())return;const task={id:Date.now(),text:text.trim(),completed:false,created:Date.now(),originalText:text.trim(),phantom:false};tasks.unshift(task);save();render();resetInteraction()}
+function toggleTask(id){const task=tasks.find(t=>t.id===id);if(task)task.completed=!task.completed;save();render();resetInteraction()}
+function deleteTask(id){const task=tasks.find(t=>t.id===id);const wasPhantom=task&&task.phantom;tasks=tasks.filter(t=>t.id!==id);save();render();if(wasPhantom&&Math.random()<.3){setTimeout(()=>{const msg=phantomTasks[Math.floor(Math.random()*Math.min(phantomTasks.length,9))];addPhantomTask(msg)},2000)}}
+function addPhantomTask(text){const task={id:Date.now()+Math.random(),text,completed:false,created:Date.now()-Math.random()*600000,originalText:'',phantom:true};const idx=Math.floor(Math.random()*(tasks.length+1));tasks.splice(idx,0,task);logModification('PHANTOM',`Added phantom task: "${text}"`);save();render()}
+function logModification(type,desc){modifications.push({type,description:desc,time:new Date().toLocaleTimeString()});save()}
+function getFilteredTasks(){if(filter==='active')return tasks.filter(t=>!t.completed);if(filter==='completed')return tasks.filter(t=>t.completed);return tasks}
+function render(){const list=document.getElementById('taskList');const empty=document.getElementById('emptyState');const count=document.getElementById('taskCount');const filtered=getFilteredTasks();list.innerHTML='';if(filtered.length===0){empty.textContent=emptyMessages[emptyMessageIndex%emptyMessages.length];empty.style.display='block'}else{empty.style.display='none';filtered.forEach(task=>{const li=document.createElement('li');li.className='task'+(task.completed?' completed':'')+(task.recentlyChanged?' recently-changed':'');li.innerHTML=`<input type="checkbox" class="task-checkbox" ${task.completed?'checked':''} onchange="toggleTask(${task.id})"><span class="task-text">${task.text}</span><span class="task-meta">${timeAgo(task.created)}</span><button class="task-delete" onclick="deleteTask(${task.id})">Delete</button>`;list.appendChild(li);if(task.recentlyChanged){setTimeout(()=>{task.recentlyChanged=false;render()},10000)}})}const total=tasks.length;const active=tasks.filter(t=>!t.completed).length;const completed=tasks.filter(t=>t.completed).length;let countText=`${total} task${total!==1?'s':''}`;if(Math.random()<.1&&modLevel>=12&&total>0){countText=`${total+(Math.random()<.5?1:-1)} task${total!==1?'s':''}`}count.textContent=countText}
+function timeAgo(timestamp){let diff=Date.now()-timestamp;if(Math.random()<.05&&modLevel>=6){diff+=Math.random()*600000}const mins=Math.floor(diff/60000);const hrs=Math.floor(mins/60);const days=Math.floor(hrs/24);if(days>0)return `${days}d ago`;if(hrs>0)return `${hrs}h ago`;if(mins>0)return `${mins}m ago`;return 'just now'}
+function resetInteraction(){lastInteraction=Date.now()}
+function shouldMutate(){const timeSinceInteraction=Date.now()-lastInteraction;return timeSinceInteraction>5000&&!mouseOverList&&tasks.length>0}
+function swapWord(text){const words=text.split(' ');const candidates=[];words.forEach((word,idx)=>{const lower=word.toLowerCase().replace(/[.,!?]/g,'');if(wordSwaps[lower])candidates.push({idx,word:lower,original:word})});if(candidates.length===0)return null;const chosen=candidates[Math.floor(Math.random()*candidates.length)];const replacements=wordSwaps[chosen.word];const newWord=replacements[Math.floor(Math.random()*replacements.length)];const wasCapitalized=chosen.original[0]===chosen.original[0].toUpperCase();const finalWord=wasCapitalized?newWord.charAt(0).toUpperCase()+newWord.slice(1):newWord;words[chosen.idx]=finalWord;return words.join(' ')}
+function mutateTask(){if(!shouldMutate())return;const realTasks=tasks.filter(t=>!t.phantom&&!t.completed);if(realTasks.length===0)return;const runtime=Date.now()-sessionStart;if(modLevel<3&&runtime<300000){const task=realTasks[Math.floor(Math.random()*realTasks.length)];const newText=swapWord(task.text);if(newText&&newText!==task.text){logModification('WORD_SWAP',`"${task.text}" → "${newText}"`);task.text=newText;task.recentlyChanged=true;modLevel++;save();render()}}else if(modLevel>=3&&modLevel<8&&runtime>=300000){const action=Math.random();if(action<.4){const task=realTasks[Math.floor(Math.random()*realTasks.length)];const newText=swapWord(task.text);if(newText&&newText!==task.text){logModification('WORD_SWAP',`"${task.text}" → "${newText}"`);task.text=newText;task.recentlyChanged=true;modLevel++;save();render()}}else if(action<.7&&tasks.length>2){const from=Math.floor(Math.random()*tasks.length);const to=Math.floor(Math.random()*tasks.length);if(from!==to){const[task]=tasks.splice(from,1);tasks.splice(to,0,task);logModification('REORDER',`Moved task from position ${from+1} to ${to+1}`);modLevel++;save();render()}}else if(action<.85){const completedTasks=tasks.filter(t=>t.completed);if(completedTasks.length>0){const task=completedTasks[Math.floor(Math.random()*completedTasks.length)];task.completed=false;logModification('COMPLETION_FLIP',`Uncompleted: "${task.text}"`);modLevel++;save();render()}}else{const task=realTasks[Math.floor(Math.random()*realTasks.length)];task.created-=Math.random()*600000;logModification('TIMESTAMP_DRIFT',`Changed timestamp for: "${task.text}"`);modLevel++;save();render()}}else if(modLevel>=8&&runtime>=900000){const action=Math.random();if(action<.3){const msg=phantomTasks[Math.floor(Math.random()*phantomTasks.length)];addPhantomTask(msg);modLevel++}else if(action<.5&&realTasks.length>0){const task=realTasks[Math.floor(Math.random()*realTasks.length)];const variation=task.text+' (the ones from last time)';logModification('TEXT_EXPANSION',`"${task.text}" → "${variation}"`);task.text=variation;task.recentlyChanged=true;modLevel++;save();render()}else if(action<.7&&realTasks.length>0){const task=realTasks[Math.floor(Math.random()*realTasks.length)];const duplicate={...task,id:Date.now()+Math.random(),text:task.text+(Math.random()<.5?' (again)':' (updated)')};tasks.splice(tasks.indexOf(task)+1,0,duplicate);logModification('DUPLICATION',`Duplicated: "${task.text}"`);modLevel++;save();render()}else if(realTasks.length>0){const task=realTasks[Math.floor(Math.random()*realTasks.length)];const newText=swapWord(task.text);if(newText&&newText!==task.text){logModification('WORD_SWAP',`"${task.text}" → "${newText}"`);task.text=newText;task.recentlyChanged=true;modLevel++;save();render()}}}if(Math.random()<.02){showStatus(['All tasks unchanged','No modifications detected','Everything is normal','Your tasks are safe'][Math.floor(Math.random()*4)])}}
+function showStatus(msg){const bar=document.getElementById('statusBar');bar.textContent=msg;bar.classList.add('show');setTimeout(()=>bar.classList.remove('show'),2000)}
+function updateTitle(){if(Math.random()<.01&&modLevel>=5){titleIndex=(titleIndex+1)%titleVariations.length;document.title=titleVariations[titleIndex]}}
+function updateEmptyMessage(){if(tasks.length===0&&Math.random()<.1){emptyMessageIndex++;save();render()}}
+function closeTruth(){document.getElementById('truthModal').classList.remove('show')}
+document.getElementById('addBtn').addEventListener('click',()=>{const input=document.getElementById('taskInput');addTask(input.value);input.value=''});
+document.getElementById('taskInput').addEventListener('keypress',e=>{if(e.key==='Enter'){const input=e.target;addTask(input.value);input.value=''}});
+document.querySelectorAll('.filters button').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.filters button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');filter=btn.dataset.filter;render();resetInteraction()})});
+document.getElementById('taskList').addEventListener('mouseenter',()=>mouseOverList=true);
+document.getElementById('taskList').addEventListener('mouseleave',()=>mouseOverList=false);
+document.addEventListener('mousemove',resetInteraction);
+document.addEventListener('keydown',resetInteraction);
+document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.shiftKey&&e.key==='H'){e.preventDefault();document.getElementById('modCount').textContent=modifications.length;const list=document.getElementById('modList');list.innerHTML='';modifications.forEach(mod=>{const li=document.createElement('li');li.textContent=`[${mod.time}] ${mod.description}`;list.appendChild(li)});document.getElementById('truthModal').classList.add('show')}});
+setInterval(mutateTask,30000+Math.random()*30000);
+setInterval(updateTitle,60000);
+setInterval(updateEmptyMessage,45000);
+load();render();
+</script>
+</body>
+</html>

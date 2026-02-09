@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo 043 - expressive instrument</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body, html { width: 100%; height: 100%; overflow: hidden; font-family: 'Courier New', monospace; }
+body { background: #08080f; cursor: crosshair; }
+canvas { display: block; width: 100%; height: 100%; }
+#ui { position: fixed; top: 20px; left: 20px; color: rgba(255,255,255,0.4); font-size: 12px; pointer-events: none; line-height: 1.6; }
+#ui .mode { color: rgba(255,255,255,0.7); font-weight: bold; }
+#noteLabel { position: fixed; color: #fff; font-size: 11px; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
+.scale-line { position: fixed; left: 0; width: 100%; height: 1px; background: rgba(255,255,255,0.08); pointer-events: none; }
+.scale-label { position: fixed; left: 10px; color: rgba(255,255,255,0.15); font-size: 10px; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="ui">
+<div class="mode">MODE: <span id="modeName">PENTATONIC</span></div>
+<div>spacebar: cycle modes | 1-4: select | m: mute | esc: stop</div>
+<div id="loopInfo" style="display:none;">r: clear loops | click: record</div>
+</div>
+<div id="noteLabel"></div>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const noteLabel = document.getElementById('noteLabel');
+const modeName = document.getElementById('modeName');
+const loopInfo = document.getElementById('loopInfo');
+
+let W, H;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Audio setup
+const actx = new (window.AudioContext || window.webkitAudioContext)();
+const masterGain = actx.createGain();
+masterGain.gain.value = 0;
+const compressor = actx.createDynamicsCompressor();
+masterGain.connect(compressor);
+compressor.connect(actx.destination);
+
+const osc1 = actx.createOscillator();
+const osc2 = actx.createOscillator();
+osc1.type = 'triangle';
+osc2.type = 'triangle';
+osc2.detune.value = 3;
+
+const oscGain = actx.createGain();
+oscGain.gain.value = 0.3;
+osc1.connect(oscGain);
+osc2.connect(oscGain);
+
+const filter = actx.createBiquadFilter();
+filter.type = 'lowpass';
+filter.Q.value = 7;
+oscGain.connect(filter);
+
+const distortion = actx.createWaveShaper();
+distortion.curve = makeDistortionCurve(0);
+filter.connect(distortion);
+
+const vibrato = actx.createOscillator();
+vibrato.frequency.value = 5;
+const vibratoGain = actx.createGain();
+vibratoGain.gain.value = 0;
+vibrato.connect(vibratoGain);
+vibratoGain.connect(osc1.frequency);
+vibratoGain.connect(osc2.frequency);
+
+const analyser = actx.createAnalyser();
+analyser.fftSize = 2048;
+distortion.connect(analyser);
+analyser.connect(masterGain);
+
+osc1.start();
+osc2.start();
+vibrato.start();
+
+// Drone oscillators
+const drone1 = actx.createOscillator();
+const drone2 = actx.createOscillator();
+drone1.type = 'sawtooth';
+drone2.type = 'sawtooth';
+drone2.detune.value = -7;
+const droneGain = actx.createGain();
+droneGain.gain.value = 0;
+drone1.connect(droneGain);
+drone2.connect(droneGain);
+droneGain.connect(compressor);
+drone1.start();
+drone2.start();
+
+function makeDistortionCurve(amount) {
+  const samples = 44100;
+  const curve = new Float32Array(samples);
+  const deg = Math.PI / 180;
+  for (let i = 0; i < samples; i++) {
+    const x = (i * 2) / samples - 1;
+    curve[i] = ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x));
+  }
+  return curve;
+}
+
+// Musical scales
+const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const pentatonic = [0, 2, 4, 7, 9]; // C D E G A
+const chromatic = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+
+function getNoteFreq(midiNote) {
+  return 440 * Math.pow(2, (midiNote - 69) / 12);
+}
+
+function getNoteName(midiNote) {
+  const octave = Math.floor(midiNote / 12) - 1;
+  const note = noteNames[midiNote % 12];
+  return note + octave;
+}
+
+function snapToScale(freq, scale, octaveShift) {
+  const midi = 69 + 12 * Math.log2(freq / 440);
+  const baseOctave = Math.floor(midi / 12) * 12;
+  const note = midi % 12;
+
+  let closest = scale[0];
+  let minDist = Math.abs(note - scale[0]);
+  for (let s of scale) {
+    const dist = Math.abs(note - s);
+    if (dist < minDist) {
+      minDist = dist;
+      closest = s;
+    }
+  }
+
+  const snapped = baseOctave + closest + octaveShift * 12;
+  return { freq: getNoteFreq(snapped), midi: snapped };
+}
+
+// State
+let mouseX = W / 2, mouseY = H / 2;
+let lastX = mouseX, lastY = mouseY;
+let mouseDown = false;
+let rightMouseDown = false;
+let velocity = 0;
+let currentFreq = 440;
+let currentMidi = 69;
+let muted = false;
+let octaveShift = 0;
+
+const modes = ['pentatonic', 'chromatic', 'drone', 'loop'];
+const modeNames = ['PENTATONIC', 'CHROMATIC', 'DRONE', 'LOOP'];
+let currentMode = 0;
+
+// Trail
+const trail = [];
+const maxTrail = 300;
+
+// Particles
+const particles = [];
+
+// Loop recording
+let loops = [[], [], []];
+let currentLoop = 0;
+let recording = false;
+let recordStart = 0;
+const loopDuration = 4000;
+let loopPlayback = [];
+
+// Load settings
+const saved = localStorage.getItem('todooo-043');
+if (saved) {
+  try {
+    const data = JSON.parse(saved);
+    currentMode = data.mode || 0;
+    octaveShift = data.octave || 0;
+    loops = data.loops || [[], [], []];
+  } catch(e) {}
+}
+
+function save() {
+  localStorage.setItem('todooo-043', JSON.stringify({
+    mode: currentMode,
+    octave: octaveShift,
+    loops: loops
+  }));
+}
+
+// Update
+function update() {
+  const dx = mouseX - lastX;
+  const dy = mouseY - lastY;
+  velocity = Math.sqrt(dx * dx + dy * dy);
+  lastX = mouseX;
+  lastY = mouseY;
+
+  // Calculate pitch from Y
+  const normalY = Math.max(0, Math.min(1, mouseY / H));
+  const rawFreq = 80 + (2000 - 80) * (1 - normalY);
+
+  const scale = currentMode === 0 ? pentatonic : chromatic;
+  const snapped = snapToScale(rawFreq, scale, octaveShift);
+  currentFreq = snapped.freq;
+  currentMidi = snapped.midi;
+
+  // Set oscillator frequency
+  osc1.frequency.setTargetAtTime(currentFreq, actx.currentTime, 0.02);
+  osc2.frequency.setTargetAtTime(currentFreq, actx.currentTime, 0.02);
+
+  // Filter from X
+  const normalX = Math.max(0, Math.min(1, mouseX / W));
+  const cutoff = 200 + (8000 - 200) * normalX;
+  filter.frequency.setTargetAtTime(cutoff, actx.currentTime, 0.02);
+
+  // Velocity controls
+  const velocityNorm = Math.min(1, velocity / 20);
+  const targetGain = mouseDown ? Math.min(0.4, 0.1 + velocityNorm * 0.3) : 0;
+  masterGain.gain.setTargetAtTime(muted ? 0 : targetGain, actx.currentTime, 0.02);
+
+  // Vibrato
+  vibratoGain.gain.setTargetAtTime(velocityNorm * 10, actx.currentTime, 0.05);
+
+  // Distortion
+  const distAmt = velocityNorm * 50;
+  distortion.curve = makeDistortionCurve(distAmt);
+
+  // Harmony (right click)
+  const harmonyFreq = currentFreq * 1.5; // fifth
+  if (rightMouseDown && !mouseDown) {
+    osc1.frequency.setTargetAtTime(harmonyFreq, actx.currentTime, 0.02);
+  }
+
+  // Drone mode
+  if (currentMode === 2) {
+    droneGain.gain.setTargetAtTime(muted ? 0 : 0.15, actx.currentTime, 0.1);
+    drone1.frequency.setTargetAtTime(currentFreq / 2, actx.currentTime, 0.5);
+    drone2.frequency.setTargetAtTime(currentFreq / 2, actx.currentTime, 0.5);
+  } else {
+    droneGain.gain.setTargetAtTime(0, actx.currentTime, 0.1);
+  }
+
+  // Loop mode recording
+  if (currentMode === 3 && recording) {
+    const elapsed = Date.now() - recordStart;
+    if (elapsed < loopDuration) {
+      loops[currentLoop].push({ time: elapsed, x: mouseX, y: mouseY, down: mouseDown });
+    } else {
+      recording = false;
+      currentLoop = (currentLoop + 1) % 3;
+      save();
+    }
+  }
+
+  // Add to trail
+  if (mouseDown || velocity > 1) {
+    trail.push({
+      x: mouseX,
+      y: mouseY,
+      width: 2 + velocityNorm * 15,
+      opacity: 0.8,
+      hue: ((currentMidi % 12) / 12) * 360,
+      age: 0
+    });
+  }
+  if (trail.length > maxTrail) trail.shift();
+
+  // Update trail
+  for (let t of trail) {
+    t.age++;
+    t.opacity = Math.max(0, 0.8 - (t.age / 100));
+  }
+
+  // Update particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life--;
+    p.opacity = p.life / 60;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+
+  // Note label
+  noteLabel.textContent = getNoteName(currentMidi);
+  noteLabel.style.left = (mouseX + 20) + 'px';
+  noteLabel.style.top = (mouseY - 20) + 'px';
+}
+
+// Render
+const waveData = new Uint8Array(analyser.frequencyBinCount);
+function render() {
+  // Background with pitch hue
+  const bgHue = ((currentMidi % 12) / 12) * 60 + 240; // blue to pink
+  ctx.fillStyle = `hsl(${bgHue}, 30%, 3%)`;
+  ctx.fillRect(0, 0, W, H);
+
+  // Waveform
+  analyser.getByteTimeDomainData(waveData);
+  ctx.strokeStyle = `hsla(${((currentMidi % 12) / 12) * 360}, 70%, 60%, 0.12)`;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  const sliceWidth = W / waveData.length;
+  for (let i = 0; i < waveData.length; i++) {
+    const v = waveData[i] / 128.0;
+    const y = (v * H) / 2;
+    if (i === 0) ctx.moveTo(0, y);
+    else ctx.lineTo(i * sliceWidth, y);
+  }
+  ctx.stroke();
+
+  // Trail
+  for (let i = 1; i < trail.length; i++) {
+    const t1 = trail[i - 1];
+    const t2 = trail[i];
+    const grad = ctx.createLinearGradient(t1.x, t1.y, t2.x, t2.y);
+    grad.addColorStop(0, `hsla(${t1.hue}, 80%, 60%, ${t1.opacity})`);
+    grad.addColorStop(1, `hsla(${t2.hue}, 80%, 60%, ${t2.opacity})`);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = (t1.width + t2.width) / 2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(t1.x, t1.y);
+    ctx.lineTo(t2.x, t2.y);
+    ctx.stroke();
+  }
+
+  // Particles
+  for (let p of particles) {
+    ctx.fillStyle = `hsla(${p.hue}, 80%, 60%, ${p.opacity})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Scale lines
+  const scale = currentMode === 0 ? pentatonic : chromatic;
+  for (let octave = -1; octave <= 8; octave++) {
+    for (let s of scale) {
+      const midi = octave * 12 + s + octaveShift * 12;
+      const freq = getNoteFreq(midi);
+      if (freq < 80 || freq > 2000) continue;
+      const normalY = 1 - ((freq - 80) / (2000 - 80));
+      const y = normalY * H;
+
+      const dist = Math.abs(y - mouseY);
+      const glow = Math.max(0, 1 - dist / 50);
+
+      ctx.strokeStyle = `rgba(255, 255, 255, ${0.08 + glow * 0.15})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(W, y);
+      ctx.stroke();
+
+      if (glow > 0.5) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.2 + glow * 0.3})`;
+        ctx.font = '10px monospace';
+        ctx.fillText(getNoteName(midi), 10, y - 5);
+      }
+    }
+  }
+}
+
+// Loop playback
+function playLoops() {
+  if (currentMode !== 3) return;
+
+  for (let i = 0; i < loops.length; i++) {
+    const loop = loops[i];
+    if (loop.length === 0) continue;
+
+    for (let frame of loop) {
+      const now = Date.now() % loopDuration;
+      const frameTime = frame.time;
+      const diff = Math.abs(now - frameTime);
+
+      if (diff < 50) {
+        // Visual feedback
+        particles.push({
+          x: frame.x,
+          y: frame.y,
+          vx: (Math.random() - 0.5) * 2,
+          vy: (Math.random() - 0.5) * 2,
+          life: 30,
+          opacity: 0.4,
+          size: 3,
+          hue: i * 120
+        });
+      }
+    }
+  }
+}
+
+// Animation loop
+function animate() {
+  update();
+  render();
+  playLoops();
+  requestAnimationFrame(animate);
+}
+animate();
+
+// Mouse events
+canvas.addEventListener('mousemove', e => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  noteLabel.style.opacity = '0.8';
+});
+
+canvas.addEventListener('mousedown', e => {
+  if (actx.state === 'suspended') actx.resume();
+
+  if (e.button === 0) {
+    mouseDown = true;
+    masterGain.gain.cancelScheduledValues(actx.currentTime);
+    masterGain.gain.setValueAtTime(masterGain.gain.value, actx.currentTime);
+    masterGain.gain.linearRampToValueAtTime(muted ? 0 : 0.5, actx.currentTime + 0.01);
+
+    // Particles burst
+    const hue = ((currentMidi % 12) / 12) * 360;
+    for (let i = 0; i < 25; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2 + Math.random() * 4;
+      particles.push({
+        x: mouseX,
+        y: mouseY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 60,
+        opacity: 1,
+        size: 2 + Math.random() * 3,
+        hue: hue
+      });
+    }
+
+    // Loop recording
+    if (currentMode === 3 && !recording) {
+      recording = true;
+      recordStart = Date.now();
+      loops[currentLoop] = [];
+    }
+  } else if (e.button === 2) {
+    rightMouseDown = true;
+
+    // Harmony particles
+    const hue = ((currentMidi % 12) / 12) * 360;
+    for (let i = 0; i < 15; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2 + Math.random() * 3;
+      particles.push({
+        x: mouseX,
+        y: mouseY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 60,
+        opacity: 1,
+        size: 2,
+        hue: (hue + 180) % 360
+      });
+    }
+  }
+  e.preventDefault();
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (e.button === 0) {
+    mouseDown = false;
+  } else if (e.button === 2) {
+    rightMouseDown = false;
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  mouseDown = false;
+  rightMouseDown = false;
+  noteLabel.style.opacity = '0';
+});
+
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (e.deltaY < 0) {
+    octaveShift = Math.min(1, octaveShift + 1);
+  } else {
+    octaveShift = Math.max(-1, octaveShift - 1);
+  }
+  save();
+});
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.key === ' ') {
+    e.preventDefault();
+    currentMode = (currentMode + 1) % modes.length;
+    modeName.textContent = modeNames[currentMode];
+    loopInfo.style.display = currentMode === 3 ? 'block' : 'none';
+    save();
+  } else if (e.key >= '1' && e.key <= '4') {
+    const idx = parseInt(e.key) - 1;
+    if (idx < modes.length) {
+      currentMode = idx;
+      modeName.textContent = modeNames[currentMode];
+      loopInfo.style.display = currentMode === 3 ? 'block' : 'none';
+      save();
+    }
+  } else if (e.key === 'm' || e.key === 'M') {
+    muted = !muted;
+  } else if (e.key === 'r' || e.key === 'R') {
+    if (currentMode === 3) {
+      loops = [[], [], []];
+      currentLoop = 0;
+      recording = false;
+      save();
+    }
+  } else if (e.key === 'Escape') {
+    mouseDown = false;
+    rightMouseDown = false;
+    masterGain.gain.setTargetAtTime(0, actx.currentTime, 0.1);
+    droneGain.gain.setTargetAtTime(0, actx.currentTime, 0.1);
+  }
+});
+
+// Touch support
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (actx.state === 'suspended') actx.resume();
+  const touch = e.touches[0];
+  mouseX = touch.clientX;
+  mouseY = touch.clientY;
+  mouseDown = true;
+
+  const hue = ((currentMidi % 12) / 12) * 360;
+  for (let i = 0; i < 25; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 2 + Math.random() * 4;
+    particles.push({
+      x: mouseX,
+      y: mouseY,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 60,
+      opacity: 1,
+      size: 2 + Math.random() * 3,
+      hue: hue
+    });
+  }
+});
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  mouseX = touch.clientX;
+  mouseY = touch.clientY;
+});
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  mouseDown = false;
+});
+</script>
+</body>
+</html>

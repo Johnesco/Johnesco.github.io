@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo 035 - Infinite Zoom / Fractal Tasks</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body, html { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+body { background: #0e0e1e; color: #fff; }
+#canvas { width: 100%; height: 100%; position: relative; overflow: hidden; cursor: grab; }
+#canvas.grabbing { cursor: grabbing; }
+#viewport { position: absolute; transform-origin: 0 0; transition: none; }
+.task-card { position: absolute; background: rgba(30, 30, 50, 0.9); border-radius: 12px; padding: 16px; min-width: 200px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); border: 2px solid #4a4a6a; cursor: pointer; user-select: none; }
+.task-card.priority-high { border-color: #ff4444; box-shadow: 0 4px 20px rgba(255,68,68,0.3); }
+.task-card.priority-medium { border-color: #ffaa44; box-shadow: 0 4px 20px rgba(255,170,68,0.3); }
+.task-card.priority-low { border-color: #44aaff; box-shadow: 0 4px 20px rgba(68,170,255,0.3); }
+.task-card.completed { background: rgba(40, 80, 40, 0.6); border-color: #44ff88; }
+.task-card.ready-to-complete { box-shadow: 0 4px 30px rgba(255,255,100,0.5); animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 4px 30px rgba(255,255,100,0.5); } 50% { box-shadow: 0 4px 40px rgba(255,255,100,0.8); } }
+.task-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.task-checkbox { width: 24px; height: 24px; border: 2px solid #888; border-radius: 6px; background: rgba(0,0,0,0.3); cursor: pointer; position: relative; flex-shrink: 0; }
+.task-checkbox.checked::after { content: '✓'; position: absolute; color: #44ff88; font-size: 18px; left: 3px; top: -2px; }
+.task-text { flex: 1; font-size: 16px; word-wrap: break-word; }
+.task-children { position: relative; margin-top: 12px; min-height: 100px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; }
+.sub-task { position: absolute; width: 120px; }
+.child-dots { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+.child-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(100,100,255,0.5); position: relative; }
+.child-dot.has-children::after { content: ''; position: absolute; width: 3px; height: 3px; border-radius: 50%; background: rgba(150,150,255,0.5); left: 2.5px; top: 2.5px; }
+#breadcrumb { position: fixed; top: 20px; left: 20px; display: flex; gap: 8px; align-items: center; font-size: 14px; z-index: 1000; background: rgba(0,0,0,0.5); padding: 10px 16px; border-radius: 8px; backdrop-filter: blur(10px); }
+.breadcrumb-item { cursor: pointer; color: #88aaff; transition: color 0.2s; }
+.breadcrumb-item:hover { color: #fff; }
+.breadcrumb-sep { color: #666; }
+#depth-indicator { position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.5); padding: 10px 16px; border-radius: 8px; font-size: 14px; z-index: 1000; backdrop-filter: blur(10px); }
+#minimap { position: fixed; bottom: 20px; right: 20px; width: 150px; height: 150px; background: rgba(0,0,0,0.7); border: 1px solid #444; border-radius: 8px; z-index: 1000; backdrop-filter: blur(10px); }
+#minimap-content { width: 100%; height: 100%; position: relative; }
+.minimap-rect { position: absolute; border: 2px solid #88aaff; background: rgba(136,170,255,0.2); }
+#input-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000; }
+#input-overlay.active { display: flex; }
+#task-input { background: rgba(30, 30, 50, 0.95); border: 2px solid #88aaff; border-radius: 8px; padding: 16px; font-size: 16px; color: #fff; width: 400px; outline: none; }
+#controls { position: fixed; bottom: 20px; left: 20px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; z-index: 1000; backdrop-filter: blur(10px); display: flex; gap: 8px; }
+.control-btn { background: rgba(100,100,150,0.5); border: 1px solid #666; color: #fff; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+.control-btn:hover { background: rgba(120,120,170,0.7); }
+.control-btn.active { background: rgba(136,170,255,0.5); border-color: #88aaff; }
+#particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 500; }
+.particle { position: absolute; width: 2px; height: 2px; background: rgba(255,255,255,0.3); border-radius: 50%; }
+#help { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(20,20,40,0.95); border: 2px solid #88aaff; border-radius: 12px; padding: 24px; max-width: 500px; z-index: 3000; display: none; }
+#help.active { display: block; }
+.help-title { font-size: 20px; margin-bottom: 16px; color: #88aaff; }
+.help-item { margin-bottom: 8px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div id="canvas">
+  <div id="viewport"></div>
+</div>
+<div id="particles"></div>
+<div id="breadcrumb"></div>
+<div id="depth-indicator">Depth: <span id="depth-value">0</span></div>
+<div id="minimap"><div id="minimap-content"></div></div>
+<div id="controls">
+  <button class="control-btn" id="sound-toggle">Sound: OFF</button>
+  <button class="control-btn" id="help-btn">Help</button>
+</div>
+<div id="input-overlay">
+  <input type="text" id="task-input" placeholder="Enter task name..." />
+</div>
+<div id="help">
+  <div class="help-title">Infinite Zoom Tasks</div>
+  <div class="help-item"><strong>Scroll Wheel:</strong> Zoom in/out</div>
+  <div class="help-item"><strong>Drag:</strong> Pan around</div>
+  <div class="help-item"><strong>Double-click empty space:</strong> Add task</div>
+  <div class="help-item"><strong>Double-click task:</strong> Zoom to task</div>
+  <div class="help-item"><strong>Right-click / Esc:</strong> Zoom out one level</div>
+  <div class="help-item"><strong>Home:</strong> Return to root</div>
+  <div class="help-item"><strong>Click checkbox:</strong> Complete task</div>
+  <div class="help-item"><strong>Breadcrumb:</strong> Jump to level</div>
+  <div style="margin-top: 16px; text-align: center;">
+    <button class="control-btn" onclick="hideHelp()">Close</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'todooo-035';
+const DEPTH_COLORS = ['#0e0e1e', '#1e0e2e', '#2e0e1e', '#2e1e0e', '#3e2e0e'];
+
+let state = {
+  tasks: [],
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+  currentPath: [],
+  soundEnabled: false,
+  nextId: 1
+};
+
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let panStartX = 0;
+let panStartY = 0;
+let isAnimating = false;
+let audioContext = null;
+
+const canvas = document.getElementById('canvas');
+const viewport = document.getElementById('viewport');
+const breadcrumb = document.getElementById('breadcrumb');
+const depthValue = document.getElementById('depth-value');
+const inputOverlay = document.getElementById('input-overlay');
+const taskInput = document.getElementById('task-input');
+const soundToggle = document.getElementById('sound-toggle');
+const helpBtn = document.getElementById('help-btn');
+const helpPanel = document.getElementById('help');
+
+function init() {
+  loadState();
+  setupEventListeners();
+  createParticles();
+  render();
+  updateBreadcrumb();
+}
+
+function loadState() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    state.tasks = parsed.tasks || [];
+    state.zoom = parsed.zoom || 1;
+    state.panX = parsed.panX || 0;
+    state.panY = parsed.panY || 0;
+    state.currentPath = parsed.currentPath || [];
+    state.nextId = parsed.nextId || 1;
+  }
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function setupEventListeners() {
+  canvas.addEventListener('wheel', handleWheel, { passive: false });
+  canvas.addEventListener('mousedown', handleMouseDown);
+  canvas.addEventListener('mousemove', handleMouseMove);
+  canvas.addEventListener('mouseup', handleMouseUp);
+  canvas.addEventListener('dblclick', handleDoubleClick);
+  canvas.addEventListener('contextmenu', handleRightClick);
+  document.addEventListener('keydown', handleKeyDown);
+  taskInput.addEventListener('keydown', handleInputKeyDown);
+  soundToggle.addEventListener('click', toggleSound);
+  helpBtn.addEventListener('click', showHelp);
+  inputOverlay.addEventListener('click', (e) => {
+    if (e.target === inputOverlay) closeInput();
+  });
+}
+
+function handleWheel(e) {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  const newZoom = Math.max(0.1, Math.min(100, state.zoom * delta));
+
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  const worldX = (mouseX - state.panX) / state.zoom;
+  const worldY = (mouseY - state.panY) / state.zoom;
+
+  state.zoom = newZoom;
+  state.panX = mouseX - worldX * state.zoom;
+  state.panY = mouseY - worldY * state.zoom;
+
+  playSound('zoom', delta > 1 ? 1.2 : 0.8);
+  render();
+  saveState();
+}
+
+function handleMouseDown(e) {
+  if (e.target === canvas || e.target === viewport) {
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    panStartX = state.panX;
+    panStartY = state.panY;
+    canvas.classList.add('grabbing');
+  }
+}
+
+function handleMouseMove(e) {
+  if (isDragging) {
+    state.panX = panStartX + (e.clientX - dragStartX);
+    state.panY = panStartY + (e.clientY - dragStartY);
+    render();
+  }
+}
+
+function handleMouseUp(e) {
+  if (isDragging) {
+    isDragging = false;
+    canvas.classList.remove('grabbing');
+    saveState();
+  }
+}
+
+function handleDoubleClick(e) {
+  if (e.target === canvas || e.target === viewport) {
+    openInput();
+  } else {
+    const taskId = findTaskElementId(e.target);
+    if (taskId) {
+      zoomToTask(taskId);
+    }
+  }
+}
+
+function handleRightClick(e) {
+  e.preventDefault();
+  zoomOut();
+}
+
+function handleKeyDown(e) {
+  if (e.key === 'Escape') {
+    if (inputOverlay.classList.contains('active')) {
+      closeInput();
+    } else if (helpPanel.classList.contains('active')) {
+      hideHelp();
+    } else {
+      zoomOut();
+    }
+  } else if (e.key === 'Home') {
+    zoomToRoot();
+  }
+}
+
+function handleInputKeyDown(e) {
+  if (e.key === 'Enter') {
+    const text = taskInput.value.trim();
+    if (text) {
+      addTask(text);
+      closeInput();
+    }
+  } else if (e.key === 'Escape') {
+    closeInput();
+  }
+}
+
+function openInput() {
+  inputOverlay.classList.add('active');
+  taskInput.value = '';
+  taskInput.focus();
+}
+
+function closeInput() {
+  inputOverlay.classList.remove('active');
+}
+
+function addTask(text) {
+  const task = {
+    id: state.nextId++,
+    text: text,
+    completed: false,
+    children: [],
+    priority: 'medium',
+    x: Math.random() * 400 - 200,
+    y: Math.random() * 400 - 200
+  };
+
+  const parent = getCurrentParent();
+  if (parent) {
+    parent.children.push(task);
+  } else {
+    state.tasks.push(task);
+  }
+
+  playSound('add');
+  render();
+  saveState();
+}
+
+function getCurrentParent() {
+  let current = null;
+  let tasks = state.tasks;
+
+  for (let id of state.currentPath) {
+    current = tasks.find(t => t.id === id);
+    if (current) {
+      tasks = current.children;
+    }
+  }
+
+  return current;
+}
+
+function getCurrentTasks() {
+  let tasks = state.tasks;
+
+  for (let id of state.currentPath) {
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      tasks = task.children;
+    }
+  }
+
+  return tasks;
+}
+
+function toggleTask(id) {
+  const task = findTaskById(id);
+  if (task) {
+    task.completed = !task.completed;
+    if (task.completed && task.children.length > 0) {
+      completeAllChildren(task);
+    }
+    playSound(task.completed ? 'complete' : 'add');
+    render();
+    saveState();
+  }
+}
+
+function completeAllChildren(task) {
+  task.children.forEach(child => {
+    child.completed = true;
+    if (child.children.length > 0) {
+      completeAllChildren(child);
+    }
+  });
+}
+
+function findTaskById(id, tasks = state.tasks) {
+  for (let task of tasks) {
+    if (task.id === id) return task;
+    const found = findTaskById(id, task.children);
+    if (found) return found;
+  }
+  return null;
+}
+
+function findTaskElementId(element) {
+  while (element && element !== viewport) {
+    if (element.dataset.taskId) {
+      return parseInt(element.dataset.taskId);
+    }
+    element = element.parentElement;
+  }
+  return null;
+}
+
+function zoomToTask(id) {
+  if (isAnimating) return;
+
+  const task = findTaskById(id);
+  if (!task) return;
+
+  state.currentPath.push(id);
+
+  isAnimating = true;
+  const startZoom = state.zoom;
+  const startPanX = state.panX;
+  const startPanY = state.panY;
+
+  const targetZoom = startZoom * 3;
+  const targetPanX = window.innerWidth / 2 - task.x * targetZoom;
+  const targetPanY = window.innerHeight / 2 - task.y * targetZoom;
+
+  const duration = 500;
+  const startTime = Date.now();
+
+  function animate() {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = easeInOutCubic(progress);
+
+    state.zoom = startZoom + (targetZoom - startZoom) * eased;
+    state.panX = startPanX + (targetPanX - startPanX) * eased;
+    state.panY = startPanY + (targetPanY - startPanY) * eased;
+
+    render();
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      isAnimating = false;
+      saveState();
+    }
+  }
+
+  playSound('zoomIn');
+  animate();
+  updateBreadcrumb();
+}
+
+function zoomOut() {
+  if (state.currentPath.length === 0) return;
+  if (isAnimating) return;
+
+  state.currentPath.pop();
+
+  isAnimating = true;
+  const startZoom = state.zoom;
+  const startPanX = state.panX;
+  const startPanY = state.panY;
+
+  const targetZoom = startZoom / 3;
+  const targetPanX = window.innerWidth / 2;
+  const targetPanY = window.innerHeight / 2;
+
+  const duration = 500;
+  const startTime = Date.now();
+
+  function animate() {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = easeInOutCubic(progress);
+
+    state.zoom = startZoom + (targetZoom - startZoom) * eased;
+    state.panX = startPanX + (targetPanX - startPanX) * eased;
+    state.panY = startPanY + (targetPanY - startPanY) * eased;
+
+    render();
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      isAnimating = false;
+      saveState();
+    }
+  }
+
+  playSound('zoomOut');
+  animate();
+  updateBreadcrumb();
+}
+
+function zoomToRoot() {
+  if (isAnimating) return;
+
+  state.currentPath = [];
+
+  isAnimating = true;
+  const startZoom = state.zoom;
+  const startPanX = state.panX;
+  const startPanY = state.panY;
+
+  const targetZoom = 1;
+  const targetPanX = window.innerWidth / 2;
+  const targetPanY = window.innerHeight / 2;
+
+  const duration = 700;
+  const startTime = Date.now();
+
+  function animate() {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = easeInOutCubic(progress);
+
+    state.zoom = startZoom + (targetZoom - startZoom) * eased;
+    state.panX = startPanX + (targetPanX - startPanX) * eased;
+    state.panY = startPanY + (targetPanY - startPanY) * eased;
+
+    render();
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      isAnimating = false;
+      saveState();
+    }
+  }
+
+  playSound('zoomOut');
+  animate();
+  updateBreadcrumb();
+}
+
+function jumpToBreadcrumb(index) {
+  if (isAnimating) return;
+
+  state.currentPath = state.currentPath.slice(0, index);
+
+  const targetZoom = 1 * Math.pow(3, index);
+
+  isAnimating = true;
+  const startZoom = state.zoom;
+  const startPanX = state.panX;
+  const startPanY = state.panY;
+
+  const targetPanX = window.innerWidth / 2;
+  const targetPanY = window.innerHeight / 2;
+
+  const duration = 500;
+  const startTime = Date.now();
+
+  function animate() {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = easeInOutCubic(progress);
+
+    state.zoom = startZoom + (targetZoom - startZoom) * eased;
+    state.panX = startPanX + (targetPanX - startPanX) * eased;
+    state.panY = startPanY + (targetPanY - startPanY) * eased;
+
+    render();
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      isAnimating = false;
+      saveState();
+    }
+  }
+
+  animate();
+  updateBreadcrumb();
+}
+
+function updateBreadcrumb() {
+  const items = ['Root'];
+  let tasks = state.tasks;
+
+  for (let id of state.currentPath) {
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      items.push(task.text);
+      tasks = task.children;
+    }
+  }
+
+  breadcrumb.innerHTML = items.map((item, i) => {
+    const isLast = i === items.length - 1;
+    const html = `<span class="breadcrumb-item" data-index="${i}">${item}</span>`;
+    return isLast ? html : html + '<span class="breadcrumb-sep">›</span>';
+  }).join('');
+
+  breadcrumb.querySelectorAll('.breadcrumb-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const index = parseInt(el.dataset.index);
+      if (index < items.length - 1) {
+        jumpToBreadcrumb(index);
+      }
+    });
+  });
+
+  depthValue.textContent = state.currentPath.length;
+
+  const depth = state.currentPath.length;
+  const color = DEPTH_COLORS[Math.min(depth, DEPTH_COLORS.length - 1)];
+  document.body.style.background = color;
+
+  playAmbient();
+}
+
+function render() {
+  const tasks = getCurrentTasks();
+
+  viewport.innerHTML = '';
+  viewport.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
+
+  tasks.forEach(task => {
+    const card = createTaskCard(task);
+    viewport.appendChild(card);
+  });
+
+  renderMinimap();
+}
+
+function createTaskCard(task) {
+  const card = document.createElement('div');
+  card.className = 'task-card';
+  card.dataset.taskId = task.id;
+  card.style.left = task.x + 'px';
+  card.style.top = task.y + 'px';
+
+  if (task.completed) {
+    card.classList.add('completed');
+  } else {
+    card.classList.add(`priority-${task.priority}`);
+
+    if (task.children.length > 0 && task.children.every(c => c.completed)) {
+      card.classList.add('ready-to-complete');
+    }
+  }
+
+  const header = document.createElement('div');
+  header.className = 'task-header';
+
+  const checkbox = document.createElement('div');
+  checkbox.className = 'task-checkbox';
+  if (task.completed) checkbox.classList.add('checked');
+  checkbox.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleTask(task.id);
+  });
+
+  const text = document.createElement('div');
+  text.className = 'task-text';
+  text.textContent = task.text;
+
+  header.appendChild(checkbox);
+  header.appendChild(text);
+  card.appendChild(header);
+
+  if (task.children.length > 0 || state.zoom > 2) {
+    const childDots = document.createElement('div');
+    childDots.className = 'child-dots';
+
+    task.children.slice(0, 10).forEach(child => {
+      const dot = document.createElement('div');
+      dot.className = 'child-dot';
+      if (child.children.length > 0) {
+        dot.classList.add('has-children');
+      }
+      if (child.completed) {
+        dot.style.background = 'rgba(68, 255, 136, 0.5)';
+      }
+      childDots.appendChild(dot);
+    });
+
+    if (task.children.length > 10) {
+      const more = document.createElement('div');
+      more.style.fontSize = '10px';
+      more.style.color = '#888';
+      more.textContent = `+${task.children.length - 10} more`;
+      childDots.appendChild(more);
+    }
+
+    card.appendChild(childDots);
+  }
+
+  return card;
+}
+
+function renderMinimap() {
+  const minimapContent = document.getElementById('minimap-content');
+  minimapContent.innerHTML = '';
+
+  const tasks = getCurrentTasks();
+  if (tasks.length === 0) return;
+
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  tasks.forEach(task => {
+    minX = Math.min(minX, task.x);
+    maxX = Math.max(maxX, task.x + 200);
+    minY = Math.min(minY, task.y);
+    maxY = Math.max(maxY, task.y + 100);
+  });
+
+  const width = maxX - minX;
+  const height = maxY - minY;
+  const scale = Math.min(150 / width, 150 / height);
+
+  tasks.forEach(task => {
+    const dot = document.createElement('div');
+    dot.style.position = 'absolute';
+    dot.style.width = '8px';
+    dot.style.height = '8px';
+    dot.style.borderRadius = '50%';
+    dot.style.background = task.completed ? '#44ff88' : '#88aaff';
+    dot.style.left = ((task.x - minX) * scale) + 'px';
+    dot.style.top = ((task.y - minY) * scale) + 'px';
+    minimapContent.appendChild(dot);
+  });
+
+  const viewX = (-state.panX / state.zoom - minX) * scale;
+  const viewY = (-state.panY / state.zoom - minY) * scale;
+  const viewW = (window.innerWidth / state.zoom) * scale;
+  const viewH = (window.innerHeight / state.zoom) * scale;
+
+  const viewRect = document.createElement('div');
+  viewRect.className = 'minimap-rect';
+  viewRect.style.left = viewX + 'px';
+  viewRect.style.top = viewY + 'px';
+  viewRect.style.width = viewW + 'px';
+  viewRect.style.height = viewH + 'px';
+  minimapContent.appendChild(viewRect);
+}
+
+function createParticles() {
+  const particlesEl = document.getElementById('particles');
+  for (let i = 0; i < 50; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
+    particle.style.left = Math.random() * window.innerWidth + 'px';
+    particle.style.top = Math.random() * window.innerHeight + 'px';
+    particle.style.animationDelay = Math.random() * 3 + 's';
+    particlesEl.appendChild(particle);
+  }
+}
+
+function toggleSound() {
+  state.soundEnabled = !state.soundEnabled;
+  soundToggle.textContent = `Sound: ${state.soundEnabled ? 'ON' : 'OFF'}`;
+  soundToggle.classList.toggle('active', state.soundEnabled);
+
+  if (state.soundEnabled && !audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playSound(type, pitch = 1) {
+  if (!state.soundEnabled || !audioContext) return;
+
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+
+  switch (type) {
+    case 'zoom':
+      oscillator.frequency.value = 200 * pitch;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+      break;
+    case 'zoomIn':
+      oscillator.frequency.value = 400;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.3);
+      break;
+    case 'zoomOut':
+      oscillator.frequency.value = 200;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.3);
+      break;
+    case 'add':
+      oscillator.frequency.value = 600;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+      break;
+    case 'complete':
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+      break;
+  }
+
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + 0.3);
+}
+
+function playAmbient() {
+  if (!state.soundEnabled || !audioContext) return;
+
+  const depth = state.currentPath.length;
+  const frequency = 110 * Math.pow(0.9, depth);
+
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+
+  oscillator.frequency.value = frequency;
+  oscillator.type = 'sine';
+  gainNode.gain.setValueAtTime(0.02, audioContext.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1);
+
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + 1);
+}
+
+function showHelp() {
+  helpPanel.classList.add('active');
+}
+
+function hideHelp() {
+  helpPanel.classList.remove('active');
+}
+
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+window.hideHelp = hideHelp;
+
+init();
+</script>
+</body>
+</html>

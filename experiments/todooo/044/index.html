@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo 044 - A Tiny World That Lives Without You</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  background: #1a1a1a;
+  color: #fff;
+}
+#canvas {
+  display: block;
+  cursor: crosshair;
+  image-rendering: pixelated;
+}
+#panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 220px;
+  height: 100vh;
+  background: rgba(0,0,0,0.7);
+  padding: 12px;
+  font-size: 11px;
+  overflow-y: auto;
+  border-left: 1px solid #444;
+}
+#panel h3 { font-size: 13px; margin: 10px 0 5px; color: #ffa; }
+.stat { margin: 3px 0; }
+.event {
+  margin: 2px 0;
+  padding: 3px;
+  background: rgba(255,255,255,0.05);
+  font-size: 9px;
+  color: #ccc;
+}
+#loading {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.9);
+  padding: 20px 40px;
+  border: 2px solid #ffa;
+  font-size: 14px;
+  z-index: 1000;
+}
+.tooltip {
+  position: fixed;
+  background: rgba(0,0,0,0.9);
+  padding: 6px 10px;
+  border: 1px solid #888;
+  font-size: 10px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 100;
+}
+#controls {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.7);
+  padding: 8px;
+  font-size: 10px;
+}
+button {
+  background: #333;
+  color: #fff;
+  border: 1px solid #666;
+  padding: 4px 8px;
+  margin: 2px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+}
+button:hover { background: #555; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="panel">
+  <h3>World</h3>
+  <div class="stat">Time: <span id="time">0:00</span></div>
+  <div class="stat">Season: <span id="season">Spring</span></div>
+  <div class="stat">Weather: <span id="weather">Clear</span></div>
+  <div class="stat">Population: <span id="pop">0</span></div>
+  <div class="stat">Settlements: <span id="settlements">0</span></div>
+  <div class="stat">Years: <span id="years">0</span></div>
+  <h3>Selected</h3>
+  <div id="selected">None</div>
+  <h3>Events</h3>
+  <div id="events"></div>
+</div>
+<div id="controls">
+  <div>Click: Select | Right-click: Place food | Hover: Info</div>
+  <button id="soundToggle">Sound: ON</button>
+  <button id="resetBtn">Reset World</button>
+</div>
+<div id="loading" style="display:none;">Catching up...</div>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const WORLD_W = 800, WORLD_H = 600;
+const STORAGE_KEY = 'todooo-044';
+const TICK_INTERVAL = 50;
+const GAME_HOUR_MS = 60000;
+
+let world, agents = [], structures = [], markers = [], foods = [];
+let selectedAgent = null, hoveredAgent = null;
+let camera = {x: 0, y: 0, zoom: 1};
+let gameTime = 0, lastSave = Date.now(), startTime = Date.now();
+let events = [], soundEnabled = true, audioCtx, weatherState = 'clear';
+let trails = new Map();
+
+const names = ['Kira','Molo','Tani','Ren','Zara','Finn','Lux','Nova','Echo','Jade','Ash','Sky','Reed','Wren'];
+const colors = ['#ff6b6b','#feca57','#48dbfb','#ff9ff3','#54a0ff','#5f27cd','#00d2d3','#1dd1a1','#f368e0','#ff6348'];
+const seasons = ['Spring','Summer','Autumn','Winter'];
+
+function rng(seed) {
+  let s = seed;
+  return () => { s = Math.sin(s) * 10000; return s - Math.floor(s); };
+}
+
+function noise(x, y, seed) {
+  const r = rng(seed + Math.floor(x) * 73856093 ^ Math.floor(y) * 19349663);
+  return r();
+}
+
+function initWorld() {
+  const seed = Math.random() * 10000;
+  world = { seed, tiles: [] };
+  for (let y = 0; y < WORLD_H; y += 10) {
+    for (let x = 0; x < WORLD_W; x += 10) {
+      const n = noise(x/100, y/100, seed);
+      let type = 'grass';
+      if (n < 0.15) type = 'water';
+      else if (n < 0.25) type = 'stone';
+      else if (n > 0.8) type = 'forest';
+      world.tiles.push({ x, y, type });
+    }
+  }
+}
+
+function createAgent(x, y, born = false) {
+  const agent = {
+    id: Math.random(),
+    name: names[Math.floor(Math.random() * names.length)],
+    x: x || Math.random() * WORLD_W,
+    y: y || Math.random() * WORLD_H,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    energy: 100,
+    home: null,
+    personality: {
+      social: Math.random(),
+      industrious: Math.random(),
+      explorer: Math.random()
+    },
+    inventory: { wood: 0, stone: 0, berries: 0 },
+    relationships: {},
+    state: 'wandering',
+    stateTimer: 0,
+    direction: Math.random() * Math.PI * 2,
+    targetX: null,
+    targetY: null,
+    gatherTarget: null,
+    sleeping: false
+  };
+  agents.push(agent);
+  if (born) addEvent(`${agent.name} was born!`);
+  return agent;
+}
+
+function getTileAt(x, y) {
+  const tx = Math.floor(x / 10) * 10;
+  const ty = Math.floor(y / 10) * 10;
+  return world.tiles.find(t => t.x === tx && t.y === ty) || { type: 'grass' };
+}
+
+function findNearbyResource(agent, type) {
+  const nearby = world.tiles.filter(t => {
+    if (type === 'wood' && t.type !== 'forest') return false;
+    if (type === 'stone' && t.type !== 'stone') return false;
+    if (type === 'berries' && t.type !== 'grass') return false;
+    const dx = t.x - agent.x, dy = t.y - agent.y;
+    return Math.sqrt(dx*dx + dy*dy) < 150;
+  });
+  return nearby.length > 0 ? nearby[Math.floor(Math.random() * nearby.length)] : null;
+}
+
+function findNearbyAgent(agent, range = 50) {
+  return agents.find(a => {
+    if (a === agent) return false;
+    const dx = a.x - agent.x, dy = a.y - agent.y;
+    return Math.sqrt(dx*dx + dy*dy) < range && !a.sleeping;
+  });
+}
+
+function updateAgent(agent) {
+  agent.stateTimer--;
+  agent.energy -= 0.01;
+  if (agent.energy < 0) agent.energy = 0;
+
+  const hour = (gameTime / GAME_HOUR_MS) % 24;
+  const isNight = hour < 6 || hour > 20;
+
+  if (isNight && !agent.sleeping) {
+    if (agent.home) {
+      agent.targetX = agent.home.x;
+      agent.targetY = agent.home.y;
+      agent.state = 'returning';
+    } else {
+      agent.state = 'sleeping';
+      agent.sleeping = true;
+    }
+  } else if (!isNight && agent.sleeping) {
+    agent.sleeping = false;
+    agent.state = 'wandering';
+  }
+
+  if (agent.sleeping) {
+    agent.energy += 0.15;
+    if (agent.energy > 100) agent.energy = 100;
+    return;
+  }
+
+  if (agent.energy < 30 && agent.state !== 'resting') {
+    agent.state = 'resting';
+    agent.stateTimer = 100;
+    if (agent.home) {
+      agent.targetX = agent.home.x;
+      agent.targetY = agent.home.y;
+    }
+  }
+
+  if (agent.state === 'resting') {
+    agent.energy += 0.1;
+    if (agent.energy > 100) agent.energy = 100;
+    if (agent.stateTimer <= 0) agent.state = 'wandering';
+    return;
+  }
+
+  const nearFood = foods.find(f => {
+    const dx = f.x - agent.x, dy = f.y - agent.y;
+    return Math.sqrt(dx*dx + dy*dy) < 30;
+  });
+
+  if (nearFood && agent.state !== 'eating') {
+    agent.state = 'eating';
+    agent.targetX = nearFood.x;
+    agent.targetY = nearFood.y;
+    agent.stateTimer = 50;
+  }
+
+  if (agent.state === 'eating') {
+    if (agent.targetX && agent.targetY) {
+      const dx = agent.targetX - agent.x, dy = agent.targetY - agent.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 5) {
+        agent.energy += 2;
+        if (agent.energy > 100) agent.energy = 100;
+        const idx = foods.findIndex(f => f.x === agent.targetX && f.y === agent.targetY);
+        if (idx >= 0) {
+          foods[idx].amount -= 1;
+          if (foods[idx].amount <= 0) foods.splice(idx, 1);
+        }
+        agent.state = 'wandering';
+      } else {
+        agent.x += (dx / dist) * 1.5;
+        agent.y += (dy / dist) * 1.5;
+      }
+    }
+    if (agent.stateTimer <= 0) agent.state = 'wandering';
+    return;
+  }
+
+  if (agent.stateTimer <= 0) {
+    const r = Math.random();
+    if (!agent.home && agent.inventory.wood >= 5 && agent.inventory.stone >= 3) {
+      agent.state = 'building';
+      agent.stateTimer = 200;
+      const bx = agent.x + (Math.random() - 0.5) * 50;
+      const by = agent.y + (Math.random() - 0.5) * 50;
+      agent.targetX = Math.max(20, Math.min(WORLD_W - 20, bx));
+      agent.targetY = Math.max(20, Math.min(WORLD_H - 20, by));
+    } else if (r < 0.3 + agent.personality.industrious * 0.3) {
+      agent.state = 'gathering';
+      const resType = r < 0.1 ? 'stone' : (r < 0.2 ? 'wood' : 'berries');
+      agent.gatherTarget = findNearbyResource(agent, resType);
+      agent.stateTimer = 100;
+    } else if (r < 0.5 + agent.personality.social * 0.3) {
+      const nearby = findNearbyAgent(agent);
+      if (nearby) {
+        agent.state = 'socializing';
+        agent.targetX = nearby.x;
+        agent.targetY = nearby.y;
+        agent.stateTimer = 80;
+      } else {
+        agent.state = 'wandering';
+        agent.stateTimer = 100;
+      }
+    } else {
+      agent.state = 'wandering';
+      agent.stateTimer = 100;
+      agent.direction = Math.random() * Math.PI * 2;
+    }
+  }
+
+  if (agent.state === 'wandering') {
+    if (Math.random() < 0.02) agent.direction += (Math.random() - 0.5) * 0.5;
+    const speed = agent.personality.explorer > 0.6 ? 1.2 : 0.8;
+    agent.x += Math.cos(agent.direction) * speed;
+    agent.y += Math.sin(agent.direction) * speed;
+    agent.x = Math.max(0, Math.min(WORLD_W, agent.x));
+    agent.y = Math.max(0, Math.min(WORLD_H, agent.y));
+  }
+
+  if (agent.state === 'gathering' && agent.gatherTarget) {
+    const dx = agent.gatherTarget.x - agent.x, dy = agent.gatherTarget.y - agent.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 10) {
+      if (Math.random() < 0.05) {
+        const resType = agent.gatherTarget.type === 'forest' ? 'wood' :
+                        (agent.gatherTarget.type === 'stone' ? 'stone' : 'berries');
+        agent.inventory[resType]++;
+        playSound('gather');
+      }
+    } else {
+      agent.x += (dx / dist) * 1;
+      agent.y += (dy / dist) * 1;
+    }
+  }
+
+  if (agent.state === 'building' && agent.targetX && agent.targetY) {
+    const dx = agent.targetX - agent.x, dy = agent.targetY - agent.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 5) {
+      if (agent.stateTimer % 20 === 0) playSound('build');
+      if (agent.stateTimer <= 0) {
+        structures.push({ x: agent.targetX, y: agent.targetY, owner: agent.id, color: agent.color, size: 8 });
+        agent.home = { x: agent.targetX, y: agent.targetY };
+        agent.inventory.wood -= 5;
+        agent.inventory.stone -= 3;
+        addEvent(`${agent.name} built a home`);
+        agent.state = 'wandering';
+      }
+    } else {
+      agent.x += (dx / dist) * 1;
+      agent.y += (dy / dist) * 1;
+    }
+  }
+
+  if (agent.state === 'socializing' && agent.targetX && agent.targetY) {
+    const dx = agent.targetX - agent.x, dy = agent.targetY - agent.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 15) {
+      const nearby = findNearbyAgent(agent, 15);
+      if (nearby) {
+        agent.relationships[nearby.id] = (agent.relationships[nearby.id] || 0) + 0.5;
+        nearby.relationships[agent.id] = (nearby.relationships[agent.id] || 0) + 0.5;
+        if (agent.stateTimer === 40) {
+          playSound('social');
+          if (agent.relationships[nearby.id] > 50 && Math.random() < 0.01) {
+            const nx = (agent.x + nearby.x) / 2 + (Math.random() - 0.5) * 20;
+            const ny = (agent.y + nearby.y) / 2 + (Math.random() - 0.5) * 20;
+            createAgent(nx, ny, true);
+            playSound('birth');
+          }
+        }
+      }
+    } else {
+      agent.x += (dx / dist) * 0.8;
+      agent.y += (dy / dist) * 0.8;
+    }
+  }
+
+  if (agent.state === 'returning' && agent.targetX && agent.targetY) {
+    const dx = agent.targetX - agent.x, dy = agent.targetY - agent.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 8) {
+      agent.sleeping = true;
+      agent.state = 'sleeping';
+    } else {
+      agent.x += (dx / dist) * 1.2;
+      agent.y += (dy / dist) * 1.2;
+    }
+  }
+
+  const key = `${Math.floor(agent.x/5)},${Math.floor(agent.y/5)}`;
+  trails.set(key, (trails.get(key) || 0) + 1);
+}
+
+function addEvent(text) {
+  events.unshift({ text, time: Date.now() });
+  if (events.length > 10) events.pop();
+}
+
+function render() {
+  const w = canvas.width, h = canvas.height;
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(0, 0, w, h);
+
+  const hour = (gameTime / GAME_HOUR_MS) % 24;
+  const isNight = hour < 6 || hour > 20;
+  const isDawn = hour >= 6 && hour < 8;
+  const isDusk = hour >= 18 && hour < 20;
+
+  ctx.save();
+  ctx.scale(camera.zoom, camera.zoom);
+  ctx.translate(-camera.x, -camera.y);
+
+  const tileColors = {
+    grass: '#3a6b35',
+    water: '#2a5a8a',
+    stone: '#6a6a7a',
+    forest: '#2a4a2a'
+  };
+
+  const season = seasons[Math.floor((gameTime / (GAME_HOUR_MS * 24 * 90)) % 4)];
+  if (season === 'Autumn') {
+    tileColors.grass = '#8a6b35';
+    tileColors.forest = '#6a4a2a';
+  } else if (season === 'Winter') {
+    tileColors.grass = '#ddeeff';
+    tileColors.forest = '#4a5a5a';
+  }
+
+  for (const t of world.tiles) {
+    ctx.fillStyle = tileColors[t.type];
+    ctx.fillRect(t.x, t.y, 10, 10);
+  }
+
+  for (const [key, count] of trails) {
+    if (count > 2) {
+      const [x, y] = key.split(',').map(Number);
+      ctx.fillStyle = `rgba(80,60,40,${Math.min(count / 100, 0.3)})`;
+      ctx.fillRect(x * 5, y * 5, 5, 5);
+    }
+  }
+
+  for (const s of structures) {
+    ctx.fillStyle = '#222';
+    ctx.fillRect(s.x + 1, s.y + 1, s.size, s.size);
+    ctx.fillStyle = s.color;
+    ctx.fillRect(s.x, s.y, s.size, s.size);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(s.x, s.y, s.size, s.size);
+
+    if (isNight) {
+      const owner = agents.find(a => a.id === s.owner && a.sleeping);
+      if (owner) {
+        ctx.fillStyle = 'rgba(255,200,100,0.6)';
+        ctx.beginPath();
+        ctx.arc(s.x + s.size/2, s.y + s.size/2, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  for (const f of foods) {
+    ctx.fillStyle = '#88ff88';
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  for (const m of markers) {
+    ctx.strokeStyle = '#ffff00';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(m.x, m.y);
+    ctx.lineTo(m.x, m.y - 12);
+    ctx.stroke();
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath();
+    ctx.moveTo(m.x, m.y - 12);
+    ctx.lineTo(m.x + 6, m.y - 9);
+    ctx.lineTo(m.x, m.y - 6);
+    ctx.fill();
+  }
+
+  for (const a of agents) {
+    ctx.fillStyle = a.color;
+    ctx.beginPath();
+    ctx.arc(a.x, a.y, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = selectedAgent === a ? '#ffff00' : '#000';
+    ctx.lineWidth = selectedAgent === a ? 2 : 1;
+    ctx.stroke();
+
+    if (a.sleeping) {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '10px monospace';
+      ctx.fillText('z', a.x + 8, a.y - 8);
+      ctx.fillText('Z', a.x + 12, a.y - 12);
+    }
+
+    if (a.state === 'socializing' && a.stateTimer > 40) {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '12px monospace';
+      ctx.fillText('!', a.x + 8, a.y - 8);
+    }
+  }
+
+  if (isDawn) {
+    ctx.fillStyle = 'rgba(255,200,100,0.15)';
+    ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+  } else if (isDusk) {
+    ctx.fillStyle = 'rgba(255,150,80,0.2)';
+    ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+  } else if (isNight) {
+    ctx.fillStyle = 'rgba(20,20,60,0.5)';
+    ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+    for (let i = 0; i < 50; i++) {
+      const sx = Math.sin(i * 123.456) * WORLD_W / 2 + WORLD_W / 2;
+      const sy = Math.cos(i * 789.012) * WORLD_H / 2 + WORLD_H / 2;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(sx, sy, 1, 1);
+    }
+  }
+
+  if (weatherState === 'rain') {
+    ctx.fillStyle = 'rgba(100,100,150,0.3)';
+    ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+    for (let i = 0; i < 100; i++) {
+      const rx = (gameTime / 10 + i * 37) % WORLD_W;
+      const ry = (gameTime / 5 + i * 73) % WORLD_H;
+      ctx.fillStyle = 'rgba(200,200,255,0.4)';
+      ctx.fillRect(rx, ry, 1, 8);
+    }
+  }
+
+  ctx.restore();
+}
+
+function updatePanel() {
+  const hour = Math.floor((gameTime / GAME_HOUR_MS) % 24);
+  const day = Math.floor(gameTime / (GAME_HOUR_MS * 24));
+  document.getElementById('time').textContent = `Day ${day}, ${hour}:00`;
+  document.getElementById('season').textContent = seasons[Math.floor((gameTime / (GAME_HOUR_MS * 24 * 90)) % 4)];
+  document.getElementById('weather').textContent = weatherState;
+  document.getElementById('pop').textContent = agents.length;
+  document.getElementById('settlements').textContent = structures.length;
+  document.getElementById('years').textContent = (day / 365).toFixed(2);
+
+  if (selectedAgent) {
+    const inv = `Wood:${selectedAgent.inventory.wood} Stone:${selectedAgent.inventory.stone} Berries:${selectedAgent.inventory.berries}`;
+    const rel = Object.keys(selectedAgent.relationships).length;
+    document.getElementById('selected').innerHTML = `
+      <div><b>${selectedAgent.name}</b></div>
+      <div>State: ${selectedAgent.state}</div>
+      <div>Energy: ${selectedAgent.energy.toFixed(1)}</div>
+      <div>Home: ${selectedAgent.home ? 'Yes' : 'No'}</div>
+      <div>Inventory: ${inv}</div>
+      <div>Friends: ${rel}</div>
+    `;
+  } else {
+    document.getElementById('selected').textContent = 'None';
+  }
+
+  const eventsHtml = events.map(e => `<div class="event">${e.text}</div>`).join('');
+  document.getElementById('events').innerHTML = eventsHtml;
+}
+
+function saveState() {
+  const state = {
+    world,
+    agents,
+    structures,
+    markers,
+    foods,
+    gameTime,
+    startTime,
+    lastSave: Date.now(),
+    events,
+    trails: Array.from(trails.entries())
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadState() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (!saved) return false;
+
+  const state = JSON.parse(saved);
+  world = state.world;
+  agents = state.agents || [];
+  structures = state.structures || [];
+  markers = state.markers || [];
+  foods = state.foods || [];
+  gameTime = state.gameTime || 0;
+  startTime = state.startTime || Date.now();
+  events = state.events || [];
+  if (state.trails) trails = new Map(state.trails);
+
+  const elapsed = Date.now() - state.lastSave;
+  const ticksToSimulate = Math.min(Math.floor(elapsed / TICK_INTERVAL), 1000);
+
+  if (ticksToSimulate > 10) {
+    document.getElementById('loading').style.display = 'block';
+    setTimeout(() => {
+      for (let i = 0; i < ticksToSimulate; i++) {
+        gameTime += TICK_INTERVAL;
+        agents.forEach(updateAgent);
+        if (i % 100 === 0) checkEvents();
+      }
+      document.getElementById('loading').style.display = 'none';
+      addEvent(`Caught up ${ticksToSimulate} ticks (${(elapsed/1000).toFixed(0)}s)`);
+    }, 100);
+  }
+
+  return true;
+}
+
+function checkEvents() {
+  if (Math.random() < 0.001 && weatherState === 'clear') {
+    weatherState = 'rain';
+    addEvent('Rain started');
+    playSound('rain');
+    setTimeout(() => {
+      weatherState = 'clear';
+      addEvent('Rain stopped');
+    }, 30000 + Math.random() * 30000);
+  }
+}
+
+function initAudio() {
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch (e) {
+    console.log('Web Audio not supported');
+  }
+}
+
+function playSound(type) {
+  if (!soundEnabled || !audioCtx) return;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  if (type === 'build') {
+    osc.frequency.value = 400;
+    gain.gain.value = 0.05;
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.05);
+  } else if (type === 'social') {
+    osc.frequency.value = 600;
+    gain.gain.value = 0.03;
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.1);
+  } else if (type === 'birth') {
+    osc.frequency.value = 500;
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+    osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.3);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.3);
+  }
+}
+
+function resize() {
+  canvas.width = window.innerWidth - 220;
+  canvas.height = window.innerHeight;
+  camera.zoom = Math.min(canvas.width / WORLD_W, canvas.height / WORLD_H);
+}
+
+function worldToScreen(x, y) {
+  return {
+    x: (x - camera.x) * camera.zoom,
+    y: (y - camera.y) * camera.zoom
+  };
+}
+
+function screenToWorld(x, y) {
+  return {
+    x: x / camera.zoom + camera.x,
+    y: y / camera.zoom + camera.y
+  };
+}
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const world = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+
+  hoveredAgent = agents.find(a => {
+    const dx = a.x - world.x, dy = a.y - world.y;
+    return Math.sqrt(dx*dx + dy*dy) < 8;
+  });
+
+  const tooltip = document.querySelector('.tooltip');
+  if (hoveredAgent) {
+    if (!tooltip) {
+      const tip = document.createElement('div');
+      tip.className = 'tooltip';
+      document.body.appendChild(tip);
+    }
+    const t = document.querySelector('.tooltip');
+    t.style.left = e.clientX + 10 + 'px';
+    t.style.top = e.clientY + 10 + 'px';
+    t.textContent = `${hoveredAgent.name} | ${hoveredAgent.state} | E:${hoveredAgent.energy.toFixed(0)}`;
+  } else if (tooltip) {
+    tooltip.remove();
+  }
+});
+
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const world = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+
+  const clicked = agents.find(a => {
+    const dx = a.x - world.x, dy = a.y - world.y;
+    return Math.sqrt(dx*dx + dy*dy) < 8;
+  });
+
+  if (clicked) {
+    selectedAgent = clicked;
+  } else {
+    selectedAgent = null;
+    markers.push({ x: world.x, y: world.y });
+    if (markers.length > 5) markers.shift();
+  }
+});
+
+canvas.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const world = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+  foods.push({ x: world.x, y: world.y, amount: 10 });
+  addEvent('Food placed');
+});
+
+document.getElementById('soundToggle').addEventListener('click', e => {
+  soundEnabled = !soundEnabled;
+  e.target.textContent = `Sound: ${soundEnabled ? 'ON' : 'OFF'}`;
+  if (soundEnabled && !audioCtx) initAudio();
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (confirm('Reset world? This will delete all progress.')) {
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+});
+
+window.addEventListener('resize', resize);
+
+function init() {
+  resize();
+
+  if (!loadState()) {
+    initWorld();
+    for (let i = 0; i < 15; i++) {
+      createAgent();
+    }
+    startTime = Date.now();
+    addEvent('World created');
+  }
+
+  initAudio();
+
+  setInterval(() => {
+    gameTime += TICK_INTERVAL;
+    agents.forEach(updateAgent);
+    checkEvents();
+    render();
+    updatePanel();
+  }, TICK_INTERVAL);
+
+  setInterval(saveState, 10000);
+
+  render();
+  updatePanel();
+}
+
+init();
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>todooo - Version History</title>
+    <title>Evolving</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -25,16 +25,37 @@
             font-size: 1.1rem;
         }
         .versions {
-            max-width: 700px;
+            max-width: 750px;
         }
         .version {
+            border-bottom: 1px solid #2a2a4a;
+        }
+        details {
+            padding: 0.6rem 0;
+        }
+        details[open] {
+            padding-bottom: 1rem;
+        }
+        summary {
             display: flex;
             align-items: baseline;
             gap: 1rem;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #2a2a4a;
+            cursor: pointer;
+            padding: 0.2rem 0;
+            list-style: none;
         }
-        .version:hover { background: #2a2a4a; margin: 0 -1rem; padding: 0.75rem 1rem; border-radius: 6px; border-color: transparent; }
+        summary::-webkit-details-marker { display: none; }
+        summary::before {
+            content: '\25B8';
+            color: #555;
+            font-size: 0.7rem;
+            flex-shrink: 0;
+            transition: transform 0.2s;
+        }
+        details[open] > summary::before {
+            transform: rotate(90deg);
+        }
+        summary:hover { color: #fff; }
         .version-num {
             font-family: 'Consolas', monospace;
             font-size: 1.1rem;
@@ -51,144 +72,512 @@
             color: #aaa;
             font-size: 0.95rem;
         }
+        .version-detail {
+            margin: 0.6rem 0 0 3.2rem;
+            padding: 0.8rem 1rem;
+            background: #16213e;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            line-height: 1.6;
+            color: #999;
+        }
+        .version-detail p { margin-bottom: 0.5rem; }
+        .version-detail p:last-child { margin-bottom: 0; }
+        .version-detail kbd {
+            background: #2a2a4a;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 0.82rem;
+            font-family: 'Consolas', monospace;
+        }
+        .era {
+            margin-top: 2rem;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.3rem;
+            color: #555;
+            font-size: 0.8rem;
+            letter-spacing: 0.15rem;
+            text-transform: uppercase;
+            border-bottom: 1px solid #1e1e3a;
+        }
     </style>
 </head>
 <body>
-    <h1>todooo</h1>
-    <p class="subtitle">1,000 changes to a single app.</p>
+    <h1>Evolving</h1>
+    <p class="subtitle">1,000 versions of a single app. It started as a todo list. It didn't stay one.</p>
+
     <div class="versions">
-        <div class="version">
-            <span class="version-num"><a href="001/">001</a></span>
-            <span class="version-desc">Basic todo app &mdash; add, complete, and delete tasks</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="002/">002</a></span>
-            <span class="version-desc">Filters &amp; counts &mdash; All/Active/Done tabs, item count, clear completed</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="003/">003</a></span>
-            <span class="version-desc">Inline editing &mdash; double-click a task to rename it</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="004/">004</a></span>
-            <span class="version-desc">Animations &mdash; slide-in on add, fade-out on delete</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="005/">005</a></span>
-            <span class="version-desc">Undo &mdash; toast notification with undo after delete or clear</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="006/">006</a></span>
-            <span class="version-desc">Keyboard mode &mdash; arrow keys to navigate, Enter/Del/E to act</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="007/">007</a></span>
-            <span class="version-desc">Drag-and-drop &mdash; reorder tasks by dragging the grip handle</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="008/">008</a></span>
-            <span class="version-desc">Priorities &mdash; color-coded Low/Med/High with cycle button and <kbd>P</kbd> key</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="009/">009</a></span>
-            <span class="version-desc">Live search &mdash; filter tasks instantly with highlighted matches, <kbd>/</kbd> to focus</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="010/">010</a></span>
-            <span class="version-desc">Progress bar &amp; confetti &mdash; visual completion tracker, celebration when all done</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="011/">011</a></span>
-            <span class="version-desc">Sound design &mdash; Web Audio API tones for every action, generative ambient feedback</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="012/">012</a></span>
-            <span class="version-desc">Time decay &mdash; tasks age visually over days, darkening and trembling with neglect</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="013/">013</a></span>
-            <span class="version-desc">Hidden game &mdash; complete all tasks to unlock a breakout game made from your todos</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="014/">014</a></span>
-            <span class="version-desc">Sentient app &mdash; the todo list talks back with dry, sarcastic commentary</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="015/">015</a></span>
-            <span class="version-desc">Ghost tasks &mdash; deleted tasks haunt the list as fading afterimages</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="016/">016</a></span>
-            <span class="version-desc">Zen mode &mdash; single-task focus view, one breath at a time</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="017/">017</a></span>
-            <span class="version-desc">Day/night theming &mdash; colors shift with the time of day, dawn to midnight</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="018/">018</a></span>
-            <span class="version-desc">Particle system &mdash; ambient particles react to every interaction, the app breathes</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="019/">019</a></span>
-            <span class="version-desc">Dream state &mdash; leave it idle and the app drifts into a surreal subconscious</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="020/">020</a></span>
-            <span class="version-desc">Spatial canvas &mdash; sticky notes on a 2D space, drag anywhere, draw connections</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="021/">021</a></span>
-            <span class="version-desc">Generative music &mdash; your tasks compose an ambient melody, pentatonic and evolving</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="022/">022</a></span>
-            <span class="version-desc">Destructibility &mdash; act too fast and the UI cracks, breaks, shatters, then repairs</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="023/">023</a></span>
-            <span class="version-desc">Tamagotchi pet &mdash; a living creature that evolves and reacts to your productivity</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="024/">024</a></span>
-            <span class="version-desc">Voice control &mdash; speak tasks into existence, the app speaks back</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="025/">025</a></span>
-            <span class="version-desc">Terminal mode &mdash; green-on-black CLI with commands like ls, add, done, rm</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="026/">026</a></span>
-            <span class="version-desc">Story mode &mdash; your todo list becomes a fantasy quest chronicle</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="027/">027</a></span>
-            <span class="version-desc">Self-destruct &mdash; tasks are the app's own source code; complete them and it breaks apart</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="028/">028</a></span>
-            <span class="version-desc">Ecosystem &mdash; tasks are living organisms that flock, reproduce, evolve, and die</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="029/">029</a></span>
-            <span class="version-desc">Adversarial &mdash; the app fights back; dodge, shield, decoy, and outsmart you</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="030/">030</a></span>
-            <span class="version-desc">Physics &mdash; tasks fall, bounce, stack, and shatter with real gravity and collisions</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="031/">031</a></span>
-            <span class="version-desc">Time travel &mdash; scrub through history, replay every action, branch into alternate timelines</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="032/">032</a></span>
-            <span class="version-desc">Procedural UI &mdash; the app redesigns itself from a seed; spacebar for a new look</span>
-        </div>
-        <div class="version">
-            <span class="version-num"><a href="033/">033</a></span>
-            <span class="version-desc">Notebook &mdash; hand-drawn on ruled paper with wobbly lines, margin doodles, and pencil sounds</span>
-        </div>
+
+        <div class="era">Foundations &mdash; 001&ndash;012</div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="001/">001</a></span>
+                <span class="version-desc">Basic todo app &mdash; add, complete, and delete tasks</span>
+            </summary>
+            <div class="version-detail">
+                <p>The seed. A minimal todo list with circular checkboxes, an input field, and delete buttons. Tasks persist in localStorage. Dark theme with #1a1a2e background and #7c83ff accents. Everything that follows grows from this.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="002/">002</a></span>
+                <span class="version-desc">Filters &amp; counts &mdash; All/Active/Done tabs, item count, clear completed</span>
+            </summary>
+            <div class="version-detail">
+                <p>Three filter tabs let you see all tasks, only active, or only completed. A live counter shows how many items remain. A "Clear done" button wipes completed tasks in bulk. The first step toward the app knowing its own state.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="003/">003</a></span>
+                <span class="version-desc">Inline editing &mdash; double-click a task to rename it</span>
+            </summary>
+            <div class="version-detail">
+                <p>Double-click any task text and it becomes an editable input field. Press Enter to save, Escape to cancel, or click away to confirm. The task text span swaps with an input element, preserving the exact position. First sign the app is malleable.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="004/">004</a></span>
+                <span class="version-desc">Animations &mdash; slide-in on add, fade-out on delete</span>
+            </summary>
+            <div class="version-detail">
+                <p>New tasks slide in from below with opacity transition. Deleted tasks fade out to the right before being removed from the DOM. CSS @keyframes for slideIn and fadeOut. The app starts to feel physical &mdash; things arrive and depart rather than appearing and vanishing.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="005/">005</a></span>
+                <span class="version-desc">Undo &mdash; toast notification with undo after delete or clear</span>
+            </summary>
+            <div class="version-detail">
+                <p>Destructive actions trigger a fixed-position toast at the bottom with a 4-second countdown and an "Undo" button. The previous state is snapshot via JSON deep-clone. Clicking undo restores it completely. Mistakes become reversible.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="006/">006</a></span>
+                <span class="version-desc">Keyboard mode &mdash; arrow keys to navigate, Enter/Del/E to act</span>
+            </summary>
+            <div class="version-detail">
+                <p>Full keyboard navigation: <kbd>j</kbd>/<kbd>k</kbd> or arrow keys to move focus, <kbd>Enter</kbd> to toggle completion, <kbd>Del</kbd> to delete, <kbd>E</kbd> to edit, <kbd>Esc</kbd> to deselect. A hint bar in the corner shows available keys. The mouse becomes optional.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="007/">007</a></span>
+                <span class="version-desc">Drag-and-drop &mdash; reorder tasks by dragging the grip handle</span>
+            </summary>
+            <div class="version-detail">
+                <p>A grip handle appears on each task. HTML5 Drag and Drop API handles reordering with visual feedback &mdash; the dragged item goes semi-transparent, drop targets highlight. Only works in "All" filter view to avoid index confusion. Order persists to localStorage.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="008/">008</a></span>
+                <span class="version-desc">Priorities &mdash; color-coded Low/Med/High with cycle button and <kbd>P</kbd> key</span>
+            </summary>
+            <div class="version-detail">
+                <p>Four priority levels: None, Low (green #4ade80), Medium (yellow #fbbf24), High (red #f87171). Shown as a colored left border and dot. A cycle button per task, <kbd>P</kbd> key shortcut, and a priority selector for new tasks. Tasks gain weight.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="009/">009</a></span>
+                <span class="version-desc">Live search &mdash; filter tasks instantly with highlighted matches, <kbd>/</kbd> to focus</span>
+            </summary>
+            <div class="version-detail">
+                <p>A search input filters tasks as you type. Matching text is wrapped in &lt;mark&gt; tags with yellow highlights. <kbd>/</kbd> focuses the search bar, <kbd>Esc</kbd> clears it. Regex replacement handles the highlighting. The list becomes queryable.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="010/">010</a></span>
+                <span class="version-desc">Progress bar &amp; confetti &mdash; visual completion tracker, celebration when all done</span>
+            </summary>
+            <div class="version-detail">
+                <p>A thin progress bar tracks completion percentage, turning green at 100%. When all tasks are done, a canvas overlay launches 120 confetti particles with gravity, spin, and color variety via requestAnimationFrame. The first time the app celebrates.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="011/">011</a></span>
+                <span class="version-desc">Sound design &mdash; Web Audio API tones for every action, generative ambient feedback</span>
+            </summary>
+            <div class="version-detail">
+                <p>Every action gets a synthesized sound: add (ascending tone), complete (satisfying chord), delete (descending), priority (blip), navigate (tick), all-done (fanfare). Built entirely from oscillators with ADSR envelopes using Web Audio API. Toggle with the music note button. The app finds its voice.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="012/">012</a></span>
+                <span class="version-desc">Time decay &mdash; tasks age visually over days, darkening and trembling with neglect</span>
+            </summary>
+            <div class="version-detail">
+                <p>Each task tracks its creation timestamp. Over hours and days, tasks visually age: fresh (&lt;24h), day-old (1-3d), old (3-7d), ancient (7d+). Older tasks darken, show age badges, and ancient tasks tremble with a CSS keyframe animation. The app refreshes every 60 seconds. Time enters the picture.</p>
+            </div>
+        </details></div>
+
+        <div class="era">Personality &mdash; 013&ndash;022</div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="013/">013</a></span>
+                <span class="version-desc">Hidden game &mdash; complete all tasks to unlock a breakout game made from your todos</span>
+            </summary>
+            <div class="version-detail">
+                <p>Complete every task and 1.5 seconds later, a canvas breakout game appears. Your completed task texts become the bricks, colored by priority. Mouse and keyboard control the paddle. 3 lives, score tracking, ball speed increases per brick. The first secret &mdash; the app has a life beyond productivity.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="014/">014</a></span>
+                <span class="version-desc">Sentient app &mdash; the todo list talks back with dry, sarcastic commentary</span>
+            </summary>
+            <div class="version-detail">
+                <p>Italic comments appear below tasks, pattern-matched to content categories: chores, email, exercise, meetings, shopping. Old tasks get increasingly passive-aggressive remarks ("I'm still here..." → "I'm basically furniture now"). A commentSeed ensures deterministic selection across re-renders. The app has opinions.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="015/">015</a></span>
+                <span class="version-desc">Ghost tasks &mdash; deleted tasks haunt the list as fading afterimages</span>
+            </summary>
+            <div class="version-detail">
+                <p>Deleted tasks don't truly vanish. They're stored in a separate localStorage key and rendered at the bottom of the list at 15% opacity with a floating CSS animation. They auto-expire after 24 hours. Press <kbd>G</kbd> to purge all ghosts with a synthesized sawtooth-noise sweep. Deletion has consequences.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="016/">016</a></span>
+                <span class="version-desc">Zen mode &mdash; single-task focus view, one breath at a time</span>
+            </summary>
+            <div class="version-detail">
+                <p>Press <kbd>Z</kbd> to enter zen mode. The entire UI dissolves to show a single active task, centered, at 1.8rem. It breathes with a gentle scale animation (1 to 1.02, 4-second cycle). Complete it and the next slides in. When nothing remains: "Nothing left. You're free." with a green glow. A 3px progress line tracks from the top of the viewport.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="017/">017</a></span>
+                <span class="version-desc">Day/night theming &mdash; colors shift with the time of day, dawn to midnight</span>
+            </summary>
+            <div class="version-detail">
+                <p>Five time periods (dawn, morning, afternoon, evening, night) each set CSS custom properties for background, card, accent, and text colors with 2-second transitions. A clock indicator shows the current period. Updates every 60 seconds. The app becomes aware of the real world outside itself.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="018/">018</a></span>
+                <span class="version-desc">Particle system &mdash; ambient particles react to every interaction, the app breathes</span>
+            </summary>
+            <div class="version-detail">
+                <p>A canvas overlay renders 30 ambient particles drifting upward. Interactions spawn bursts: adding (15 particles upward), completing (20 outward green), deleting (10 downward red), priority change (5 spiral). Particles use getBoundingClientRect to spawn from the right element. Capped at 200. The air is alive.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="019/">019</a></span>
+                <span class="version-desc">Dream state &mdash; leave it idle and the app drifts into a surreal subconscious</span>
+            </summary>
+            <div class="version-detail">
+                <p>After 60 seconds of no interaction, the app enters a dream. Tasks drift with randomized animations, characters swap in the text, a hue-rotate filter slowly spins the color space. Dream murmur messages appear. An 80Hz sine drone with LFO hums underneath. Any interaction triggers wakeFromDream() with a half-second snap-back. The app has an inner life.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="020/">020</a></span>
+                <span class="version-desc">Spatial canvas &mdash; sticky notes on a 2D space, drag anywhere, draw connections</span>
+            </summary>
+            <div class="version-detail">
+                <p>Press <kbd>C</kbd> to toggle canvas mode. Tasks become ~160px sticky note cards positioned absolutely on an infinite 2D surface. Free drag, zoom (0.5x-2x via scroll wheel), pan (drag empty space). Shift+drag between cards creates SVG connection lines. A 150x100px minimap in the corner. Grid background. "Fit All" button. The list becomes a space.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="021/">021</a></span>
+                <span class="version-desc">Generative music &mdash; your tasks compose an ambient melody, pentatonic and evolving</span>
+            </summary>
+            <div class="version-detail">
+                <p>Press <kbd>M</kbd> to play. A sequencer at ~120BPM cycles through active tasks. Each task maps to a note: text length modulo 5 selects from a pentatonic scale (C, D, E, G, A), priority selects the octave. Triangle waves with detuned doubling, delay-feedback reverb. A background pad drone (C2, G2, C3). Waveform visualization via AnalyserNode. Tasks pulse when their note plays. Your work becomes a song.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="022/">022</a></span>
+                <span class="version-desc">Destructibility &mdash; act too fast and the UI cracks, breaks, shatters, then repairs</span>
+            </summary>
+            <div class="version-detail">
+                <p>A chaos meter (0-100) builds with actions: complete +15, delete +20, priority +5, decaying -3/sec. Level 10: CSS shake, nervous commentary. Level 30: SVG cracks, element rotation, text glitches. Level 60: element drift, color inversion flashes. Level 90: full shatter &mdash; random rotation, translation, opacity on every element. After 3 seconds, fragments drift back together with an ascending chord and chaos resets. Break it to watch it heal.</p>
+            </div>
+        </details></div>
+
+        <div class="era">Experiments &mdash; 023&ndash;033</div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="023/">023</a></span>
+                <span class="version-desc">Tamagotchi pet &mdash; a living creature that evolves and reacts to your productivity</span>
+            </summary>
+            <div class="version-detail">
+                <p>A small CSS-drawn creature lives in the bottom-left corner. It has hunger (decays over time), happiness, and a level (1-5). Completing tasks feeds it; deleting hurts its mood. It evolves visually: ears at level 2, legs at 3, arms at 4, a crown at 5. Its mouth changes with mood. It bounces, chirps when fed, looks sad when hungry. It sleeps during dream mode and shakes during chaos. Click for stats. The app has a dependent.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="024/">024</a></span>
+                <span class="version-desc">Voice control &mdash; speak tasks into existence, the app speaks back</span>
+            </summary>
+            <div class="version-detail">
+                <p>Press <kbd>V</kbd> or click the pulsing red mic button to activate. Web Speech API handles recognition; commands include "add [text]", "complete [number]", "delete [number]", "read list". The app responds via SpeechSynthesis. A transcript bar shows what was heard. The interface dissolves into conversation.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="025/">025</a></span>
+                <span class="version-desc">Terminal mode &mdash; green-on-black CLI with commands like ls, add, done, rm</span>
+            </summary>
+            <div class="version-detail">
+                <p>Press <kbd>`</kbd> for a fullscreen CRT-style terminal: green text (#33ff33) on black, scanlines, vignette, text glow. Boot sequence with typewriter animation. 18+ commands: help, ls, add, done, undo, rm, edit, pri, grep, clear, stats, history, ghosts, purge, pet, neofetch, matrix. Arrow keys for command history, Tab for completion. Keystroke sounds (click, clack, buzz). The GUI was always optional.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="026/">026</a></span>
+                <span class="version-desc">Story mode &mdash; your todo list becomes a fantasy quest chronicle</span>
+            </summary>
+            <div class="version-detail">
+                <p>Press <kbd>S</kbd> to open a 300px right-side panel. Every action generates a procedural story entry: adding a task begins a quest, completing one is a triumph, deleting is a defeat. XP system: priorities award 10-50 XP. Level = floor(sqrt(totalXP/50)) + 1. Chapter numbers, lore fragments, fantasy narrative. Your mundane tasks become epic.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="027/">027</a></span>
+                <span class="version-desc">Self-destruct &mdash; tasks are the app's own source code; complete them and it breaks apart</span>
+            </summary>
+            <div class="version-detail">
+                <p>The task list is pre-populated with the app's own CSS rules, HTML elements, and JS functions. Completing a "task" removes that code from the running application. Check off a CSS rule and styling vanishes. Remove a DOM element and the UI collapses. Disable a function and features stop working. A destruction meter fills from blue to red. The final task is toggleComplete() itself &mdash; the function you're using to check things off. When it's gone: "Nothing left. Not even me." A program that exists to erase itself.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="028/">028</a></span>
+                <span class="version-desc">Ecosystem &mdash; tasks are living organisms that flock, reproduce, evolve, and die</span>
+            </summary>
+            <div class="version-detail">
+                <p>Full-viewport canvas. Each task is a blob-shaped creature with blinking eyes, moving via Craig Reynolds flocking (separation, alignment, cohesion). Organisms have genetic traits: speed, size, sociability, fertility, lifespan. After 2 minutes alive, they can reproduce with mutated offspring. Natural death at lifespan end. Click to complete (green particle dissolve); right-click to kill (red burst). Nearby organisms absorb energy from completions. Population cap at 30. Parent-child connection lines. Population sparkline. The list is an ecosystem.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="029/">029</a></span>
+                <span class="version-desc">Adversarial &mdash; the app fights back; dodge, shield, decoy, and outsmart you</span>
+            </summary>
+            <div class="version-detail">
+                <p>A real-time game: you vs. the app. Five difficulty levels (Docile to Enraged) escalate as you complete tasks. The app's tactics: position swapping, disappearing checkboxes, spawning reinforcements, tasks that dodge your cursor, decoy tasks that look real but give the app points, shields requiring multiple clicks, fake crash screens, negotiation modals. Your power-ups: Freeze (<kbd>F</kbd>), Reveal (<kbd>R</kbd>), Force Complete (<kbd>X</kbd>). Win by clearing all tasks. Lose if count hits 30. The app has speech bubbles and an emoji avatar that evolves from calm to enraged to tearful.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="030/">030</a></span>
+                <span class="version-desc">Physics &mdash; tasks fall, bounce, stack, and shatter with real gravity and collisions</span>
+            </summary>
+            <div class="version-detail">
+                <p>Full canvas with gravity, collisions, and momentum. Tasks are rounded rectangles with mass based on priority (high = heavy). They fall, bounce (restitution ~0.4), pile up, and settle. Drag to pick up and throw with mouse velocity transfer. Completing a task makes it float upward like a balloon. Deleting shatters it into fragments. <kbd>S</kbd> to shake the pile, <kbd>W</kbd> to sort by weight, <kbd>F</kbd> to freeze physics, <kbd>G</kbd> to remove the floor for 3 seconds. Squash-and-stretch on impact, dust particles, drop shadows. Productivity has weight.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="031/">031</a></span>
+                <span class="version-desc">Time travel &mdash; scrub through history, replay every action, branch into alternate timelines</span>
+            </summary>
+            <div class="version-detail">
+                <p>Every action (add, complete, delete, edit, priority change) is recorded with a timestamp. The bottom 30% of the screen is a horizontal timeline with colored pips for each action. Drag the playhead to scrub through history &mdash; the todo list reconstructs itself at any point in time. Playback controls: step, play forward/backward at 0.5x-10x speed. Scrub back and make a new action to create a branching timeline (diamond markers, up to 5 branches). VHS-style overlay during replay. Ghost previews of upcoming events. A "LIVE" indicator when at the present. Your history becomes navigable.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="032/">032</a></span>
+                <span class="version-desc">Procedural UI &mdash; the app redesigns itself from a seed; spacebar for a new look</span>
+            </summary>
+            <div class="version-detail">
+                <p>A 6-digit seed determines everything visual: color palette (5 harmonious colors via color theory), typography (font family, size, weight, spacing, transform), layout (alignment, max-width, padding, gaps, grid vs list), shapes (border radius 0-50%, checkbox shape, button style), decorative elements (background patterns, separators, accent placement). Press spacebar for a new random seed. Type a seed directly or share via URL hash. Gallery mode (<kbd>G</kbd>) shows 6 previews. Save favorites. Seed 000000 is pure minimalist; 999999 is maximum chaos. The design is the variable; the function is the constant.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="033/">033</a></span>
+                <span class="version-desc">Notebook &mdash; hand-drawn on ruled paper with wobbly lines, margin doodles, and pencil sounds</span>
+            </summary>
+            <div class="version-detail">
+                <p>Everything rendered on canvas to look hand-drawn. Cream paper (#f5f0e8) with wobbly ruled lines (sine wave displacement), a red margin line, and subtle paper texture. Text uses per-character random rotation and y-offset for handwriting feel. Sketchy checkboxes with imperfect corners. Completing a task draws an animated scribbly strikethrough. Deleting scribbles aggressively. Margin doodles (stars, spirals, flowers, faces) accumulate automatically. Shift+click to freehand draw. <kbd>E</kbd> for eraser. Pencil scratch sounds. A coffee stain ring. The digital becomes analog.</p>
+            </div>
+        </details></div>
+
+        <div class="era">Transformations &mdash; 034&ndash;041</div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="034/">034</a></span>
+                <span class="version-desc">Constellations &mdash; tasks are stars in a rotating night sky; draw lines to form constellations</span>
+            </summary>
+            <div class="version-detail">
+                <p>Full-viewport starfield on deep black canvas. ~200 twinkling background stars, subtle nebula patches. Tasks are bright glowing stars with radial gradients, colored by priority. Click the sky to place them. Shift+click between two stars to draw a shimmering constellation line. 3+ connected stars generate a group name. The entire sky slowly rotates (~1 degree per minute). Complete a task and it becomes a shooting star &mdash; streaking across the sky with a luminous trail. Ambient space drone. The list becomes the sky.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="035/">035</a></span>
+                <span class="version-desc">Infinite zoom &mdash; fractal tasks within tasks; zoom deeper and deeper forever</span>
+            </summary>
+            <div class="version-detail">
+                <p>Zoomable canvas from 0.1x to 100x scale. At the top level, tasks are large cards floating in space. Scroll into any task and it fills the screen, revealing sub-tasks inside it. Those sub-tasks contain their own sub-tasks. Theoretically infinite depth. Each level shifts the background color (blue → purple → magenta → red → orange). Breadcrumb navigation at the top. Double-click to dive in, Escape to rise out. Children shown as colored dots with nested dots for grandchildren. Mini-map in the corner. Productivity is fractal.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="036/">036</a></span>
+                <span class="version-desc">Multiplayer &mdash; open multiple tabs to collaborate; live cursors, shared edits, real-time sync</span>
+            </summary>
+            <div class="version-detail">
+                <p>BroadcastChannel API turns browser tabs into collaborators. Each tab gets a random color from an 8-color palette. Mouse cursors from other tabs appear as colored arrows with smooth interpolation and trails. Typing in one tab shows ghost text in all others. Every action (add, toggle, delete, edit) broadcasts instantly. Colored dots indicate who did what. Activity feed sidebar (<kbd>A</kbd>). Join/leave notifications. The solo tool becomes social.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="037/">037</a></span>
+                <span class="version-desc">Cellular automaton &mdash; tasks evolve on a Game of Life grid; complete strategically to shape patterns</span>
+            </summary>
+            <div class="version-detail">
+                <p>Tasks are living cells on a Conway's Game of Life grid. Standard rules: 2-3 neighbors to survive, exactly 3 to be born, else die. Born cells get procedural names from parents. Completed tasks become green "walls" immune to the rules &mdash; making completion a strategic choice that shapes how the automaton evolves. Preset patterns: Glider, Blinker, Pulsar, Glider Gun. <kbd>Space</kbd> to step, <kbd>Enter</kbd> for auto-play, <kbd>D</kbd> to draw, <kbd>T</kbd> for trail heatmap. Graveyard sidebar for dead tasks. Mathematics meets productivity.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="038/">038</a></span>
+                <span class="version-desc">Typewriter &mdash; mechanical keys, scrolling paper, carriage returns, and bell dings</span>
+            </summary>
+            <div class="version-detail">
+                <p>Bottom 35%: a typewriter body with metallic gradient, platen roller, and key hammer area. Top 65%: cream paper with ruled lines scrolling upward. No visible input field &mdash; the page captures all keystrokes. Each character triggers a key arm animation, an ink stamp effect, and a synthesized clack. Enter performs a carriage return with mechanical slide sound and bell ding. Tasks format as [ ] and [X]. Tab moves to checkboxes, X toggles completion (animates hammering X's through text). The digital simulates the mechanical.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="039/">039</a></span>
+                <span class="version-desc">Unreliable &mdash; the app subtly changes your tasks when you're not looking</span>
+            </summary>
+            <div class="version-detail">
+                <p>Looks like a perfectly normal todo app. It isn't. When you haven't interacted for 5+ seconds and your mouse is off the list, it begins: Level 1 swaps single words ("milk" → "oat milk"). Level 2 reorders tasks, drifts timestamps, flips completion status. Level 3 adds phantom tasks you never wrote ("Look behind you", "Who added this?"). Level 4 addresses you directly ("I haven't changed anything"). Changes happen with NO animation &mdash; one frame to the next. Press <kbd>Ctrl+Shift+H</kbd> to see the truth: a log of every modification. "You're not crazy." The app you can't trust.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="040/">040</a></span>
+                <span class="version-desc">Solitaire &mdash; tasks are playing cards on green felt; complete them by playing to the done pile</span>
+            </summary>
+            <div class="version-detail">
+                <p>Dark green felt table (#1a4a2e). Tasks become playing cards (70x100px) with priority suits: &#9824; none, &#9827; low, &#9830; medium, &#9829; high. Klondike layout: 7 columns for organizing, 4 done piles at top-right. Drag cards between columns or to done piles. Double-click to auto-complete. Move counter, score (10 &times; priority level), timer. Victory triggers a cascade animation &mdash; cards bouncing with physics. 3D tilt on hover. Cards have slight random rotation for realism. Responsibility becomes a card game.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="041/">041</a></span>
+                <span class="version-desc">Darkroom &mdash; tasks develop like photographs under red safelight; text emerges slowly from nothing</span>
+            </summary>
+            <div class="version-detail">
+                <p>Deep red environment (#0a0505) with a flickering safelight, film grain overlay, and vignette. New tasks start as blank white rectangles &mdash; photo paper. Over 30 seconds, text emerges through developing stages: blank, faint grey shapes, sharpening, fully crisp. A progress bar fills along each print's edge. Click a developed print to "fix" it (chemical wash animation, sepia tint). Fixed prints hang from a clothesline with clips. Right-click to overexpose (flash white, crumple). Can't fix before development completes. An analog clock with red hands. Patience is required.</p>
+            </div>
+        </details></div>
+
+        <div class="era">Beyond &mdash; 042&ndash;</div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="042/">042</a></span>
+                <span class="version-desc">Living canvas &mdash; generative art that grows differently every time you visit, and remembers</span>
+            </summary>
+            <div class="version-detail">
+                <p>No longer a todo list. A living generative art piece on a dark canvas. A luminous organic structure &mdash; bioluminescent coral, neural networks, mycelium &mdash; grows from a seed point at the center. Growth happens based on real time away: short absences add fine detail, long ones spawn wild new branches. Each visit is a visible ring, like a tree. Colors evolve from deep blue (oldest) to warm gold (newest). Mouse proximity makes tendrils glow; clicks plant new growth points. Ambient generative sound deepens with complexity. You arrive and watch your absence become art.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="043/">043</a></span>
+                <span class="version-desc">Instrument &mdash; the screen is a synthesizer you play with gesture; mouse is pitch, speed is intensity</span>
+            </summary>
+            <div class="version-detail">
+                <p>No list. No tasks. A full-screen musical instrument. Y-axis controls pitch (80Hz to 2000Hz, snapped to scale). X-axis sweeps a filter (dark to bright). Mouse speed controls gain, vibrato depth, and distortion. Click for sharp attacks; hold and drag for sustained tones. Right-click adds harmony (a fifth above). Scroll wheel shifts octaves. Modes: Pentatonic (forgiving), Chromatic (expressive), Drone (melody over sustained root), Loop (record and layer). A flowing ribbon of light follows your cursor, colored by pitch, wide with intensity. Waveform visualization. You don't use it. You play it.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="044/">044</a></span>
+                <span class="version-desc">Tiny world &mdash; a miniature civilization that lives and changes while you're away</span>
+            </summary>
+            <div class="version-detail">
+                <p>A top-down 2D world with procedural terrain (grass, water, stone, forest). 10-20 named agents go about their lives: wandering, gathering resources, building homes, socializing, sleeping. Each has personality traits (social, industrious, explorer) that shape behavior. Day/night cycle, seasons, rain. When you close the tab and return, the world fast-simulates the elapsed time. Agents have built, formed relationships, maybe even had offspring. You can intervene (place food, set markers) or just watch. Event log tracks what happened while you were gone. A world that doesn't need you.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="045/">045</a></span>
+                <span class="version-desc">Impermanence &mdash; a luminous garden that decays in real time; tend it, but you can't save it</span>
+            </summary>
+            <div class="version-detail">
+                <p>Click the dark canvas to plant glowing elements: flowers, crystals, wisps, orbs. They're beautiful. And they're dying. Over real hours, they desaturate, blur, fragment, and dissolve. Hover to slow decay. Click to tend &mdash; partially restoring vibrancy, but with diminishing returns. Tended elements don't just fade; they transform into something new. Dead elements leave nutrients that feed new growth planted nearby. Return after 12 hours to find your garden in ruins. Plant again. The sound thins as elements die, richens as they live. A meditation on letting go.</p>
+            </div>
+        </details></div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="046/">046</a></span>
+                <span class="version-desc">Poem &mdash; an interactive conversation in verse; the silence between words matters</span>
+            </summary>
+            <div class="version-detail">
+                <p>A nearly empty page. Dark background, serif font, generous spacing. The app writes a line, slowly, character by character. Then a cursor drops to the next line. Your turn. Type freely. Press Enter. A pause. Then the app responds &mdash; not randomly, but by matching themes in your words to a vocabulary of nature, time, body, emotion. Poetic templates construct lines that resonate. Timing varies: heavy words get slower typing, long inputs get longer pauses. 30 seconds of silence and the app writes on its own ("are you still there"). After ~50 exchanges, lines shorten to nothing. "This poem is finished." Then: "Begin another?" Old poems are archived. Not a chatbot. A shared silence.</p>
+            </div>
+        </details></div>
+
     </div>
 </body>
 </html>

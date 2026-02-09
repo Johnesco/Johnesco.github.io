@@ -1,6 +1,6 @@
-# todooo
+# Evolving
 
-A todo app that evolves one version at a time.
+An app that evolves one version at a time.
 
 ## Structure
 

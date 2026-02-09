@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todooo 040 - Solitaire</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: radial-gradient(ellipse at center, #2a5a3e 0%, #1a4a2e 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px);
+  pointer-events: none;
+}
+
+#topBar {
+  position: relative;
+  background: rgba(0,0,0,0.3);
+  padding: 12px 20px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  border-bottom: 2px solid rgba(255,255,255,0.1);
+  z-index: 100;
+}
+#taskInput {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid #444;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+}
+.suitBtn {
+  font-size: 28px;
+  padding: 4px 12px;
+  border: 2px solid #555;
+  background: #fff;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.suitBtn:hover { transform: scale(1.1); }
+.suitBtn.selected {
+  background: #ffd700;
+  border-color: #cc9900;
+  box-shadow: 0 0 10px rgba(255,215,0,0.5);
+}
+#stats {
+  color: #fff;
+  font-size: 13px;
+  display: flex;
+  gap: 15px;
+}
+#stats span {
+  background: rgba(0,0,0,0.3);
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+#newGameBtn, #soundBtn {
+  padding: 6px 14px;
+  background: #444;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+#newGameBtn:hover, #soundBtn:hover { background: #666; }
+
+#table {
+  position: relative;
+  height: calc(100vh - 60px);
+  padding: 20px;
+  perspective: 1000px;
+}
+
+.card {
+  position: absolute;
+  width: 70px;
+  height: 100px;
+  background: #f8f8f0;
+  border: 2px solid #333;
+  border-radius: 8px;
+  cursor: grab;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  text-align: center;
+  font-size: 10px;
+  line-height: 1.2;
+  word-wrap: break-word;
+  overflow: hidden;
+}
+.card:hover {
+  transform: translateY(-3px) rotateZ(2deg);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+  z-index: 50;
+}
+.card.dragging {
+  cursor: grabbing;
+  transform: scale(1.05) rotateZ(5deg);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  z-index: 1000;
+}
+.card.faceDown {
+  background: linear-gradient(135deg, #1a1a4e 0%, #2a2a6e 100%);
+  background-image:
+    repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.05) 10px, rgba(255,255,255,.05) 20px),
+    repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(255,255,255,.03) 10px, rgba(255,255,255,.03) 20px);
+  border-color: #111;
+}
+.card::before, .card::after {
+  position: absolute;
+  font-size: 18px;
+}
+.card::before {
+  top: 4px;
+  left: 6px;
+}
+.card::after {
+  bottom: 4px;
+  right: 6px;
+  transform: rotate(180deg);
+}
+.card[data-priority="none"]::before,
+.card[data-priority="none"]::after {
+  content: '♠';
+  color: #000;
+}
+.card[data-priority="low"]::before,
+.card[data-priority="low"]::after {
+  content: '♣';
+  color: #000;
+}
+.card[data-priority="med"]::before,
+.card[data-priority="med"]::after {
+  content: '♦';
+  color: #d32f2f;
+}
+.card[data-priority="high"]::before,
+.card[data-priority="high"]::after {
+  content: '♥';
+  color: #d32f2f;
+}
+.card.faceDown::before,
+.card.faceDown::after {
+  content: '';
+}
+.cardText {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  max-width: 100%;
+}
+
+.pile {
+  position: absolute;
+  width: 70px;
+  height: 100px;
+  border: 2px dashed rgba(255,255,255,0.3);
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+.pile.dropZone {
+  border-color: #ffd700;
+  background: rgba(255,215,0,0.2);
+  box-shadow: 0 0 20px rgba(255,215,0,0.5);
+}
+.pile.done {
+  border-style: solid;
+  border-color: rgba(255,255,255,0.4);
+  background: rgba(0,0,0,0.2);
+}
+.pile::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 36px;
+  opacity: 0.4;
+}
+.pile[data-suit="spade"]::before { content: '♠'; color: #000; }
+.pile[data-suit="club"]::before { content: '♣'; color: #000; }
+.pile[data-suit="diamond"]::before { content: '♦'; color: #d32f2f; }
+.pile[data-suit="heart"]::before { content: '♥'; color: #d32f2f; }
+
+.pileCount {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 11px;
+  background: rgba(0,0,0,0.5);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+#drawPile {
+  top: 20px;
+  left: 20px;
+}
+#donePiles {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 15px;
+}
+
+.column {
+  position: absolute;
+  top: 140px;
+  width: 70px;
+  min-height: 400px;
+}
+
+#winScreen {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+#winScreen.show { display: flex; }
+#winMessage {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  padding: 40px 60px;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+  animation: bounce 0.6s ease-out;
+}
+#winMessage h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+  color: #333;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+#winMessage p {
+  font-size: 18px;
+  margin: 10px 0;
+  color: #555;
+}
+@keyframes bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.cascadeCard {
+  position: fixed;
+  width: 70px;
+  height: 100px;
+  background: #f8f8f0;
+  border: 2px solid #333;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 9999;
+}
+</style>
+</head>
+<body>
+
+<div id="topBar">
+  <input type="text" id="taskInput" placeholder="Add a new task..." />
+  <button class="suitBtn" data-priority="none" title="No Priority">♠</button>
+  <button class="suitBtn selected" data-priority="low" title="Low Priority">♣</button>
+  <button class="suitBtn" data-priority="med" title="Medium Priority">♦</button>
+  <button class="suitBtn" data-priority="high" title="High Priority">♥</button>
+  <div id="stats">
+    <span>Moves: <b id="moveCount">0</b></span>
+    <span>Score: <b id="score">0</b></span>
+    <span>Time: <b id="timer">0:00</b></span>
+  </div>
+  <button id="soundBtn">🔊</button>
+  <button id="newGameBtn">New Game</button>
+</div>
+
+<div id="table">
+  <div id="drawPile" class="pile" data-suit="draw"></div>
+  <div id="donePiles">
+    <div class="pile done" data-suit="spade"><div class="pileCount">0</div></div>
+    <div class="pile done" data-suit="club"><div class="pileCount">0</div></div>
+    <div class="pile done" data-suit="diamond"><div class="pileCount">0</div></div>
+    <div class="pile done" data-suit="heart"><div class="pileCount">0</div></div>
+  </div>
+  <div class="column" style="left: 20px;"></div>
+  <div class="column" style="left: 110px;"></div>
+  <div class="column" style="left: 200px;"></div>
+  <div class="column" style="left: 290px;"></div>
+  <div class="column" style="left: 380px;"></div>
+  <div class="column" style="left: 470px;"></div>
+  <div class="column" style="left: 560px;"></div>
+</div>
+
+<div id="winScreen">
+  <div id="winMessage">
+    <h1>Victory!</h1>
+    <p>All tasks completed!</p>
+    <p id="winStats"></p>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'todooo-040';
+const SUITS = { none: 'spade', low: 'club', med: 'diamond', high: 'heart' };
+const PRIORITY_VALUES = { none: 1, low: 2, med: 3, high: 4 };
+
+let state = {
+  tasks: [],
+  columns: [[], [], [], [], [], [], []],
+  done: { spade: [], club: [], diamond: [], heart: [] },
+  moves: 0,
+  score: 0,
+  startTime: Date.now(),
+  soundEnabled: true,
+  selectedPriority: 'low'
+};
+
+let dragState = null;
+let timerInterval = null;
+
+// Audio context for sounds
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound(type) {
+  if (!state.soundEnabled) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  const now = audioCtx.currentTime;
+  switch(type) {
+    case 'deal':
+      osc.frequency.setValueAtTime(200, now);
+      osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      osc.start(now);
+      osc.stop(now + 0.1);
+      break;
+    case 'place':
+      osc.frequency.setValueAtTime(150, now);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+      osc.start(now);
+      osc.stop(now + 0.08);
+      break;
+    case 'complete':
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc.start(now);
+      osc.stop(now + 0.15);
+      break;
+    case 'win':
+      [0, 0.1, 0.2].forEach((delay, i) => {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.connect(g);
+        g.connect(audioCtx.destination);
+        o.frequency.setValueAtTime(400 + i * 100, now + delay);
+        g.gain.setValueAtTime(0.2, now + delay);
+        g.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.3);
+        o.start(now + delay);
+        o.stop(now + delay + 0.3);
+      });
+      break;
+  }
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadState() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    state = JSON.parse(saved);
+    state.startTime = Date.now() - (state.elapsedTime || 0);
+  }
+}
+
+function addTask(text, priority) {
+  const task = {
+    id: Date.now() + Math.random(),
+    text: text,
+    priority: priority,
+    createdAt: Date.now()
+  };
+  state.tasks.push(task);
+
+  // Auto-deal to shortest column
+  const shortestCol = state.columns.reduce((minIdx, col, idx, arr) =>
+    col.length < arr[minIdx].length ? idx : minIdx, 0);
+  state.columns[shortestCol].push(task.id);
+
+  playSound('deal');
+  saveState();
+  render();
+}
+
+function completeTask(taskId) {
+  const task = state.tasks.find(t => t.id === taskId);
+  if (!task) return;
+
+  const suit = SUITS[task.priority];
+  state.done[suit].push(taskId);
+
+  // Remove from columns
+  state.columns.forEach(col => {
+    const idx = col.indexOf(taskId);
+    if (idx !== -1) col.splice(idx, 1);
+  });
+
+  state.moves++;
+  state.score += 10 * PRIORITY_VALUES[task.priority];
+
+  playSound('complete');
+  saveState();
+  render();
+  checkWin();
+}
+
+function moveCard(taskId, fromCol, toCol) {
+  const fromIdx = state.columns[fromCol].indexOf(taskId);
+  if (fromIdx !== -1) {
+    state.columns[fromCol].splice(fromIdx, 1);
+    state.columns[toCol].push(taskId);
+    state.moves++;
+    playSound('place');
+    saveState();
+    render();
+  }
+}
+
+function checkWin() {
+  const allDone = state.tasks.every(task =>
+    Object.values(state.done).flat().includes(task.id)
+  );
+
+  if (allDone && state.tasks.length > 0) {
+    clearInterval(timerInterval);
+    playSound('win');
+    showWinScreen();
+    cascadeCards();
+  }
+}
+
+function showWinScreen() {
+  const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  document.getElementById('winStats').innerHTML = `
+    <b>Moves:</b> ${state.moves} |
+    <b>Score:</b> ${state.score} |
+    <b>Time:</b> ${mins}:${secs.toString().padStart(2, '0')}
+  `;
+  document.getElementById('winScreen').classList.add('show');
+}
+
+function cascadeCards() {
+  const donePiles = document.querySelectorAll('.pile.done');
+  let delay = 0;
+
+  donePiles.forEach(pile => {
+    const rect = pile.getBoundingClientRect();
+    const count = parseInt(pile.querySelector('.pileCount').textContent);
+
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        const card = document.createElement('div');
+        card.className = 'cascadeCard';
+        card.style.left = rect.left + 'px';
+        card.style.top = rect.top + 'px';
+        document.body.appendChild(card);
+
+        let x = rect.left;
+        let y = rect.top;
+        let vx = (Math.random() - 0.5) * 10;
+        let vy = -10 - Math.random() * 5;
+        let rotation = Math.random() * 360;
+        let rotSpeed = (Math.random() - 0.5) * 20;
+
+        function animate() {
+          vy += 0.5; // gravity
+          x += vx;
+          y += vy;
+          rotation += rotSpeed;
+
+          if (y > window.innerHeight) {
+            card.remove();
+            return;
+          }
+          if (x < 0 || x > window.innerWidth - 70) {
+            vx *= -0.8;
+            x = Math.max(0, Math.min(window.innerWidth - 70, x));
+          }
+
+          card.style.left = x + 'px';
+          card.style.top = y + 'px';
+          card.style.transform = `rotate(${rotation}deg)`;
+
+          requestAnimationFrame(animate);
+        }
+        animate();
+      }, delay);
+      delay += 100;
+    }
+  });
+}
+
+function render() {
+  // Clear existing cards
+  document.querySelectorAll('.card').forEach(el => el.remove());
+
+  // Render columns
+  state.columns.forEach((col, colIdx) => {
+    const columnEl = document.querySelectorAll('.column')[colIdx];
+    col.forEach((taskId, cardIdx) => {
+      const task = state.tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      const card = createCardElement(task, colIdx, cardIdx);
+      columnEl.appendChild(card);
+    });
+  });
+
+  // Update done pile counts
+  document.querySelectorAll('.pile.done').forEach(pile => {
+    const suit = pile.dataset.suit;
+    const count = state.done[suit].length;
+    pile.querySelector('.pileCount').textContent = count;
+  });
+
+  // Update stats
+  document.getElementById('moveCount').textContent = state.moves;
+  document.getElementById('score').textContent = state.score;
+}
+
+function createCardElement(task, colIdx, cardIdx) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.dataset.taskId = task.id;
+  card.dataset.priority = task.priority;
+  card.dataset.column = colIdx;
+
+  card.innerHTML = `<div class="cardText">${task.text}</div>`;
+  card.style.top = (cardIdx * 30) + 'px';
+  card.style.transform = `rotate(${(Math.random() - 0.5) * 2}deg)`;
+
+  // Drag handlers
+  card.addEventListener('mousedown', startDrag);
+  card.addEventListener('dblclick', () => completeTask(task.id));
+
+  return card;
+}
+
+function startDrag(e) {
+  if (e.button !== 0) return;
+  e.preventDefault();
+
+  const card = e.currentTarget;
+  const taskId = parseFloat(card.dataset.taskId);
+  const colIdx = parseInt(card.dataset.column);
+
+  card.classList.add('dragging');
+
+  dragState = {
+    card,
+    taskId,
+    colIdx,
+    startX: e.clientX,
+    startY: e.clientY,
+    offsetX: e.clientX - card.getBoundingClientRect().left,
+    offsetY: e.clientY - card.getBoundingClientRect().top
+  };
+
+  // Move to fixed position
+  const rect = card.getBoundingClientRect();
+  card.style.position = 'fixed';
+  card.style.left = rect.left + 'px';
+  card.style.top = rect.top + 'px';
+  card.style.zIndex = 1000;
+
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', endDrag);
+}
+
+function onDrag(e) {
+  if (!dragState) return;
+
+  const x = e.clientX - dragState.offsetX;
+  const y = e.clientY - dragState.offsetY;
+
+  dragState.card.style.left = x + 'px';
+  dragState.card.style.top = y + 'px';
+
+  // Highlight valid drop zones
+  document.querySelectorAll('.pile, .column').forEach(el => {
+    el.classList.remove('dropZone');
+  });
+
+  const target = getDropTarget(e.clientX, e.clientY);
+  if (target) {
+    target.classList.add('dropZone');
+  }
+}
+
+function endDrag(e) {
+  if (!dragState) return;
+
+  document.removeEventListener('mousemove', onDrag);
+  document.removeEventListener('mouseup', endDrag);
+
+  const target = getDropTarget(e.clientX, e.clientY);
+
+  if (target) {
+    if (target.classList.contains('done')) {
+      const suit = target.dataset.suit;
+      const task = state.tasks.find(t => t.id === dragState.taskId);
+      if (SUITS[task.priority] === suit) {
+        completeTask(dragState.taskId);
+      }
+    } else if (target.classList.contains('column')) {
+      const toCol = Array.from(document.querySelectorAll('.column')).indexOf(target);
+      if (toCol !== dragState.colIdx) {
+        moveCard(dragState.taskId, dragState.colIdx, toCol);
+      }
+    }
+  }
+
+  document.querySelectorAll('.pile, .column').forEach(el => {
+    el.classList.remove('dropZone');
+  });
+
+  dragState.card.classList.remove('dragging');
+  dragState = null;
+  render();
+}
+
+function getDropTarget(x, y) {
+  const targets = document.elementsFromPoint(x, y);
+  return targets.find(el =>
+    (el.classList.contains('pile') && el.classList.contains('done')) ||
+    el.classList.contains('column')
+  );
+}
+
+function updateTimer() {
+  const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  document.getElementById('timer').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+  state.elapsedTime = elapsed * 1000;
+}
+
+function newGame() {
+  if (!confirm('Start a new game? This will clear all current tasks.')) return;
+
+  state = {
+    tasks: [],
+    columns: [[], [], [], [], [], [], []],
+    done: { spade: [], club: [], diamond: [], heart: [] },
+    moves: 0,
+    score: 0,
+    startTime: Date.now(),
+    soundEnabled: state.soundEnabled,
+    selectedPriority: 'low'
+  };
+
+  document.getElementById('winScreen').classList.remove('show');
+  saveState();
+  render();
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(updateTimer, 1000);
+}
+
+// Event listeners
+document.getElementById('taskInput').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter' && e.target.value.trim()) {
+    addTask(e.target.value.trim(), state.selectedPriority);
+    e.target.value = '';
+  }
+});
+
+document.querySelectorAll('.suitBtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.suitBtn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    state.selectedPriority = btn.dataset.priority;
+  });
+});
+
+document.getElementById('newGameBtn').addEventListener('click', newGame);
+
+document.getElementById('soundBtn').addEventListener('click', (e) => {
+  state.soundEnabled = !state.soundEnabled;
+  e.target.textContent = state.soundEnabled ? '🔊' : '🔇';
+  saveState();
+});
+
+document.getElementById('winScreen').addEventListener('click', (e) => {
+  if (e.target.id === 'winScreen') {
+    e.target.classList.remove('show');
+  }
+});
+
+// Initialize
+loadState();
+render();
+startTimer();
+
+// Update selected priority button
+document.querySelector(`.suitBtn[data-priority="${state.selectedPriority}"]`)?.classList.add('selected');
+document.getElementById('soundBtn').textContent = state.soundEnabled ? '🔊' : '🔇';
+</script>
+
+</body>
+</html>

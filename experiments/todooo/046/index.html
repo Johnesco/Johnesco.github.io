@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo 046</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0a0a0f;
+  color: #d4cfc0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.3rem;
+  line-height: 2.0;
+  overflow-x: hidden;
+  padding: 2rem;
+}
+#poem {
+  max-width: 500px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+}
+.line {
+  margin: 0;
+  padding: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.line.app {
+  color: #d4cfc0;
+  text-shadow: 0 0 8px rgba(212, 207, 192, 0.15);
+}
+.line.user {
+  color: #a8c0d0;
+}
+.line.old {
+  opacity: 0.7;
+}
+.cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.3rem;
+  background: #d4cfc0;
+  vertical-align: text-bottom;
+  animation: blink 530ms infinite;
+  margin-left: 1px;
+}
+.cursor.steady {
+  animation: none;
+  opacity: 1;
+}
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+#archive {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 10, 15, 0.97);
+  z-index: 1000;
+  overflow-y: auto;
+  padding: 3rem;
+  display: none;
+}
+#archive.show { display: block; }
+#archive .content {
+  max-width: 600px;
+  margin: 0 auto;
+  color: #d4cfc0;
+}
+#archive .close {
+  text-align: center;
+  margin-top: 3rem;
+  opacity: 0.5;
+  font-size: 0.9rem;
+}
+.poem-archive {
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid rgba(212, 207, 192, 0.2);
+}
+</style>
+</head>
+<body>
+<div id="poem"></div>
+<div id="archive">
+  <div class="content">
+    <div id="archivePoems"></div>
+    <div class="close">press escape to return</div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'todooo-046';
+const ARCHIVE_KEY = 'todooo-046-archive';
+
+const themes = {
+  nature: ['sky', 'river', 'stone', 'leaf', 'wind', 'rain', 'mountain', 'sea', 'dust', 'root', 'bird', 'cloud', 'tree', 'grass', 'earth', 'flower', 'snow', 'tide', 'field', 'shore'],
+  time: ['moment', 'hour', 'age', 'dawn', 'dusk', 'forever', 'never', 'once', 'still', 'again', 'gone', 'now', 'then', 'yesterday', 'tomorrow', 'always', 'night', 'morning', 'season', 'year'],
+  body: ['hand', 'breath', 'eye', 'heart', 'bone', 'skin', 'voice', 'shadow', 'step', 'weight', 'blood', 'finger', 'shoulder', 'mouth', 'throat', 'pulse', 'spine'],
+  emotion: ['quiet', 'gentle', 'heavy', 'bright', 'hollow', 'warm', 'sharp', 'soft', 'lost', 'found', 'dark', 'light', 'empty', 'full', 'still', 'wild', 'cold', 'tender'],
+  abstract: ['silence', 'distance', 'memory', 'edge', 'between', 'almost', 'perhaps', 'nothing', 'everything', 'meaning', 'truth', 'dream', 'absence', 'waiting', 'longing', 'wonder']
+};
+
+const heavyWords = ['death', 'loss', 'gone', 'grief', 'pain', 'broken', 'empty', 'alone', 'never', 'goodbye'];
+
+const templates = [
+  (w) => `the ${w} remembers what it forgets`,
+  (w) => `between ${w} and silence`,
+  (w, u) => `you said ${u}. the ${w} listened.`,
+  (w) => `somewhere, a ${w} is waiting`,
+  (w) => `even the ${w} grows quiet`,
+  (w) => `I held a ${w} once`,
+  (w, u) => `what you call ${u}, I call ${w}`,
+  (w) => `the ${w} does not hurry`,
+  (w) => `like ${w} on water`,
+  (w) => `there is no word for ${w}`,
+  (w) => `${w}, slowly`,
+  (w) => `the ${w} knows`,
+  (w) => `a ${w} in the distance`,
+  (w, u) => `${u}. yes.`,
+  (w) => `${w}`,
+  (w) => `all the ${w}s in the world`,
+  (w) => `the ${w} carries what it can`,
+  (w) => `before the ${w}`,
+  (w) => `after the ${w}`,
+  (w) => `inside the ${w}, nothing`,
+  (w) => `I do not understand ${w}`,
+  (w) => `${w} is enough`,
+  (w) => `without ${w}`,
+  (w, u) => `you speak of ${u}. I think of ${w}.`,
+  (w) => `the weight of ${w}`,
+  (w) => `${w}, like breathing`,
+  (w) => `we are all ${w} here`,
+  (w) => `the ${w} remains`,
+  (w) => `beneath the ${w}`,
+  (w) => `where the ${w} ends`,
+  () => `listen.`,
+  () => `yes.`,
+  () => `I know.`,
+  () => `again.`,
+  () => `wait.`,
+  (w) => `every ${w} is different`,
+  (w) => `no ${w} is the same`,
+  (w) => `${w} and ${w} and ${w}`,
+  (w) => `the first ${w}`,
+  (w) => `the last ${w}`,
+  (w, u) => `${u}, you say`,
+  (w) => `as if ${w} mattered`,
+  (w) => `the ${w} teaches patience`,
+  (w) => `I am learning ${w}`,
+  (w) => `${w} has no shape`,
+  () => `these words are all we have`,
+  () => `the quiet is fine`,
+  () => `are you still there`,
+  () => `...`
+];
+
+const idleLines = [
+  'are you still there',
+  'the quiet is fine',
+  "I'll wait",
+  'the silence grows',
+  'listening',
+  '...'
+];
+
+let state = {
+  lines: [],
+  currentLine: '',
+  isTyping: false,
+  isUserTurn: false,
+  depth: 0,
+  wordHistory: [],
+  lastActivityTime: Date.now(),
+  soundEnabled: true,
+  exchanges: 0
+};
+
+let audioCtx = null;
+let idleTimer = null;
+let droneNode = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playClick(pitch = 800, duration = 20) {
+  if (!state.soundEnabled || !audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.frequency.value = pitch;
+  gain.gain.value = 0.02;
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration / 1000);
+  osc.stop(audioCtx.currentTime + duration / 1000);
+}
+
+function startDrone() {
+  if (!state.soundEnabled || !audioCtx || droneNode) return;
+  droneNode = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  droneNode.connect(gain);
+  gain.connect(audioCtx.destination);
+  droneNode.frequency.value = 55;
+  gain.gain.value = 0.005;
+  droneNode.start();
+}
+
+function stopDrone() {
+  if (droneNode) {
+    droneNode.stop();
+    droneNode = null;
+  }
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function load() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    const loaded = JSON.parse(saved);
+    state = { ...state, ...loaded, isTyping: false, currentLine: '', isUserTurn: false };
+    return true;
+  }
+  return false;
+}
+
+function render() {
+  const poem = document.getElementById('poem');
+  poem.innerHTML = '';
+
+  state.lines.forEach((line, i) => {
+    const div = document.createElement('div');
+    div.className = `line ${line.type}`;
+    if (i < state.lines.length - 10) div.classList.add('old');
+    div.textContent = line.text;
+    poem.appendChild(div);
+  });
+
+  if (state.currentLine !== '' || state.isUserTurn) {
+    const div = document.createElement('div');
+    div.className = `line ${state.isUserTurn ? 'user' : 'app'}`;
+    div.textContent = state.currentLine;
+
+    const cursor = document.createElement('span');
+    cursor.className = state.isTyping ? 'cursor steady' : 'cursor';
+    div.appendChild(cursor);
+
+    poem.appendChild(div);
+  }
+
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function findThemeWords(text) {
+  const words = text.toLowerCase().split(/\s+/);
+  const found = [];
+  for (let [themeName, themeWords] of Object.entries(themes)) {
+    for (let word of words) {
+      if (themeWords.includes(word)) {
+        found.push({ theme: themeName, word });
+      }
+    }
+  }
+  return found;
+}
+
+function selectWord(exclude = []) {
+  const allWords = Object.values(themes).flat().filter(w => !exclude.includes(w));
+  return allWords[Math.floor(Math.random() * allWords.length)];
+}
+
+function generateResponse(userText) {
+  const foundWords = findThemeWords(userText);
+  const userWords = userText.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+
+  let template;
+  let word;
+  let userWord = userWords[Math.floor(Math.random() * userWords.length)] || 'this';
+
+  if (state.exchanges > 50) {
+    const endings = [
+      'this poem is finished.',
+      'the words are fading',
+      'quieter now',
+      '...',
+      'begin another?'
+    ];
+    return endings[Math.min(state.exchanges - 50, endings.length - 1)];
+  }
+
+  if (foundWords.length > 0) {
+    const fw = foundWords[Math.floor(Math.random() * foundWords.length)];
+    const relatedTheme = Object.keys(themes)[Math.floor(Math.random() * Object.keys(themes).length)];
+    word = themes[relatedTheme][Math.floor(Math.random() * themes[relatedTheme].length)];
+  } else {
+    word = selectWord();
+  }
+
+  template = templates[Math.floor(Math.random() * templates.length)];
+  return template(word, userWord);
+}
+
+async function typeAppLine(text, speed = 80) {
+  state.isTyping = true;
+  state.currentLine = '';
+  render();
+
+  const hasHeavy = heavyWords.some(w => text.toLowerCase().includes(w));
+  const actualSpeed = text.length < 10 ? 50 : (hasHeavy ? 120 : speed);
+
+  for (let char of text) {
+    state.currentLine += char;
+    render();
+    playClick(600, 15);
+    const delay = char === '.' && text.trim() === '...' ? 400 : actualSpeed;
+    await new Promise(r => setTimeout(r, delay));
+  }
+
+  state.isTyping = false;
+  state.lines.push({ text, type: 'app' });
+  state.currentLine = '';
+  state.isUserTurn = true;
+  render();
+  save();
+  resetIdleTimer();
+}
+
+async function startConversation() {
+  const opening = [
+    'the river carries what it can',
+    'listening',
+    'what is the first word',
+    'begin',
+    'I am here'
+  ];
+  await typeAppLine(opening[Math.floor(Math.random() * opening.length)]);
+}
+
+function commitUserLine() {
+  if (state.currentLine.trim() === '') return;
+
+  const text = state.currentLine;
+  state.lines.push({ text, type: 'user' });
+  state.currentLine = '';
+  state.isUserTurn = false;
+  state.exchanges++;
+  render();
+  save();
+
+  stopDrone();
+
+  const wordCount = text.split(/\s+/).length;
+  const pauseTime = wordCount < 4 ? 1500 : (wordCount > 10 ? 4000 : 2500);
+
+  setTimeout(async () => {
+    const response = generateResponse(text);
+    await typeAppLine(response);
+  }, pauseTime);
+}
+
+function resetIdleTimer() {
+  state.lastActivityTime = Date.now();
+  stopDrone();
+  if (idleTimer) clearTimeout(idleTimer);
+
+  idleTimer = setTimeout(() => {
+    if (!state.isUserTurn || state.isTyping) return;
+    startDrone();
+    setTimeout(async () => {
+      if (Date.now() - state.lastActivityTime > 30000) {
+        const idleLine = idleLines[Math.floor(Math.random() * idleLines.length)];
+        state.isUserTurn = false;
+        await typeAppLine(idleLine);
+      }
+    }, 5000);
+  }, 30000);
+}
+
+function archiveCurrentPoem() {
+  const archives = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
+  archives.unshift({
+    date: new Date().toISOString(),
+    lines: state.lines
+  });
+  localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archives.slice(0, 10)));
+}
+
+function showArchive() {
+  const archives = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
+  const container = document.getElementById('archivePoems');
+  container.innerHTML = '';
+
+  if (archives.length === 0) {
+    container.innerHTML = '<p>no poems yet</p>';
+  } else {
+    archives.forEach((poem, i) => {
+      const div = document.createElement('div');
+      div.className = 'poem-archive';
+      const date = new Date(poem.date).toLocaleDateString();
+      div.innerHTML = `<p style="opacity:0.5;font-size:0.9rem;margin-bottom:1rem;">${date}</p>`;
+      poem.lines.forEach(line => {
+        const p = document.createElement('p');
+        p.className = `line ${line.type}`;
+        p.textContent = line.text;
+        div.appendChild(p);
+      });
+      container.appendChild(div);
+    });
+  }
+
+  document.getElementById('archive').classList.add('show');
+}
+
+function hideArchive() {
+  document.getElementById('archive').classList.remove('show');
+}
+
+function resetPoem() {
+  if (state.lines.length > 0) {
+    archiveCurrentPoem();
+  }
+  state = {
+    lines: [],
+    currentLine: '',
+    isTyping: false,
+    isUserTurn: false,
+    depth: 0,
+    wordHistory: [],
+    lastActivityTime: Date.now(),
+    soundEnabled: state.soundEnabled,
+    exchanges: 0
+  };
+  localStorage.removeItem(STORAGE_KEY);
+  render();
+  startConversation();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (document.getElementById('archive').classList.contains('show')) {
+    if (e.key === 'Escape') {
+      hideArchive();
+    }
+    return;
+  }
+
+  if (e.key === 'p' || e.key === 'P') {
+    showArchive();
+    return;
+  }
+
+  if (e.key === 's' || e.key === 'S') {
+    state.soundEnabled = !state.soundEnabled;
+    if (!state.soundEnabled) stopDrone();
+    return;
+  }
+
+  if (!state.isUserTurn || state.isTyping) return;
+
+  resetIdleTimer();
+
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (state.currentLine.trim() === 'begin another?' || state.exchanges > 54) {
+      resetPoem();
+    } else {
+      commitUserLine();
+    }
+  } else if (e.key === 'Backspace') {
+    e.preventDefault();
+    state.currentLine = state.currentLine.slice(0, -1);
+    render();
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    state.currentLine = '';
+    render();
+  } else if (e.key.length === 1) {
+    initAudio();
+    state.currentLine += e.key;
+    render();
+    playClick(800, 20);
+  }
+});
+
+window.addEventListener('load', async () => {
+  const loaded = load();
+  render();
+
+  if (!loaded) {
+    await new Promise(r => setTimeout(r, 1000));
+    startConversation();
+  } else if (state.lines.length > 0) {
+    const timeSinceLastActivity = Date.now() - state.lastActivityTime;
+    if (timeSinceLastActivity > 3600000) {
+      state.isUserTurn = false;
+      await typeAppLine('you were gone. the words waited.');
+    } else {
+      state.isUserTurn = true;
+      render();
+    }
+  }
+});
+</script>
+</body>
+</html>

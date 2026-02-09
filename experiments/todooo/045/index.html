@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo 045 — impermanence</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body, html { width: 100%; height: 100%; overflow: hidden; font-family: 'Georgia', serif; }
+body { background: #0a0a0e; }
+canvas { display: block; cursor: crosshair; }
+#info {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 11px;
+  pointer-events: none;
+  transition: opacity 3s ease;
+}
+#info.hidden { opacity: 0; }
+#sound {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  opacity: 0.3;
+  transition: opacity 0.3s;
+}
+#sound:hover { opacity: 0.7; }
+#sound svg { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="info"></div>
+<div id="sound" title="Toggle sound">
+  <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2">
+    <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+    <path id="soundwave" d="M15.54 8.46a5 5 0 010 7.07M18 6a9 9 0 010 12"/>
+  </svg>
+</div>
+<script>
+const STORAGE_KEY = 'todooo-045';
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const info = document.getElementById('info');
+const soundBtn = document.getElementById('sound');
+const soundwave = document.getElementById('soundwave');
+
+let W, H;
+let elements = [];
+let nutrients = [];
+let remembered = 0;
+let lastVisit = Date.now();
+let hovering = null;
+let plantType = 0;
+let audioCtx, baseOscillators = [], soundEnabled = false;
+let ambientGain, masterGain;
+let particles = [];
+
+const TYPES = ['flower', 'crystal', 'wisp', 'orb'];
+const COLORS = {
+  flower: ['#ffb3ba', '#ffd4a3', '#e0b3ff', '#ffe4e1'],
+  crystal: ['#b3e5fc', '#b9f6ca', '#e1bee7', '#c5cae9'],
+  wisp: ['#ffffff', '#e3f2fd', '#f5f5f5'],
+  orb: ['#ffecb3', '#ffe0b2', '#fff9c4', '#f0f4c3']
+};
+
+const PHASES = [
+  { until: 30 * 60 * 1000, glow: 1, blur: 0, desat: 0 },
+  { until: 2 * 60 * 60 * 1000, glow: 0.9, blur: 1, desat: 0.2 },
+  { until: 8 * 60 * 60 * 1000, glow: 0.5, blur: 3, desat: 0.6 },
+  { until: 24 * 60 * 60 * 1000, glow: 0.2, blur: 6, desat: 0.85 },
+  { until: 48 * 60 * 60 * 1000, glow: 0.05, blur: 8, desat: 0.95 }
+];
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+
+function load() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    elements = data.elements || [];
+    nutrients = data.nutrients || [];
+    remembered = data.remembered || 0;
+    lastVisit = data.lastVisit || Date.now();
+    soundEnabled = data.soundEnabled !== false;
+    updateSoundIcon();
+  } catch (e) {}
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    elements,
+    nutrients,
+    remembered,
+    lastVisit: Date.now(),
+    soundEnabled
+  }));
+}
+
+function getNutrient(x, y) {
+  let total = 0;
+  for (let n of nutrients) {
+    const dist = Math.hypot(x - n.x, y - n.y);
+    if (dist < n.radius) total += n.strength * (1 - dist / n.radius);
+  }
+  return Math.min(total, 1);
+}
+
+function addNutrient(x, y, strength) {
+  nutrients.push({ x, y, radius: 80, strength });
+  if (nutrients.length > 100) nutrients.shift();
+}
+
+function plant(x, y) {
+  const type = TYPES[plantType % TYPES.length];
+  plantType++;
+  const colors = COLORS[type];
+  const baseColor = colors[Math.floor(Math.random() * colors.length)];
+  const nutrient = getNutrient(x, y);
+  const lifeBonus = nutrient * 0.3;
+
+  const el = {
+    x, y, type,
+    birth: Date.now(),
+    baseColor,
+    color: baseColor,
+    size: 20 + Math.random() * 15,
+    angle: Math.random() * Math.PI * 2,
+    tended: 0,
+    tendHistory: [],
+    lifeBonus,
+    phase: Math.random() * Math.PI * 2,
+    vertices: type === 'flower' ? 5 + Math.floor(Math.random() * 4) : 4 + Math.floor(Math.random() * 3),
+    drift: [],
+    oscNode: null
+  };
+
+  if (type === 'crystal' || type === 'flower') {
+    for (let i = 0; i < el.vertices; i++) {
+      el.drift.push({ x: 0, y: 0, vx: 0, vy: 0 });
+    }
+  }
+
+  elements.push(el);
+  remembered++;
+  playSound('plant');
+  updateInfo();
+  save();
+}
+
+function tend(el) {
+  if (!el) return;
+  el.tended++;
+  el.tendHistory.push(Date.now());
+  playSound('tend');
+
+  for (let i = 0; i < 8; i++) {
+    particles.push({
+      x: el.x,
+      y: el.y,
+      vx: (Math.random() - 0.5) * 2,
+      vy: (Math.random() - 0.5) * 2 - 1,
+      life: 1,
+      color: '#ffd700'
+    });
+  }
+
+  save();
+}
+
+function getAge(el) {
+  return Date.now() - el.birth;
+}
+
+function getPhase(el) {
+  const age = getAge(el) * (1 - el.lifeBonus);
+  for (let i = 0; i < PHASES.length; i++) {
+    if (age < PHASES[i].until) return { ...PHASES[i], index: i, age };
+  }
+  return { glow: 0, blur: 10, desat: 1, index: 5, age };
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return { r, g, b };
+}
+
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  return { h, s, l };
+}
+
+function hslToRgb(h, s, l) {
+  let r, g, b;
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+  return { r: r * 255, g: g * 255, b: b * 255 };
+}
+
+function transformColor(hex, desat, tended) {
+  let rgb = hexToRgb(hex);
+  let hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+
+  if (tended > 0) {
+    hsl.h = (hsl.h + tended * 0.05) % 1;
+    hsl.s = Math.min(1, hsl.s + tended * 0.1);
+  }
+
+  hsl.s *= (1 - desat);
+  hsl.l = hsl.l * (1 - desat * 0.5) + desat * 0.5;
+
+  const final = hslToRgb(hsl.h, hsl.s, hsl.l);
+  return `rgb(${Math.round(final.r)}, ${Math.round(final.g)}, ${Math.round(final.b)})`;
+}
+
+function drawElement(el) {
+  const p = getPhase(el);
+  const breathing = Math.sin(Date.now() / 1000 + el.phase) * 0.1 + 1;
+  const size = el.size * breathing;
+  const color = transformColor(el.baseColor, p.desat, el.tended);
+  const alpha = 1 - p.desat;
+
+  ctx.save();
+  ctx.translate(el.x, el.y);
+  ctx.rotate(el.angle);
+
+  if (p.blur > 0) ctx.filter = `blur(${p.blur}px)`;
+
+  ctx.globalAlpha = alpha * p.glow;
+  ctx.shadowBlur = 20 * p.glow;
+  ctx.shadowColor = color;
+
+  if (el.type === 'flower') {
+    for (let i = 0; i < el.vertices; i++) {
+      const angle = (Math.PI * 2 * i) / el.vertices;
+      const drift = el.drift[i];
+      if (p.index >= 2) {
+        drift.vx += (Math.random() - 0.5) * 0.05;
+        drift.vy += (Math.random() - 0.5) * 0.05;
+        drift.vx *= 0.95;
+        drift.vy *= 0.95;
+        drift.x += drift.vx;
+        drift.y += drift.vy;
+      }
+      const px = Math.cos(angle) * size * 0.7 + drift.x;
+      const py = Math.sin(angle) * size * 0.7 + drift.y;
+      ctx.beginPath();
+      ctx.ellipse(px, py, size * 0.4, size * 0.6, angle, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+
+      if (p.index >= 3 && Math.random() < 0.02) {
+        particles.push({
+          x: el.x + px,
+          y: el.y + py,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: -Math.random() * 0.5 - 0.5,
+          life: 1,
+          color
+        });
+      }
+    }
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 0.2, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  } else if (el.type === 'crystal') {
+    ctx.beginPath();
+    for (let i = 0; i < el.vertices; i++) {
+      const angle = (Math.PI * 2 * i) / el.vertices;
+      const drift = el.drift[i];
+      if (p.index >= 2) {
+        drift.vx += (Math.random() - 0.5) * 0.05;
+        drift.vy += (Math.random() - 0.5) * 0.05;
+        drift.vx *= 0.95;
+        drift.vy *= 0.95;
+        drift.x += drift.vx;
+        drift.y += drift.vy;
+      }
+      const r = size * (0.8 + Math.random() * 0.4);
+      const px = Math.cos(angle) * r + drift.x;
+      const py = Math.sin(angle) * r + drift.y;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+
+      if (p.index >= 3 && Math.random() < 0.02) {
+        particles.push({
+          x: el.x + px,
+          y: el.y + py,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: -Math.random() * 0.5 - 0.5,
+          life: 1,
+          color
+        });
+      }
+    }
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.globalAlpha *= 0.3;
+    for (let i = 0; i < el.vertices; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      const angle = (Math.PI * 2 * i) / el.vertices;
+      const r = size;
+      ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+      ctx.stroke();
+    }
+  } else if (el.type === 'wisp') {
+    const ctrl1x = Math.sin(Date.now() / 2000 + el.phase) * size;
+    const ctrl1y = Math.cos(Date.now() / 1500 + el.phase) * size;
+    const ctrl2x = Math.sin(Date.now() / 1800 + el.phase + 1) * size;
+    const ctrl2y = Math.cos(Date.now() / 2200 + el.phase + 1) * size;
+
+    ctx.beginPath();
+    ctx.moveTo(-size, 0);
+    ctx.bezierCurveTo(ctrl1x, ctrl1y, ctrl2x, ctrl2y, size, 0);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3 * p.glow;
+    ctx.stroke();
+
+    if (p.index >= 3 && Math.random() < 0.02) {
+      particles.push({
+        x: el.x + (Math.random() - 0.5) * size * 2,
+        y: el.y + (Math.random() - 0.5) * size,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: -Math.random() * 0.5 - 0.3,
+        life: 1,
+        color
+      });
+    }
+  } else if (el.type === 'orb') {
+    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
+    grad.addColorStop(0, color);
+    grad.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(0, 0, size, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    if (p.index >= 3 && Math.random() < 0.02) {
+      const angle = Math.random() * Math.PI * 2;
+      particles.push({
+        x: el.x + Math.cos(angle) * size,
+        y: el.y + Math.sin(angle) * size,
+        vx: Math.cos(angle) * 0.5,
+        vy: Math.sin(angle) * 0.5 - 0.5,
+        life: 1,
+        color
+      });
+    }
+  }
+
+  ctx.restore();
+
+  if (hovering === el) {
+    ctx.save();
+    ctx.globalAlpha = 0.2;
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(el.x, el.y, size * 1.5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy -= 0.01;
+    p.life -= 0.01;
+
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+      continue;
+    }
+
+    ctx.save();
+    ctx.globalAlpha = p.life * 0.6;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawAmbient() {
+  if (Math.random() < 0.02) {
+    particles.push({
+      x: Math.random() * W,
+      y: H + 10,
+      vx: (Math.random() - 0.5) * 0.1,
+      vy: -Math.random() * 0.3 - 0.2,
+      life: 1,
+      color: 'rgba(255, 255, 255, 0.4)'
+    });
+  }
+}
+
+function updateInfo() {
+  const living = elements.filter(e => getPhase(e).index < 3).length;
+  const fading = elements.filter(e => {
+    const idx = getPhase(e).index;
+    return idx >= 3 && idx < 5;
+  }).length;
+
+  const elapsed = Date.now() - lastVisit;
+  let timeStr = '';
+  if (elapsed > 60 * 60 * 1000) {
+    const hrs = Math.floor(elapsed / (60 * 60 * 1000));
+    timeStr = `${hrs}h since last visit`;
+  } else if (elapsed > 60 * 1000) {
+    const mins = Math.floor(elapsed / (60 * 1000));
+    timeStr = `${mins}m since last visit`;
+  }
+
+  info.textContent = `${living} living, ${fading} fading, ${remembered} remembered ${timeStr ? '• ' + timeStr : ''}`;
+  info.classList.remove('hidden');
+  setTimeout(() => info.classList.add('hidden'), 5000);
+}
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = soundEnabled ? 1 : 0;
+    masterGain.connect(audioCtx.destination);
+
+    ambientGain = audioCtx.createGain();
+    ambientGain.gain.value = 0.02;
+    ambientGain.connect(masterGain);
+
+    for (let i = 0; i < 3; i++) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      gain.gain.value = 0.3;
+      osc.frequency.value = 55 * Math.pow(2, i * 0.5);
+      osc.type = 'sine';
+      osc.connect(gain);
+      gain.connect(ambientGain);
+      osc.start();
+      baseOscillators.push({ osc, gain });
+    }
+  }
+}
+
+function updateSoundIcon() {
+  soundwave.style.display = soundEnabled ? 'block' : 'none';
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  initAudio();
+  masterGain.gain.value = soundEnabled ? 1 : 0;
+  updateSoundIcon();
+  save();
+}
+
+function playSound(type) {
+  if (!soundEnabled) return;
+  initAudio();
+
+  const now = audioCtx.currentTime;
+
+  if (type === 'plant') {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const freqs = [261.63, 293.66, 329.63, 392.00, 440.00];
+    osc.frequency.value = freqs[Math.floor(Math.random() * freqs.length)] * 2;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start(now);
+    osc.stop(now + 0.3);
+  } else if (type === 'tend') {
+    const osc1 = audioCtx.createOscillator();
+    const osc2 = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc1.frequency.value = 440;
+    osc2.frequency.value = 440 * 1.5;
+    osc1.type = 'sine';
+    osc2.type = 'sine';
+    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(masterGain);
+    osc1.start(now);
+    osc2.start(now);
+    osc1.stop(now + 0.4);
+    osc2.stop(now + 0.4);
+  } else if (type === 'death') {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.frequency.value = 110;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.03, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 1);
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start(now);
+    osc.stop(now + 1);
+  }
+}
+
+function updateElements() {
+  for (let i = elements.length - 1; i >= 0; i--) {
+    const el = elements[i];
+    const p = getPhase(el);
+
+    if (p.index === 5 && p.age > PHASES[4].until) {
+      addNutrient(el.x, el.y, 0.5 + el.tended * 0.1);
+      playSound('death');
+      elements.splice(i, 1);
+      save();
+    }
+  }
+}
+
+function render() {
+  ctx.fillStyle = '#0a0a0e';
+  ctx.fillRect(0, 0, W, H);
+
+  const totalGlow = elements.reduce((sum, el) => sum + getPhase(el).glow, 0);
+  const ambientLight = Math.min(totalGlow * 0.01, 0.3);
+  if (ambientLight > 0) {
+    ctx.fillStyle = `rgba(20, 20, 40, ${ambientLight})`;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  drawAmbient();
+  drawParticles();
+
+  for (let el of elements) {
+    drawElement(el);
+  }
+
+  requestAnimationFrame(render);
+}
+
+function checkHover(mx, my) {
+  hovering = null;
+  for (let el of elements) {
+    const dist = Math.hypot(mx - el.x, my - el.y);
+    if (dist < el.size * 2) {
+      hovering = el;
+      break;
+    }
+  }
+}
+
+canvas.addEventListener('mousemove', (e) => {
+  checkHover(e.clientX, e.clientY);
+});
+
+canvas.addEventListener('click', (e) => {
+  if (hovering) {
+    tend(hovering);
+  } else {
+    plant(e.clientX, e.clientY);
+  }
+});
+
+soundBtn.addEventListener('click', toggleSound);
+
+window.addEventListener('resize', resize);
+
+resize();
+load();
+updateInfo();
+
+const awayTime = Date.now() - lastVisit;
+if (awayTime > 60 * 1000) {
+  setTimeout(updateInfo, 100);
+}
+
+setInterval(updateElements, 5000);
+setInterval(save, 30000);
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo 037 - Cellular Automaton</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0a0a1a;
+  color: #e0e0e0;
+  overflow: hidden;
+  height: 100vh;
+}
+#canvas { display: block; cursor: crosshair; }
+#stats {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 10;
+}
+#generation {
+  font-size: 48px;
+  font-weight: 700;
+  color: #7c83ff;
+  text-shadow: 0 0 20px rgba(124, 131, 255, 0.5);
+  animation: pulse 0.3s ease-out;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+#population {
+  font-size: 16px;
+  color: #888;
+  margin-top: 8px;
+}
+#sidebar {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 300px;
+  height: 100vh;
+  background: rgba(20, 20, 30, 0.95);
+  backdrop-filter: blur(10px);
+  border-left: 1px solid #2a2a3a;
+  padding: 20px;
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+  z-index: 100;
+}
+#sidebar.hidden { transform: translateX(100%); }
+#sidebar h2 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #666;
+  margin: 20px 0 10px 0;
+  border-bottom: 1px solid #2a2a3a;
+  padding-bottom: 5px;
+}
+#sidebar h2:first-child { margin-top: 0; }
+.task-item {
+  background: rgba(40, 40, 50, 0.5);
+  padding: 8px 10px;
+  margin: 5px 0;
+  border-radius: 4px;
+  font-size: 13px;
+  border-left: 3px solid #666;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.task-item:hover { background: rgba(50, 50, 60, 0.7); }
+.task-item.alive { border-left-color: #7c83ff; color: #7c83ff; }
+.task-item.completed { border-left-color: #4ade80; color: #4ade80; opacity: 0.7; }
+.task-item.dead { border-left-color: #666; color: #666; opacity: 0.5; }
+.pattern-btn {
+  background: rgba(124, 131, 255, 0.2);
+  border: 1px solid #7c83ff;
+  color: #7c83ff;
+  padding: 8px 12px;
+  margin: 5px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  width: 100%;
+  text-align: left;
+  transition: all 0.2s;
+}
+.pattern-btn:hover {
+  background: rgba(124, 131, 255, 0.3);
+  transform: translateX(3px);
+}
+#controls {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 20, 30, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 15px 25px;
+  border-radius: 30px;
+  border: 1px solid #2a2a3a;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  z-index: 10;
+}
+.btn {
+  background: rgba(124, 131, 255, 0.2);
+  border: 1px solid #7c83ff;
+  color: #7c83ff;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+.btn:hover { background: rgba(124, 131, 255, 0.3); }
+.btn.active { background: #7c83ff; color: #0a0a1a; }
+#speedControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#speedSlider {
+  width: 100px;
+  accent-color: #7c83ff;
+}
+#modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(20, 20, 30, 0.98);
+  border: 1px solid #7c83ff;
+  border-radius: 12px;
+  padding: 25px;
+  z-index: 200;
+  min-width: 300px;
+  display: none;
+}
+#modal.show { display: block; }
+#modal input {
+  width: 100%;
+  padding: 10px;
+  background: rgba(40, 40, 50, 0.8);
+  border: 1px solid #2a2a3a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 14px;
+  margin: 10px 0;
+}
+#modal input:focus {
+  outline: none;
+  border-color: #7c83ff;
+}
+.modal-btn {
+  padding: 8px 16px;
+  margin: 5px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.modal-btn.primary {
+  background: #7c83ff;
+  color: #0a0a1a;
+}
+.modal-btn.secondary {
+  background: rgba(124, 131, 255, 0.2);
+  color: #7c83ff;
+}
+#help {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  font-size: 11px;
+  color: #555;
+  z-index: 5;
+  line-height: 1.6;
+  max-width: 200px;
+}
+#help kbd {
+  background: rgba(40, 40, 50, 0.8);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: monospace;
+  color: #888;
+}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="stats">
+  <div id="generation">Generation 0</div>
+  <div id="population">Population: 0 alive, 0 completed, 0 fallen</div>
+</div>
+<div id="help">
+  <kbd>Space</kbd> Step<br>
+  <kbd>Enter</kbd> Auto-play<br>
+  <kbd>Shift+Click</kbd> Add task<br>
+  <kbd>Right-Click</kbd> Delete<br>
+  <kbd>D</kbd> Draw mode<br>
+  <kbd>C</kbd> Clear mode<br>
+  <kbd>R</kbd> Random fill<br>
+  <kbd>Z</kbd> Zoom<br>
+  <kbd>T</kbd> Trail<br>
+  <kbd>Tab</kbd> Sidebar<br>
+  <kbd>S</kbd> Sound
+</div>
+<div id="controls">
+  <button class="btn" onclick="step()">Step</button>
+  <button class="btn" id="playBtn" onclick="togglePlay()">Play</button>
+  <div id="speedControl">
+    <span style="font-size: 11px; color: #666;">Speed</span>
+    <input type="range" id="speedSlider" min="0.5" max="5" step="0.5" value="2">
+    <span id="speedLabel" style="font-size: 11px; color: #888;">2x</span>
+  </div>
+  <button class="btn" onclick="toggleZoom()">Zoom</button>
+  <button class="btn" onclick="toggleTrail()">Trail</button>
+  <button class="btn" onclick="toggleSound()">Sound</button>
+</div>
+<div id="sidebar" class="hidden">
+  <h2>Living Tasks</h2>
+  <div id="livingList"></div>
+  <h2>Completed</h2>
+  <div id="completedList"></div>
+  <h2>Graveyard</h2>
+  <div id="graveyardList"></div>
+  <h2>Patterns</h2>
+  <button class="pattern-btn" onclick="selectPattern('glider')">Glider</button>
+  <button class="pattern-btn" onclick="selectPattern('blinker')">Blinker</button>
+  <button class="pattern-btn" onclick="selectPattern('pulsar')">Pulsar</button>
+  <button class="pattern-btn" onclick="selectPattern('gliderGun')">Glider Gun</button>
+  <button class="pattern-btn" onclick="selectPattern('toad')">Toad</button>
+  <button class="pattern-btn" onclick="selectPattern('beacon')">Beacon</button>
+</div>
+<div id="modal">
+  <div id="modalContent"></div>
+</div>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const STORAGE_KEY = 'todooo-037';
+
+let cellSize = 20;
+let cols, rows;
+let grid = {};
+let generation = 0;
+let playing = false;
+let playInterval = null;
+let speed = 2;
+let zoomed = false;
+let trail = false;
+let soundEnabled = false;
+let mode = 'normal';
+let selectedPattern = null;
+let graveyard = [];
+let drawMode = false;
+let clearMode = false;
+let heatmap = {};
+
+const priorities = ['low', 'medium', 'high', 'urgent'];
+const priorityColors = { low: '#4ade80', medium: '#fbbf24', high: '#f87171', urgent: '#a78bfa' };
+
+const words = ['task','work','fix','update','review','plan','design','build','test','deploy','refactor','optimize','debug','document','research','analyze','implement','configure','validate','prepare'];
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  cols = Math.floor(canvas.width / cellSize);
+  rows = Math.floor(canvas.height / cellSize);
+}
+
+function key(x, y) { return `${x},${y}`; }
+
+function generateTaskName(neighbors = []) {
+  if (neighbors.length === 0) return words[Math.floor(Math.random() * words.length)];
+  const parentWords = neighbors.map(n => n.text.split(' ')).flat();
+  const prefixes = ['re-', 'sub-', 'auto-', 'pre-', 'post-'];
+  if (Math.random() > 0.5 && parentWords.length > 0) {
+    return prefixes[Math.floor(Math.random() * prefixes.length)] + parentWords[Math.floor(Math.random() * parentWords.length)];
+  }
+  return parentWords.length > 1 ? parentWords.slice(0, 2).join(' ') : words[Math.floor(Math.random() * words.length)];
+}
+
+function getNeighbors(x, y) {
+  const neighbors = [];
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      if (dx === 0 && dy === 0) continue;
+      const nx = (x + dx + cols) % cols;
+      const ny = (y + dy + rows) % rows;
+      const cell = grid[key(nx, ny)];
+      if (cell && cell.state === 'alive') neighbors.push(cell);
+    }
+  }
+  return neighbors;
+}
+
+function step() {
+  const nextGrid = {};
+  const changes = [];
+
+  // Check all cells in current grid and their neighbors
+  const toCheck = new Set();
+  Object.keys(grid).forEach(k => {
+    const [x, y] = k.split(',').map(Number);
+    toCheck.add(key(x, y));
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        toCheck.add(key((x + dx + cols) % cols, (y + dy + rows) % rows));
+      }
+    }
+  });
+
+  toCheck.forEach(k => {
+    const [x, y] = k.split(',').map(Number);
+    const cell = grid[k];
+    const neighbors = getNeighbors(x, y);
+    const aliveCount = neighbors.length;
+
+    if (cell && cell.state === 'completed') {
+      nextGrid[k] = { ...cell };
+    } else if (cell && cell.state === 'alive') {
+      if (aliveCount === 2 || aliveCount === 3) {
+        nextGrid[k] = { ...cell, justBorn: false };
+      } else {
+        graveyard.push({ ...cell, diedGen: generation });
+        changes.push({ x, y, type: 'death' });
+        if (trail) heatmap[k] = (heatmap[k] || 0) + 1;
+        playSound('death');
+      }
+    } else if (aliveCount === 3) {
+      const newTask = {
+        x, y,
+        text: generateTaskName(neighbors),
+        state: 'alive',
+        priority: priorities[Math.floor(Math.random() * priorities.length)],
+        justBorn: true
+      };
+      nextGrid[k] = newTask;
+      changes.push({ x, y, type: 'birth' });
+      playSound('birth');
+    }
+  });
+
+  grid = nextGrid;
+  generation++;
+
+  document.getElementById('generation').textContent = `Generation ${generation}`;
+  document.getElementById('generation').style.animation = 'none';
+  setTimeout(() => {
+    document.getElementById('generation').style.animation = 'pulse 0.3s ease-out';
+  }, 10);
+
+  updateStats();
+  updateSidebar();
+  save();
+  playSound('tick');
+  draw();
+}
+
+function togglePlay() {
+  playing = !playing;
+  const btn = document.getElementById('playBtn');
+  if (playing) {
+    btn.classList.add('active');
+    btn.textContent = 'Pause';
+    playInterval = setInterval(step, 1000 / speed);
+    playSound('playStart');
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = 'Play';
+    clearInterval(playInterval);
+    playSound('playStop');
+  }
+}
+
+function toggleZoom() {
+  zoomed = !zoomed;
+  cellSize = zoomed ? 40 : 20;
+  resize();
+  draw();
+}
+
+function toggleTrail() {
+  trail = !trail;
+  if (!trail) heatmap = {};
+  draw();
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+}
+
+function playSound(type) {
+  if (!soundEnabled) return;
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const oscillator = audioCtx.createOscillator();
+  const gainNode = audioCtx.createGain();
+
+  oscillator.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+
+  gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+
+  switch(type) {
+    case 'tick':
+      oscillator.frequency.value = 200;
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+      break;
+    case 'birth':
+      oscillator.frequency.value = 600;
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+      break;
+    case 'death':
+      oscillator.frequency.value = 150;
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+      break;
+    case 'complete':
+      oscillator.frequency.value = 800;
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+      break;
+    case 'playStart':
+      oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+      break;
+    case 'playStop':
+      oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+      break;
+  }
+
+  oscillator.start(audioCtx.currentTime);
+  oscillator.stop(audioCtx.currentTime + 0.2);
+}
+
+function draw() {
+  ctx.fillStyle = '#0a0a1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw grid lines
+  ctx.strokeStyle = '#1a1a2a';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= cols; x++) {
+    ctx.beginPath();
+    ctx.moveTo(x * cellSize, 0);
+    ctx.lineTo(x * cellSize, canvas.height);
+    ctx.stroke();
+  }
+  for (let y = 0; y <= rows; y++) {
+    ctx.beginPath();
+    ctx.moveTo(0, y * cellSize);
+    ctx.lineTo(canvas.width, y * cellSize);
+    ctx.stroke();
+  }
+
+  // Draw heatmap
+  if (trail) {
+    Object.keys(heatmap).forEach(k => {
+      const [x, y] = k.split(',').map(Number);
+      const intensity = Math.min(heatmap[k] / 10, 1);
+      ctx.fillStyle = `rgba(124, 131, 255, ${intensity * 0.2})`;
+      ctx.fillRect(x * cellSize + 1, y * cellSize + 1, cellSize - 2, cellSize - 2);
+    });
+  }
+
+  // Draw cells
+  Object.values(grid).forEach(cell => {
+    const x = cell.x * cellSize;
+    const y = cell.y * cellSize;
+
+    if (cell.state === 'completed') {
+      ctx.fillStyle = '#4ade80';
+      ctx.fillRect(x + 2, y + 2, cellSize - 4, cellSize - 4);
+    } else if (cell.state === 'alive') {
+      if (cell.justBorn) {
+        ctx.fillStyle = '#9fa4ff';
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#9fa4ff';
+      } else {
+        ctx.fillStyle = '#7c83ff';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#7c83ff';
+      }
+      ctx.fillRect(x + 2, y + 2, cellSize - 4, cellSize - 4);
+      ctx.shadowBlur = 0;
+
+      // Priority border
+      ctx.strokeStyle = priorityColors[cell.priority];
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 2, y + 2, cellSize - 4, cellSize - 4);
+    }
+
+    // Draw text if zoomed
+    if (zoomed && cellSize >= 30) {
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const text = cell.text.length > 8 ? cell.text.substring(0, 7) + '...' : cell.text;
+      ctx.fillText(text, x + cellSize / 2, y + cellSize / 2);
+    }
+  });
+}
+
+function updateStats() {
+  const alive = Object.values(grid).filter(c => c.state === 'alive').length;
+  const completed = Object.values(grid).filter(c => c.state === 'completed').length;
+  const fallen = graveyard.length;
+  document.getElementById('population').textContent = `Population: ${alive} alive, ${completed} completed, ${fallen} fallen`;
+}
+
+function updateSidebar() {
+  const alive = Object.values(grid).filter(c => c.state === 'alive');
+  const completed = Object.values(grid).filter(c => c.state === 'completed');
+
+  document.getElementById('livingList').innerHTML = alive.length ? alive.map(c =>
+    `<div class="task-item alive" onclick="selectCell(${c.x}, ${c.y})">${c.text}</div>`
+  ).join('') : '<div style="color: #444; font-size: 11px;">No living tasks</div>';
+
+  document.getElementById('completedList').innerHTML = completed.length ? completed.map(c =>
+    `<div class="task-item completed" onclick="selectCell(${c.x}, ${c.y})">${c.text}</div>`
+  ).join('') : '<div style="color: #444; font-size: 11px;">No completed tasks</div>';
+
+  document.getElementById('graveyardList').innerHTML = graveyard.length ? graveyard.slice(-20).reverse().map(c =>
+    `<div class="task-item dead">${c.text} (Gen ${c.diedGen})</div>`
+  ).join('') : '<div style="color: #444; font-size: 11px;">No fallen tasks</div>';
+}
+
+function selectCell(x, y) {
+  const cell = grid[key(x, y)];
+  if (!cell) return;
+
+  const modal = document.getElementById('modal');
+  const content = document.getElementById('modalContent');
+
+  content.innerHTML = `
+    <h3 style="margin-bottom: 15px; color: #7c83ff;">${cell.text}</h3>
+    <p style="font-size: 12px; color: #888; margin-bottom: 10px;">Position: (${x}, ${y})</p>
+    <p style="font-size: 12px; color: #888; margin-bottom: 10px;">Priority: ${cell.priority}</p>
+    <p style="font-size: 12px; color: #888; margin-bottom: 15px;">State: ${cell.state}</p>
+    <div style="display: flex; gap: 10px;">
+      ${cell.state === 'alive' ? '<button class="modal-btn primary" onclick="completeCell(' + x + ',' + y + ')">Complete</button>' : ''}
+      <button class="modal-btn secondary" onclick="deleteCell(${x}, ${y})">Delete</button>
+      <button class="modal-btn secondary" onclick="closeModal()">Cancel</button>
+    </div>
+  `;
+
+  modal.classList.add('show');
+}
+
+function completeCell(x, y) {
+  const cell = grid[key(x, y)];
+  if (cell) {
+    cell.state = 'completed';
+    playSound('complete');
+    save();
+    draw();
+    updateSidebar();
+    closeModal();
+  }
+}
+
+function deleteCell(x, y) {
+  delete grid[key(x, y)];
+  save();
+  draw();
+  updateStats();
+  updateSidebar();
+  closeModal();
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+}
+
+function addTask(x, y) {
+  const modal = document.getElementById('modal');
+  const content = document.getElementById('modalContent');
+
+  content.innerHTML = `
+    <h3 style="margin-bottom: 15px; color: #7c83ff;">New Task</h3>
+    <input type="text" id="taskInput" placeholder="Task name..." autofocus>
+    <select id="prioritySelect" style="width: 100%; padding: 10px; background: rgba(40, 40, 50, 0.8); border: 1px solid #2a2a3a; border-radius: 6px; color: #e0e0e0; margin: 10px 0;">
+      <option value="low">Low Priority</option>
+      <option value="medium" selected>Medium Priority</option>
+      <option value="high">High Priority</option>
+      <option value="urgent">Urgent</option>
+    </select>
+    <div style="display: flex; gap: 10px; margin-top: 15px;">
+      <button class="modal-btn primary" onclick="confirmAddTask(${x}, ${y})">Add</button>
+      <button class="modal-btn secondary" onclick="closeModal()">Cancel</button>
+    </div>
+  `;
+
+  modal.classList.add('show');
+
+  setTimeout(() => {
+    const input = document.getElementById('taskInput');
+    input.focus();
+    input.addEventListener('keypress', e => {
+      if (e.key === 'Enter') confirmAddTask(x, y);
+    });
+  }, 100);
+}
+
+function confirmAddTask(x, y) {
+  const text = document.getElementById('taskInput').value.trim();
+  const priority = document.getElementById('prioritySelect').value;
+
+  if (!text) {
+    closeModal();
+    return;
+  }
+
+  grid[key(x, y)] = { x, y, text, state: 'alive', priority, justBorn: false };
+  save();
+  draw();
+  updateStats();
+  updateSidebar();
+  closeModal();
+}
+
+function randomFill() {
+  for (let i = 0; i < cols * rows * 0.3; i++) {
+    const x = Math.floor(Math.random() * cols);
+    const y = Math.floor(Math.random() * rows);
+    if (!grid[key(x, y)]) {
+      grid[key(x, y)] = {
+        x, y,
+        text: generateTaskName(),
+        state: 'alive',
+        priority: priorities[Math.floor(Math.random() * priorities.length)],
+        justBorn: false
+      };
+    }
+  }
+  save();
+  draw();
+  updateStats();
+  updateSidebar();
+}
+
+const patterns = {
+  glider: [[1,0],[2,1],[0,2],[1,2],[2,2]],
+  blinker: [[0,0],[0,1],[0,2]],
+  pulsar: [[2,0],[3,0],[4,0],[8,0],[9,0],[10,0],[0,2],[5,2],[7,2],[12,2],[0,3],[5,3],[7,3],[12,3],[0,4],[5,4],[7,4],[12,4],[2,5],[3,5],[4,5],[8,5],[9,5],[10,5],[2,7],[3,7],[4,7],[8,7],[9,7],[10,7],[0,8],[5,8],[7,8],[12,8],[0,9],[5,9],[7,9],[12,9],[0,10],[5,10],[7,10],[12,10],[2,12],[3,12],[4,12],[8,12],[9,12],[10,12]],
+  gliderGun: [[0,4],[0,5],[1,4],[1,5],[10,4],[10,5],[10,6],[11,3],[11,7],[12,2],[12,8],[13,2],[13,8],[14,5],[15,3],[15,7],[16,4],[16,5],[16,6],[17,5],[20,2],[20,3],[20,4],[21,2],[21,3],[21,4],[22,1],[22,5],[24,0],[24,1],[24,5],[24,6],[34,2],[34,3],[35,2],[35,3]],
+  toad: [[1,1],[2,1],[3,1],[0,2],[1,2],[2,2]],
+  beacon: [[0,0],[1,0],[0,1],[3,2],[2,3],[3,3]]
+};
+
+function selectPattern(name) {
+  selectedPattern = name;
+  canvas.style.cursor = 'copy';
+}
+
+function placePattern(x, y) {
+  if (!selectedPattern) return;
+  const pattern = patterns[selectedPattern];
+  pattern.forEach(([dx, dy]) => {
+    const nx = (x + dx) % cols;
+    const ny = (y + dy) % rows;
+    grid[key(nx, ny)] = {
+      x: nx, y: ny,
+      text: generateTaskName(),
+      state: 'alive',
+      priority: priorities[Math.floor(Math.random() * priorities.length)],
+      justBorn: false
+    };
+  });
+  selectedPattern = null;
+  canvas.style.cursor = 'crosshair';
+  save();
+  draw();
+  updateStats();
+  updateSidebar();
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    grid: Object.fromEntries(Object.entries(grid).map(([k, v]) => [k, v])),
+    generation,
+    graveyard,
+    heatmap
+  }));
+}
+
+function load() {
+  const data = localStorage.getItem(STORAGE_KEY);
+  if (data) {
+    const parsed = JSON.parse(data);
+    grid = parsed.grid || {};
+    generation = parsed.generation || 0;
+    graveyard = parsed.graveyard || [];
+    heatmap = parsed.heatmap || {};
+    document.getElementById('generation').textContent = `Generation ${generation}`;
+    updateStats();
+    updateSidebar();
+    draw();
+  }
+}
+
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor((e.clientX - rect.left) / cellSize);
+  const y = Math.floor((e.clientY - rect.top) / cellSize);
+
+  if (selectedPattern) {
+    placePattern(x, y);
+  } else if (e.shiftKey) {
+    if (!grid[key(x, y)]) addTask(x, y);
+  } else if (drawMode) {
+    if (!grid[key(x, y)]) {
+      grid[key(x, y)] = {
+        x, y,
+        text: generateTaskName(),
+        state: 'alive',
+        priority: priorities[Math.floor(Math.random() * priorities.length)],
+        justBorn: false
+      };
+      save();
+      draw();
+      updateStats();
+      updateSidebar();
+    }
+  } else if (clearMode) {
+    delete grid[key(x, y)];
+    save();
+    draw();
+    updateStats();
+    updateSidebar();
+  } else {
+    if (grid[key(x, y)]) {
+      selectCell(x, y);
+    }
+  }
+});
+
+canvas.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor((e.clientX - rect.left) / cellSize);
+  const y = Math.floor((e.clientY - rect.top) / cellSize);
+  deleteCell(x, y);
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (e.buttons === 1) {
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) / cellSize);
+    const y = Math.floor((e.clientY - rect.top) / cellSize);
+
+    if (drawMode && !grid[key(x, y)]) {
+      grid[key(x, y)] = {
+        x, y,
+        text: generateTaskName(),
+        state: 'alive',
+        priority: priorities[Math.floor(Math.random() * priorities.length)],
+        justBorn: false
+      };
+      draw();
+    } else if (clearMode) {
+      delete grid[key(x, y)];
+      draw();
+    }
+  }
+});
+
+canvas.addEventListener('mouseup', () => {
+  if (drawMode || clearMode) {
+    save();
+    updateStats();
+    updateSidebar();
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+
+  if (e.key === ' ') {
+    e.preventDefault();
+    step();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    togglePlay();
+  } else if (e.key === 'd' || e.key === 'D') {
+    drawMode = !drawMode;
+    clearMode = false;
+    canvas.style.cursor = drawMode ? 'cell' : 'crosshair';
+  } else if (e.key === 'c' || e.key === 'C') {
+    clearMode = !clearMode;
+    drawMode = false;
+    canvas.style.cursor = clearMode ? 'not-allowed' : 'crosshair';
+  } else if (e.key === 'r' || e.key === 'R') {
+    randomFill();
+  } else if (e.key === 'z' || e.key === 'Z') {
+    toggleZoom();
+  } else if (e.key === 't' || e.key === 'T') {
+    toggleTrail();
+  } else if (e.key === 's' || e.key === 'S') {
+    toggleSound();
+  } else if (e.key === 'Tab') {
+    e.preventDefault();
+    document.getElementById('sidebar').classList.toggle('hidden');
+  }
+});
+
+document.getElementById('speedSlider').addEventListener('input', e => {
+  speed = parseFloat(e.target.value);
+  document.getElementById('speedLabel').textContent = speed + 'x';
+  if (playing) {
+    clearInterval(playInterval);
+    playInterval = setInterval(step, 1000 / speed);
+  }
+});
+
+window.addEventListener('resize', () => {
+  resize();
+  draw();
+});
+
+resize();
+load();
+draw();
+</script>
+</body>
+</html>

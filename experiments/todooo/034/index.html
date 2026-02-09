@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>todooo 034 - Constellation Sky</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body, html { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+body { background: #050510; }
+#canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+#controls { position: fixed; top: 20px; left: 20px; color: #aac; font-size: 13px; background: rgba(5,5,16,0.7); padding: 15px; border-radius: 8px; backdrop-filter: blur(10px); pointer-events: all; }
+#controls div { margin: 5px 0; }
+.btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #aac; padding: 4px 10px; margin: 2px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.btn:hover { background: rgba(255,255,255,0.2); }
+.btn.active { background: rgba(100,150,255,0.3); border-color: rgba(100,150,255,0.5); }
+#input-container { position: fixed; display: none; background: rgba(10,10,30,0.95); padding: 12px; border-radius: 8px; border: 1px solid rgba(100,150,255,0.5); box-shadow: 0 0 20px rgba(100,150,255,0.3); z-index: 1000; }
+#task-input { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 8px; font-size: 14px; width: 250px; border-radius: 4px; outline: none; }
+#task-input::placeholder { color: #888; }
+.priority-selector { margin-top: 8px; display: flex; gap: 8px; align-items: center; }
+.priority-dot { width: 16px; height: 16px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
+.priority-dot:hover { transform: scale(1.2); }
+.priority-dot.selected { border-color: #fff; box-shadow: 0 0 8px currentColor; }
+.priority-dot.none { background: #fff; }
+.priority-dot.low { background: #4f8; }
+.priority-dot.medium { background: #fa0; }
+.priority-dot.high { background: #f44; }
+#tooltip { position: fixed; display: none; background: rgba(10,10,30,0.95); color: #fff; padding: 10px 14px; border-radius: 6px; font-size: 12px; pointer-events: none; border: 1px solid rgba(100,150,255,0.5); z-index: 999; max-width: 200px; }
+.help-text { color: #778; font-size: 11px; margin-top: 10px; line-height: 1.4; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="controls">
+  <div><strong id="star-count">0 stars</strong></div>
+  <div><strong id="completed-count">0 fallen</strong></div>
+  <div style="margin-top: 10px;">
+    <button class="btn active" id="filter-all">All</button>
+    <button class="btn" id="filter-active">Active</button>
+    <button class="btn" id="filter-done">Done</button>
+  </div>
+  <div style="margin-top: 10px;">
+    <button class="btn active" id="sound-toggle">Sound On</button>
+  </div>
+  <div class="help-text">
+    Click sky to add<br>
+    Shift+click two stars to connect<br>
+    Double-click to complete
+  </div>
+</div>
+<div id="input-container">
+  <input type="text" id="task-input" placeholder="Task name...">
+  <div class="priority-selector">
+    <span style="color: #888; font-size: 12px;">Priority:</span>
+    <div class="priority-dot none selected" data-priority="none"></div>
+    <div class="priority-dot low" data-priority="low"></div>
+    <div class="priority-dot medium" data-priority="medium"></div>
+    <div class="priority-dot high" data-priority="high"></div>
+  </div>
+</div>
+<div id="tooltip"></div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const inputContainer = document.getElementById('input-container');
+const taskInput = document.getElementById('task-input');
+const tooltip = document.getElementById('tooltip');
+const STORAGE_KEY = 'todooo-034';
+
+let width, height, centerX, centerY;
+let tasks = [];
+let completedTasks = [];
+let connections = [];
+let backgroundStars = [];
+let nebulae = [];
+let skyRotation = 0;
+let selectedPriority = 'none';
+let filter = 'all';
+let soundEnabled = true;
+let draggingTask = null;
+let shiftKeyDown = false;
+let firstSelectedStar = null;
+let shootingStars = [];
+let particles = [];
+let audioContext;
+let ambientGain;
+
+const PRIORITY_COLORS = {
+  none: '#fff',
+  low: '#4f8',
+  medium: '#fa0',
+  high: '#f44'
+};
+
+function resize() {
+  width = canvas.width = window.innerWidth;
+  height = canvas.height = window.innerHeight;
+  centerX = width / 2;
+  centerY = height / 2;
+}
+
+function initAudio() {
+  try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    ambientGain = audioContext.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.value = 55;
+    oscillator.connect(ambientGain);
+    ambientGain.connect(audioContext.destination);
+    ambientGain.gain.value = 0.01;
+    oscillator.start();
+  } catch (e) {
+    soundEnabled = false;
+  }
+}
+
+function playSound(type) {
+  if (!soundEnabled || !audioContext) return;
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  const now = audioContext.currentTime;
+
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
+
+  switch(type) {
+    case 'place':
+      osc.frequency.value = 800;
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.3);
+      break;
+    case 'connect':
+      osc.frequency.value = 400;
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+      osc.start(now);
+      osc.stop(now + 0.2);
+      setTimeout(() => {
+        const osc2 = audioContext.createOscillator();
+        const gain2 = audioContext.createGain();
+        osc2.connect(gain2);
+        gain2.connect(audioContext.destination);
+        osc2.frequency.value = 600;
+        gain2.gain.setValueAtTime(0.08, audioContext.currentTime);
+        gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+        osc2.start();
+        osc2.stop(audioContext.currentTime + 0.2);
+      }, 100);
+      break;
+    case 'complete':
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.5);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+      osc.start(now);
+      osc.stop(now + 0.6);
+      break;
+    case 'delete':
+      osc.frequency.value = 150;
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+      osc.start(now);
+      osc.stop(now + 0.4);
+      break;
+    case 'ambient-shoot':
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(200, now + 0.8);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+      osc.start(now);
+      osc.stop(now + 0.8);
+      break;
+  }
+}
+
+function generateBackgroundStars() {
+  backgroundStars = [];
+  for (let i = 0; i < 200; i++) {
+    backgroundStars.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      radius: Math.random() * 1.5 + 0.5,
+      brightness: Math.random() * 0.5 + 0.3,
+      twinklePhase: Math.random() * Math.PI * 2,
+      twinkleSpeed: Math.random() * 0.001 + 0.0005
+    });
+  }
+}
+
+function generateNebulae() {
+  nebulae = [];
+  for (let i = 0; i < 4; i++) {
+    nebulae.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      radius: Math.random() * 200 + 150,
+      hue: Math.random() * 60 + 220
+    });
+  }
+}
+
+function rotatePoint(x, y, angle) {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const dx = x - centerX;
+  const dy = y - centerY;
+  return {
+    x: centerX + dx * cos - dy * sin,
+    y: centerY + dx * sin + dy * cos
+  };
+}
+
+function drawSky(time) {
+  ctx.fillStyle = '#050510';
+  ctx.fillRect(0, 0, width, height);
+
+  // Nebulae
+  nebulae.forEach(neb => {
+    const pos = rotatePoint(neb.x, neb.y, skyRotation);
+    const gradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, neb.radius);
+    gradient.addColorStop(0, `hsla(${neb.hue}, 70%, 50%, 0.05)`);
+    gradient.addColorStop(1, 'transparent');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+  });
+
+  // Background stars
+  backgroundStars.forEach(star => {
+    const pos = rotatePoint(star.x, star.y, skyRotation);
+    const twinkle = Math.sin(time * star.twinkleSpeed + star.twinklePhase) * 0.3 + 0.7;
+    const opacity = star.brightness * twinkle;
+
+    // Atmospheric haze near horizon
+    const distFromBottom = height - pos.y;
+    const hazeOpacity = distFromBottom < height * 0.15 ? (distFromBottom / (height * 0.15)) : 1;
+
+    ctx.fillStyle = `rgba(255, 255, 255, ${opacity * hazeOpacity * 0.8})`;
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, star.radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Horizon
+  const horizonGradient = ctx.createLinearGradient(0, height * 0.85, 0, height);
+  horizonGradient.addColorStop(0, 'transparent');
+  horizonGradient.addColorStop(1, 'rgba(10, 10, 20, 0.8)');
+  ctx.fillStyle = horizonGradient;
+  ctx.fillRect(0, height * 0.85, width, height * 0.15);
+}
+
+function drawConstellations(time) {
+  connections.forEach(conn => {
+    const task1 = tasks.find(t => t.id === conn.from);
+    const task2 = tasks.find(t => t.id === conn.to);
+    if (!task1 || !task2) return;
+
+    const shimmer = Math.sin(time * 0.002 + conn.phase) * 0.2 + 0.5;
+    ctx.strokeStyle = `rgba(100, 150, 255, ${shimmer * 0.4})`;
+    ctx.lineWidth = 1;
+    ctx.shadowBlur = 4;
+    ctx.shadowColor = 'rgba(100, 150, 255, 0.5)';
+    ctx.beginPath();
+    ctx.moveTo(task1.x, task1.y);
+    ctx.lineTo(task2.x, task2.y);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  });
+
+  // Draw constellation names
+  const constellations = findConstellations();
+  constellations.forEach(constellation => {
+    const centerX = constellation.tasks.reduce((sum, t) => sum + t.x, 0) / constellation.tasks.length;
+    const centerY = constellation.tasks.reduce((sum, t) => sum + t.y, 0) / constellation.tasks.length;
+    ctx.fillStyle = 'rgba(170, 170, 255, 0.3)';
+    ctx.font = 'italic 14px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(constellation.name, centerX, centerY);
+  });
+}
+
+function findConstellations() {
+  const constellations = [];
+  const visited = new Set();
+
+  tasks.forEach(task => {
+    if (visited.has(task.id)) return;
+
+    const group = [];
+    const queue = [task];
+    visited.add(task.id);
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      group.push(current);
+
+      connections.forEach(conn => {
+        let nextId = null;
+        if (conn.from === current.id) nextId = conn.to;
+        else if (conn.to === current.id) nextId = conn.from;
+
+        if (nextId && !visited.has(nextId)) {
+          const nextTask = tasks.find(t => t.id === nextId);
+          if (nextTask) {
+            visited.add(nextId);
+            queue.push(nextTask);
+          }
+        }
+      });
+    }
+
+    if (group.length >= 3) {
+      constellations.push({
+        tasks: group,
+        name: generateConstellationName(group)
+      });
+    }
+  });
+
+  return constellations;
+}
+
+function generateConstellationName(taskGroup) {
+  const words = taskGroup.flatMap(t => t.name.split(' ')).filter(w => w.length > 3);
+  if (words.length > 0) {
+    const word = words[Math.floor(Math.random() * words.length)];
+    return `The ${word.charAt(0).toUpperCase() + word.slice(1)}`;
+  }
+  return `Group ${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`;
+}
+
+function drawTasks(time, mouseX, mouseY) {
+  const activeTasks = filter === 'active' ? tasks.filter(t => !t.completed) : tasks;
+
+  activeTasks.forEach(task => {
+    const pulse = Math.sin(time * 0.003 + task.id * 0.1) * 0.2 + 0.8;
+    const radius = task.radius || (Math.random() * 2 + 4);
+    task.radius = radius;
+
+    const color = PRIORITY_COLORS[task.priority] || '#fff';
+    const gradient = ctx.createRadialGradient(task.x, task.y, 0, task.x, task.y, radius * 3);
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(0.3, color);
+    gradient.addColorStop(1, 'transparent');
+
+    ctx.fillStyle = gradient;
+    ctx.globalAlpha = pulse * 0.9;
+    ctx.beginPath();
+    ctx.arc(task.x, task.y, radius * 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(task.x, task.y, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Selection ring
+    if (task === firstSelectedStar) {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(task.x, task.y, radius + 4, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Name
+    const dist = Math.hypot(task.x - mouseX, task.y - mouseY);
+    const isHover = dist < radius * 3 + 10;
+    ctx.fillStyle = isHover ? 'rgba(255, 255, 255, 1)' : 'rgba(170, 170, 204, 0.7)';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(task.name, task.x + radius + 8, task.y + 4);
+  });
+
+  if (filter === 'done') {
+    ctx.globalAlpha = 0.2;
+    completedTasks.forEach(task => {
+      ctx.fillStyle = '#888';
+      ctx.beginPath();
+      ctx.arc(task.x, task.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawShootingStars(time) {
+  shootingStars = shootingStars.filter(star => {
+    const progress = (time - star.startTime) / 2000;
+    if (progress >= 1) return false;
+
+    const x = star.startX + star.dx * progress;
+    const y = star.startY + star.dy * progress;
+    const alpha = 1 - progress;
+
+    // Trail
+    const gradient = ctx.createLinearGradient(star.startX, star.startY, x, y);
+    gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha * 0.8})`);
+    gradient.addColorStop(0.5, star.color.replace(')', `, ${alpha * 0.5})`).replace('rgb', 'rgba'));
+    gradient.addColorStop(1, 'transparent');
+
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(star.startX, star.startY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+
+    // Head
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    return true;
+  });
+
+  // Particles
+  particles = particles.filter(p => {
+    const progress = (time - p.startTime) / 500;
+    if (progress >= 1) return false;
+
+    const x = p.x + p.vx * progress;
+    const y = p.y + p.vy * progress;
+    const alpha = 1 - progress;
+
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.7})`;
+    ctx.beginPath();
+    ctx.arc(x, y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+
+    return true;
+  });
+}
+
+function getTaskAtPosition(x, y) {
+  for (let i = tasks.length - 1; i >= 0; i--) {
+    const task = tasks[i];
+    const dist = Math.hypot(task.x - x, task.y - y);
+    if (dist < (task.radius || 6) * 3 + 10) return task;
+  }
+  return null;
+}
+
+function createTask(x, y, name, priority) {
+  const task = {
+    id: Date.now() + Math.random(),
+    x, y,
+    name,
+    priority,
+    completed: false,
+    createdAt: Date.now()
+  };
+  tasks.push(task);
+
+  // Burst animation
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * 50,
+      vy: Math.sin(angle) * 50,
+      size: 2,
+      startTime: Date.now()
+    });
+  }
+
+  playSound('place');
+  save();
+  updateUI();
+}
+
+function completeTask(task) {
+  const color = PRIORITY_COLORS[task.priority];
+  const angle = Math.random() * Math.PI * 0.5 + Math.PI * 0.25;
+  const speed = 400;
+
+  shootingStars.push({
+    startX: task.x,
+    startY: task.y,
+    dx: Math.cos(angle) * speed,
+    dy: -Math.abs(Math.sin(angle)) * speed,
+    color,
+    startTime: Date.now()
+  });
+
+  // Flash
+  for (let i = 0; i < 20; i++) {
+    const angle = (i / 20) * Math.PI * 2;
+    particles.push({
+      x: task.x,
+      y: task.y,
+      vx: Math.cos(angle) * 100,
+      vy: Math.sin(angle) * 100,
+      size: 1.5,
+      startTime: Date.now()
+    });
+  }
+
+  completedTasks.push({...task});
+  connections = connections.filter(c => c.from !== task.id && c.to !== task.id);
+  tasks = tasks.filter(t => t.id !== task.id);
+
+  playSound('complete');
+  save();
+  updateUI();
+}
+
+function deleteTask(task) {
+  // Implosion particles
+  for (let i = 0; i < 15; i++) {
+    const angle = (i / 15) * Math.PI * 2;
+    const dist = 30;
+    particles.push({
+      x: task.x + Math.cos(angle) * dist,
+      y: task.y + Math.sin(angle) * dist,
+      vx: -Math.cos(angle) * 60,
+      vy: -Math.sin(angle) * 60,
+      size: 1.5,
+      startTime: Date.now()
+    });
+  }
+
+  connections = connections.filter(c => c.from !== task.id && c.to !== task.id);
+  tasks = tasks.filter(t => t.id !== task.id);
+
+  playSound('delete');
+  save();
+  updateUI();
+}
+
+function connectTasks(task1, task2) {
+  const exists = connections.some(c =>
+    (c.from === task1.id && c.to === task2.id) ||
+    (c.from === task2.id && c.to === task1.id)
+  );
+
+  if (!exists) {
+    connections.push({
+      from: task1.id,
+      to: task2.id,
+      phase: Math.random() * Math.PI * 2
+    });
+    playSound('connect');
+    save();
+  }
+}
+
+function updateUI() {
+  document.getElementById('star-count').textContent = `${tasks.length} ${tasks.length === 1 ? 'star' : 'stars'}`;
+  document.getElementById('completed-count').textContent = `${completedTasks.length} fallen`;
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    tasks,
+    completedTasks,
+    connections,
+    skyRotation
+  }));
+}
+
+function load() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (data) {
+      tasks = data.tasks || [];
+      completedTasks = data.completedTasks || [];
+      connections = data.connections || [];
+      skyRotation = data.skyRotation || 0;
+    }
+  } catch (e) {
+    console.error('Failed to load:', e);
+  }
+  updateUI();
+}
+
+let lastTime = 0;
+let lastAmbientShoot = 0;
+
+function animate(time) {
+  if (!lastTime) lastTime = time;
+  const delta = time - lastTime;
+  lastTime = time;
+
+  skyRotation += (Math.PI / 180 / 60) * (delta / 1000);
+
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = currentMouseX - rect.left;
+  const mouseY = currentMouseY - rect.top;
+
+  drawSky(time);
+  drawConstellations(time);
+  drawTasks(time, mouseX, mouseY);
+  drawShootingStars(time);
+
+  // Ambient shooting stars
+  if (time - lastAmbientShoot > 60000) {
+    const x = Math.random() * width;
+    const y = Math.random() * height * 0.5;
+    const angle = Math.random() * Math.PI * 0.5 + Math.PI * 0.25;
+    shootingStars.push({
+      startX: x,
+      startY: y,
+      dx: Math.cos(angle) * 500,
+      dy: -Math.abs(Math.sin(angle)) * 500,
+      color: 'rgb(200, 220, 255)',
+      startTime: time
+    });
+    playSound('ambient-shoot');
+    lastAmbientShoot = time;
+  }
+
+  if (time % 5000 < 16) {
+    save();
+  }
+
+  requestAnimationFrame(animate);
+}
+
+let currentMouseX = 0;
+let currentMouseY = 0;
+let clickTimeout = null;
+
+canvas.addEventListener('mousemove', (e) => {
+  currentMouseX = e.clientX;
+  currentMouseY = e.clientY;
+
+  if (draggingTask) {
+    const rect = canvas.getBoundingClientRect();
+    draggingTask.x = e.clientX - rect.left;
+    draggingTask.y = e.clientY - rect.top;
+    save();
+    return;
+  }
+
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const task = getTaskAtPosition(x, y);
+
+  if (task) {
+    tooltip.style.display = 'block';
+    tooltip.style.left = e.clientX + 15 + 'px';
+    tooltip.style.top = e.clientY + 15 + 'px';
+    tooltip.innerHTML = `<strong>${task.name}</strong><br>Priority: ${task.priority}<br>Created: ${new Date(task.createdAt).toLocaleDateString()}`;
+  } else {
+    tooltip.style.display = 'none';
+  }
+});
+
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const task = getTaskAtPosition(x, y);
+
+  if (task) {
+    if (shiftKeyDown) {
+      if (firstSelectedStar && firstSelectedStar !== task) {
+        connectTasks(firstSelectedStar, task);
+        firstSelectedStar = null;
+      } else {
+        firstSelectedStar = task;
+      }
+    } else {
+      draggingTask = task;
+      firstSelectedStar = task;
+    }
+  }
+});
+
+canvas.addEventListener('mouseup', () => {
+  draggingTask = null;
+});
+
+canvas.addEventListener('click', (e) => {
+  if (draggingTask) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const task = getTaskAtPosition(x, y);
+
+  if (!task && !shiftKeyDown) {
+    inputContainer.style.display = 'block';
+    inputContainer.style.left = e.clientX + 'px';
+    inputContainer.style.top = e.clientY + 'px';
+    taskInput.value = '';
+    taskInput.focus();
+    inputContainer.dataset.x = x;
+    inputContainer.dataset.y = y;
+  }
+});
+
+canvas.addEventListener('dblclick', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const task = getTaskAtPosition(x, y);
+
+  if (task) {
+    completeTask(task);
+  }
+});
+
+canvas.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const task = getTaskAtPosition(x, y);
+
+  if (task) {
+    deleteTask(task);
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Shift') {
+    shiftKeyDown = true;
+  }
+
+  if (e.key === 'Enter' && firstSelectedStar && !inputContainer.style.display.includes('block')) {
+    completeTask(firstSelectedStar);
+    firstSelectedStar = null;
+  }
+});
+
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'Shift') {
+    shiftKeyDown = false;
+  }
+});
+
+taskInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const name = taskInput.value.trim();
+    if (name) {
+      const x = parseFloat(inputContainer.dataset.x);
+      const y = parseFloat(inputContainer.dataset.y);
+      createTask(x, y, name, selectedPriority);
+    }
+    inputContainer.style.display = 'none';
+  } else if (e.key === 'Escape') {
+    inputContainer.style.display = 'none';
+  }
+});
+
+document.querySelectorAll('.priority-dot').forEach(dot => {
+  dot.addEventListener('click', () => {
+    document.querySelectorAll('.priority-dot').forEach(d => d.classList.remove('selected'));
+    dot.classList.add('selected');
+    selectedPriority = dot.dataset.priority;
+  });
+});
+
+document.getElementById('filter-all').addEventListener('click', () => {
+  filter = 'all';
+  document.querySelectorAll('#controls .btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('filter-all').classList.add('active');
+});
+
+document.getElementById('filter-active').addEventListener('click', () => {
+  filter = 'active';
+  document.querySelectorAll('#controls .btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('filter-active').classList.add('active');
+});
+
+document.getElementById('filter-done').addEventListener('click', () => {
+  filter = 'done';
+  document.querySelectorAll('#controls .btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('filter-done').classList.add('active');
+});
+
+document.getElementById('sound-toggle').addEventListener('click', (e) => {
+  soundEnabled = !soundEnabled;
+  e.target.textContent = soundEnabled ? 'Sound On' : 'Sound Off';
+  e.target.classList.toggle('active');
+  if (soundEnabled && audioContext) {
+    audioContext.resume();
+  }
+});
+
+window.addEventListener('resize', resize);
+window.addEventListener('load', () => {
+  resize();
+  generateBackgroundStars();
+  generateNebulae();
+  load();
+  initAudio();
+  requestAnimationFrame(animate);
+});
+</script>
+</body>
+</html>
