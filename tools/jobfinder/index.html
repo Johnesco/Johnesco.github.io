@@ -189,10 +189,16 @@
       color: #ff6b6b;
     }
 
-    /* Edit Button */
+    /* Edit Buttons */
+    .edit-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
     .edit-btn {
-      display: block;
-      margin: 1rem auto;
+      display: inline-block;
       padding: 0.6rem 1.2rem;
       font-size: 0.9rem;
       border: 1px solid #1f4068;
@@ -219,6 +225,66 @@
     }
 
     .edit-panel.open { display: block; }
+
+    /* Search Edit Rows */
+    .search-edit-row {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .search-edit-row input[type="text"] {
+      flex: 1;
+      padding: 0.3rem 0.5rem;
+      font-size: 0.85rem;
+      border: 1px solid #1f4068;
+      border-radius: 4px;
+      background: #1a1a2e;
+      color: #fff;
+      min-width: 0;
+    }
+
+    .search-edit-row input[type="text"]:focus {
+      outline: none;
+      border-color: #00d9ff;
+    }
+
+    .search-edit-row select {
+      padding: 0.3rem 0.4rem;
+      font-size: 0.75rem;
+      border: 1px solid #1f4068;
+      border-radius: 4px;
+      background: #1a1a2e;
+      color: #aaa;
+      cursor: pointer;
+    }
+
+    .search-edit-row select:focus {
+      outline: none;
+      border-color: #00d9ff;
+    }
+
+    .search-edit-row select.core { color: #00d9ff; border-color: #00d9ff; }
+    .search-edit-row select.growth { color: #4ade80; border-color: #4ade80; }
+    .search-edit-row select.reach { color: #c084fc; border-color: #c084fc; }
+
+    .move-btn {
+      padding: 0.15rem 0.35rem;
+      font-size: 0.65rem;
+      border: 1px solid #1f4068;
+      border-radius: 3px;
+      background: transparent;
+      color: #666;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      line-height: 1;
+    }
+
+    .move-btn:hover {
+      border-color: #00d9ff;
+      color: #00d9ff;
+    }
 
     .edit-panel h3 {
       color: #00d9ff;
@@ -494,6 +560,34 @@
       color: #00d9ff;
     }
 
+    /* View Toggle */
+    .view-toggle {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    .view-btn {
+      padding: 0.35rem 1.1rem;
+      font-size: 0.8rem;
+      border: 1px solid #1f4068;
+      background: transparent;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .view-btn:first-child { border-radius: 5px 0 0 5px; }
+    .view-btn:last-child { border-radius: 0 5px 5px 0; border-left: none; }
+
+    .view-btn.active {
+      background: #1f4068;
+      color: #00d9ff;
+      border-color: #00d9ff;
+    }
+
+    .view-btn:hover:not(.active) { color: #aaa; }
+
     /* Container */
     .container {
       max-width: 100%;
@@ -605,6 +699,10 @@
       flex-shrink: 0;
     }
 
+    .site-name.core { color: #00d9ff; }
+    .site-name.growth { color: #4ade80; }
+    .site-name.reach { color: #c084fc; }
+
     .site-links {
       display: flex;
       gap: 0.3rem;
@@ -689,6 +787,7 @@
       display: flex;
       align-items: center;
       gap: 0.4rem;
+      color: #aaa;
     }
 
     .priority-header:hover { opacity: 0.8; }
@@ -773,10 +872,19 @@
         <button class="clear-location" onclick="clearLocation()">Clear</button>
       </div>
     </div>
-    <button class="edit-btn" onclick="toggleBoardsPanel()">Customize Job Boards</button>
+    <div class="edit-buttons">
+      <button class="edit-btn" onclick="toggleSearchesPanel()">Edit Searches</button>
+      <button class="edit-btn" onclick="toggleBoardsPanel()">Customize Job Boards</button>
+    </div>
   </header>
 
+  <div class="edit-panel" id="searches-panel"></div>
   <div class="edit-panel" id="boards-panel"></div>
+
+  <div class="view-toggle">
+    <button class="view-btn active" data-mode="skill" onclick="setViewMode('skill')">By Skill</button>
+    <button class="view-btn" data-mode="board" onclick="setViewMode('board')">By Board</button>
+  </div>
 
   <div class="container" id="container"></div>
 
@@ -789,6 +897,7 @@
     let userLocation = { city: '', state: '' };
     let clickData = {};
     let collapsedGroups = {};
+    let viewMode = 'skill';
 
     // LocalStorage keys
     const SEARCHES_KEY = 'jobfinder_searches';
@@ -797,6 +906,7 @@
     const LOCATION_KEY = 'jobfinder_location';
     const CLICKS_KEY = 'jobfinder_clicks';
     const COLLAPSED_KEY = 'jobfinder_collapsed';
+    const VIEW_KEY = 'jobfinder_view';
 
     // Initialize
     document.addEventListener('DOMContentLoaded', init);
@@ -815,6 +925,7 @@
       loadLocation();
       loadClicks();
       loadCollapsed();
+      loadViewMode();
 
       // Enter to submit textarea, Shift+Enter for newline
       document.getElementById('search-input').addEventListener('keydown', function(e) {
@@ -932,6 +1043,17 @@
     function toggleGroup(priority) {
       collapsedGroups[priority] = !collapsedGroups[priority];
       saveCollapsed();
+      render();
+    }
+
+    // View mode
+    function loadViewMode() {
+      viewMode = localStorage.getItem(VIEW_KEY) || 'skill';
+    }
+
+    function setViewMode(mode) {
+      viewMode = mode;
+      localStorage.setItem(VIEW_KEY, mode);
       render();
     }
 
@@ -1217,6 +1339,56 @@
     function deleteSearch(term) {
       searches = searches.filter(s => s.term !== term);
       saveSearches();
+      renderSearchesPanel();
+      render();
+    }
+
+    function updateSearchTerm(index, newTerm) {
+      const oldTerm = searches[index].term;
+      newTerm = newTerm.trim();
+      if (!newTerm || newTerm === oldTerm) return;
+      if (searches.some((s, i) => i !== index && s.term.toLowerCase() === newTerm.toLowerCase())) {
+        alert('A search with this name already exists');
+        renderSearchesPanel();
+        return;
+      }
+      // Migrate click data keys
+      const updated = {};
+      for (const key in clickData) {
+        if (key.startsWith(oldTerm + '::')) {
+          updated[newTerm + '::' + key.substring(oldTerm.length + 2)] = clickData[key];
+        } else {
+          updated[key] = clickData[key];
+        }
+      }
+      clickData = updated;
+      saveClicks();
+      searches[index].term = newTerm;
+      saveSearches();
+      render();
+    }
+
+    function updateSearchPriority(index, newPriority) {
+      searches[index].priority = newPriority;
+      saveSearches();
+      renderSearchesPanel();
+      render();
+    }
+
+    function moveSearch(index, direction) {
+      const search = searches[index];
+      const priority = search.priority || '';
+      const sameGroup = [];
+      searches.forEach((s, i) => {
+        if ((s.priority || '') === priority) sameGroup.push(i);
+      });
+      const posInGroup = sameGroup.indexOf(index);
+      const targetPos = posInGroup + direction;
+      if (targetPos < 0 || targetPos >= sameGroup.length) return;
+      const targetIndex = sameGroup[targetPos];
+      [searches[index], searches[targetIndex]] = [searches[targetIndex], searches[index]];
+      saveSearches();
+      renderSearchesPanel();
       render();
     }
 
@@ -1232,10 +1404,63 @@
       render();
     }
 
-    // Panel toggle
+    // Panel toggles
+    function toggleSearchesPanel() {
+      const panel = document.getElementById('searches-panel');
+      document.getElementById('boards-panel').classList.remove('open');
+      panel.classList.toggle('open');
+      if (panel.classList.contains('open')) renderSearchesPanel();
+    }
+
     function toggleBoardsPanel() {
       const panel = document.getElementById('boards-panel');
+      document.getElementById('searches-panel').classList.remove('open');
       panel.classList.toggle('open');
+    }
+
+    function renderSearchesPanel() {
+      const panel = document.getElementById('searches-panel');
+      const priorities = ['core', 'growth', 'reach', ''];
+      const priorityLabels = { core: 'Core', growth: 'Growth', reach: 'Reach', '': 'No Priority' };
+      const priorityColors = { core: '#00d9ff', growth: '#4ade80', reach: '#c084fc', '': '#888' };
+
+      let html = '<h3>Edit Searches</h3>';
+
+      priorities.forEach(priority => {
+        const group = [];
+        searches.forEach((s, i) => {
+          if ((s.priority || '') === priority) group.push({ search: s, index: i });
+        });
+        if (group.length === 0) return;
+
+        html += `<div class="category-settings">
+          <h4 style="color: ${priorityColors[priority]}">${priorityLabels[priority]}</h4>`;
+
+        group.forEach(({ search, index }) => {
+          const safeTerm = escapeAttr(search.term);
+          const selP = search.priority || '';
+          html += `<div class="search-edit-row">
+            <input type="text" value="${safeTerm}" onchange="updateSearchTerm(${index}, this.value)" onkeydown="if(event.key==='Enter')this.blur();">
+            <button class="move-btn" onclick="moveSearch(${index}, -1)" title="Move up">▲</button>
+            <button class="move-btn" onclick="moveSearch(${index}, 1)" title="Move down">▼</button>
+            <select class="${selP}" onchange="updateSearchPriority(${index}, this.value); this.className=this.value;">
+              <option value=""${selP === '' ? ' selected' : ''}>—</option>
+              <option value="core"${selP === 'core' ? ' selected' : ''}>Core</option>
+              <option value="growth"${selP === 'growth' ? ' selected' : ''}>Growth</option>
+              <option value="reach"${selP === 'reach' ? ' selected' : ''}>Reach</option>
+            </select>
+            <button class="delete-btn" onclick="deleteSearch('${escapeAttr(search.term)}')" title="Delete">&times;</button>
+          </div>`;
+        });
+
+        html += '</div>';
+      });
+
+      html += `<div class="settings-footer">
+        <button class="back-btn" onclick="toggleSearchesPanel()">Back to Main</button>
+      </div>`;
+
+      panel.innerHTML = html;
     }
 
     // Import/Export functions
@@ -1472,6 +1697,11 @@
 
       const container = document.getElementById('container');
 
+      // Update view toggle
+      document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === viewMode);
+      });
+
       if (searches.length === 0) {
         container.innerHTML = `
           <div class="empty-state">
@@ -1489,6 +1719,14 @@
         return;
       }
 
+      if (viewMode === 'board') {
+        container.innerHTML = renderByBoard();
+      } else {
+        container.innerHTML = renderBySkill();
+      }
+    }
+
+    function renderBySkill() {
       const hasLoc = userLocation.city && userLocation.state;
       const priorities = ['core', 'growth', 'reach', ''];
       const priorityLabels = { core: 'Core', growth: 'Growth', reach: 'Reach' };
@@ -1515,7 +1753,101 @@
         html += '</div></div>';
       });
 
-      container.innerHTML = html;
+      return html;
+    }
+
+    function renderByBoard() {
+      const hasLoc = userLocation.city && userLocation.state;
+      let html = '';
+
+      if (!hasLoc) {
+        html += `<div class="no-location-note">Only remote search available — add a location above for location-based results</div>`;
+      }
+
+      CONFIG.categories.forEach(cat => {
+        const enabledInCategory = cat.sites.filter(s => enabledSites.includes(s.name));
+        if (enabledInCategory.length === 0) return;
+
+        const isCollapsed = collapsedGroups[cat.name];
+        html += `<div class="priority-group${isCollapsed ? ' collapsed' : ''}">`;
+        html += `<h2 class="priority-header" onclick="toggleGroup('${escapeAttr(cat.name)}')">
+          <span class="collapse-arrow">▾</span> ${cat.name} <span class="group-count">(${enabledInCategory.length})</span>
+        </h2>`;
+        html += `<div class="searches-grid">`;
+        enabledInCategory.forEach(site => {
+          html += buildBoardCard(site, hasLoc);
+        });
+        html += '</div></div>';
+      });
+
+      const enabledCustom = customSites.filter(s => enabledSites.includes(s.name));
+      if (enabledCustom.length > 0) {
+        const isCollapsed = collapsedGroups['Custom'];
+        html += `<div class="priority-group${isCollapsed ? ' collapsed' : ''}">`;
+        html += `<h2 class="priority-header" onclick="toggleGroup('Custom')">
+          <span class="collapse-arrow">▾</span> Custom <span class="group-count">(${enabledCustom.length})</span>
+        </h2>`;
+        html += `<div class="searches-grid">`;
+        enabledCustom.forEach(site => {
+          html += buildBoardCard(site, hasLoc);
+        });
+        html += '</div></div>';
+      }
+
+      return html;
+    }
+
+    function buildBoardCard(site, hasLocation) {
+      const safeSiteName = escapeHtml(site.name);
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const ts = todayStart.getTime();
+      let todayDone = 0;
+      searches.forEach(s => {
+        const key = s.term + '::' + site.name;
+        if (clickData[key] && clickData[key] >= ts) todayDone++;
+      });
+
+      let html = `
+        <div class="search-card">
+          <div class="search-card-header">
+            <h3>${safeSiteName} <span class="search-progress"><span class="done">${todayDone}</span>/${searches.length} today</span></h3>
+          </div>
+      `;
+
+      searches.forEach(search => {
+        const term = search.term;
+        const priority = search.priority || '';
+        const safeTerm = escapeHtml(term);
+        const safeAttr = escapeAttr(term);
+        const age = getClickAge(term, site.name);
+        const statusHtml = age
+          ? `<span class="site-status ${age.tier}">${age.tier === 'fresh' ? '✓ ' : ''}${age.label}</span>`
+          : '';
+
+        html += `<div class="site-row">
+          <span class="site-name${priority ? ' ' + priority : ''}">${safeTerm}</span>
+          <div class="site-links">`;
+
+        if (site.urls.location) {
+          if (hasLocation) {
+            const locationUrl = buildUrl(site.urls.location, term, userLocation.city, userLocation.state);
+            html += `<a href="${locationUrl}" target="_blank" class="site-link location" data-keyword="${safeAttr}" data-site="${escapeAttr(site.name)}">Location</a>`;
+          } else {
+            html += `<span class="site-link location disabled">Location</span>`;
+          }
+        }
+
+        if (site.urls.remote) {
+          const remoteUrl = buildUrl(site.urls.remote, term, '', '');
+          html += `<a href="${remoteUrl}" target="_blank" class="site-link remote" data-keyword="${safeAttr}" data-site="${escapeAttr(site.name)}">Remote</a>`;
+        }
+
+        html += `</div>${statusHtml}</div>`;
+      });
+
+      html += '</div>';
+      return html;
     }
 
     function buildSearchCard(search) {
