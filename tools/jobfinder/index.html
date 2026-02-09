@@ -798,13 +798,23 @@
     .priority-header:hover { opacity: 0.8; }
 
     .collapse-arrow {
-      font-size: 0.6rem;
+      font-size: 0.85rem;
       display: inline-block;
-      transition: transform 0.2s;
+      transition: transform 0.25s ease;
     }
 
     .priority-group.collapsed .collapse-arrow { transform: rotate(-90deg); }
-    .priority-group.collapsed .searches-grid { display: none; }
+
+    .priority-group .searches-grid {
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.25s ease;
+      max-height: 5000px;
+      opacity: 1;
+    }
+    .priority-group.collapsed .searches-grid {
+      max-height: 0;
+      opacity: 0;
+    }
 
     .group-count {
       font-size: 0.7rem;
@@ -844,10 +854,19 @@
     .card-skill-header.reach { color: #c084fc; }
 
     .card-skill-header .collapse-arrow {
-      font-size: 0.5rem;
+      font-size: 0.7rem;
     }
 
-    .card-skill-group.collapsed .card-skill-rows { display: none; }
+    .card-skill-group .card-skill-rows {
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.25s ease;
+      max-height: 5000px;
+      opacity: 1;
+    }
+    .card-skill-group.collapsed .card-skill-rows {
+      max-height: 0;
+      opacity: 0;
+    }
     .card-skill-group.collapsed .collapse-arrow { transform: rotate(-90deg); }
 
     @keyframes fadeIn {
@@ -1075,10 +1094,16 @@
       localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsedGroups));
     }
 
-    function toggleGroup(priority) {
-      collapsedGroups[priority] = !collapsedGroups[priority];
+    function toggleGroup(key, el) {
+      collapsedGroups[key] = !collapsedGroups[key];
       saveCollapsed();
-      render();
+      // Toggle directly on DOM — no full re-render
+      const group = el ? el.closest('.priority-group, .card-skill-group') : null;
+      if (group) {
+        group.classList.toggle('collapsed', collapsedGroups[key]);
+      } else {
+        render();
+      }
     }
 
     // View mode
@@ -1777,7 +1802,7 @@
         const isCollapsed = priority && collapsedGroups[priority];
         html += `<div class="priority-group${isCollapsed ? ' collapsed' : ''}">`;
         if (priority) {
-          html += `<h2 class="priority-header ${priority}" onclick="toggleGroup('${priority}')">
+          html += `<h2 class="priority-header ${priority}" onclick="toggleGroup('${priority}', this)">
             <span class="collapse-arrow">▾</span> ${priorityLabels[priority]} <span class="group-count">(${group.length})</span>
           </h2>`;
         }
@@ -1805,7 +1830,7 @@
 
         const isCollapsed = collapsedGroups[cat.name];
         html += `<div class="priority-group${isCollapsed ? ' collapsed' : ''}">`;
-        html += `<h2 class="priority-header" onclick="toggleGroup('${escapeAttr(cat.name)}')">
+        html += `<h2 class="priority-header" onclick="toggleGroup('${escapeAttr(cat.name)}', this)">
           <span class="collapse-arrow">▾</span> ${cat.name} <span class="group-count">(${enabledInCategory.length})</span>
         </h2>`;
         html += `<div class="searches-grid">`;
@@ -1819,7 +1844,7 @@
       if (enabledCustom.length > 0) {
         const isCollapsed = collapsedGroups['Custom'];
         html += `<div class="priority-group${isCollapsed ? ' collapsed' : ''}">`;
-        html += `<h2 class="priority-header" onclick="toggleGroup('Custom')">
+        html += `<h2 class="priority-header" onclick="toggleGroup('Custom', this)">
           <span class="collapse-arrow">▾</span> Custom <span class="group-count">(${enabledCustom.length})</span>
         </h2>`;
         html += `<div class="searches-grid">`;
@@ -1862,7 +1887,7 @@
         const isCollapsed = collapsedGroups[groupKey];
 
         html += `<div class="card-skill-group${isCollapsed ? ' collapsed' : ''}">`;
-        html += `<div class="card-skill-header${priority ? ' ' + priority : ''}" onclick="toggleGroup('${escapeAttr(groupKey)}')">
+        html += `<div class="card-skill-header${priority ? ' ' + priority : ''}" onclick="toggleGroup('${escapeAttr(groupKey)}', this)">
           <span class="collapse-arrow">▾</span> ${priorityLabels[priority]} <span class="group-count">(${group.length})</span>
         </div>`;
         html += `<div class="card-skill-rows">`;
