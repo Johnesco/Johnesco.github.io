@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Station - Todooo 057</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            transition: background 2s ease;
+        }
+
+        #bgCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        #container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        #weatherReport {
+            font-size: 32px;
+            color: #2a2a2a;
+            margin: 20px 0;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(255,255,255,0.5);
+            font-style: italic;
+        }
+
+        #instrumentGrid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            max-width: 1400px;
+            margin: 20px auto;
+        }
+
+        .instrument {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .instrument canvas {
+            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.3));
+        }
+
+        .instrument-label {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #2a2a2a;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+        }
+
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        button {
+            background: rgba(139, 90, 43, 0.9);
+            border: 2px solid rgba(184, 134, 11, 0.8);
+            color: #fff;
+            padding: 10px 20px;
+            font-family: 'Georgia', serif;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: rgba(184, 134, 11, 0.9);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+
+        button.active {
+            background: rgba(34, 139, 34, 0.9);
+            border-color: rgba(144, 238, 144, 0.8);
+        }
+
+        #historyPanel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 40px;
+        }
+
+        #historyPanel.visible {
+            display: block;
+        }
+
+        #historyContent {
+            max-width: 1200px;
+            margin: 0 auto;
+            color: #fff;
+        }
+
+        #historyContent h2 {
+            font-size: 36px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .history-chart {
+            margin: 30px 0;
+        }
+
+        .history-chart h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .sparkline {
+            width: 100%;
+            height: 100px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+
+        .stats {
+            margin: 30px 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-box .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .stat-box .label {
+            font-size: 14px;
+            color: #ccc;
+            margin-top: 5px;
+        }
+
+        #textInput {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            padding: 10px;
+            font-size: 16px;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bgCanvas"></canvas>
+
+    <div id="container">
+        <div id="weatherReport">Initializing instruments...</div>
+
+        <div id="instrumentGrid">
+            <div class="instrument">
+                <canvas id="barometer" width="280" height="280"></canvas>
+                <div class="instrument-label">Barometer</div>
+            </div>
+            <div class="instrument">
+                <canvas id="thermometer" width="120" height="320"></canvas>
+                <div class="instrument-label">Thermometer</div>
+            </div>
+            <div class="instrument">
+                <canvas id="hygrometer" width="280" height="280"></canvas>
+                <div class="instrument-label">Hygrometer</div>
+            </div>
+            <div class="instrument">
+                <canvas id="anemometer" width="280" height="280"></canvas>
+                <div class="instrument-label">Anemometer</div>
+            </div>
+            <div class="instrument">
+                <canvas id="rainGauge" width="120" height="320"></canvas>
+                <div class="instrument-label">Rain Gauge</div>
+            </div>
+            <div class="instrument">
+                <canvas id="windVane" width="280" height="280"></canvas>
+                <div class="instrument-label">Wind Vane</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="controls">
+        <button id="audioToggle">Audio: OFF</button>
+        <button id="historyToggle">History (H)</button>
+    </div>
+
+    <div id="historyPanel">
+        <div id="historyContent">
+            <h2>Weather History - Last 24 Hours</h2>
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="value" id="visitCount">0</div>
+                    <div class="label">Total Visits</div>
+                </div>
+                <div class="stat-box">
+                    <div class="value" id="longestStorm">0m</div>
+                    <div class="label">Longest Storm</div>
+                </div>
+                <div class="stat-box">
+                    <div class="value" id="longestCalm">0m</div>
+                    <div class="label">Longest Calm</div>
+                </div>
+            </div>
+            <div class="history-chart">
+                <h3>Pressure (Movement Velocity)</h3>
+                <canvas class="sparkline" id="pressureHistory"></canvas>
+            </div>
+            <div class="history-chart">
+                <h3>Temperature (Typing Speed)</h3>
+                <canvas class="sparkline" id="tempHistory"></canvas>
+            </div>
+            <div class="history-chart">
+                <h3>Humidity (Idle Time)</h3>
+                <canvas class="sparkline" id="humidityHistory"></canvas>
+            </div>
+            <div class="history-chart">
+                <h3>Wind Speed (Scroll Speed)</h3>
+                <canvas class="sparkline" id="windHistory"></canvas>
+            </div>
+            <div class="history-chart">
+                <h3>Rainfall (Clicks)</h3>
+                <canvas class="sparkline" id="rainHistory"></canvas>
+            </div>
+            <button onclick="hideHistory()" style="margin: 20px auto; display: block;">Close (H)</button>
+        </div>
+    </div>
+
+    <input type="text" id="textInput" placeholder="Type to generate heat...">
+
+    <script>
+        // State
+        const state = {
+            pressure: 50,        // 0-100 (mouse velocity)
+            temperature: 50,     // 0-100 (typing speed)
+            humidity: 50,        // 0-100 (idle time)
+            windSpeed: 0,        // 0-100 (scroll speed)
+            rainfall: 0,         // 0-100 (clicks)
+            windDirection: 0,    // 0-360 degrees
+
+            // Targets for spring physics
+            pressureTarget: 50,
+            temperatureTarget: 50,
+            humidityTarget: 50,
+            windSpeedTarget: 0,
+            rainfallTarget: 0,
+            windDirectionTarget: 0,
+
+            // Behavior tracking
+            lastMouseX: 0,
+            lastMouseY: 0,
+            lastMouseTime: Date.now(),
+            lastActivityTime: Date.now(),
+            lastKeyTime: 0,
+            keyPresses: [],
+            anemometerRotation: 0,
+
+            // Audio
+            audioEnabled: false,
+            audioContext: null,
+
+            // History
+            history: [],
+            weatherCondition: 'Clear',
+            stormStart: null,
+            calmStart: null,
+            longestStorm: 0,
+            longestCalm: 0,
+            visitCount: 0
+        };
+
+        // Canvas contexts
+        const bgCanvas = document.getElementById('bgCanvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        const barometerCtx = document.getElementById('barometer').getContext('2d');
+        const thermometerCtx = document.getElementById('thermometer').getContext('2d');
+        const hygrometerCtx = document.getElementById('hygrometer').getContext('2d');
+        const anemometerCtx = document.getElementById('anemometer').getContext('2d');
+        const rainGaugeCtx = document.getElementById('rainGauge').getContext('2d');
+        const windVaneCtx = document.getElementById('windVane').getContext('2d');
+
+        // Resize background canvas
+        function resizeBackground() {
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+        }
+        resizeBackground();
+        window.addEventListener('resize', resizeBackground);
+
+        // Load state
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('todooo-057');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    state.history = data.history || [];
+                    state.longestStorm = data.longestStorm || 0;
+                    state.longestCalm = data.longestCalm || 0;
+                    state.visitCount = (data.visitCount || 0) + 1;
+                }
+            } catch (e) {
+                console.error('Failed to load state:', e);
+            }
+        }
+
+        // Save state
+        function saveState() {
+            try {
+                const data = {
+                    history: state.history.slice(-1440), // Keep last 24 hours (1 per minute)
+                    longestStorm: state.longestStorm,
+                    longestCalm: state.longestCalm,
+                    visitCount: state.visitCount
+                };
+                localStorage.setItem('todooo-057', JSON.stringify(data));
+            } catch (e) {
+                console.error('Failed to save state:', e);
+            }
+        }
+
+        // Spring physics for smooth animation
+        function spring(current, target, velocity = 0, stiffness = 0.1, damping = 0.8) {
+            const delta = target - current;
+            velocity += delta * stiffness;
+            velocity *= damping;
+            return current + velocity;
+        }
+
+        // Mouse movement tracking
+        let mouseVelocity = 0;
+        document.addEventListener('mousemove', (e) => {
+            const now = Date.now();
+            const dt = (now - state.lastMouseTime) / 1000;
+
+            if (dt > 0) {
+                const dx = e.clientX - state.lastMouseX;
+                const dy = e.clientY - state.lastMouseY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                mouseVelocity = Math.min(distance / dt / 10, 100);
+
+                // Wind direction
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                state.windDirectionTarget = (angle + 90 + 360) % 360;
+            }
+
+            state.lastMouseX = e.clientX;
+            state.lastMouseY = e.clientY;
+            state.lastMouseTime = now;
+            state.lastActivityTime = now;
+        });
+
+        // Typing tracking
+        const textInput = document.getElementById('textInput');
+        textInput.focus();
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'h' || e.key === 'H') {
+                if (!document.getElementById('historyPanel').classList.contains('visible')) {
+                    showHistory();
+                } else {
+                    hideHistory();
+                }
+                return;
+            }
+
+            textInput.focus();
+            const now = Date.now();
+            state.keyPresses.push(now);
+            state.lastKeyTime = now;
+            state.lastActivityTime = now;
+
+            // Keep only last 5 seconds of key presses
+            state.keyPresses = state.keyPresses.filter(t => now - t < 5000);
+        });
+
+        // Scroll tracking
+        let scrollVelocity = 0;
+        let lastScrollTime = Date.now();
+        let lastScrollY = window.scrollY;
+
+        window.addEventListener('wheel', (e) => {
+            const now = Date.now();
+            const dt = (now - lastScrollTime) / 1000;
+
+            if (dt > 0) {
+                scrollVelocity = Math.min(Math.abs(e.deltaY) / dt / 5, 100);
+            }
+
+            lastScrollTime = now;
+            state.lastActivityTime = now;
+        }, { passive: true });
+
+        // Click tracking
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                state.rainfallTarget = Math.min(state.rainfallTarget + 5, 100);
+                state.lastActivityTime = Date.now();
+
+                if (state.audioEnabled) {
+                    playRainDrop();
+                }
+            }
+        });
+
+        // Update sensor targets
+        function updateSensors() {
+            const now = Date.now();
+
+            // Pressure from mouse velocity
+            state.pressureTarget = mouseVelocity;
+            mouseVelocity *= 0.95; // Decay
+
+            // Temperature from typing speed
+            const recentKeys = state.keyPresses.filter(t => now - t < 2000).length;
+            state.temperatureTarget = Math.min(recentKeys * 10, 100);
+
+            // Humidity from idle time
+            const idleTime = (now - state.lastActivityTime) / 1000;
+            state.humidityTarget = Math.min(idleTime * 2, 100);
+
+            // Wind speed from scroll velocity
+            state.windSpeedTarget = scrollVelocity;
+            scrollVelocity *= 0.9; // Decay
+
+            // Rainfall evaporation
+            state.rainfallTarget *= 0.995;
+
+            // Apply spring physics
+            state.pressure = spring(state.pressure, state.pressureTarget, 0, 0.15, 0.85);
+            state.temperature = spring(state.temperature, state.temperatureTarget, 0, 0.1, 0.9);
+            state.humidity = spring(state.humidity, state.humidityTarget, 0, 0.08, 0.92);
+            state.windSpeed = spring(state.windSpeed, state.windSpeedTarget, 0, 0.2, 0.8);
+            state.rainfall = spring(state.rainfall, state.rainfallTarget, 0, 0.12, 0.88);
+            state.windDirection = spring(state.windDirection, state.windDirectionTarget, 0, 0.1, 0.9);
+        }
+
+        // Weather condition calculation
+        function getWeatherCondition() {
+            const avg = (state.pressure + state.temperature + state.windSpeed) / 3;
+            const rain = state.rainfall;
+
+            if (avg > 80 && rain > 50) return 'Thunderstorm';
+            if (avg > 60 && rain > 40) return 'Heavy Rain';
+            if (rain > 30) return 'Light Rain';
+            if (avg > 70) return 'Stormy';
+            if (avg > 50) return 'Windy';
+            if (state.humidity > 70) return 'Fog';
+            if (avg > 30) return 'Partly Cloudy';
+            if (state.temperature < 20) return 'Snow';
+            if (avg < 15) return 'Clear';
+            return 'Overcast';
+        }
+
+        // Background rendering
+        function drawBackground() {
+            const condition = getWeatherCondition();
+
+            // Sky color based on weather
+            let skyColor = '#87CEEB'; // Clear blue
+            if (condition === 'Clear') skyColor = '#87CEEB';
+            else if (condition === 'Partly Cloudy') skyColor = '#B0C4DE';
+            else if (condition === 'Overcast') skyColor = '#778899';
+            else if (condition === 'Fog') skyColor = '#BEBEBE';
+            else if (condition === 'Light Rain') skyColor = '#708090';
+            else if (condition === 'Heavy Rain') skyColor = '#606060';
+            else if (condition === 'Thunderstorm') skyColor = '#404040';
+            else if (condition === 'Windy') skyColor = '#9FB6CD';
+            else if (condition === 'Stormy') skyColor = '#556B2F';
+            else if (condition === 'Snow') skyColor = '#E0E0E0';
+
+            // Gradient background
+            const gradient = bgCtx.createLinearGradient(0, 0, 0, bgCanvas.height);
+            gradient.addColorStop(0, skyColor);
+            gradient.addColorStop(1, adjustBrightness(skyColor, -20));
+            bgCtx.fillStyle = gradient;
+            bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+            // Lightning flash
+            if (condition === 'Thunderstorm' && Math.random() < 0.01) {
+                bgCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+                if (state.audioEnabled) {
+                    playThunder();
+                }
+            }
+        }
+
+        function adjustBrightness(color, amount) {
+            const hex = color.replace('#', '');
+            const num = parseInt(hex, 16);
+            const r = Math.max(0, Math.min(255, ((num >> 16) & 0xFF) + amount));
+            const g = Math.max(0, Math.min(255, ((num >> 8) & 0xFF) + amount));
+            const b = Math.max(0, Math.min(255, (num & 0xFF) + amount));
+            return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+        }
+
+        // Draw barometer (circular gauge for pressure)
+        function drawBarometer() {
+            const canvas = barometerCtx.canvas;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const radius = 100;
+
+            barometerCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Brass background
+            const gradient = barometerCtx.createRadialGradient(cx, cy, radius * 0.8, cx, cy, radius);
+            gradient.addColorStop(0, '#D4AF37');
+            gradient.addColorStop(0.5, '#B8860B');
+            gradient.addColorStop(1, '#8B6914');
+            barometerCtx.fillStyle = gradient;
+            barometerCtx.beginPath();
+            barometerCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+            barometerCtx.fill();
+
+            // Glass face
+            const glassGrad = barometerCtx.createRadialGradient(cx - 20, cy - 20, 10, cx, cy, radius * 0.9);
+            glassGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+            glassGrad.addColorStop(0.7, 'rgba(255, 255, 255, 0.1)');
+            glassGrad.addColorStop(1, 'rgba(0, 0, 0, 0.1)');
+            barometerCtx.fillStyle = glassGrad;
+            barometerCtx.beginPath();
+            barometerCtx.arc(cx, cy, radius * 0.9, 0, Math.PI * 2);
+            barometerCtx.fill();
+
+            // Scale marks
+            barometerCtx.strokeStyle = '#2a2a2a';
+            barometerCtx.lineWidth = 2;
+            for (let i = 0; i <= 100; i += 10) {
+                const angle = -Math.PI * 0.75 + (i / 100) * Math.PI * 1.5;
+                const r1 = radius * 0.7;
+                const r2 = i % 20 === 0 ? radius * 0.8 : radius * 0.75;
+                const x1 = cx + Math.cos(angle) * r1;
+                const y1 = cy + Math.sin(angle) * r1;
+                const x2 = cx + Math.cos(angle) * r2;
+                const y2 = cy + Math.sin(angle) * r2;
+
+                barometerCtx.beginPath();
+                barometerCtx.moveTo(x1, y1);
+                barometerCtx.lineTo(x2, y2);
+                barometerCtx.stroke();
+            }
+
+            // Labels
+            barometerCtx.fillStyle = '#2a2a2a';
+            barometerCtx.font = 'bold 14px Georgia';
+            barometerCtx.textAlign = 'center';
+            barometerCtx.textBaseline = 'middle';
+
+            ['CALM', 'STORMY'].forEach((text, i) => {
+                const angle = -Math.PI * 0.75 + i * Math.PI * 1.5;
+                const x = cx + Math.cos(angle) * radius * 0.55;
+                const y = cy + Math.sin(angle) * radius * 0.55;
+                barometerCtx.fillText(text, x, y);
+            });
+
+            // Needle
+            const needleAngle = -Math.PI * 0.75 + (state.pressure / 100) * Math.PI * 1.5;
+            barometerCtx.strokeStyle = '#8B0000';
+            barometerCtx.lineWidth = 3;
+            barometerCtx.beginPath();
+            barometerCtx.moveTo(cx, cy);
+            barometerCtx.lineTo(
+                cx + Math.cos(needleAngle) * radius * 0.6,
+                cy + Math.sin(needleAngle) * radius * 0.6
+            );
+            barometerCtx.stroke();
+
+            // Center cap
+            barometerCtx.fillStyle = '#2a2a2a';
+            barometerCtx.beginPath();
+            barometerCtx.arc(cx, cy, 8, 0, Math.PI * 2);
+            barometerCtx.fill();
+
+            // Value text
+            barometerCtx.fillStyle = '#2a2a2a';
+            barometerCtx.font = 'bold 16px Georgia';
+            barometerCtx.fillText(Math.round(state.pressure), cx, cy + 40);
+        }
+
+        // Draw thermometer
+        function drawThermometer() {
+            const canvas = thermometerCtx.canvas;
+            const cx = canvas.width / 2;
+            const tubeTop = 40;
+            const tubeBottom = 280;
+            const tubeWidth = 30;
+            const bulbRadius = 25;
+
+            thermometerCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Glass tube
+            const tubeGrad = thermometerCtx.createLinearGradient(cx - tubeWidth / 2, 0, cx + tubeWidth / 2, 0);
+            tubeGrad.addColorStop(0, 'rgba(200, 200, 255, 0.6)');
+            tubeGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.8)');
+            tubeGrad.addColorStop(1, 'rgba(200, 200, 255, 0.6)');
+            thermometerCtx.fillStyle = tubeGrad;
+            thermometerCtx.strokeStyle = '#888';
+            thermometerCtx.lineWidth = 2;
+
+            thermometerCtx.beginPath();
+            thermometerCtx.roundRect(cx - tubeWidth / 2, tubeTop, tubeWidth, tubeBottom - tubeTop, 15);
+            thermometerCtx.fill();
+            thermometerCtx.stroke();
+
+            // Bulb
+            const bulbGrad = thermometerCtx.createRadialGradient(cx - 5, tubeBottom + 5, 5, cx, tubeBottom + 10, bulbRadius);
+            bulbGrad.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+            bulbGrad.addColorStop(1, 'rgba(200, 200, 255, 0.6)');
+            thermometerCtx.fillStyle = bulbGrad;
+            thermometerCtx.beginPath();
+            thermometerCtx.arc(cx, tubeBottom + 10, bulbRadius, 0, Math.PI * 2);
+            thermometerCtx.fill();
+            thermometerCtx.stroke();
+
+            // Mercury
+            const mercuryHeight = ((tubeBottom - tubeTop - 20) * state.temperature / 100);
+            const mercuryBottom = tubeBottom - 10;
+            const mercuryTop = mercuryBottom - mercuryHeight;
+
+            const mercuryGrad = thermometerCtx.createLinearGradient(cx - 10, 0, cx + 10, 0);
+            const mercuryColor = state.temperature > 50 ? '#DC143C' : '#4169E1';
+            mercuryGrad.addColorStop(0, mercuryColor);
+            mercuryGrad.addColorStop(0.5, adjustBrightness(mercuryColor, 40));
+            mercuryGrad.addColorStop(1, mercuryColor);
+            thermometerCtx.fillStyle = mercuryGrad;
+
+            // Mercury in bulb
+            thermometerCtx.beginPath();
+            thermometerCtx.arc(cx, tubeBottom + 10, bulbRadius * 0.7, 0, Math.PI * 2);
+            thermometerCtx.fill();
+
+            // Mercury column
+            if (mercuryHeight > 0) {
+                thermometerCtx.beginPath();
+                thermometerCtx.roundRect(cx - 8, mercuryTop, 16, mercuryHeight, 8);
+                thermometerCtx.fill();
+            }
+
+            // Scale marks
+            thermometerCtx.strokeStyle = '#2a2a2a';
+            thermometerCtx.lineWidth = 1;
+            thermometerCtx.font = '10px Georgia';
+            thermometerCtx.textAlign = 'right';
+            thermometerCtx.fillStyle = '#2a2a2a';
+
+            for (let i = 0; i <= 100; i += 20) {
+                const y = tubeBottom - 10 - ((tubeBottom - tubeTop - 20) * i / 100);
+                thermometerCtx.beginPath();
+                thermometerCtx.moveTo(cx + tubeWidth / 2 + 2, y);
+                thermometerCtx.lineTo(cx + tubeWidth / 2 + 8, y);
+                thermometerCtx.stroke();
+                thermometerCtx.fillText(i, cx + tubeWidth / 2 + 25, y + 3);
+            }
+        }
+
+        // Draw hygrometer (humidity dial)
+        function drawHygrometer() {
+            const canvas = hygrometerCtx.canvas;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const radius = 100;
+
+            hygrometerCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Copper background
+            const gradient = hygrometerCtx.createRadialGradient(cx, cy, radius * 0.8, cx, cy, radius);
+            gradient.addColorStop(0, '#B87333');
+            gradient.addColorStop(0.5, '#CD853F');
+            gradient.addColorStop(1, '#8B4513');
+            hygrometerCtx.fillStyle = gradient;
+            hygrometerCtx.beginPath();
+            hygrometerCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+            hygrometerCtx.fill();
+
+            // Glass face
+            const glassGrad = hygrometerCtx.createRadialGradient(cx - 20, cy - 20, 10, cx, cy, radius * 0.9);
+            glassGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+            glassGrad.addColorStop(0.7, 'rgba(255, 255, 255, 0.1)');
+            glassGrad.addColorStop(1, 'rgba(0, 0, 0, 0.1)');
+            hygrometerCtx.fillStyle = glassGrad;
+            hygrometerCtx.beginPath();
+            hygrometerCtx.arc(cx, cy, radius * 0.9, 0, Math.PI * 2);
+            hygrometerCtx.fill();
+
+            // Scale
+            hygrometerCtx.strokeStyle = '#2a2a2a';
+            hygrometerCtx.lineWidth = 2;
+            for (let i = 0; i <= 100; i += 10) {
+                const angle = -Math.PI * 0.75 + (i / 100) * Math.PI * 1.5;
+                const r1 = radius * 0.7;
+                const r2 = i % 20 === 0 ? radius * 0.8 : radius * 0.75;
+                const x1 = cx + Math.cos(angle) * r1;
+                const y1 = cy + Math.sin(angle) * r1;
+                const x2 = cx + Math.cos(angle) * r2;
+                const y2 = cy + Math.sin(angle) * r2;
+
+                hygrometerCtx.beginPath();
+                hygrometerCtx.moveTo(x1, y1);
+                hygrometerCtx.lineTo(x2, y2);
+                hygrometerCtx.stroke();
+            }
+
+            // Labels
+            hygrometerCtx.fillStyle = '#2a2a2a';
+            hygrometerCtx.font = 'bold 14px Georgia';
+            hygrometerCtx.textAlign = 'center';
+
+            ['DRY', 'HUMID'].forEach((text, i) => {
+                const angle = -Math.PI * 0.75 + i * Math.PI * 1.5;
+                const x = cx + Math.cos(angle) * radius * 0.55;
+                const y = cy + Math.sin(angle) * radius * 0.55;
+                hygrometerCtx.fillText(text, x, y);
+            });
+
+            // Needle
+            const needleAngle = -Math.PI * 0.75 + (state.humidity / 100) * Math.PI * 1.5;
+            hygrometerCtx.strokeStyle = '#006400';
+            hygrometerCtx.lineWidth = 3;
+            hygrometerCtx.beginPath();
+            hygrometerCtx.moveTo(cx, cy);
+            hygrometerCtx.lineTo(
+                cx + Math.cos(needleAngle) * radius * 0.6,
+                cy + Math.sin(needleAngle) * radius * 0.6
+            );
+            hygrometerCtx.stroke();
+
+            // Center
+            hygrometerCtx.fillStyle = '#2a2a2a';
+            hygrometerCtx.beginPath();
+            hygrometerCtx.arc(cx, cy, 8, 0, Math.PI * 2);
+            hygrometerCtx.fill();
+
+            // Value
+            hygrometerCtx.fillStyle = '#2a2a2a';
+            hygrometerCtx.font = 'bold 16px Georgia';
+            hygrometerCtx.fillText(Math.round(state.humidity) + '%', cx, cy + 40);
+        }
+
+        // Draw anemometer (spinning cups)
+        function drawAnemometer() {
+            const canvas = anemometerCtx.canvas;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            anemometerCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update rotation based on wind speed
+            state.anemometerRotation += state.windSpeed * 0.01;
+
+            // Center pole
+            anemometerCtx.fillStyle = '#505050';
+            anemometerCtx.fillRect(cx - 4, cy - 80, 8, 160);
+
+            // Draw 3 cups
+            const cupRadius = 40;
+            const cupDistance = 60;
+
+            for (let i = 0; i < 3; i++) {
+                const angle = state.anemometerRotation + (i * Math.PI * 2 / 3);
+                const cupX = cx + Math.cos(angle) * cupDistance;
+                const cupY = cy + Math.sin(angle) * cupDistance;
+
+                // Arm
+                anemometerCtx.strokeStyle = '#505050';
+                anemometerCtx.lineWidth = 4;
+                anemometerCtx.beginPath();
+                anemometerCtx.moveTo(cx, cy);
+                anemometerCtx.lineTo(cupX, cupY);
+                anemometerCtx.stroke();
+
+                // Cup
+                const cupGrad = anemometerCtx.createRadialGradient(cupX - 10, cupY - 10, 5, cupX, cupY, cupRadius);
+                cupGrad.addColorStop(0, '#ff4444');
+                cupGrad.addColorStop(1, '#cc0000');
+                anemometerCtx.fillStyle = cupGrad;
+                anemometerCtx.beginPath();
+                anemometerCtx.arc(cupX, cupY, cupRadius * 0.5, 0, Math.PI * 2);
+                anemometerCtx.fill();
+
+                // Cup shadow
+                anemometerCtx.fillStyle = 'rgba(0,0,0,0.3)';
+                anemometerCtx.beginPath();
+                anemometerCtx.arc(cupX + 2, cupY + 2, cupRadius * 0.5, 0, Math.PI * 2);
+                anemometerCtx.fill();
+            }
+
+            // Center cap
+            anemometerCtx.fillStyle = '#2a2a2a';
+            anemometerCtx.beginPath();
+            anemometerCtx.arc(cx, cy, 10, 0, Math.PI * 2);
+            anemometerCtx.fill();
+
+            // Speed text
+            anemometerCtx.fillStyle = '#2a2a2a';
+            anemometerCtx.font = 'bold 16px Georgia';
+            anemometerCtx.textAlign = 'center';
+            anemometerCtx.fillText(Math.round(state.windSpeed) + ' mph', cx, cy + 100);
+        }
+
+        // Draw rain gauge
+        function drawRainGauge() {
+            const canvas = rainGaugeCtx.canvas;
+            const cx = canvas.width / 2;
+            const gaugeTop = 40;
+            const gaugeBottom = 280;
+            const gaugeWidth = 40;
+
+            rainGaugeCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Glass cylinder
+            const glassGrad = rainGaugeCtx.createLinearGradient(cx - gaugeWidth / 2, 0, cx + gaugeWidth / 2, 0);
+            glassGrad.addColorStop(0, 'rgba(200, 220, 255, 0.5)');
+            glassGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.7)');
+            glassGrad.addColorStop(1, 'rgba(200, 220, 255, 0.5)');
+            rainGaugeCtx.fillStyle = glassGrad;
+            rainGaugeCtx.strokeStyle = '#888';
+            rainGaugeCtx.lineWidth = 2;
+
+            rainGaugeCtx.beginPath();
+            rainGaugeCtx.roundRect(cx - gaugeWidth / 2, gaugeTop, gaugeWidth, gaugeBottom - gaugeTop, 10);
+            rainGaugeCtx.fill();
+            rainGaugeCtx.stroke();
+
+            // Water fill
+            const waterHeight = ((gaugeBottom - gaugeTop - 10) * state.rainfall / 100);
+            const waterTop = gaugeBottom - 5 - waterHeight;
+
+            if (waterHeight > 0) {
+                const waterGrad = rainGaugeCtx.createLinearGradient(cx - gaugeWidth / 2 + 5, 0, cx + gaugeWidth / 2 - 5, 0);
+                waterGrad.addColorStop(0, 'rgba(100, 150, 255, 0.7)');
+                waterGrad.addColorStop(0.5, 'rgba(150, 200, 255, 0.9)');
+                waterGrad.addColorStop(1, 'rgba(100, 150, 255, 0.7)');
+                rainGaugeCtx.fillStyle = waterGrad;
+
+                rainGaugeCtx.beginPath();
+                rainGaugeCtx.roundRect(cx - gaugeWidth / 2 + 5, waterTop, gaugeWidth - 10, waterHeight, 5);
+                rainGaugeCtx.fill();
+            }
+
+            // Scale marks
+            rainGaugeCtx.strokeStyle = '#2a2a2a';
+            rainGaugeCtx.lineWidth = 1;
+            rainGaugeCtx.font = '10px Georgia';
+            rainGaugeCtx.textAlign = 'left';
+            rainGaugeCtx.fillStyle = '#2a2a2a';
+
+            for (let i = 0; i <= 100; i += 20) {
+                const y = gaugeBottom - 5 - ((gaugeBottom - gaugeTop - 10) * i / 100);
+                rainGaugeCtx.beginPath();
+                rainGaugeCtx.moveTo(cx + gaugeWidth / 2 + 2, y);
+                rainGaugeCtx.lineTo(cx + gaugeWidth / 2 + 8, y);
+                rainGaugeCtx.stroke();
+                rainGaugeCtx.fillText(i, cx + gaugeWidth / 2 + 12, y + 3);
+            }
+
+            // Base
+            rainGaugeCtx.fillStyle = '#8B6914';
+            rainGaugeCtx.fillRect(cx - gaugeWidth / 2 - 5, gaugeBottom, gaugeWidth + 10, 20);
+        }
+
+        // Draw wind vane
+        function drawWindVane() {
+            const canvas = windVaneCtx.canvas;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const radius = 100;
+
+            windVaneCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Compass rose background
+            const gradient = windVaneCtx.createRadialGradient(cx, cy, radius * 0.8, cx, cy, radius);
+            gradient.addColorStop(0, '#C0C0C0');
+            gradient.addColorStop(0.5, '#A9A9A9');
+            gradient.addColorStop(1, '#808080');
+            windVaneCtx.fillStyle = gradient;
+            windVaneCtx.beginPath();
+            windVaneCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+            windVaneCtx.fill();
+
+            // Compass points
+            const directions = ['N', 'E', 'S', 'W'];
+            windVaneCtx.fillStyle = '#2a2a2a';
+            windVaneCtx.font = 'bold 20px Georgia';
+            windVaneCtx.textAlign = 'center';
+            windVaneCtx.textBaseline = 'middle';
+
+            directions.forEach((dir, i) => {
+                const angle = i * Math.PI / 2;
+                const x = cx + Math.cos(angle - Math.PI / 2) * radius * 0.75;
+                const y = cy + Math.sin(angle - Math.PI / 2) * radius * 0.75;
+                windVaneCtx.fillText(dir, x, y);
+            });
+
+            // Wind vane arrow
+            const vaneAngle = state.windDirection * Math.PI / 180;
+            windVaneCtx.save();
+            windVaneCtx.translate(cx, cy);
+            windVaneCtx.rotate(vaneAngle);
+
+            // Arrow
+            windVaneCtx.fillStyle = '#DC143C';
+            windVaneCtx.beginPath();
+            windVaneCtx.moveTo(0, -radius * 0.5);
+            windVaneCtx.lineTo(-15, 10);
+            windVaneCtx.lineTo(0, 0);
+            windVaneCtx.lineTo(15, 10);
+            windVaneCtx.closePath();
+            windVaneCtx.fill();
+
+            // Tail
+            windVaneCtx.fillStyle = '#2a2a2a';
+            windVaneCtx.beginPath();
+            windVaneCtx.moveTo(0, 10);
+            windVaneCtx.lineTo(-20, radius * 0.4);
+            windVaneCtx.lineTo(0, radius * 0.35);
+            windVaneCtx.lineTo(20, radius * 0.4);
+            windVaneCtx.closePath();
+            windVaneCtx.fill();
+
+            windVaneCtx.restore();
+
+            // Center pin
+            windVaneCtx.fillStyle = '#2a2a2a';
+            windVaneCtx.beginPath();
+            windVaneCtx.arc(cx, cy, 8, 0, Math.PI * 2);
+            windVaneCtx.fill();
+
+            // Direction text
+            windVaneCtx.fillStyle = '#2a2a2a';
+            windVaneCtx.font = 'bold 14px Georgia';
+            windVaneCtx.fillText(Math.round(state.windDirection) + '°', cx, cy + 80);
+        }
+
+        // Update weather report text
+        function updateWeatherReport() {
+            const condition = getWeatherCondition();
+            state.weatherCondition = condition;
+
+            const descriptions = {
+                'Clear': 'All is calm and clear.',
+                'Partly Cloudy': 'A gentle stirring in the air.',
+                'Overcast': 'The atmosphere grows heavy.',
+                'Fog': 'Stillness descends like a veil.',
+                'Light Rain': 'Soft percussion on the instruments.',
+                'Heavy Rain': 'The deluge intensifies.',
+                'Thunderstorm': 'Chaos in the measurements!',
+                'Windy': 'Restless energy sweeps through.',
+                'Stormy': 'Turbulent conditions prevail.',
+                'Snow': 'Quiet cold settles in.'
+            };
+
+            document.getElementById('weatherReport').textContent =
+                `${condition} — ${descriptions[condition] || ''}`;
+
+            // Track storm/calm duration
+            const now = Date.now();
+            if (condition === 'Thunderstorm' || condition === 'Stormy' || condition === 'Heavy Rain') {
+                if (!state.stormStart) {
+                    state.stormStart = now;
+                }
+                state.calmStart = null;
+
+                const duration = Math.floor((now - state.stormStart) / 60000);
+                if (duration > state.longestStorm) {
+                    state.longestStorm = duration;
+                }
+            } else if (condition === 'Clear' || condition === 'Fog') {
+                if (!state.calmStart) {
+                    state.calmStart = now;
+                }
+                state.stormStart = null;
+
+                const duration = Math.floor((now - state.calmStart) / 60000);
+                if (duration > state.longestCalm) {
+                    state.longestCalm = duration;
+                }
+            } else {
+                state.stormStart = null;
+                state.calmStart = null;
+            }
+        }
+
+        // Audio system
+        function initAudio() {
+            if (!state.audioContext) {
+                state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playRainDrop() {
+            if (!state.audioContext) return;
+
+            const osc = state.audioContext.createOscillator();
+            const gain = state.audioContext.createGain();
+
+            osc.connect(gain);
+            gain.connect(state.audioContext.destination);
+
+            osc.frequency.value = 800 + Math.random() * 400;
+            gain.gain.value = 0.1;
+
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.01, state.audioContext.currentTime + 0.1);
+            osc.stop(state.audioContext.currentTime + 0.1);
+        }
+
+        function playThunder() {
+            if (!state.audioContext) return;
+
+            const bufferSize = state.audioContext.sampleRate * 2;
+            const buffer = state.audioContext.createBuffer(1, bufferSize, state.audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.exp(-i / bufferSize * 5);
+            }
+
+            const source = state.audioContext.createBufferSource();
+            const gain = state.audioContext.createGain();
+            const filter = state.audioContext.createBiquadFilter();
+
+            source.buffer = buffer;
+            filter.type = 'lowpass';
+            filter.frequency.value = 200;
+
+            source.connect(filter);
+            filter.connect(gain);
+            gain.connect(state.audioContext.destination);
+
+            gain.gain.value = 0.3;
+            source.start();
+        }
+
+        function updateAmbience() {
+            if (!state.audioEnabled || !state.audioContext) return;
+
+            // Simple ambient wind/rain based on conditions
+            // (Simplified - full implementation would use sustained oscillators)
+        }
+
+        // History
+        function recordHistory() {
+            const now = Date.now();
+            state.history.push({
+                time: now,
+                pressure: state.pressure,
+                temperature: state.temperature,
+                humidity: state.humidity,
+                windSpeed: state.windSpeed,
+                rainfall: state.rainfall,
+                condition: state.weatherCondition
+            });
+
+            // Keep only last 24 hours
+            const dayAgo = now - 24 * 60 * 60 * 1000;
+            state.history = state.history.filter(h => h.time > dayAgo);
+
+            saveState();
+        }
+
+        function showHistory() {
+            document.getElementById('historyPanel').classList.add('visible');
+
+            // Update stats
+            document.getElementById('visitCount').textContent = state.visitCount;
+            document.getElementById('longestStorm').textContent = state.longestStorm + 'm';
+            document.getElementById('longestCalm').textContent = state.longestCalm + 'm';
+
+            // Draw sparklines
+            drawSparkline('pressureHistory', 'pressure');
+            drawSparkline('tempHistory', 'temperature');
+            drawSparkline('humidityHistory', 'humidity');
+            drawSparkline('windHistory', 'windSpeed');
+            drawSparkline('rainHistory', 'rainfall');
+        }
+
+        function hideHistory() {
+            document.getElementById('historyPanel').classList.remove('visible');
+        }
+
+        function drawSparkline(canvasId, metric) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            if (state.history.length < 2) return;
+
+            const data = state.history.map(h => h[metric]);
+            const max = Math.max(...data, 1);
+
+            ctx.strokeStyle = '#4CAF50';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            data.forEach((value, i) => {
+                const x = (i / (data.length - 1)) * width;
+                const y = height - (value / max * height * 0.9) - height * 0.05;
+
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+
+            ctx.stroke();
+
+            // Fill area
+            ctx.lineTo(width, height);
+            ctx.lineTo(0, height);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(76, 175, 80, 0.2)';
+            ctx.fill();
+        }
+
+        // UI Controls
+        document.getElementById('audioToggle').addEventListener('click', function() {
+            state.audioEnabled = !state.audioEnabled;
+            this.textContent = state.audioEnabled ? 'Audio: ON' : 'Audio: OFF';
+            this.classList.toggle('active');
+
+            if (state.audioEnabled) {
+                initAudio();
+            }
+        });
+
+        document.getElementById('historyToggle').addEventListener('click', showHistory);
+
+        // Main animation loop
+        function animate() {
+            updateSensors();
+            updateWeatherReport();
+
+            drawBackground();
+            drawBarometer();
+            drawThermometer();
+            drawHygrometer();
+            drawAnemometer();
+            drawRainGauge();
+            drawWindVane();
+
+            updateAmbience();
+
+            requestAnimationFrame(animate);
+        }
+
+        // Initialize
+        loadState();
+
+        // Record history every minute
+        setInterval(recordHistory, 60000);
+
+        // Start animation
+        animate();
+
+        console.log('Weather Station initialized. Press H for history.');
+    </script>
+</body>
+</html>

@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>052 - An Empty Room</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #0a0a10;
+  font-family: 'Courier New', monospace;
+  color: #999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+#canvas {
+  display: block;
+  cursor: crosshair;
+  image-rendering: crisp-edges;
+}
+#toolbar {
+  position: fixed;
+  bottom: 20px;
+  display: flex;
+  gap: 10px;
+  background: rgba(20,20,30,0.9);
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+.tool {
+  width: 50px;
+  height: 50px;
+  background: #1a1a2a;
+  border: 2px solid #333;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+.tool:hover { border-color: #666; transform: scale(1.1); }
+.tool.active { border-color: #d4a574; background: #2a2a3a; }
+#visitCounter {
+  position: fixed;
+  top: 30px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 2s;
+  color: #d4a574;
+}
+#soundToggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(20,20,30,0.9);
+  border: 1px solid #333;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #999;
+}
+#soundToggle:hover { color: #d4a574; }
+#help {
+  position: fixed;
+  bottom: 90px;
+  font-size: 11px;
+  color: #555;
+  text-align: center;
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="toolbar">
+  <div class="tool" data-type="cube" title="Cube">▢</div>
+  <div class="tool" data-type="sphere" title="Sphere">●</div>
+  <div class="tool" data-type="plant" title="Plant">🌿</div>
+  <div class="tool" data-type="books" title="Books">📚</div>
+  <div class="tool" data-type="candle" title="Candle">🕯</div>
+  <div class="tool" data-type="cushion" title="Cushion">◎</div>
+</div>
+<div id="visitCounter"></div>
+<div id="soundToggle">Sound: OFF</div>
+<div id="help">
+  Click tool + click floor to place • Drag objects to move • Right-click to remove<br>
+  Drag light to reposition • R to recolor selected • Scroll to zoom
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width = 900;
+const H = canvas.height = 700;
+
+const STORAGE_KEY = 'todooo-052';
+const MAX_OBJECTS = 20;
+
+let zoom = 1;
+let selectedTool = null;
+let selectedObject = null;
+let draggingObject = null;
+let draggingLight = false;
+let soundEnabled = false;
+let visitCount = 0;
+
+const warmColors = ['#d4a574', '#c89666', '#b38867', '#8b6f47', '#7a5c3d', '#c4916a'];
+const softColors = ['#9ab4a8', '#b89aa0', '#a8b49a', '#c4b49a', '#9ab4c4', '#b4a89a'];
+
+let light = { x: 450, y: 200, glow: 0 };
+let objects = [];
+
+class AudioSystem {
+  constructor() {
+    this.ctx = null;
+    this.ambience = null;
+  }
+  init() {
+    if (!this.ctx) {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 80;
+      gain.gain.value = 0.002;
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      this.ambience = { osc, gain };
+    }
+  }
+  play(freq, duration = 0.1, vol = 0.05) {
+    if (!soundEnabled || !this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.frequency.value = freq;
+    gain.gain.value = vol;
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + duration);
+  }
+  thud() { this.play(120, 0.2, 0.03); }
+  whoosh() { this.play(200, 0.15, 0.02); }
+  hum() { this.play(300, 0.1, 0.015); }
+}
+
+const audio = new AudioSystem();
+
+function toIso(x, y, z = 0) {
+  const ix = (x - y) * 0.866;
+  const iy = (x + y) * 0.5 - z;
+  return { x: W/2 + ix * zoom, y: H/2 + iy * zoom };
+}
+
+function fromIso(sx, sy) {
+  const x = (sx - W/2) / zoom;
+  const y = (sy - H/2) / zoom;
+  const worldX = (x / 0.866 + y) / 2;
+  const worldY = (y - x / 0.866) / 2;
+  return { x: worldX, y: worldY };
+}
+
+function drawFloor() {
+  const corners = [
+    toIso(-200, -150), toIso(200, -150),
+    toIso(200, 150), toIso(-200, 150)
+  ];
+
+  ctx.fillStyle = '#2a1a10';
+  ctx.beginPath();
+  ctx.moveTo(corners[0].x, corners[0].y);
+  corners.forEach(c => ctx.lineTo(c.x, c.y));
+  ctx.closePath();
+  ctx.fill();
+
+  const gradient = ctx.createRadialGradient(light.x, light.y + 150, 0, light.x, light.y + 150, 250 * zoom);
+  gradient.addColorStop(0, `rgba(212, 165, 116, ${0.08 + light.glow * 0.02})`);
+  gradient.addColorStop(1, 'rgba(212, 165, 116, 0)');
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 1;
+  for (let i = -6; i <= 6; i++) {
+    const p1 = toIso(-200, i * 25);
+    const p2 = toIso(200, i * 25);
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.stroke();
+  }
+}
+
+function drawWalls() {
+  const back = toIso(-200, -150, 0);
+  const backTop = toIso(-200, -150, 200);
+  const left = toIso(-200, 150, 0);
+  const leftTop = toIso(-200, 150, 200);
+  const right = toIso(200, -150, 0);
+  const rightTop = toIso(200, -150, 200);
+  const corner = toIso(-200, -150, 0);
+  const cornerTop = toIso(-200, -150, 200);
+
+  ctx.fillStyle = '#1a1a2a';
+  ctx.beginPath();
+  ctx.moveTo(back.x, back.y);
+  ctx.lineTo(backTop.x, backTop.y);
+  ctx.lineTo(leftTop.x, leftTop.y);
+  ctx.lineTo(left.x, left.y);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#16162a';
+  ctx.beginPath();
+  ctx.moveTo(back.x, back.y);
+  ctx.lineTo(backTop.x, backTop.y);
+  ctx.lineTo(rightTop.x, rightTop.y);
+  ctx.lineTo(right.x, right.y);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 8; i++) {
+    const p1 = toIso(-200, -150 + i * 37.5, 0);
+    const p2 = toIso(-200, -150 + i * 37.5, 200);
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.stroke();
+  }
+}
+
+function drawLight() {
+  const gradient = ctx.createRadialGradient(light.x, light.y, 0, light.x, light.y, 30);
+  const alpha = 0.6 + light.glow * 0.2;
+  gradient.addColorStop(0, `rgba(255, 200, 120, ${alpha})`);
+  gradient.addColorStop(0.5, 'rgba(255, 180, 80, 0.4)');
+  gradient.addColorStop(1, 'rgba(255, 150, 60, 0)');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(light.x, light.y, 30, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffe4b5';
+  ctx.beginPath();
+  ctx.arc(light.x, light.y, 8, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawShadow(obj) {
+  const dx = obj.x - (light.x - W/2) / zoom;
+  const dy = obj.y - (light.y - H/2 - 150) / zoom;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const shadowDist = Math.min(dist * 0.3, 50);
+  const angle = Math.atan2(dy, dx);
+
+  const sx = obj.x + Math.cos(angle) * shadowDist;
+  const sy = obj.y + Math.sin(angle) * shadowDist;
+  const spos = toIso(sx, sy, 0);
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  ctx.beginPath();
+  ctx.ellipse(spos.x, spos.y, obj.size * zoom * 0.8, obj.size * zoom * 0.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawCube(obj) {
+  const pos = toIso(obj.x, obj.y, 0);
+  const size = obj.size * zoom;
+  const h = size * 1.2;
+
+  const top = { x: pos.x, y: pos.y - h };
+  const left = { x: pos.x - size * 0.866, y: pos.y - h/2 };
+  const right = { x: pos.x + size * 0.866, y: pos.y - h/2 };
+  const bottom = pos;
+
+  ctx.fillStyle = shadeColor(obj.color, -20);
+  ctx.beginPath();
+  ctx.moveTo(left.x, left.y);
+  ctx.lineTo(top.x, top.y);
+  ctx.lineTo(bottom.x, bottom.y);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = shadeColor(obj.color, 20);
+  ctx.beginPath();
+  ctx.moveTo(right.x, right.y);
+  ctx.lineTo(top.x, top.y);
+  ctx.lineTo(bottom.x, bottom.y);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = obj.color;
+  ctx.beginPath();
+  ctx.moveTo(top.x, top.y);
+  ctx.lineTo(left.x, left.y);
+  ctx.lineTo(pos.x, pos.y - h - size * 0.5);
+  ctx.lineTo(right.x, right.y);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawSphere(obj) {
+  const pos = toIso(obj.x, obj.y, obj.size);
+  const size = obj.size * zoom;
+
+  const gradient = ctx.createRadialGradient(pos.x - size/3, pos.y - size/3, 0, pos.x, pos.y, size);
+  gradient.addColorStop(0, shadeColor(obj.color, 40));
+  gradient.addColorStop(1, shadeColor(obj.color, -30));
+
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawPlant(obj) {
+  const pos = toIso(obj.x, obj.y, 0);
+  const size = obj.size * zoom;
+
+  ctx.fillStyle = '#5a4a3a';
+  ctx.fillRect(pos.x - size * 0.4, pos.y - size * 0.5, size * 0.8, size * 0.5);
+
+  const leaves = [
+    { x: pos.x, y: pos.y - size * 1.5, r: size * 0.6 },
+    { x: pos.x - size * 0.4, y: pos.y - size * 1.2, r: size * 0.5 },
+    { x: pos.x + size * 0.4, y: pos.y - size * 1.2, r: size * 0.5 }
+  ];
+
+  ctx.fillStyle = '#4a7c59';
+  leaves.forEach(leaf => {
+    ctx.beginPath();
+    ctx.arc(leaf.x, leaf.y, leaf.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function drawBooks(obj) {
+  const pos = toIso(obj.x, obj.y, 0);
+  const size = obj.size * zoom;
+  const books = [
+    { h: size * 0.3, color: warmColors[0] },
+    { h: size * 0.25, color: warmColors[2] },
+    { h: size * 0.35, color: warmColors[4] }
+  ];
+
+  let offset = 0;
+  books.forEach(book => {
+    ctx.fillStyle = book.color;
+    ctx.fillRect(pos.x - size * 0.7, pos.y - offset - book.h, size * 1.4, book.h);
+    ctx.strokeStyle = shadeColor(book.color, -30);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(pos.x - size * 0.7, pos.y - offset - book.h, size * 1.4, book.h);
+    offset += book.h;
+  });
+}
+
+function drawCandle(obj) {
+  const pos = toIso(obj.x, obj.y, 0);
+  const size = obj.size * zoom;
+
+  ctx.fillStyle = '#e8d4b8';
+  ctx.fillRect(pos.x - size * 0.2, pos.y - size, size * 0.4, size);
+
+  const flicker = Math.sin(Date.now() * 0.01 + obj.id) * 2;
+  const flame = {
+    x: pos.x,
+    y: pos.y - size - size * 0.3 + flicker
+  };
+
+  const gradient = ctx.createRadialGradient(flame.x, flame.y, 0, flame.x, flame.y, size * 0.5);
+  gradient.addColorStop(0, 'rgba(255, 200, 100, 0.9)');
+  gradient.addColorStop(0.5, 'rgba(255, 150, 50, 0.6)');
+  gradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.moveTo(flame.x, flame.y - size * 0.3);
+  ctx.lineTo(flame.x - size * 0.15, flame.y + size * 0.1);
+  ctx.lineTo(flame.x + size * 0.15, flame.y + size * 0.1);
+  ctx.closePath();
+  ctx.fill();
+
+  const glow = ctx.createRadialGradient(flame.x, flame.y, 0, flame.x, flame.y, size * 2);
+  glow.addColorStop(0, 'rgba(255, 180, 80, 0.15)');
+  glow.addColorStop(1, 'rgba(255, 150, 50, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(flame.x, flame.y, size * 2, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawCushion(obj) {
+  const pos = toIso(obj.x, obj.y, 0);
+  const size = obj.size * zoom;
+
+  ctx.fillStyle = obj.color;
+  ctx.beginPath();
+  ctx.ellipse(pos.x, pos.y, size * 1.2, size * 0.6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = shadeColor(obj.color, -15);
+  ctx.beginPath();
+  ctx.ellipse(pos.x, pos.y, size * 0.9, size * 0.45, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawObject(obj) {
+  switch(obj.type) {
+    case 'cube': drawCube(obj); break;
+    case 'sphere': drawSphere(obj); break;
+    case 'plant': drawPlant(obj); break;
+    case 'books': drawBooks(obj); break;
+    case 'candle': drawCandle(obj); break;
+    case 'cushion': drawCushion(obj); break;
+  }
+
+  if (obj === selectedObject) {
+    const pos = toIso(obj.x, obj.y, obj.size);
+    ctx.strokeStyle = '#d4a574';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.strokeRect(pos.x - obj.size * zoom, pos.y - obj.size * zoom, obj.size * zoom * 2, obj.size * zoom * 2);
+    ctx.setLineDash([]);
+  }
+}
+
+function shadeColor(color, percent) {
+  const num = parseInt(color.slice(1), 16);
+  const r = Math.min(255, Math.max(0, (num >> 16) + percent));
+  const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + percent));
+  const b = Math.min(255, Math.max(0, (num & 0x0000FF) + percent));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
+
+function getObjectAt(wx, wy) {
+  for (let i = objects.length - 1; i >= 0; i--) {
+    const obj = objects[i];
+    const dist = Math.sqrt((obj.x - wx) ** 2 + (obj.y - wy) ** 2);
+    if (dist < obj.size) return obj;
+  }
+  return null;
+}
+
+function snapToGrid(x, y) {
+  const gridSize = 25;
+  return {
+    x: Math.round(x / gridSize) * gridSize,
+    y: Math.round(y / gridSize) * gridSize
+  };
+}
+
+function randomColor(palette) {
+  return palette[Math.floor(Math.random() * palette.length)];
+}
+
+function render() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0a0a10';
+  ctx.fillRect(0, 0, W, H);
+
+  drawFloor();
+  drawWalls();
+  drawLight();
+
+  objects.sort((a, b) => (a.x + a.y) - (b.x + b.y));
+
+  objects.forEach(obj => {
+    drawShadow(obj);
+  });
+
+  objects.forEach(obj => {
+    drawObject(obj);
+  });
+
+  light.glow = Math.sin(Date.now() * 0.002) * 0.5 + 0.5;
+
+  requestAnimationFrame(render);
+}
+
+function save() {
+  const data = {
+    objects: objects.map(o => ({
+      type: o.type,
+      x: o.x,
+      y: o.y,
+      size: o.size,
+      color: o.color,
+      id: o.id
+    })),
+    light: { x: light.x, y: light.y },
+    visitCount
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function load() {
+  const data = localStorage.getItem(STORAGE_KEY);
+  if (data) {
+    const parsed = JSON.parse(data);
+    objects = parsed.objects || [];
+    if (parsed.light) {
+      light.x = parsed.light.x;
+      light.y = parsed.light.y;
+    }
+    visitCount = (parsed.visitCount || 0) + 1;
+  } else {
+    visitCount = 1;
+  }
+  save();
+  showVisitCounter();
+}
+
+function showVisitCounter() {
+  const counter = document.getElementById('visitCounter');
+  counter.textContent = `Visit ${visitCount}`;
+  counter.style.opacity = '1';
+  setTimeout(() => {
+    counter.style.opacity = '0';
+  }, 2000);
+}
+
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  const lightDist = Math.sqrt((mx - light.x) ** 2 + (my - light.y) ** 2);
+  if (lightDist < 30) {
+    return;
+  }
+
+  const world = fromIso(mx, my);
+
+  if (Math.abs(world.x) > 200 || Math.abs(world.y) > 150) {
+    return;
+  }
+
+  const clickedObj = getObjectAt(world.x, world.y);
+
+  if (clickedObj) {
+    selectedObject = clickedObj;
+    selectedTool = null;
+    document.querySelectorAll('.tool').forEach(t => t.classList.remove('active'));
+  } else if (selectedTool && objects.length < MAX_OBJECTS) {
+    const snapped = snapToGrid(world.x, world.y);
+    const newObj = {
+      type: selectedTool,
+      x: snapped.x,
+      y: snapped.y,
+      size: 20,
+      color: selectedTool === 'plant' ? '#4a7c59' : randomColor(warmColors),
+      id: Date.now()
+    };
+    objects.push(newObj);
+    audio.thud();
+    save();
+    selectedTool = null;
+    document.querySelectorAll('.tool').forEach(t => t.classList.remove('active'));
+  }
+});
+
+canvas.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const world = fromIso(mx, my);
+  const clickedObj = getObjectAt(world.x, world.y);
+
+  if (clickedObj) {
+    objects = objects.filter(o => o !== clickedObj);
+    if (selectedObject === clickedObj) selectedObject = null;
+    audio.whoosh();
+    save();
+  }
+});
+
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  const lightDist = Math.sqrt((mx - light.x) ** 2 + (my - light.y) ** 2);
+  if (lightDist < 30) {
+    draggingLight = true;
+    canvas.style.cursor = 'grabbing';
+    return;
+  }
+
+  const world = fromIso(mx, my);
+  const clickedObj = getObjectAt(world.x, world.y);
+  if (clickedObj) {
+    draggingObject = clickedObj;
+    selectedObject = clickedObj;
+    canvas.style.cursor = 'grabbing';
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  if (draggingLight) {
+    light.x = mx;
+    light.y = my;
+    audio.hum();
+  } else if (draggingObject) {
+    const world = fromIso(mx, my);
+    if (Math.abs(world.x) <= 200 && Math.abs(world.y) <= 150) {
+      const snapped = snapToGrid(world.x, world.y);
+      draggingObject.x = snapped.x;
+      draggingObject.y = snapped.y;
+    }
+  }
+});
+
+canvas.addEventListener('mouseup', () => {
+  if (draggingLight) {
+    save();
+  }
+  if (draggingObject) {
+    save();
+  }
+  draggingLight = false;
+  draggingObject = null;
+  canvas.style.cursor = 'crosshair';
+});
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  zoom += e.deltaY > 0 ? -0.05 : 0.05;
+  zoom = Math.max(0.8, Math.min(1.2, zoom));
+});
+
+document.querySelectorAll('.tool').forEach(tool => {
+  tool.addEventListener('click', () => {
+    const type = tool.dataset.type;
+    if (selectedTool === type) {
+      selectedTool = null;
+      tool.classList.remove('active');
+    } else {
+      selectedTool = type;
+      document.querySelectorAll('.tool').forEach(t => t.classList.remove('active'));
+      tool.classList.add('active');
+    }
+    selectedObject = null;
+  });
+});
+
+document.getElementById('soundToggle').addEventListener('click', (e) => {
+  soundEnabled = !soundEnabled;
+  e.target.textContent = `Sound: ${soundEnabled ? 'ON' : 'OFF'}`;
+  if (soundEnabled) audio.init();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'r' || e.key === 'R') {
+    if (selectedObject) {
+      selectedObject.color = randomColor(selectedObject.type === 'plant' ? softColors : warmColors);
+      save();
+    }
+  }
+});
+
+load();
+render();
+</script>
+</body>
+</html>

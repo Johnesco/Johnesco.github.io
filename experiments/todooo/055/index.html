@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tide Pool - 055</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  overflow: hidden;
+  font-family: 'Georgia', serif;
+  background: #0a0a0a;
+  color: #e0e0d0;
+}
+
+canvas {
+  display: block;
+  cursor: crosshair;
+}
+
+#info {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  max-width: 600px;
+  padding: 0 20px;
+}
+
+#creature-name {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  opacity: 0;
+  transition: opacity 0.5s;
+  color: #f0e6d2;
+  text-shadow: 0 0 10px rgba(0,0,0,0.8);
+}
+
+#creature-desc {
+  font-size: 14px;
+  font-style: italic;
+  opacity: 0;
+  transition: opacity 0.5s;
+  color: #d0c8b0;
+  text-shadow: 0 0 8px rgba(0,0,0,0.8);
+  line-height: 1.4;
+}
+
+#stats {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  font-size: 12px;
+  opacity: 0.6;
+  text-shadow: 0 0 8px rgba(0,0,0,0.8);
+}
+
+.stat-line {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="info">
+  <div id="creature-name"></div>
+  <div id="creature-desc"></div>
+</div>
+<div id="stats">
+  <div class="stat-line" id="discovered"></div>
+  <div class="stat-line" id="visits"></div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const creatureNameEl = document.getElementById('creature-name');
+const creatureDescEl = document.getElementById('creature-desc');
+const discoveredEl = document.getElementById('discovered');
+const visitsEl = document.getElementById('visits');
+
+let W, H;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Persistence
+const STORAGE_KEY = 'todooo-055';
+let state = {
+  algaeGrowth: 0,
+  discovered: [],
+  visits: 0,
+  firstVisit: Date.now(),
+  totalTime: 0,
+  lastSave: Date.now()
+};
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      state = { ...state, ...parsed };
+    }
+  } catch (e) {}
+  state.visits++;
+  saveState();
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {}
+}
+
+loadState();
+
+// Noise function for procedural generation
+class SimplexNoise {
+  constructor() {
+    this.grad3 = [[1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],
+                  [1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],
+                  [0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]];
+    this.p = [];
+    for(let i=0; i<256; i++) this.p[i] = Math.floor(Math.random()*256);
+    this.perm = [];
+    for(let i=0; i<512; i++) this.perm[i]=this.p[i & 255];
+  }
+
+  dot(g, x, y) {
+    return g[0]*x + g[1]*y;
+  }
+
+  noise(xin, yin) {
+    const F2 = 0.5*(Math.sqrt(3.0)-1.0);
+    const G2 = (3.0-Math.sqrt(3.0))/6.0;
+    let n0, n1, n2;
+    const s = (xin+yin)*F2;
+    const i = Math.floor(xin+s);
+    const j = Math.floor(yin+s);
+    const t = (i+j)*G2;
+    const X0 = i-t;
+    const Y0 = j-t;
+    const x0 = xin-X0;
+    const y0 = yin-Y0;
+    let i1, j1;
+    if(x0>y0) {i1=1; j1=0;}
+    else {i1=0; j1=1;}
+    const x1 = x0 - i1 + G2;
+    const y1 = y0 - j1 + G2;
+    const x2 = x0 - 1.0 + 2.0 * G2;
+    const y2 = y0 - 1.0 + 2.0 * G2;
+    const ii = i & 255;
+    const jj = j & 255;
+    const gi0 = this.perm[ii+this.perm[jj]] % 12;
+    const gi1 = this.perm[ii+i1+this.perm[jj+j1]] % 12;
+    const gi2 = this.perm[ii+1+this.perm[jj+1]] % 12;
+    let t0 = 0.5 - x0*x0-y0*y0;
+    if(t0<0) n0 = 0.0;
+    else {
+      t0 *= t0;
+      n0 = t0 * t0 * this.dot(this.grad3[gi0], x0, y0);
+    }
+    let t1 = 0.5 - x1*x1-y1*y1;
+    if(t1<0) n1 = 0.0;
+    else {
+      t1 *= t1;
+      n1 = t1 * t1 * this.dot(this.grad3[gi1], x1, y1);
+    }
+    let t2 = 0.5 - x2*x2-y2*y2;
+    if(t2<0) n2 = 0.0;
+    else {
+      t2 *= t2;
+      n2 = t2 * t2 * this.dot(this.grad3[gi2], x2, y2);
+    }
+    return 70.0 * (n0 + n1 + n2);
+  }
+}
+
+const noise = new SimplexNoise();
+
+// Tide mechanics
+const TIDE_CYCLE = 360000; // 6 minutes in ms
+let tideStartTime = Date.now();
+
+function getTideLevel() {
+  const elapsed = (Date.now() - tideStartTime) % TIDE_CYCLE;
+  const phase = elapsed / TIDE_CYCLE;
+  // 0 to 0.5: rising, 0.5 to 1.0: falling
+  const tidePhase = phase < 0.5 ? phase * 2 : 2 - (phase * 2);
+  return tidePhase; // 0 to 1
+}
+
+// Rock terrain
+let rockHeights = [];
+const ROCK_SAMPLES = 200;
+
+function generateRockTerrain() {
+  rockHeights = [];
+  for (let i = 0; i < ROCK_SAMPLES; i++) {
+    const x = i / ROCK_SAMPLES;
+    const n1 = noise.noise(x * 5, 0) * 0.3;
+    const n2 = noise.noise(x * 15, 100) * 0.15;
+    const n3 = noise.noise(x * 30, 200) * 0.08;
+    const height = 0.5 + n1 + n2 + n3;
+    rockHeights.push(Math.max(0.2, Math.min(0.85, height)));
+  }
+}
+
+generateRockTerrain();
+
+function getRockHeightAt(x) {
+  const normalized = (x / W) * (ROCK_SAMPLES - 1);
+  const index = Math.floor(normalized);
+  const frac = normalized - index;
+  if (index >= ROCK_SAMPLES - 1) return rockHeights[ROCK_SAMPLES - 1];
+  return rockHeights[index] * (1 - frac) + rockHeights[index + 1] * frac;
+}
+
+// Algae patches
+let algaePatches = [];
+function initAlgae() {
+  algaePatches = [];
+  for (let i = 0; i < 40; i++) {
+    algaePatches.push({
+      x: Math.random() * W,
+      y: H * (0.4 + Math.random() * 0.5),
+      size: 10 + Math.random() * 20,
+      growth: state.algaeGrowth
+    });
+  }
+}
+
+initAlgae();
+
+// Creature definitions
+const CREATURE_TYPES = {
+  seastar: { name: 'Sea Star', desc: 'Ancient navigator of stone, slow and steady beneath the waves.' },
+  anemone: { name: 'Anemone', desc: 'Flower of the sea, dancing fingers reaching for invisible currents.' },
+  fish: { name: 'Tide Pool Fish', desc: 'Quick silver flash, here and gone, breathing the rhythm of the ocean.' },
+  crab: { name: 'Hermit Crab', desc: 'Borrowed shell, careful steps, a wanderer who carries home on their back.' },
+};
+
+class Creature {
+  constructor(type, x, y) {
+    this.type = type;
+    this.x = x;
+    this.y = y;
+    this.id = `${type}-${Math.random()}`;
+    this.hidden = false;
+    this.discovered = false;
+  }
+
+  update(tideLevel, mouseX, mouseY, mouseStill) {}
+  draw(ctx, tideLevel) {}
+  isNear(x, y, dist) {
+    return Math.hypot(this.x - x, this.y - y) < dist;
+  }
+
+  markDiscovered() {
+    if (!this.discovered) {
+      this.discovered = true;
+      if (!state.discovered.includes(this.type)) {
+        state.discovered.push(this.type);
+        saveState();
+        playDiscoverSound();
+      }
+    }
+  }
+}
+
+class SeaStar extends Creature {
+  constructor(x, y) {
+    super('seastar', x, y);
+    this.angle = Math.random() * Math.PI * 2;
+    this.arms = 5;
+    this.size = 15 + Math.random() * 10;
+    this.color = Math.random() > 0.5 ? '#d97942' : '#8b4789';
+    this.phase = Math.random() * Math.PI * 2;
+    this.speed = 0.1 + Math.random() * 0.2;
+    this.targetX = x;
+    this.targetY = y;
+  }
+
+  update(tideLevel, mouseX, mouseY, mouseStill) {
+    if (tideLevel < 0.3) return;
+
+    this.phase += 0.01;
+
+    // Slow crawling
+    if (Math.random() < 0.01) {
+      this.targetX = this.x + (Math.random() - 0.5) * 100;
+      this.targetY = this.y + (Math.random() - 0.5) * 50;
+      this.targetX = Math.max(50, Math.min(W - 50, this.targetX));
+      this.targetY = Math.max(H * 0.5, Math.min(H - 50, this.targetY));
+    }
+
+    const dx = this.targetX - this.x;
+    const dy = this.targetY - this.y;
+    this.x += dx * 0.005;
+    this.y += dy * 0.005;
+
+    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+      this.angle = Math.atan2(dy, dx);
+    }
+  }
+
+  draw(ctx, tideLevel) {
+    if (tideLevel < 0.3) return;
+
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    for (let i = 0; i < this.arms; i++) {
+      const angle = (i / this.arms) * Math.PI * 2;
+      const wobble = Math.sin(this.phase + i) * 0.1;
+      const r = this.size * (1 + wobble);
+      const x = Math.cos(angle) * r;
+      const y = Math.sin(angle) * r;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+
+      const innerAngle = angle + Math.PI / this.arms;
+      const innerX = Math.cos(innerAngle) * this.size * 0.3;
+      const innerY = Math.sin(innerAngle) * this.size * 0.3;
+      ctx.lineTo(innerX, innerY);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Texture dots
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    for (let i = 0; i < 8; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const r = Math.random() * this.size * 0.6;
+      ctx.beginPath();
+      ctx.arc(Math.cos(angle) * r, Math.sin(angle) * r, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+}
+
+class Anemone extends Creature {
+  constructor(x, y) {
+    super('anemone', x, y);
+    this.tentacles = 12 + Math.floor(Math.random() * 8);
+    this.size = 20 + Math.random() * 15;
+    this.phase = Math.random() * Math.PI * 2;
+    this.retracted = false;
+    this.color = `hsl(${180 + Math.random() * 40}, 60%, 50%)`;
+  }
+
+  update(tideLevel, mouseX, mouseY, mouseStill) {
+    this.phase += 0.02;
+
+    if (tideLevel < 0.4 || this.isNear(mouseX, mouseY, 60)) {
+      this.retracted = true;
+    } else {
+      this.retracted = false;
+    }
+  }
+
+  draw(ctx, tideLevel) {
+    if (tideLevel < 0.2) return;
+
+    ctx.save();
+    ctx.translate(this.x, this.y);
+
+    // Base
+    ctx.fillStyle = '#6b4e3d';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, this.size * 0.4, this.size * 0.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (!this.retracted) {
+      // Tentacles
+      for (let i = 0; i < this.tentacles; i++) {
+        const angle = (i / this.tentacles) * Math.PI * 2;
+        const wave = Math.sin(this.phase + i * 0.5);
+        const length = this.size * (0.8 + wave * 0.2);
+
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 2 + Math.random();
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+
+        const segments = 5;
+        for (let s = 1; s <= segments; s++) {
+          const t = s / segments;
+          const segAngle = angle + Math.sin(this.phase * 2 + s) * 0.3;
+          const x = Math.cos(segAngle) * length * t;
+          const y = Math.sin(segAngle) * length * t;
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Tip bulb
+        const tipX = Math.cos(angle) * length;
+        const tipY = Math.sin(angle) * length;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(tipX, tipY, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
+  }
+}
+
+class Fish extends Creature {
+  constructor(x, y) {
+    super('fish', x, y);
+    this.vx = (Math.random() - 0.5) * 2;
+    this.vy = (Math.random() - 0.5) * 1;
+    this.size = 8 + Math.random() * 6;
+    this.color = `hsl(${200 + Math.random() * 30}, 70%, 60%)`;
+    this.phase = Math.random() * Math.PI * 2;
+    this.fleeing = false;
+    this.fleeTimer = 0;
+  }
+
+  update(tideLevel, mouseX, mouseY, mouseStill) {
+    if (tideLevel < 0.6) {
+      this.hidden = true;
+      return;
+    }
+    this.hidden = false;
+
+    this.phase += 0.1;
+
+    // Flee from mouse
+    if (this.isNear(mouseX, mouseY, 80)) {
+      this.fleeing = true;
+      this.fleeTimer = 30;
+      const angle = Math.atan2(this.y - mouseY, this.x - mouseX);
+      this.vx = Math.cos(angle) * 4;
+      this.vy = Math.sin(angle) * 4;
+    }
+
+    if (this.fleeTimer > 0) {
+      this.fleeTimer--;
+      if (this.fleeTimer === 0) this.fleeing = false;
+    }
+
+    // Random darting
+    if (!this.fleeing && Math.random() < 0.02) {
+      this.vx = (Math.random() - 0.5) * 3;
+      this.vy = (Math.random() - 0.5) * 2;
+    }
+
+    // Damping
+    this.vx *= 0.98;
+    this.vy *= 0.98;
+
+    this.x += this.vx;
+    this.y += this.vy;
+
+    // Bounds
+    const waterTop = H * (1 - tideLevel);
+    if (this.x < 20) { this.x = 20; this.vx *= -1; }
+    if (this.x > W - 20) { this.x = W - 20; this.vx *= -1; }
+    if (this.y < waterTop + 20) { this.y = waterTop + 20; this.vy *= -1; }
+    if (this.y > H - 20) { this.y = H - 20; this.vy *= -1; }
+  }
+
+  draw(ctx, tideLevel) {
+    if (this.hidden || tideLevel < 0.6) return;
+
+    ctx.save();
+    ctx.translate(this.x, this.y);
+
+    const angle = Math.atan2(this.vy, this.vx);
+    ctx.rotate(angle);
+
+    // Body
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, this.size, this.size * 0.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tail
+    const tailWobble = Math.sin(this.phase) * 0.2;
+    ctx.beginPath();
+    ctx.moveTo(-this.size, 0);
+    ctx.lineTo(-this.size * 1.5, -this.size * 0.5 + tailWobble);
+    ctx.lineTo(-this.size * 1.5, this.size * 0.5 + tailWobble);
+    ctx.closePath();
+    ctx.fill();
+
+    // Eye
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(this.size * 0.4, 0, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
+
+class HermitCrab extends Creature {
+  constructor(x, y) {
+    super('crab', x, y);
+    this.vx = 0;
+    this.dir = Math.random() > 0.5 ? 1 : -1;
+    this.size = 10 + Math.random() * 8;
+    this.phase = Math.random() * Math.PI * 2;
+    this.hiding = false;
+    this.hideTimer = 0;
+    this.walkTimer = 0;
+  }
+
+  update(tideLevel, mouseX, mouseY, mouseStill) {
+    this.phase += 0.05;
+
+    // Hide from mouse
+    if (this.isNear(mouseX, mouseY, 70)) {
+      this.hiding = true;
+      this.hideTimer = 60;
+      this.vx = 0;
+    }
+
+    if (this.hideTimer > 0) {
+      this.hideTimer--;
+      if (this.hideTimer === 0) this.hiding = false;
+    }
+
+    if (!this.hiding) {
+      // Random walking
+      if (this.walkTimer === 0) {
+        if (Math.random() < 0.02) {
+          this.walkTimer = 30 + Math.floor(Math.random() * 40);
+          this.dir = Math.random() > 0.5 ? 1 : -1;
+        }
+      } else {
+        this.walkTimer--;
+        this.vx = this.dir * 0.5;
+      }
+
+      this.x += this.vx;
+
+      if (this.x < 30) { this.x = 30; this.dir = 1; }
+      if (this.x > W - 30) { this.x = W - 30; this.dir = -1; }
+    }
+  }
+
+  draw(ctx, tideLevel) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+
+    if (this.dir < 0) ctx.scale(-1, 1);
+
+    if (this.hiding) {
+      // Just shell
+      ctx.fillStyle = '#8b6f47';
+      ctx.beginPath();
+      ctx.arc(0, 0, this.size * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#5d4a37';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(0, 0, this.size * 0.3 * (i + 1), 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    } else {
+      // Shell
+      ctx.fillStyle = '#8b6f47';
+      ctx.beginPath();
+      ctx.arc(-this.size * 0.3, 0, this.size * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Legs
+      const legPhase = Math.sin(this.phase);
+      ctx.strokeStyle = '#c74a3a';
+      ctx.lineWidth = 2;
+
+      for (let i = 0; i < 3; i++) {
+        const y = (i - 1) * 4;
+        const legOffset = legPhase * (i % 2 === 0 ? 1 : -1) * 3;
+
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(this.size * 0.7, y + 5 + legOffset);
+        ctx.stroke();
+      }
+
+      // Claws
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(this.size * 0.2, -3);
+      ctx.lineTo(this.size * 1.2, -8);
+      ctx.stroke();
+
+      // Eyes
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.arc(this.size * 0.3, -this.size * 0.5, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+}
+
+// Creature instances
+let creatures = [];
+
+function initCreatures() {
+  creatures = [];
+
+  // Sea stars
+  for (let i = 0; i < 3; i++) {
+    creatures.push(new SeaStar(
+      100 + Math.random() * (W - 200),
+      H * 0.6 + Math.random() * H * 0.3
+    ));
+  }
+
+  // Anemones
+  for (let i = 0; i < 5; i++) {
+    creatures.push(new Anemone(
+      80 + Math.random() * (W - 160),
+      H * 0.65 + Math.random() * H * 0.25
+    ));
+  }
+
+  // Fish
+  for (let i = 0; i < 6; i++) {
+    creatures.push(new Fish(
+      Math.random() * W,
+      H * 0.4 + Math.random() * H * 0.3
+    ));
+  }
+
+  // Hermit crabs
+  for (let i = 0; i < 4; i++) {
+    creatures.push(new HermitCrab(
+      100 + Math.random() * (W - 200),
+      H * 0.8 + Math.random() * H * 0.15
+    ));
+  }
+}
+
+initCreatures();
+
+// Mouse tracking
+let mouseX = -1000;
+let mouseY = -1000;
+let mouseStillTime = 0;
+let mouseStill = false;
+let lastMouseX = -1000;
+let lastMouseY = -1000;
+
+canvas.addEventListener('mousemove', (e) => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+});
+
+canvas.addEventListener('mouseleave', () => {
+  mouseX = -1000;
+  mouseY = -1000;
+});
+
+canvas.addEventListener('click', (e) => {
+  const clickX = e.clientX;
+  const clickY = e.clientY;
+
+  for (let creature of creatures) {
+    if (creature.isNear(clickX, clickY, 40)) {
+      creature.markDiscovered();
+      showCreatureInfo(creature.type);
+      break;
+    }
+  }
+});
+
+function showCreatureInfo(type) {
+  const info = CREATURE_TYPES[type];
+  if (!info) return;
+
+  creatureNameEl.textContent = info.name;
+  creatureDescEl.textContent = info.desc;
+  creatureNameEl.style.opacity = 1;
+  creatureDescEl.style.opacity = 1;
+
+  setTimeout(() => {
+    creatureNameEl.style.opacity = 0;
+    creatureDescEl.style.opacity = 0;
+  }, 4000);
+}
+
+// Ripple effect
+let ripples = [];
+function addRipple(x, y) {
+  ripples.push({ x, y, radius: 0, alpha: 1 });
+}
+
+// Audio
+let audioCtx = null;
+let oceanOsc = null;
+let oceanGain = null;
+
+function initAudio() {
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Ocean ambience
+    oceanOsc = audioCtx.createOscillator();
+    oceanOsc.type = 'sine';
+    oceanOsc.frequency.value = 0.5;
+
+    const oceanFilter = audioCtx.createBiquadFilter();
+    oceanFilter.type = 'lowpass';
+    oceanFilter.frequency.value = 200;
+
+    oceanGain = audioCtx.createGain();
+    oceanGain.gain.value = 0;
+
+    oceanOsc.connect(oceanFilter);
+    oceanFilter.connect(oceanGain);
+    oceanGain.connect(audioCtx.destination);
+
+    oceanOsc.start();
+  } catch (e) {
+    console.log('Audio not available');
+  }
+}
+
+function playDiscoverSound() {
+  if (!audioCtx) return;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.frequency.value = 800;
+  osc.type = 'sine';
+
+  gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.5);
+}
+
+canvas.addEventListener('click', () => {
+  if (!audioCtx) initAudio();
+}, { once: true });
+
+// Animation loop
+let lastTime = Date.now();
+let skyHue = 200;
+
+function update() {
+  const now = Date.now();
+  const dt = now - lastTime;
+  lastTime = now;
+
+  // Track mouse stillness
+  if (Math.hypot(mouseX - lastMouseX, mouseY - lastMouseY) < 2) {
+    mouseStillTime += dt;
+    if (mouseStillTime > 5000) mouseStill = true;
+  } else {
+    mouseStillTime = 0;
+    mouseStill = false;
+  }
+  lastMouseX = mouseX;
+  lastMouseY = mouseY;
+
+  // Algae growth
+  state.algaeGrowth = Math.min(1, state.algaeGrowth + 0.00001);
+
+  // Save periodically
+  if (now - state.lastSave > 30000) {
+    state.totalTime += 30;
+    state.lastSave = now;
+    saveState();
+  }
+
+  // Tide level
+  const tideLevel = getTideLevel();
+
+  // Update creatures
+  for (let creature of creatures) {
+    creature.update(tideLevel, mouseX, mouseY, mouseStill);
+  }
+
+  // Spawn bonus creatures if mouse is still
+  if (mouseStill && Math.random() < 0.02 && creatures.length < 30) {
+    const type = ['fish', 'crab'][Math.floor(Math.random() * 2)];
+    if (type === 'fish') {
+      creatures.push(new Fish(Math.random() * W, H * 0.5 + Math.random() * H * 0.3));
+    } else {
+      creatures.push(new HermitCrab(Math.random() * W, H * 0.8));
+    }
+  }
+
+  // Update ripples
+  ripples = ripples.filter(r => {
+    r.radius += 2;
+    r.alpha -= 0.02;
+    return r.alpha > 0;
+  });
+
+  // Random ripples from mouse in water
+  if (mouseY > H * (1 - tideLevel) && Math.random() < 0.1) {
+    addRipple(mouseX, mouseY);
+  }
+
+  // Sky color
+  skyHue = (skyHue + 0.01) % 360;
+
+  // Audio
+  if (audioCtx && oceanGain) {
+    const targetVolume = tideLevel * 0.02;
+    oceanGain.gain.linearRampToValueAtTime(targetVolume, audioCtx.currentTime + 0.1);
+  }
+
+  // Update stats
+  const totalCreatureTypes = Object.keys(CREATURE_TYPES).length;
+  discoveredEl.textContent = `Discovered: ${state.discovered.length}/${totalCreatureTypes}`;
+  visitsEl.textContent = `Visits: ${state.visits}`;
+}
+
+function drawSky() {
+  const skyHeight = H * 0.1;
+  const gradient = ctx.createLinearGradient(0, 0, 0, skyHeight);
+  gradient.addColorStop(0, `hsl(${skyHue}, 40%, 20%)`);
+  gradient.addColorStop(1, `hsl(${skyHue + 20}, 30%, 15%)`);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, skyHeight);
+}
+
+function drawRocks() {
+  // Dark rocky background
+  ctx.fillStyle = '#1a1612';
+  ctx.fillRect(0, 0, W, H);
+
+  // Rocky terrain
+  ctx.fillStyle = '#2d2419';
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  for (let i = 0; i < ROCK_SAMPLES; i++) {
+    const x = (i / (ROCK_SAMPLES - 1)) * W;
+    const y = H * rockHeights[i];
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(W, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // Rock texture
+  for (let i = 0; i < 200; i++) {
+    const x = Math.random() * W;
+    const rockHeight = getRockHeightAt(x) * H;
+    const y = rockHeight + Math.random() * (H - rockHeight);
+    const size = 1 + Math.random() * 3;
+    const brightness = 20 + Math.random() * 15;
+    ctx.fillStyle = `rgb(${brightness}, ${brightness - 5}, ${brightness - 10})`;
+    ctx.fillRect(x, y, size, size);
+  }
+
+  // Algae patches
+  for (let patch of algaePatches) {
+    const alpha = 0.3 + state.algaeGrowth * 0.4;
+    ctx.fillStyle = `rgba(40, 80, 50, ${alpha})`;
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const r = patch.size * (0.8 + Math.random() * 0.4);
+      const x = patch.x + Math.cos(angle) * r;
+      const y = patch.y + Math.sin(angle) * r;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawWater(tideLevel) {
+  const waterTop = H * (1 - tideLevel);
+
+  if (tideLevel <= 0) return;
+
+  // Water body
+  const waterGradient = ctx.createLinearGradient(0, waterTop, 0, H);
+  waterGradient.addColorStop(0, 'rgba(40, 90, 100, 0.4)');
+  waterGradient.addColorStop(1, 'rgba(30, 70, 80, 0.6)');
+  ctx.fillStyle = waterGradient;
+  ctx.fillRect(0, waterTop, W, H - waterTop);
+
+  // Light caustics on rocks
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const time = Date.now() * 0.001;
+  for (let i = 0; i < 15; i++) {
+    const x = (i / 15) * W + Math.sin(time + i) * 30;
+    const y = waterTop + 50 + Math.sin(time * 0.7 + i * 0.5) * 40;
+    const size = 20 + Math.sin(time * 0.5 + i) * 10;
+
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
+    gradient.addColorStop(0, 'rgba(100, 180, 200, 0.15)');
+    gradient.addColorStop(1, 'rgba(100, 180, 200, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - size, y - size, size * 2, size * 2);
+  }
+  ctx.restore();
+
+  // Waterline foam
+  ctx.strokeStyle = 'rgba(200, 220, 230, 0.3)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let x = 0; x < W; x += 5) {
+    const y = waterTop + Math.sin(time * 2 + x * 0.05) * 3;
+    if (x === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Ripples
+  for (let ripple of ripples) {
+    if (ripple.y < waterTop) continue;
+    ctx.strokeStyle = `rgba(200, 230, 240, ${ripple.alpha * 0.4})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+function draw() {
+  const tideLevel = getTideLevel();
+
+  drawSky();
+  drawRocks();
+
+  // Draw creatures below water
+  for (let creature of creatures) {
+    creature.draw(ctx, tideLevel);
+  }
+
+  drawWater(tideLevel);
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>

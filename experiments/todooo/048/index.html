@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>048 — Erosion</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; background: #000; font-family: monospace; }
+canvas { display: block; cursor: crosshair; }
+#info {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  color: rgba(255,255,255,0.7);
+  font-size: 12px;
+  pointer-events: none;
+  transition: opacity 1s;
+  line-height: 1.6;
+}
+#info.hidden { opacity: 0; }
+#sound {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: monospace;
+  font-size: 11px;
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="info"></div>
+<button id="sound">Sound: OFF</button>
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+const info = document.getElementById('info');
+const soundBtn = document.getElementById('sound');
+
+let W, H, cols;
+const STORAGE_KEY = 'todooo-048';
+const LAYERS = [
+  { name: 'surface', color: '#5a7a4a', depth: 60 },
+  { name: 'shallow', color: '#8a7a5a', depth: 70 },
+  { name: 'mid', color: '#7a5a3a', depth: 65 },
+  { name: 'deep', color: '#9a5a4a', depth: 75 },
+  { name: 'stone', color: '#6a6a7a', depth: 80 },
+  { name: 'bedrock', color: '#3a3a4a', depth: 100 }
+];
+
+let terrain = [];
+let plants = [];
+let particles = [];
+let puddles = [];
+let mouse = { x: 0, y: 0, px: 0, py: 0, down: false };
+let data = {
+  visits: 0,
+  firstVisit: Date.now(),
+  lastVisit: Date.now(),
+  erosionPct: 0,
+  initialMass: 0,
+  currentMass: 0
+};
+let soundEnabled = false;
+let audioCtx, windOsc, windGain;
+
+function resize() {
+  W = c.width = window.innerWidth;
+  H = c.height = window.innerHeight;
+  cols = Math.ceil(W / 2);
+  if (terrain.length === 0) initTerrain();
+}
+
+function noise(x, freq = 0.01) {
+  return Math.sin(x * freq) * 0.5 +
+         Math.sin(x * freq * 2.3) * 0.3 +
+         Math.sin(x * freq * 0.7) * 0.2;
+}
+
+function initTerrain() {
+  terrain = [];
+  const baseHeight = H * 0.6;
+  for (let x = 0; x < cols; x++) {
+    const n = noise(x, 0.008);
+    const height = baseHeight + n * 80;
+    const col = [];
+    let currentH = height;
+    LAYERS.forEach(layer => {
+      col.push({ height: currentH, layer: layer.name, color: layer.color });
+      currentH += layer.depth;
+    });
+    terrain.push(col);
+  }
+
+  // Initialize plants
+  plants = terrain.map((col, x) => ({
+    age: Math.random() * 100,
+    density: Math.random() * 0.8 + 0.2
+  }));
+
+  // Calculate initial mass
+  data.initialMass = calculateMass();
+  data.currentMass = data.initialMass;
+}
+
+function calculateMass() {
+  let mass = 0;
+  terrain.forEach(col => {
+    for (let i = 0; i < col.length - 1; i++) {
+      mass += col[i + 1].height - col[i].height;
+    }
+  });
+  return mass;
+}
+
+function loadData() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    data = parsed.data;
+    data.visits++;
+    data.lastVisit = Date.now();
+
+    if (parsed.terrain && parsed.terrain.length === cols) {
+      terrain = parsed.terrain;
+      plants = parsed.plants || plants;
+      naturalErosion();
+      regrowPlants();
+    } else {
+      initTerrain();
+    }
+  } else {
+    initTerrain();
+    data.visits = 1;
+  }
+
+  updateInfo();
+  setTimeout(() => info.classList.add('hidden'), 5000);
+}
+
+function saveData() {
+  data.currentMass = calculateMass();
+  data.erosionPct = ((data.initialMass - data.currentMass) / data.initialMass * 100).toFixed(1);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    data,
+    terrain,
+    plants
+  }));
+}
+
+function updateInfo() {
+  const daysSince = Math.floor((Date.now() - data.firstVisit) / 86400000);
+  info.innerHTML = `Visit ${data.visits}<br>Erosion: ${data.erosionPct}%<br>${daysSince} days`;
+}
+
+function naturalErosion() {
+  const timeSince = Date.now() - data.lastVisit;
+  const hours = timeSince / 3600000;
+  const erosions = Math.floor(hours * cols * 0.001);
+
+  for (let i = 0; i < erosions; i++) {
+    const x = Math.floor(Math.random() * cols);
+    erodeAt(x, 0.5);
+  }
+}
+
+function regrowPlants() {
+  const timeSince = Date.now() - data.lastVisit;
+  const hours = timeSince / 3600000;
+
+  plants.forEach((p, x) => {
+    if (p.age < 100) {
+      p.age = Math.min(100, p.age + hours * 0.5);
+    }
+  });
+}
+
+function erodeAt(x, amount) {
+  if (x < 0 || x >= cols) return;
+  const col = terrain[x];
+  if (col.length === 0) return;
+
+  const top = col[0];
+  top.height += amount;
+
+  // Remove layer if fully eroded
+  if (col.length > 1 && top.height >= col[1].height) {
+    col.shift();
+  }
+
+  // Reset plant age
+  plants[x].age = 0;
+
+  // Create particles
+  const speed = Math.abs(mouse.x - mouse.px);
+  const dx = mouse.x - mouse.px;
+  const dy = mouse.y - mouse.py;
+  const angle = Math.atan2(dy, dx);
+
+  for (let i = 0; i < amount; i++) {
+    particles.push({
+      x: x * 2,
+      y: top.height,
+      vx: Math.cos(angle) * speed * 0.1 + (Math.random() - 0.5) * 2,
+      vy: -Math.random() * 2,
+      life: 60,
+      color: top.color
+    });
+  }
+}
+
+function applyGravity() {
+  terrain.forEach((col, x) => {
+    if (x === 0 || x === cols - 1) return;
+
+    const left = terrain[x - 1];
+    const right = terrain[x + 1];
+    const height = col[0].height;
+    const leftH = left[0]?.height || height;
+    const rightH = right[0]?.height || height;
+
+    // Check slope angle
+    const maxSlope = 15; // pixels per column
+
+    if (height < leftH - maxSlope) {
+      const amt = (leftH - height - maxSlope) * 0.1;
+      erodeAt(x - 1, amt);
+      col[0].height -= amt;
+    }
+    if (height < rightH - maxSlope) {
+      const amt = (rightH - height - maxSlope) * 0.1;
+      erodeAt(x + 1, amt);
+      col[0].height -= amt;
+    }
+  });
+}
+
+function rain(x, sustained = false) {
+  const col = Math.floor(x / 2);
+  if (col < 0 || col >= cols) return;
+
+  // Create rain particles
+  for (let i = 0; i < (sustained ? 5 : 20); i++) {
+    particles.push({
+      x: x + (Math.random() - 0.5) * 40,
+      y: 0,
+      vx: 0,
+      vy: Math.random() * 5 + 5,
+      life: 120,
+      color: '#4a7a9a',
+      isWater: true
+    });
+  }
+
+  // Erode at impact
+  erodeAt(col, sustained ? 0.3 : 1.5);
+
+  // Flow water downhill
+  flowWater(col);
+}
+
+function flowWater(startX) {
+  let x = startX;
+  let steps = 0;
+
+  while (steps < 50 && x >= 0 && x < cols) {
+    const currentH = terrain[x][0].height;
+    const leftH = x > 0 ? terrain[x - 1][0].height : currentH;
+    const rightH = x < cols - 1 ? terrain[x + 1][0].height : currentH;
+
+    // Erode current position
+    erodeAt(x, 0.2);
+
+    // Flow downhill
+    if (leftH < currentH && leftH <= rightH) {
+      x--;
+    } else if (rightH < currentH) {
+      x++;
+    } else {
+      // Pool
+      addPuddle(x);
+      break;
+    }
+
+    steps++;
+  }
+}
+
+function addPuddle(x) {
+  const existing = puddles.find(p => Math.abs(p.x - x) < 10);
+  if (existing) {
+    existing.depth = Math.min(20, existing.depth + 1);
+  } else {
+    puddles.push({ x, depth: 3, life: 600 });
+  }
+}
+
+function earthquake() {
+  // Check for unsupported terrain
+  terrain.forEach((col, x) => {
+    if (x === 0 || x === cols - 1) return;
+
+    const height = col[0].height;
+    const leftH = terrain[x - 1][0].height;
+    const rightH = terrain[x + 1][0].height;
+
+    // If overhanging significantly
+    if (height < leftH - 30 && height < rightH - 30) {
+      // Collapse
+      const fallAmt = Math.min(leftH, rightH) - height - 5;
+      col[0].height += fallAmt;
+
+      // Create debris
+      for (let i = 0; i < fallAmt; i++) {
+        particles.push({
+          x: x * 2,
+          y: height,
+          vx: (Math.random() - 0.5) * 4,
+          vy: Math.random() * -3,
+          life: 90,
+          color: col[0].color
+        });
+      }
+    }
+  });
+
+  // Screen shake (visual only)
+  ctx.translate(Math.random() * 10 - 5, Math.random() * 10 - 5);
+  setTimeout(() => ctx.setTransform(1, 0, 0, 1, 0, 0), 100);
+}
+
+function updateParticles() {
+  particles = particles.filter(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.2; // gravity
+    p.vx *= 0.98;
+    p.life--;
+
+    // Settle particles
+    if (p.life < 30 && !p.isWater) {
+      const col = Math.floor(p.x / 2);
+      if (col >= 0 && col < cols && p.y >= terrain[col][0].height) {
+        terrain[col][0].height -= 0.1; // settle
+        return false;
+      }
+    }
+
+    return p.life > 0 && p.y < H;
+  });
+
+  puddles = puddles.filter(p => {
+    p.life--;
+    return p.life > 0;
+  });
+}
+
+function draw() {
+  // Sky gradient
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, H * 0.6);
+  skyGrad.addColorStop(0, '#0a1a3a');
+  skyGrad.addColorStop(1, '#2a4a6a');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Stars
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  for (let i = 0; i < 100; i++) {
+    const x = (i * 137.508) % W;
+    const y = (i * 97.3) % (H * 0.5);
+    ctx.fillRect(x, y, 1, 1);
+  }
+
+  // Terrain
+  for (let x = 0; x < cols; x++) {
+    const col = terrain[x];
+    for (let i = 0; i < col.length - 1; i++) {
+      const layer = col[i];
+      const nextLayer = col[i + 1];
+      ctx.fillStyle = layer.color;
+      ctx.fillRect(x * 2, layer.height, 2, nextLayer.height - layer.height);
+    }
+
+    // Last layer to bottom
+    const last = col[col.length - 1];
+    ctx.fillStyle = last.color;
+    ctx.fillRect(x * 2, last.height, 2, H - last.height);
+  }
+
+  // Plants
+  ctx.strokeStyle = '#5a7a4a';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < cols; x++) {
+    const plant = plants[x];
+    if (plant.age > 20) {
+      const surfaceY = terrain[x][0].height;
+      const blades = Math.floor(plant.density * 5);
+      for (let b = 0; b < blades; b++) {
+        const bx = x * 2 + b * 0.4;
+        const sway = Math.sin(Date.now() * 0.001 + x + b) * 1;
+        const height = 3 + (plant.age / 100) * 4;
+        ctx.globalAlpha = Math.min(1, plant.age / 100);
+        ctx.beginPath();
+        ctx.moveTo(bx, surfaceY);
+        ctx.lineTo(bx + sway, surfaceY - height);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // Puddles
+  puddles.forEach(p => {
+    const x = p.x;
+    const y = terrain[x][0].height;
+    ctx.fillStyle = `rgba(74, 122, 154, ${p.life / 600 * 0.5})`;
+    ctx.fillRect(x * 2 - p.depth, y, p.depth * 2, 3);
+  });
+
+  // Particles
+  particles.forEach(p => {
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = p.life / 60;
+    ctx.fillRect(p.x, p.y, p.isWater ? 2 : 1, p.isWater ? 4 : 1);
+  });
+  ctx.globalAlpha = 1;
+}
+
+function loop() {
+  // Wind erosion on mouse movement
+  if (mouse.x !== mouse.px || mouse.y !== mouse.py) {
+    const speed = Math.hypot(mouse.x - mouse.px, mouse.y - mouse.py);
+    const col = Math.floor(mouse.x / 2);
+
+    if (col >= 0 && col < cols && mouse.y < terrain[col][0].height) {
+      const erosionAmt = Math.min(5, speed * 0.05);
+      erodeAt(col, erosionAmt);
+
+      if (soundEnabled && windOsc) {
+        windGain.gain.value = Math.min(0.1, speed * 0.001);
+        windOsc.frequency.value = 100 + speed * 2;
+      }
+    }
+  } else if (soundEnabled && windGain) {
+    windGain.gain.value *= 0.9;
+  }
+
+  // Sustained rain
+  if (mouse.down) {
+    rain(mouse.x, true);
+  }
+
+  updateParticles();
+
+  if (Math.random() < 0.1) applyGravity();
+
+  // Grow plants
+  plants.forEach(p => {
+    if (p.age < 100) p.age += 0.02;
+  });
+
+  draw();
+
+  mouse.px = mouse.x;
+  mouse.py = mouse.y;
+
+  requestAnimationFrame(loop);
+}
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Wind oscillator
+    windOsc = audioCtx.createOscillator();
+    windOsc.type = 'sine';
+    windOsc.frequency.value = 100;
+
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 800;
+
+    windGain = audioCtx.createGain();
+    windGain.gain.value = 0;
+
+    windOsc.connect(filter);
+    filter.connect(windGain);
+    windGain.connect(audioCtx.destination);
+    windOsc.start();
+  }
+}
+
+function playSound(type) {
+  if (!soundEnabled || !audioCtx) return;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  switch(type) {
+    case 'rain':
+      osc.frequency.value = Math.random() * 200 + 100;
+      gain.gain.value = 0.05;
+      break;
+    case 'crack':
+      osc.frequency.value = Math.random() * 100 + 50;
+      gain.gain.value = 0.08;
+      break;
+    case 'rumble':
+      osc.frequency.value = 30;
+      gain.gain.value = 0.15;
+      break;
+  }
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+  osc.stop(audioCtx.currentTime + 0.1);
+}
+
+// Events
+c.addEventListener('mousemove', e => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+});
+
+c.addEventListener('mousedown', e => {
+  if (e.button === 0) {
+    mouse.down = true;
+    rain(e.clientX);
+    playSound('rain');
+  }
+});
+
+c.addEventListener('mouseup', () => {
+  mouse.down = false;
+});
+
+c.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  earthquake();
+  playSound('rumble');
+});
+
+soundBtn.addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  soundBtn.textContent = `Sound: ${soundEnabled ? 'ON' : 'OFF'}`;
+  if (soundEnabled) initAudio();
+});
+
+window.addEventListener('resize', resize);
+window.addEventListener('beforeunload', saveData);
+
+// Auto-save every 10 seconds
+setInterval(saveData, 10000);
+
+resize();
+loadData();
+loop();
+</script>
+</body>
+</html>

@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow Puppet Theater - todooo 060</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Georgia', serif;
+            background: #1a1410;
+            cursor: none;
+        }
+
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #caption {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #f5e8d0;
+            font-size: 18px;
+            font-style: italic;
+            text-align: center;
+            pointer-events: none;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: 10;
+        }
+
+        #caption.visible {
+            opacity: 1;
+        }
+
+        #instructions {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #f5e8d0;
+            font-size: 12px;
+            text-align: center;
+            pointer-events: none;
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+            opacity: 0.6;
+            z-index: 10;
+        }
+
+        .light-cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 230, 180, 0.9), rgba(255, 200, 100, 0.3));
+            pointer-events: none;
+            z-index: 100;
+            mix-blend-mode: screen;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="caption"></div>
+    <div id="instructions">Arrow keys: change scene | Click: pin light | Double-click: release | Space: flicker</div>
+    <div class="light-cursor" id="cursor"></div>
+
+    <script>
+        // Configuration
+        const STORAGE_KEY = 'todooo-060';
+        const SCREEN_COLOR = '#f5e8d0';
+        const SILHOUETTE_COLOR = '#0a0806';
+        const SHADOW_COLOR = 'rgba(10, 8, 6, 0.6)';
+        const FRAME_COLOR = '#2a1f1a';
+
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const caption = document.getElementById('caption');
+        const cursorEl = document.getElementById('cursor');
+
+        let width, height;
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // State
+        let state = {
+            currentScene: 0,
+            visitedScenes: new Set([0]),
+            visitCount: 0,
+            lightPos: { x: width / 2, y: height / 2 },
+            lightPinned: false,
+            mousePos: { x: width / 2, y: height / 2 },
+            mouseVelocity: 0,
+            flickering: false,
+            flickerIntensity: 1,
+            sceneTransition: 0,
+            prevScene: 0
+        };
+
+        // Load state
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    state.currentScene = data.currentScene || 0;
+                    state.visitedScenes = new Set(data.visitedScenes || [0]);
+                    state.visitCount = data.visitCount || 0;
+                }
+            } catch (e) {
+                console.error('Failed to load state:', e);
+            }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    currentScene: state.currentScene,
+                    visitedScenes: Array.from(state.visitedScenes),
+                    visitCount: state.visitCount
+                }));
+            } catch (e) {
+                console.error('Failed to save state:', e);
+            }
+        }
+
+        loadState();
+
+        // Scene definitions
+        const scenes = [
+            {
+                name: 'Forest Edge',
+                caption: 'where the wild things gather in moonlight',
+                objects: [
+                    {
+                        type: 'tree',
+                        x: 0.2,
+                        y: 0.7,
+                        depth: 0.3,
+                        points: [
+                            [0, -150], [-20, -130], [-10, -100], [-25, -80], [-15, -50],
+                            [-30, -30], [-15, 0], [-10, 50], [-5, 80], [0, 100],
+                            [5, 80], [10, 50], [15, 0], [30, -30], [15, -50],
+                            [25, -80], [10, -100], [20, -130]
+                        ]
+                    },
+                    {
+                        type: 'tree',
+                        x: 0.75,
+                        y: 0.75,
+                        depth: 0.5,
+                        points: [
+                            [0, -120], [-15, -110], [-8, -85], [-18, -70], [-10, -40],
+                            [-22, -25], [-12, 0], [-8, 40], [-4, 65], [0, 80],
+                            [4, 65], [8, 40], [12, 0], [22, -25], [10, -40],
+                            [18, -70], [8, -85], [15, -110]
+                        ]
+                    },
+                    {
+                        type: 'deer',
+                        x: 0.5,
+                        y: 0.8,
+                        depth: 0.6,
+                        points: [
+                            [-30, -25], [-28, -35], [-20, -30], [-15, -20],
+                            [-10, -15], [0, -18], [10, -15],
+                            [15, -20], [20, -30], [28, -35], [30, -25],
+                            [25, -10], [20, 0], [15, 10], [10, 15],
+                            [5, 20], [0, 20], [-5, 20], [-10, 15],
+                            [-15, 10], [-20, 0], [-25, -10]
+                        ]
+                    },
+                    {
+                        type: 'moon',
+                        x: 0.85,
+                        y: 0.2,
+                        depth: 0.1,
+                        points: generateCircle(40, 20)
+                    }
+                ],
+                ambient: 'forest'
+            },
+            {
+                name: 'Village',
+                caption: 'smoke rises where stories are told',
+                objects: [
+                    {
+                        type: 'house',
+                        x: 0.3,
+                        y: 0.75,
+                        depth: 0.4,
+                        points: [
+                            [-60, 0], [-60, -60], [-40, -60], [-40, -80], [0, -120],
+                            [40, -80], [40, -60], [60, -60], [60, 0]
+                        ]
+                    },
+                    {
+                        type: 'house',
+                        x: 0.65,
+                        y: 0.78,
+                        depth: 0.5,
+                        points: [
+                            [-45, 0], [-45, -50], [-30, -50], [-30, -65], [0, -95],
+                            [30, -65], [30, -50], [45, -50], [45, 0]
+                        ]
+                    },
+                    {
+                        type: 'figure',
+                        x: 0.5,
+                        y: 0.85,
+                        depth: 0.7,
+                        points: [
+                            [0, -40], [-6, -35], [-8, -25], [-10, -10],
+                            [-8, 0], [-10, 10], [-8, 20], [-6, 25],
+                            [0, 25], [6, 25], [8, 20], [10, 10],
+                            [8, 0], [10, -10], [8, -25], [6, -35]
+                        ]
+                    },
+                    {
+                        type: 'smoke',
+                        x: 0.3,
+                        y: 0.55,
+                        depth: 0.2,
+                        points: [
+                            [0, 0], [-5, -20], [3, -35], [-4, -50],
+                            [5, -65], [-3, -80], [0, -90]
+                        ]
+                    }
+                ],
+                ambient: 'village'
+            },
+            {
+                name: 'Mountain',
+                caption: 'where earth touches sky',
+                objects: [
+                    {
+                        type: 'mountain',
+                        x: 0.3,
+                        y: 0.85,
+                        depth: 0.2,
+                        points: [
+                            [-200, 0], [-150, -80], [-100, -40], [-50, -120],
+                            [0, -180], [50, -140], [100, -100], [150, -150],
+                            [200, 0]
+                        ]
+                    },
+                    {
+                        type: 'mountain',
+                        x: 0.7,
+                        y: 0.88,
+                        depth: 0.3,
+                        points: [
+                            [-150, 0], [-100, -60], [-50, -30], [0, -120],
+                            [50, -90], [100, -60], [150, 0]
+                        ]
+                    },
+                    {
+                        type: 'eagle',
+                        x: 0.6,
+                        y: 0.3,
+                        depth: 0.6,
+                        points: [
+                            [-25, 0], [-15, -5], [-5, -3], [0, 0],
+                            [5, -3], [15, -5], [25, 0], [15, 3],
+                            [5, 2], [0, 0], [-5, 2], [-15, 3]
+                        ]
+                    },
+                    {
+                        type: 'cloud',
+                        x: 0.2,
+                        y: 0.25,
+                        depth: 0.15,
+                        points: generateCloud(50, 15)
+                    },
+                    {
+                        type: 'cloud',
+                        x: 0.8,
+                        y: 0.35,
+                        depth: 0.12,
+                        points: generateCloud(60, 18)
+                    }
+                ],
+                ambient: 'wind'
+            },
+            {
+                name: 'Sea',
+                caption: 'the deep calls to the deep',
+                objects: [
+                    {
+                        type: 'wave',
+                        x: 0.3,
+                        y: 0.7,
+                        depth: 0.4,
+                        points: generateWave(150, 30, 5)
+                    },
+                    {
+                        type: 'wave',
+                        x: 0.7,
+                        y: 0.75,
+                        depth: 0.5,
+                        points: generateWave(120, 25, 4)
+                    },
+                    {
+                        type: 'boat',
+                        x: 0.5,
+                        y: 0.6,
+                        depth: 0.6,
+                        points: [
+                            [-40, 0], [-35, 10], [-25, 15], [25, 15],
+                            [35, 10], [40, 0], [30, -5], [20, -8],
+                            [15, -50], [10, -8], [-10, -8], [-15, -50],
+                            [-20, -8], [-30, -5]
+                        ]
+                    },
+                    {
+                        type: 'whale',
+                        x: 0.2,
+                        y: 0.5,
+                        depth: 0.3,
+                        points: [
+                            [-60, 0], [-50, -15], [-30, -20], [0, -18],
+                            [30, -15], [50, -10], [60, 0], [50, 8],
+                            [30, 10], [0, 8], [-30, 5], [-50, 3]
+                        ]
+                    }
+                ],
+                ambient: 'waves'
+            },
+            {
+                name: 'Night',
+                caption: 'in darkness, we dream',
+                objects: [
+                    {
+                        type: 'figure-sleeping',
+                        x: 0.5,
+                        y: 0.8,
+                        depth: 0.6,
+                        points: [
+                            [-40, 0], [-38, -8], [-30, -12], [-20, -15],
+                            [0, -15], [20, -15], [30, -12], [38, -8], [40, 0]
+                        ]
+                    },
+                    {
+                        type: 'owl',
+                        x: 0.15,
+                        y: 0.35,
+                        depth: 0.4,
+                        points: [
+                            [-15, -20], [-10, -25], [0, -25], [10, -25], [15, -20],
+                            [12, -10], [10, 0], [8, 10], [0, 15],
+                            [-8, 10], [-10, 0], [-12, -10]
+                        ]
+                    },
+                    {
+                        type: 'star',
+                        x: 0.3,
+                        y: 0.2,
+                        depth: 0.05,
+                        points: [[0, -8], [-2, -2], [-8, 0], [-2, 2], [0, 8], [2, 2], [8, 0], [2, -2]]
+                    },
+                    {
+                        type: 'star',
+                        x: 0.5,
+                        y: 0.15,
+                        depth: 0.05,
+                        points: [[0, -6], [-1.5, -1.5], [-6, 0], [-1.5, 1.5], [0, 6], [1.5, 1.5], [6, 0], [1.5, -1.5]]
+                    },
+                    {
+                        type: 'star',
+                        x: 0.7,
+                        y: 0.25,
+                        depth: 0.05,
+                        points: [[0, -7], [-1.8, -1.8], [-7, 0], [-1.8, 1.8], [0, 7], [1.8, 1.8], [7, 0], [1.8, -1.8]]
+                    },
+                    {
+                        type: 'star',
+                        x: 0.85,
+                        y: 0.18,
+                        depth: 0.05,
+                        points: [[0, -5], [-1.2, -1.2], [-5, 0], [-1.2, 1.2], [0, 5], [1.2, 1.2], [5, 0], [1.2, -1.2]]
+                    }
+                ],
+                ambient: 'crickets'
+            }
+        ];
+
+        // Helper functions for generating shapes
+        function generateCircle(radius, points) {
+            const pts = [];
+            for (let i = 0; i < points; i++) {
+                const angle = (i / points) * Math.PI * 2;
+                pts.push([Math.cos(angle) * radius, Math.sin(angle) * radius]);
+            }
+            return pts;
+        }
+
+        function generateCloud(width, height) {
+            const pts = [];
+            const segments = 12;
+            for (let i = 0; i < segments; i++) {
+                const angle = (i / segments) * Math.PI * 2;
+                const r = width / 2 + Math.sin(angle * 3) * width * 0.2;
+                pts.push([Math.cos(angle) * r, Math.sin(angle) * height * 0.5]);
+            }
+            return pts;
+        }
+
+        function generateWave(width, height, frequency) {
+            const pts = [];
+            const segments = 20;
+            for (let i = 0; i <= segments; i++) {
+                const x = (i / segments - 0.5) * width;
+                const y = Math.sin((i / segments) * Math.PI * frequency) * height;
+                pts.push([x, y]);
+            }
+            return pts;
+        }
+
+        // Audio context
+        let audioCtx = null;
+        let currentAmbient = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playAmbient(type) {
+            if (!audioCtx) return;
+
+            // Stop current ambient
+            if (currentAmbient) {
+                currentAmbient.stop();
+                currentAmbient = null;
+            }
+
+            // Create ambient sound based on type
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            oscillator.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            switch(type) {
+                case 'forest':
+                    oscillator.frequency.value = 120;
+                    filter.frequency.value = 400;
+                    break;
+                case 'village':
+                    oscillator.frequency.value = 150;
+                    filter.frequency.value = 600;
+                    break;
+                case 'wind':
+                    oscillator.frequency.value = 80;
+                    filter.frequency.value = 300;
+                    break;
+                case 'waves':
+                    oscillator.frequency.value = 100;
+                    filter.frequency.value = 500;
+                    break;
+                case 'crickets':
+                    oscillator.frequency.value = 200;
+                    filter.frequency.value = 800;
+                    break;
+            }
+
+            oscillator.type = 'sine';
+            filter.type = 'lowpass';
+            gainNode.gain.value = 0.02;
+
+            oscillator.start();
+            currentAmbient = oscillator;
+        }
+
+        function playFlickerSound() {
+            if (!audioCtx) return;
+
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.frequency.value = 60;
+            oscillator.type = 'sawtooth';
+            gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.3);
+        }
+
+        function playSwooshSound() {
+            if (!audioCtx) return;
+
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            oscillator.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.5);
+            filter.frequency.value = 1000;
+            filter.type = 'lowpass';
+
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        }
+
+        // Scene management
+        function changeScene(direction) {
+            state.prevScene = state.currentScene;
+            state.currentScene = (state.currentScene + direction + scenes.length) % scenes.length;
+            state.visitedScenes.add(state.currentScene);
+            state.visitCount++;
+            state.sceneTransition = 1;
+
+            saveState();
+            updateCaption();
+
+            initAudio();
+            playSwooshSound();
+
+            setTimeout(() => {
+                playAmbient(scenes[state.currentScene].ambient);
+            }, 300);
+        }
+
+        function updateCaption() {
+            const scene = scenes[state.currentScene];
+            caption.textContent = scene.caption;
+            caption.classList.remove('visible');
+            setTimeout(() => caption.classList.add('visible'), 300);
+        }
+
+        // Input handling
+        let lastMousePos = { x: width / 2, y: height / 2 };
+        let clickCount = 0;
+        let clickTimer = null;
+
+        document.addEventListener('mousemove', (e) => {
+            const dx = e.clientX - lastMousePos.x;
+            const dy = e.clientY - lastMousePos.y;
+            state.mouseVelocity = Math.sqrt(dx * dx + dy * dy);
+            lastMousePos = { x: e.clientX, y: e.clientY };
+
+            state.mousePos = { x: e.clientX, y: e.clientY };
+
+            if (!state.lightPinned) {
+                state.lightPos = { x: e.clientX, y: e.clientY };
+            }
+
+            cursorEl.style.left = e.clientX + 'px';
+            cursorEl.style.top = e.clientY + 'px';
+        });
+
+        document.addEventListener('click', (e) => {
+            clickCount++;
+
+            if (clickTimer) clearTimeout(clickTimer);
+
+            if (clickCount === 2) {
+                // Double click - release pin
+                state.lightPinned = false;
+                clickCount = 0;
+            } else {
+                // Single click - pin light
+                clickTimer = setTimeout(() => {
+                    state.lightPinned = true;
+                    state.lightPos = { x: e.clientX, y: e.clientY };
+                    clickCount = 0;
+                }, 250);
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                changeScene(-1);
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                changeScene(1);
+            } else if (e.key === ' ') {
+                e.preventDefault();
+                state.flickering = true;
+                initAudio();
+                playFlickerSound();
+
+                setTimeout(() => {
+                    state.flickering = false;
+                }, 500);
+            }
+        });
+
+        // Rendering
+        function drawSilhouette(obj, screenX, screenY) {
+            ctx.save();
+            ctx.translate(screenX, screenY);
+
+            // Apply flutter effect if mouse is moving fast
+            const flutter = state.mouseVelocity > 20 ? Math.sin(Date.now() / 100) * 2 : 0;
+            ctx.rotate(flutter * 0.01);
+
+            ctx.beginPath();
+            obj.points.forEach((point, i) => {
+                if (i === 0) {
+                    ctx.moveTo(point[0], point[1]);
+                } else {
+                    ctx.lineTo(point[0], point[1]);
+                }
+            });
+            ctx.closePath();
+
+            ctx.fillStyle = SILHOUETTE_COLOR;
+            ctx.shadowBlur = 3;
+            ctx.shadowColor = SILHOUETTE_COLOR;
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawShadow(obj, screenX, screenY, lightX, lightY) {
+            ctx.save();
+
+            const dx = screenX - lightX;
+            const dy = screenY - lightY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const shadowLength = Math.max(100, distance * 0.5);
+
+            // Project shadow
+            obj.points.forEach((point, i) => {
+                const px = screenX + point[0];
+                const py = screenY + point[1];
+
+                const pdx = px - lightX;
+                const pdy = py - lightY;
+                const pDist = Math.sqrt(pdx * pdx + pdy * pdy);
+
+                const shadowX = px + (pdx / pDist) * shadowLength;
+                const shadowY = py + (pdy / pDist) * shadowLength;
+
+                if (i === 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(px, py);
+                    ctx.lineTo(shadowX, shadowY);
+                } else {
+                    ctx.lineTo(shadowX, shadowY);
+                }
+            });
+
+            // Close shadow polygon
+            for (let i = obj.points.length - 1; i >= 0; i--) {
+                const px = screenX + obj.points[i][0];
+                const py = screenY + obj.points[i][1];
+                ctx.lineTo(px, py);
+            }
+
+            ctx.closePath();
+            ctx.fillStyle = SHADOW_COLOR;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawLightGlow(x, y, intensity) {
+            const gradient = ctx.createRadialGradient(x, y, 0, x, y, 150 * intensity);
+            gradient.addColorStop(0, `rgba(255, 230, 180, ${0.3 * intensity})`);
+            gradient.addColorStop(0.5, `rgba(255, 200, 100, ${0.15 * intensity})`);
+            gradient.addColorStop(1, 'rgba(255, 200, 100, 0)');
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(x - 150, y - 150, 300, 300);
+        }
+
+        function drawFrame() {
+            const frameWidth = 30;
+            ctx.fillStyle = FRAME_COLOR;
+            ctx.fillRect(0, 0, width, frameWidth);
+            ctx.fillRect(0, height - frameWidth, width, frameWidth);
+            ctx.fillRect(0, 0, frameWidth, height);
+            ctx.fillRect(width - frameWidth, 0, frameWidth, height);
+        }
+
+        function render() {
+            // Update flicker
+            if (state.flickering) {
+                state.flickerIntensity = 0.3 + Math.random() * 0.7;
+            } else {
+                state.flickerIntensity = 1;
+            }
+
+            // Update velocity decay
+            state.mouseVelocity *= 0.9;
+
+            // Update scene transition
+            if (state.sceneTransition > 0) {
+                state.sceneTransition -= 0.02;
+            }
+
+            // Clear canvas
+            ctx.fillStyle = SCREEN_COLOR;
+            ctx.fillRect(0, 0, width, height);
+
+            // Get current scene
+            const scene = scenes[state.currentScene];
+            const prevScene = scenes[state.prevScene];
+
+            // Calculate light position with parallax
+            const lightX = state.lightPos.x;
+            const lightY = state.lightPos.y;
+
+            // Draw shadows first (back to front by depth)
+            const currentObjects = [...scene.objects].sort((a, b) => a.depth - b.depth);
+
+            if (state.sceneTransition > 0) {
+                ctx.globalAlpha = 1 - state.sceneTransition;
+            }
+
+            currentObjects.forEach(obj => {
+                const parallaxX = (lightX - width / 2) * obj.depth * 0.1;
+                const parallaxY = (lightY - height / 2) * obj.depth * 0.1;
+                const screenX = obj.x * width + parallaxX;
+                const screenY = obj.y * height + parallaxY;
+
+                drawShadow(obj, screenX, screenY, lightX, lightY);
+            });
+
+            // Draw silhouettes
+            currentObjects.forEach(obj => {
+                const parallaxX = (lightX - width / 2) * obj.depth * 0.1;
+                const parallaxY = (lightY - height / 2) * obj.depth * 0.1;
+                const screenX = obj.x * width + parallaxX;
+                const screenY = obj.y * height + parallaxY;
+
+                drawSilhouette(obj, screenX, screenY);
+            });
+
+            ctx.globalAlpha = 1;
+
+            // Draw light glow
+            drawLightGlow(lightX, lightY, state.flickerIntensity);
+
+            // Draw frame
+            drawFrame();
+
+            requestAnimationFrame(render);
+        }
+
+        // Initialize
+        updateCaption();
+        initAudio();
+        playAmbient(scenes[state.currentScene].ambient);
+        render();
+    </script>
+</body>
+</html>

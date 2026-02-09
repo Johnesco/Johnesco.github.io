@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loom - Version 059</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(to bottom, #2a2520, #1a1510);
+            color: #d4c4b0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #canvas {
+            display: block;
+            border: 2px solid #4a3820;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+            background: #f5f0e8;
+        }
+
+        .ui {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(42, 37, 32, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #6a5840;
+            max-width: 250px;
+        }
+
+        .ui h3 {
+            margin-bottom: 12px;
+            color: #e4d4c0;
+            font-size: 14px;
+            border-bottom: 1px solid #4a3820;
+            padding-bottom: 8px;
+        }
+
+        .ui-item {
+            margin: 10px 0;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .ui-item strong {
+            color: #c4a870;
+        }
+
+        .color-preview {
+            width: 100%;
+            height: 30px;
+            border: 1px solid #6a5840;
+            margin-top: 8px;
+            border-radius: 4px;
+        }
+
+        .help {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(42, 37, 32, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #6a5840;
+            font-size: 11px;
+            line-height: 1.8;
+            max-width: 300px;
+        }
+
+        .help div {
+            margin: 4px 0;
+        }
+
+        .help kbd {
+            background: #4a3820;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #e4d4c0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="ui">
+        <h3>LOOM STATUS</h3>
+        <div class="ui-item"><strong>Rows:</strong> <span id="row-count">0</span></div>
+        <div class="ui-item"><strong>Threads:</strong> <span id="thread-count">0</span></div>
+        <div class="ui-item"><strong>Pattern:</strong> <span id="pattern-name">Plain</span></div>
+        <div class="ui-item"><strong>Palette:</strong> <span id="palette-name">Free</span></div>
+        <div class="ui-item">
+            <strong>Next Color:</strong>
+            <div class="color-preview" id="color-preview"></div>
+        </div>
+    </div>
+
+    <div class="help">
+        <div><kbd>Type</kbd> Add threads</div>
+        <div><kbd>Space</kbd> Create gap</div>
+        <div><kbd>Enter</kbd> Complete row</div>
+        <div><kbd>Backspace</kbd> Remove thread</div>
+        <div><kbd>Tab</kbd> Cycle pattern</div>
+        <div><kbd>1-5</kbd> Set color palette</div>
+        <div><kbd>C</kbd> Clear tapestry</div>
+    </div>
+
+    <script>
+        // Configuration
+        const STORAGE_KEY = 'todooo-059';
+        const CANVAS_WIDTH = 1000;
+        const CANVAS_HEIGHT = 700;
+        const WARP_COUNT = 50;
+        const LOOM_BAR_HEIGHT = 40;
+        const THREAD_THICKNESS = 2;
+        const WEFT_HEIGHT = 6;
+        const MAX_VISIBLE_ROWS = 80;
+
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+
+        // Audio context
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let ambientOscillator = null;
+
+        // State
+        let state = {
+            rows: [],
+            currentRow: [],
+            scrollOffset: 0,
+            pattern: 0, // 0: plain, 1: twill, 2: herringbone, 3: diamond
+            palette: 0, // 0: free, 1-5: presets
+            paletteIndex: 0,
+            totalThreads: 0,
+            lastKey: 'a'
+        };
+
+        const PATTERNS = ['Plain', 'Twill', 'Herringbone', 'Diamond'];
+        const PALETTES = [
+            'Free',
+            'Earth',
+            'Ocean',
+            'Sunset',
+            'Forest',
+            'Twilight'
+        ];
+
+        const PALETTE_COLORS = [
+            null, // Free mode
+            ['#8B4513', '#D2691E', '#F4A460', '#DEB887', '#FFE4B5'], // Earth
+            ['#003366', '#004080', '#0066CC', '#3399FF', '#66B2FF'], // Ocean
+            ['#FF4500', '#FF6347', '#FF7F50', '#FFA500', '#FFD700'], // Sunset
+            ['#2D5016', '#3D6B1F', '#4A7C2C', '#5C8F3A', '#6FA047'], // Forest
+            ['#2C1654', '#4A2C7E', '#6842A8', '#8658C8', '#A46ED8']  // Twilight
+        ];
+
+        // Warp thread positions and colors
+        const warpThreads = [];
+        const warpSpacing = (CANVAS_WIDTH - 100) / (WARP_COUNT - 1);
+        const warpStartX = 50;
+
+        for (let i = 0; i < WARP_COUNT; i++) {
+            const shade = 235 + Math.random() * 15;
+            warpThreads.push({
+                x: warpStartX + i * warpSpacing,
+                color: `rgb(${shade}, ${shade - 5}, ${shade - 10})`
+            });
+        }
+
+        // Initialize
+        function init() {
+            loadState();
+            startAmbient();
+            updateUI();
+            render();
+
+            // Ensure audio starts on user interaction
+            document.addEventListener('keydown', function initAudio() {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            }, { once: true });
+        }
+
+        // Save/Load
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                rows: state.rows,
+                pattern: state.pattern,
+                palette: state.palette,
+                totalThreads: state.totalThreads
+            }));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    state.rows = data.rows || [];
+                    state.pattern = data.pattern || 0;
+                    state.palette = data.palette || 0;
+                    state.totalThreads = data.totalThreads || 0;
+
+                    // Adjust scroll to show the most recent work
+                    if (state.rows.length > MAX_VISIBLE_ROWS) {
+                        state.scrollOffset = (state.rows.length - MAX_VISIBLE_ROWS) * WEFT_HEIGHT;
+                    }
+                } catch (e) {
+                    console.error('Failed to load state:', e);
+                }
+            }
+        }
+
+        // Color mapping
+        function charToColor(char) {
+            if (state.palette > 0) {
+                const colors = PALETTE_COLORS[state.palette];
+                const color = colors[state.paletteIndex % colors.length];
+                state.paletteIndex++;
+                return color;
+            }
+
+            const code = char.toLowerCase().charCodeAt(0);
+            let hue;
+
+            if (code >= 97 && code <= 122) {
+                hue = ((code - 97) / 26) * 360;
+            } else {
+                hue = (code % 360);
+            }
+
+            const saturation = 60 + Math.random() * 20;
+            const lightness = 45 + Math.random() * 15;
+
+            return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        }
+
+        // Weave pattern logic
+        function shouldThreadGoOver(warpIndex, rowIndex) {
+            switch (state.pattern) {
+                case 0: // Plain weave
+                    return (warpIndex + rowIndex) % 2 === 0;
+
+                case 1: // Twill (diagonal)
+                    return (warpIndex + rowIndex) % 3 < 2;
+
+                case 2: // Herringbone
+                    const cycle = Math.floor(rowIndex / 4) % 2;
+                    if (cycle === 0) {
+                        return (warpIndex + rowIndex) % 4 < 2;
+                    } else {
+                        return (warpIndex - rowIndex) % 4 < 2;
+                    }
+
+                case 3: // Diamond
+                    const phase = rowIndex % 8;
+                    if (phase < 4) {
+                        return (warpIndex + phase) % 4 < 2;
+                    } else {
+                        return (warpIndex + (8 - phase)) % 4 < 2;
+                    }
+
+                default:
+                    return (warpIndex + rowIndex) % 2 === 0;
+            }
+        }
+
+        // Audio
+        function startAmbient() {
+            ambientOscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            ambientOscillator.type = 'sine';
+            ambientOscillator.frequency.value = 55; // Low hum
+            gainNode.gain.value = 0.02;
+
+            ambientOscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            ambientOscillator.start();
+        }
+
+        function playShuttleClick() {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'square';
+            osc.frequency.value = 150 + Math.random() * 50;
+            gain.gain.value = 0.1;
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        function playRowComplete() {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.value = 80;
+            gain.gain.value = 0.15;
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+            osc.stop(audioCtx.currentTime + 0.2);
+        }
+
+        // Input handling
+        document.addEventListener('keydown', (e) => {
+            // Prevent default for special keys
+            if (['Tab', 'Backspace'].includes(e.key)) {
+                e.preventDefault();
+            }
+
+            if (e.key === 'c' || e.key === 'C') {
+                if (confirm('Clear the entire tapestry?')) {
+                    state.rows = [];
+                    state.currentRow = [];
+                    state.scrollOffset = 0;
+                    state.totalThreads = 0;
+                    state.paletteIndex = 0;
+                    saveState();
+                    updateUI();
+                    render();
+                }
+                return;
+            }
+
+            if (e.key === 'Tab') {
+                state.pattern = (state.pattern + 1) % PATTERNS.length;
+                saveState();
+                updateUI();
+                render();
+                return;
+            }
+
+            if (e.key >= '1' && e.key <= '5') {
+                const paletteNum = parseInt(e.key);
+                state.palette = paletteNum;
+                state.paletteIndex = 0;
+                saveState();
+                updateUI();
+                render();
+                return;
+            }
+
+            if (e.key === '0') {
+                state.palette = 0;
+                saveState();
+                updateUI();
+                render();
+                return;
+            }
+
+            if (e.key === 'Backspace') {
+                if (state.currentRow.length > 0) {
+                    state.currentRow.pop();
+                    state.totalThreads--;
+                    playShuttleClick();
+                    updateUI();
+                    render();
+                }
+                return;
+            }
+
+            if (e.key === 'Enter') {
+                if (state.currentRow.length > 0) {
+                    state.rows.push([...state.currentRow]);
+                    state.currentRow = [];
+                    playRowComplete();
+
+                    // Auto-scroll
+                    if (state.rows.length > MAX_VISIBLE_ROWS) {
+                        state.scrollOffset = (state.rows.length - MAX_VISIBLE_ROWS) * WEFT_HEIGHT;
+                    }
+
+                    saveState();
+                    updateUI();
+                    render();
+                }
+                return;
+            }
+
+            if (e.key === ' ') {
+                state.currentRow.push({ char: ' ', color: null });
+                state.totalThreads++;
+                playShuttleClick();
+                updateUI();
+                render();
+                return;
+            }
+
+            // Regular character
+            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+                const color = charToColor(e.key);
+                state.currentRow.push({ char: e.key, color: color });
+                state.totalThreads++;
+                state.lastKey = e.key;
+                playShuttleClick();
+                updateUI();
+                render();
+            }
+        });
+
+        // UI updates
+        function updateUI() {
+            document.getElementById('row-count').textContent = state.rows.length;
+            document.getElementById('thread-count').textContent = state.totalThreads;
+            document.getElementById('pattern-name').textContent = PATTERNS[state.pattern];
+            document.getElementById('palette-name').textContent = PALETTES[state.palette];
+
+            // Preview next color
+            const previewColor = charToColor(state.lastKey);
+            document.getElementById('color-preview').style.background = previewColor;
+
+            // Restore palette index if in palette mode
+            if (state.palette > 0) {
+                state.paletteIndex--;
+            }
+        }
+
+        // Rendering
+        function render() {
+            // Clear
+            ctx.fillStyle = '#f5f0e8';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            // Draw loom frame
+            drawLoomFrame();
+
+            // Draw warp threads
+            drawWarpThreads();
+
+            // Draw completed rows
+            drawCompletedRows();
+
+            // Draw current row
+            drawCurrentRow();
+
+            // Draw shuttle
+            drawShuttle();
+        }
+
+        function drawLoomFrame() {
+            // Top bar
+            drawWoodenBar(0, 0, CANVAS_WIDTH, LOOM_BAR_HEIGHT);
+
+            // Bottom bar
+            drawWoodenBar(0, CANVAS_HEIGHT - LOOM_BAR_HEIGHT, CANVAS_WIDTH, LOOM_BAR_HEIGHT);
+        }
+
+        function drawWoodenBar(x, y, width, height) {
+            // Base wood color
+            const gradient = ctx.createLinearGradient(x, y, x, y + height);
+            gradient.addColorStop(0, '#6B4423');
+            gradient.addColorStop(0.5, '#8B6434');
+            gradient.addColorStop(1, '#6B4423');
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(x, y, width, height);
+
+            // Wood grain texture
+            ctx.strokeStyle = 'rgba(50, 30, 10, 0.3)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < width; i += 20) {
+                const offset = Math.sin(i * 0.1) * 3;
+                ctx.beginPath();
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i + offset, y + height);
+                ctx.stroke();
+            }
+
+            // Highlight
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x, y + 2);
+            ctx.lineTo(x + width, y + 2);
+            ctx.stroke();
+        }
+
+        function drawWarpThreads() {
+            ctx.lineWidth = THREAD_THICKNESS;
+
+            for (let i = 0; i < warpThreads.length; i++) {
+                const warp = warpThreads[i];
+                ctx.strokeStyle = warp.color;
+                ctx.beginPath();
+                ctx.moveTo(warp.x, LOOM_BAR_HEIGHT);
+                ctx.lineTo(warp.x, CANVAS_HEIGHT - LOOM_BAR_HEIGHT);
+                ctx.stroke();
+            }
+        }
+
+        function drawCompletedRows() {
+            const startY = LOOM_BAR_HEIGHT + 10;
+
+            for (let rowIdx = 0; rowIdx < state.rows.length; rowIdx++) {
+                const row = state.rows[rowIdx];
+                const y = startY + (rowIdx * WEFT_HEIGHT) - state.scrollOffset;
+
+                // Skip rows outside visible area
+                if (y < LOOM_BAR_HEIGHT - WEFT_HEIGHT || y > CANVAS_HEIGHT - LOOM_BAR_HEIGHT) {
+                    continue;
+                }
+
+                drawWeftRow(row, y, rowIdx);
+            }
+        }
+
+        function drawCurrentRow() {
+            if (state.currentRow.length === 0) return;
+
+            const startY = LOOM_BAR_HEIGHT + 10;
+            const y = startY + (state.rows.length * WEFT_HEIGHT) - state.scrollOffset;
+
+            if (y >= LOOM_BAR_HEIGHT && y <= CANVAS_HEIGHT - LOOM_BAR_HEIGHT) {
+                drawWeftRow(state.currentRow, y, state.rows.length, true);
+            }
+        }
+
+        function drawWeftRow(row, y, rowIndex, isCurrent = false) {
+            const threadsPerWarp = row.length / WARP_COUNT;
+
+            for (let i = 0; i < row.length; i++) {
+                const thread = row[i];
+                if (!thread.color) continue; // Skip gaps
+
+                const warpIdx = Math.floor(i * WARP_COUNT / row.length);
+                const warp = warpThreads[warpIdx];
+                const nextWarp = warpThreads[Math.min(warpIdx + 1, WARP_COUNT - 1)];
+
+                const startX = warp.x;
+                const endX = nextWarp.x;
+                const segmentWidth = (endX - startX) / Math.ceil(threadsPerWarp);
+                const x = startX + (i % Math.ceil(threadsPerWarp)) * segmentWidth;
+
+                const isOver = shouldThreadGoOver(warpIdx, rowIndex);
+
+                // Draw thread segment with over/under shading
+                ctx.fillStyle = thread.color;
+
+                if (isOver) {
+                    // Thread goes over - slightly brighter
+                    ctx.globalAlpha = isCurrent ? 0.8 : 0.95;
+                    ctx.fillRect(x, y - WEFT_HEIGHT/2, segmentWidth + 1, WEFT_HEIGHT);
+
+                    // Highlight on top
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                    ctx.fillRect(x, y - WEFT_HEIGHT/2, segmentWidth + 1, 1);
+                } else {
+                    // Thread goes under - slightly darker
+                    ctx.globalAlpha = isCurrent ? 0.6 : 0.75;
+                    ctx.fillRect(x, y - WEFT_HEIGHT/2, segmentWidth + 1, WEFT_HEIGHT);
+
+                    // Shadow on top
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                    ctx.fillRect(x, y - WEFT_HEIGHT/2, segmentWidth + 1, 1);
+                }
+
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function drawShuttle() {
+            if (state.currentRow.length === 0) return;
+
+            const startY = LOOM_BAR_HEIGHT + 10;
+            const y = startY + (state.rows.length * WEFT_HEIGHT) - state.scrollOffset;
+
+            if (y < LOOM_BAR_HEIGHT || y > CANVAS_HEIGHT - LOOM_BAR_HEIGHT) return;
+
+            // Calculate shuttle position
+            const progress = state.currentRow.length / WARP_COUNT;
+            const x = warpThreads[0].x + (warpThreads[WARP_COUNT - 1].x - warpThreads[0].x) * progress;
+
+            // Draw shuttle (boat shape)
+            ctx.fillStyle = '#8B4513';
+            ctx.beginPath();
+            ctx.ellipse(x, y, 15, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Shuttle highlight
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.ellipse(x - 3, y - 1, 8, 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>

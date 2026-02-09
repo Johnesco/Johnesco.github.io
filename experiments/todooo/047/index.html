@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Breathing Room</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body, html { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+body { background: #0a0e1a; color: rgba(255,255,255,0.6); cursor: default; }
+canvas { display: block; width: 100%; height: 100%; }
+.ui { position: fixed; font-size: 13px; transition: opacity 0.5s; pointer-events: none; }
+.phase { bottom: 40px; left: 50%; transform: translateX(-50%); font-size: 16px; letter-spacing: 2px; }
+.stats { bottom: 20px; left: 20px; }
+.pattern { top: 20px; left: 50%; transform: translateX(-50%); font-size: 14px; cursor: pointer; pointer-events: auto; }
+.pattern:hover { color: rgba(255,255,255,0.9); }
+.welcome { top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 18px; line-height: 1.8; }
+.fade { opacity: 0; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div class="ui phase" id="phase">breathe in</div>
+<div class="ui stats" id="stats"></div>
+<div class="ui pattern" id="pattern" onclick="cyclePattern()"></div>
+<div class="ui welcome" id="welcome"></div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let w, h;
+
+function resize() {
+  w = canvas.width = window.innerWidth;
+  h = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Breathing patterns
+const patterns = [
+  { name: 'Calm', phases: [{name:'breathe in',dur:4},{name:'breathe out',dur:6}] },
+  { name: 'Box', phases: [{name:'breathe in',dur:4},{name:'hold',dur:4},{name:'breathe out',dur:4},{name:'hold',dur:4}] },
+  { name: '4-7-8', phases: [{name:'breathe in',dur:4},{name:'hold',dur:7},{name:'breathe out',dur:8}] },
+  { name: 'Deep', phases: [{name:'breathe in',dur:6},{name:'breathe out',dur:8}] }
+];
+let patternIdx = 0;
+let currentPattern = patterns[patternIdx];
+
+// State
+let breathCount = 0;
+let sessionStart = Date.now();
+let phaseIdx = 0;
+let phaseProgress = 0;
+let lastTime = Date.now();
+let particles = [];
+let colorHue = 220; // Start at midnight blue
+let uiFadeTimeout;
+let uiVisible = true;
+let audioEnabled = true;
+let audioCtx, masterGain, osc1, osc2, noiseNode, noiseGain, inhaleGain, holdGain, exhaleGain;
+
+// Particle system
+class Particle {
+  constructor() {
+    this.x = Math.random() * w;
+    this.y = Math.random() * h;
+    this.vx = 0;
+    this.vy = 0;
+    this.baseX = this.x;
+    this.baseY = this.y;
+    this.size = 1 + Math.random() * 2;
+    this.opacity = 0.1 + Math.random() * 0.2;
+  }
+  update(dt, phase, progress, centerX, centerY, mouseX, mouseY) {
+    const dx = centerX - this.x;
+    const dy = centerY - this.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+
+    if (phase === 'breathe in') {
+      this.vx += (dx / dist) * 0.5 * dt;
+      this.vy += (dy / dist) * 0.5 * dt;
+    } else if (phase === 'breathe out') {
+      this.vx -= (dx / dist) * 0.3 * dt;
+      this.vy -= (dy / dist) * 0.3 * dt;
+    } else { // hold
+      this.vx *= 0.95;
+      this.vy *= 0.95;
+    }
+
+    // Mouse wobble
+    if (mouseX !== null) {
+      const mdx = mouseX - this.x;
+      const mdy = mouseY - this.y;
+      const mdist = Math.sqrt(mdx*mdx + mdy*mdy);
+      if (mdist < 200) {
+        this.vx += (mdx / mdist) * 0.1;
+        this.vy += (mdy / mdist) * 0.1;
+      }
+    }
+
+    this.vx *= 0.98;
+    this.vy *= 0.98;
+    this.x += this.vx;
+    this.y += this.vy;
+
+    // Wrap
+    if (this.x < 0) this.x = w;
+    if (this.x > w) this.x = 0;
+    if (this.y < 0) this.y = h;
+    if (this.y > h) this.y = 0;
+  }
+  draw() {
+    ctx.fillStyle = `rgba(255,255,255,${this.opacity})`;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+for (let i = 0; i < 50; i++) {
+  particles.push(new Particle());
+}
+
+// Audio setup
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.08;
+  masterGain.connect(audioCtx.destination);
+
+  // Oscillators
+  osc1 = audioCtx.createOscillator();
+  osc1.type = 'sine';
+  osc1.frequency.value = 100;
+  inhaleGain = audioCtx.createGain();
+  inhaleGain.gain.value = 0;
+  osc1.connect(inhaleGain);
+  inhaleGain.connect(masterGain);
+  osc1.start();
+
+  osc2 = audioCtx.createOscillator();
+  osc2.type = 'sine';
+  osc2.frequency.value = 102;
+  holdGain = audioCtx.createGain();
+  holdGain.gain.value = 0;
+  osc2.connect(holdGain);
+  holdGain.connect(masterGain);
+  osc2.start();
+
+  // Noise for exhale
+  const bufferSize = audioCtx.sampleRate * 2;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  noiseNode = audioCtx.createBufferSource();
+  noiseNode.buffer = buffer;
+  noiseNode.loop = true;
+  const noiseFilter = audioCtx.createBiquadFilter();
+  noiseFilter.type = 'lowpass';
+  noiseFilter.frequency.value = 400;
+  noiseGain = audioCtx.createGain();
+  noiseGain.gain.value = 0;
+  exhaleGain = audioCtx.createGain();
+  exhaleGain.gain.value = 0;
+  noiseNode.connect(noiseFilter);
+  noiseFilter.connect(noiseGain);
+  noiseGain.connect(masterGain);
+
+  const exhaleOsc = audioCtx.createOscillator();
+  exhaleOsc.type = 'sine';
+  exhaleOsc.frequency.value = 100;
+  exhaleOsc.connect(exhaleGain);
+  exhaleGain.connect(masterGain);
+  exhaleOsc.start();
+  noiseNode.start();
+}
+
+function updateAudio(phase, progress, phaseDuration) {
+  if (!audioCtx || !audioEnabled) return;
+  const now = audioCtx.currentTime;
+  const rampTime = 0.1;
+
+  if (phase === 'breathe in') {
+    const freq = 100 + progress * 100;
+    osc1.frequency.setTargetAtTime(freq, now, 0.1);
+    inhaleGain.gain.setTargetAtTime(0.5, now, rampTime);
+    holdGain.gain.setTargetAtTime(0, now, rampTime);
+    exhaleGain.gain.setTargetAtTime(0, now, rampTime);
+    noiseGain.gain.setTargetAtTime(0, now, rampTime);
+  } else if (phase === 'hold') {
+    osc2.frequency.setTargetAtTime(150, now, 0.1);
+    inhaleGain.gain.setTargetAtTime(0, now, rampTime);
+    holdGain.gain.setTargetAtTime(0.3, now, rampTime);
+    exhaleGain.gain.setTargetAtTime(0, now, rampTime);
+    noiseGain.gain.setTargetAtTime(0, now, rampTime);
+  } else if (phase === 'breathe out') {
+    const freq = 200 - progress * 100;
+    osc1.frequency.setTargetAtTime(freq, now, 0.1);
+    inhaleGain.gain.setTargetAtTime(0, now, rampTime);
+    holdGain.gain.setTargetAtTime(0, now, rampTime);
+    exhaleGain.gain.setTargetAtTime(0.3, now, rampTime);
+    noiseGain.gain.setTargetAtTime(0.05, now, rampTime);
+  }
+}
+
+// localStorage
+function loadData() {
+  const data = localStorage.getItem('todooo-047');
+  if (data) {
+    const parsed = JSON.parse(data);
+    const lastVisit = parsed.lastVisit || Date.now();
+    const daysSince = Math.floor((Date.now() - lastVisit) / 86400000);
+    if (daysSince > 0) {
+      document.getElementById('welcome').innerHTML = `Welcome back<br>${daysSince} day${daysSince>1?'s':''} since your last breath`;
+      setTimeout(() => {
+        document.getElementById('welcome').classList.add('fade');
+      }, 3000);
+    }
+    return parsed.totalBreaths || 0;
+  }
+  return 0;
+}
+
+function saveData(totalBreaths) {
+  localStorage.setItem('todooo-047', JSON.stringify({
+    totalBreaths,
+    lastVisit: Date.now()
+  }));
+}
+
+let totalBreaths = loadData();
+
+// UI updates
+function updateUI() {
+  const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  document.getElementById('stats').textContent = `${breathCount} breath${breathCount!==1?'s':''} • ${mins}:${secs.toString().padStart(2,'0')}`;
+  document.getElementById('pattern').textContent = currentPattern.name;
+}
+
+function resetUIFade() {
+  if (uiFadeTimeout) clearTimeout(uiFadeTimeout);
+  if (!uiVisible) {
+    document.querySelectorAll('.ui').forEach(el => el.classList.remove('fade'));
+    uiVisible = true;
+  }
+  uiFadeTimeout = setTimeout(() => {
+    document.querySelectorAll('.ui').forEach(el => el.classList.add('fade'));
+    uiVisible = false;
+  }, 5000);
+}
+
+function cyclePattern() {
+  patternIdx = (patternIdx + 1) % patterns.length;
+  currentPattern = patterns[patternIdx];
+  phaseIdx = 0;
+  phaseProgress = 0;
+  updateUI();
+  resetUIFade();
+}
+
+function toggleSound() {
+  audioEnabled = !audioEnabled;
+  if (audioEnabled && !audioCtx) {
+    initAudio();
+  }
+}
+
+// Mouse tracking
+let mouseX = null, mouseY = null;
+let mouseMoveTimeout;
+document.addEventListener('mousemove', (e) => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  resetUIFade();
+  if (mouseMoveTimeout) clearTimeout(mouseMoveTimeout);
+  mouseMoveTimeout = setTimeout(() => {
+    mouseX = null;
+    mouseY = null;
+  }, 1000);
+});
+
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ') {
+    e.preventDefault();
+    cyclePattern();
+  } else if (e.key === 's' || e.key === 'S') {
+    toggleSound();
+  } else if (e.key === 'Escape') {
+    window.close();
+  }
+});
+
+// Click to trigger inhale
+canvas.addEventListener('click', () => {
+  phaseIdx = 0;
+  phaseProgress = 0;
+  initAudio();
+});
+
+// Animation loop
+function animate() {
+  const now = Date.now();
+  const dt = Math.min((now - lastTime) / 1000, 0.1);
+  lastTime = now;
+
+  // Update phase
+  const currentPhase = currentPattern.phases[phaseIdx];
+  phaseProgress += dt / currentPhase.dur;
+
+  if (phaseProgress >= 1) {
+    phaseProgress = 0;
+    phaseIdx++;
+    if (phaseIdx >= currentPattern.phases.length) {
+      phaseIdx = 0;
+      breathCount++;
+      totalBreaths++;
+      saveData(totalBreaths);
+      updateUI();
+
+      // Shift color hue
+      colorHue = (colorHue + 5) % 360;
+    }
+  }
+
+  const phase = currentPattern.phases[phaseIdx];
+  updateAudio(phase.name, phaseProgress, phase.dur);
+
+  // Calculate total cycle progress for ring
+  let totalDuration = 0;
+  let elapsedInCycle = 0;
+  for (let i = 0; i < currentPattern.phases.length; i++) {
+    totalDuration += currentPattern.phases[i].dur;
+    if (i < phaseIdx) {
+      elapsedInCycle += currentPattern.phases[i].dur;
+    }
+  }
+  elapsedInCycle += phaseProgress * phase.dur;
+  const cycleProgress = elapsedInCycle / totalDuration;
+
+  // Draw
+  ctx.fillStyle = '#0a0e1a';
+  ctx.fillRect(0, 0, w, h);
+
+  // Central breathing shape
+  const centerX = w / 2;
+  const centerY = h / 2;
+  let shapeSize, shapeColor;
+
+  if (phase.name === 'breathe in') {
+    shapeSize = (0.2 + 0.4 * phaseProgress) * Math.min(w, h);
+    const hue = (colorHue + 20 * phaseProgress) % 360;
+    shapeColor = `hsl(${hue}, 50%, ${30 + 10 * phaseProgress}%)`;
+  } else if (phase.name === 'breathe out') {
+    shapeSize = (0.6 - 0.4 * phaseProgress) * Math.min(w, h);
+    const hue = (colorHue + 20 - 20 * phaseProgress) % 360;
+    shapeColor = `hsl(${hue}, 50%, ${40 - 10 * phaseProgress}%)`;
+  } else { // hold
+    if (phaseIdx === 1 || phaseIdx === 2) { // after inhale
+      shapeSize = 0.6 * Math.min(w, h);
+      shapeColor = `hsl(${(colorHue + 20) % 360}, 50%, 40%)`;
+    } else { // after exhale
+      shapeSize = 0.2 * Math.min(w, h);
+      shapeColor = `hsl(${colorHue}, 50%, 30%)`;
+    }
+  }
+
+  const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, shapeSize);
+  gradient.addColorStop(0, shapeColor);
+  gradient.addColorStop(0.6, shapeColor.replace(/[\d.]+\)/, '0.3)').replace('hsl', 'hsla'));
+  gradient.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, shapeSize, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Progress ring
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, shapeSize + 40, -Math.PI/2, -Math.PI/2 + cycleProgress * Math.PI * 2);
+  ctx.stroke();
+
+  // Particles
+  particles.forEach(p => {
+    p.update(dt, phase.name, phaseProgress, centerX, centerY, mouseX, mouseY);
+    p.draw();
+  });
+
+  // Phase text
+  document.getElementById('phase').textContent = phase.name;
+
+  requestAnimationFrame(animate);
+}
+
+// Start
+initAudio();
+updateUI();
+resetUIFade();
+animate();
+</script>
+</body>
+</html>

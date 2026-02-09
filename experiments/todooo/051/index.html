@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evolving 051 — Generative Radio</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#111;font-family:'Courier New',monospace;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+#screen{flex:1;position:relative;background:#000;overflow:hidden}
+canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+#radio-body{height:40vh;background:linear-gradient(180deg,#3a2a1a,#2a1a0a);border-top:3px solid #8a7a5a;position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column}
+#speaker-grille{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:200px;height:40px;display:grid;grid-template-columns:repeat(12,1fr);gap:4px}
+.speaker-hole{width:100%;height:100%;background:#1a0a00;border-radius:50%;opacity:0.5}
+#power-light{position:absolute;top:20px;right:40px;width:12px;height:12px;border-radius:50%;background:#ff6600;opacity:0;box-shadow:0 0 10px #ff6600;transition:opacity 0.5s}
+#power-light.on{opacity:1}
+#dial-container{position:relative;width:160px;height:160px;margin:20px auto}
+#dial{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 30% 30%,#aaa,#555);box-shadow:inset 0 2px 8px rgba(0,0,0,0.5),0 4px 12px rgba(0,0,0,0.8);cursor:grab;position:relative}
+#dial:active{cursor:grabbing}
+#dial-indicator{position:absolute;top:10%;left:50%;width:3px;height:40%;background:#fff;transform-origin:bottom center;transform:translateX(-50%)}
+#frequency-display{text-align:center;color:#ff6600;font-size:28px;margin-top:15px;text-shadow:0 0 8px #ff6600;font-weight:bold}
+#signal-meter{position:absolute;bottom:30px;left:30px;width:100px;height:20px;background:#1a0a00;border:2px solid #8a7a5a;border-radius:4px;overflow:hidden}
+#signal-bar{height:100%;width:0%;background:linear-gradient(90deg,#0f0,#ff0,#f00);transition:width 0.1s}
+#power-btn{position:absolute;bottom:30px;right:30px;width:50px;height:50px;border-radius:50%;background:#333;border:3px solid #8a7a5a;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#8a7a5a;font-size:20px;font-weight:bold}
+#power-btn:hover{background:#444}
+</style>
+</head>
+<body>
+<div id="screen">
+<canvas id="visual"></canvas>
+</div>
+<div id="radio-body">
+<div id="speaker-grille"></div>
+<div id="power-light"></div>
+<div id="dial-container">
+<div id="dial"><div id="dial-indicator"></div></div>
+</div>
+<div id="frequency-display">87.0</div>
+<div id="signal-meter"><div id="signal-bar"></div></div>
+<div id="power-btn" title="Power">⏻</div>
+</div>
+<script>
+const STORE='todooo-051';
+const canvas=document.getElementById('visual');
+const ctx=canvas.getContext('2d');
+const dial=document.getElementById('dial');
+const indicator=document.getElementById('dial-indicator');
+const freqDisplay=document.getElementById('frequency-display');
+const powerLight=document.getElementById('power-light');
+const signalBar=document.getElementById('signal-bar');
+const powerBtn=document.getElementById('power-btn');
+const speakerGrille=document.getElementById('speaker-grille');
+
+for(let i=0;i<36;i++){
+  const hole=document.createElement('div');
+  hole.className='speaker-hole';
+  speakerGrille.appendChild(hole);
+}
+
+let audioCtx,masterGain,staticGain,staticSource;
+let freq=87.0,power=false,volume=0.5,angle=0;
+let isDragging=false,lastAngle=0;
+const stations=[
+  {freq:89.1,name:'Ambient',gen:null},
+  {freq:92.7,name:'Rhythm',gen:null},
+  {freq:95.3,name:'Drone',gen:null},
+  {freq:98.9,name:'Melody',gen:null},
+  {freq:102.5,name:'Noise',gen:null},
+  {freq:106.1,name:'Voices',gen:null}
+];
+
+function resize(){
+  canvas.width=canvas.offsetWidth;
+  canvas.height=canvas.offsetHeight;
+}
+resize();
+window.addEventListener('resize',resize);
+
+function load(){
+  const data=localStorage.getItem(STORE);
+  if(data){
+    const state=JSON.parse(data);
+    freq=state.freq||87.0;
+    volume=state.volume||0.5;
+    power=state.power||false;
+  }
+  updateDial();
+  if(power)powerLight.classList.add('on');
+}
+
+function save(){
+  localStorage.setItem(STORE,JSON.stringify({freq,volume,power}));
+}
+
+function initAudio(){
+  if(audioCtx)return;
+  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  masterGain=audioCtx.createGain();
+  masterGain.gain.value=volume;
+  masterGain.connect(audioCtx.destination);
+
+  staticGain=audioCtx.createGain();
+  staticGain.gain.value=0;
+  staticGain.connect(masterGain);
+
+  const buffer=audioCtx.createBuffer(1,audioCtx.sampleRate*2,audioCtx.sampleRate);
+  const data=buffer.getChannelData(0);
+  for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
+  staticSource=audioCtx.createBufferSource();
+  staticSource.buffer=buffer;
+  staticSource.loop=true;
+  staticSource.connect(staticGain);
+  staticSource.start();
+}
+
+function freqToAngle(f){
+  return((f-87)/(108-87))*360;
+}
+
+function angleToFreq(a){
+  let normalized=(a%360+360)%360;
+  return 87+(normalized/360)*21;
+}
+
+function updateDial(){
+  angle=freqToAngle(freq);
+  indicator.style.transform=`translateX(-50%) rotate(${angle}deg)`;
+  freqDisplay.textContent=freq.toFixed(1);
+  save();
+}
+
+function getSignalStrength(){
+  let maxStrength=0;
+  let nearestDist=1000;
+  for(let s of stations){
+    const dist=Math.abs(freq-s.freq);
+    if(dist<nearestDist)nearestDist=dist;
+    const strength=Math.max(0,1-dist/0.4);
+    if(strength>maxStrength)maxStrength=strength;
+  }
+  return{strength:maxStrength,dist:nearestDist};
+}
+
+function updateAudio(){
+  if(!power||!audioCtx)return;
+  const{strength}=getSignalStrength();
+  staticGain.gain.linearRampToValueAtTime(0.1*(1-strength),audioCtx.currentTime+0.1);
+  signalBar.style.width=(strength*100)+'%';
+
+  for(let s of stations){
+    const dist=Math.abs(freq-s.freq);
+    const str=Math.max(0,1-dist/0.4);
+    if(str>0.1){
+      if(!s.gen)s.gen=createGenerator(s.name);
+      s.gen.setVolume(str*volume);
+    }else{
+      if(s.gen){
+        s.gen.stop();
+        s.gen=null;
+      }
+    }
+  }
+}
+
+function createGenerator(type){
+  const gain=audioCtx.createGain();
+  gain.gain.value=0;
+  gain.connect(masterGain);
+
+  if(type==='Ambient'){
+    const oscs=[];
+    const freqs=[220,275,330,412.5];
+    for(let f of freqs){
+      const osc=audioCtx.createOscillator();
+      osc.frequency.value=f;
+      const lfo=audioCtx.createOscillator();
+      lfo.frequency.value=0.1+Math.random()*0.2;
+      const lfoGain=audioCtx.createGain();
+      lfoGain.gain.value=5;
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+      lfo.start();
+      const g=audioCtx.createGain();
+      g.gain.value=0.15;
+      osc.connect(g);
+      g.connect(gain);
+      osc.start();
+      oscs.push({osc,lfo});
+    }
+    return{setVolume:v=>gain.gain.linearRampToValueAtTime(v*0.6,audioCtx.currentTime+0.1),stop:()=>{oscs.forEach(o=>{o.osc.stop();o.lfo.stop()})}};
+  }
+
+  if(type==='Rhythm'){
+    let step=0,interval;
+    const pattern=[1,0,0,0,1,0,0,0,1,0,0,0,1,0,1,0];
+    const playBeat=()=>{
+      if(pattern[step]){
+        const kick=audioCtx.createOscillator();
+        const kickGain=audioCtx.createGain();
+        kick.frequency.value=150;
+        kick.connect(kickGain);
+        kickGain.connect(gain);
+        kickGain.gain.setValueAtTime(0.8,audioCtx.currentTime);
+        kickGain.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.2);
+        kick.start();
+        kick.stop(audioCtx.currentTime+0.2);
+      }
+      if(step%4===2){
+        const noise=audioCtx.createBufferSource();
+        const nBuf=audioCtx.createBuffer(1,audioCtx.sampleRate*0.1,audioCtx.sampleRate);
+        const nData=nBuf.getChannelData(0);
+        for(let i=0;i<nData.length;i++)nData[i]=(Math.random()*2-1)*0.3;
+        noise.buffer=nBuf;
+        noise.connect(gain);
+        noise.start();
+      }
+      step=(step+1)%16;
+    };
+    interval=setInterval(playBeat,150);
+    return{setVolume:v=>gain.gain.linearRampToValueAtTime(v*0.5,audioCtx.currentTime+0.1),stop:()=>clearInterval(interval)};
+  }
+
+  if(type==='Drone'){
+    const oscs=[];
+    const freqs=[110,165,220];
+    for(let f of freqs){
+      const osc=audioCtx.createOscillator();
+      osc.type='sawtooth';
+      osc.frequency.value=f;
+      const filter=audioCtx.createBiquadFilter();
+      filter.type='lowpass';
+      filter.frequency.value=400;
+      osc.connect(filter);
+      const g=audioCtx.createGain();
+      g.gain.value=0.2;
+      filter.connect(g);
+      g.connect(gain);
+      osc.start();
+      oscs.push(osc);
+    }
+    return{setVolume:v=>gain.gain.linearRampToValueAtTime(v*0.7,audioCtx.currentTime+0.1),stop:()=>oscs.forEach(o=>o.stop())};
+  }
+
+  if(type==='Melody'){
+    const scale=[220,247,277,330,370];
+    let interval;
+    const playNote=()=>{
+      const note=scale[Math.floor(Math.random()*scale.length)];
+      const osc=audioCtx.createOscillator();
+      osc.type='triangle';
+      osc.frequency.value=note;
+      const env=audioCtx.createGain();
+      env.gain.setValueAtTime(0,audioCtx.currentTime);
+      env.gain.linearRampToValueAtTime(0.3,audioCtx.currentTime+0.05);
+      env.gain.linearRampToValueAtTime(0,audioCtx.currentTime+0.5);
+      osc.connect(env);
+      env.connect(gain);
+      osc.start();
+      osc.stop(audioCtx.currentTime+0.5);
+    };
+    interval=setInterval(playNote,600);
+    return{setVolume:v=>gain.gain.linearRampToValueAtTime(v*0.6,audioCtx.currentTime+0.1),stop:()=>clearInterval(interval)};
+  }
+
+  if(type==='Noise'){
+    const noise=audioCtx.createBufferSource();
+    const nBuf=audioCtx.createBuffer(1,audioCtx.sampleRate*2,audioCtx.sampleRate);
+    const nData=nBuf.getChannelData(0);
+    for(let i=0;i<nData.length;i++)nData[i]=Math.random()*2-1;
+    noise.buffer=nBuf;
+    noise.loop=true;
+    const filter=audioCtx.createBiquadFilter();
+    filter.type='bandpass';
+    filter.frequency.value=1000;
+    filter.Q.value=5;
+    const lfo=audioCtx.createOscillator();
+    lfo.frequency.value=0.5;
+    const lfoGain=audioCtx.createGain();
+    lfoGain.gain.value=2000;
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+    lfo.start();
+    noise.connect(filter);
+    filter.connect(gain);
+    noise.start();
+    return{setVolume:v=>gain.gain.linearRampToValueAtTime(v*0.4,audioCtx.currentTime+0.1),stop:()=>{noise.stop();lfo.stop()}};
+  }
+
+  if(type==='Voices'){
+    const osc=audioCtx.createOscillator();
+    osc.frequency.value=150;
+    const f1=audioCtx.createBiquadFilter();
+    f1.type='bandpass';
+    f1.frequency.value=800;
+    f1.Q.value=10;
+    const f2=audioCtx.createBiquadFilter();
+    f2.type='bandpass';
+    f2.frequency.value=1200;
+    f2.Q.value=10;
+    const lfo1=audioCtx.createOscillator();
+    lfo1.frequency.value=0.3;
+    const lfoGain1=audioCtx.createGain();
+    lfoGain1.gain.value=300;
+    lfo1.connect(lfoGain1);
+    lfoGain1.connect(f1.frequency);
+    const lfo2=audioCtx.createOscillator();
+    lfo2.frequency.value=0.4;
+    const lfoGain2=audioCtx.createGain();
+    lfoGain2.gain.value=400;
+    lfo2.connect(lfoGain2);
+    lfoGain2.connect(f2.frequency);
+    osc.connect(f1);
+    f1.connect(f2);
+    f2.connect(gain);
+    osc.start();
+    lfo1.start();
+    lfo2.start();
+    return{setVolume:v=>gain.gain.linearRampToValueAtTime(v*0.5,audioCtx.currentTime+0.1),stop:()=>{osc.stop();lfo1.stop();lfo2.stop()}};
+  }
+
+  return{setVolume:()=>{},stop:()=>{}};
+}
+
+function togglePower(){
+  power=!power;
+  if(power){
+    powerLight.classList.add('on');
+    initAudio();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+    updateAudio();
+  }else{
+    powerLight.classList.remove('on');
+    if(audioCtx){
+      for(let s of stations){
+        if(s.gen){s.gen.stop();s.gen=null}
+      }
+    }
+    signalBar.style.width='0%';
+  }
+  save();
+}
+
+powerBtn.addEventListener('click',togglePower);
+
+function getDialAngle(e){
+  const rect=dial.getBoundingClientRect();
+  const cx=rect.left+rect.width/2;
+  const cy=rect.top+rect.height/2;
+  const dx=e.clientX-cx;
+  const dy=e.clientY-cy;
+  return Math.atan2(dy,dx)*180/Math.PI+90;
+}
+
+dial.addEventListener('mousedown',e=>{
+  isDragging=true;
+  lastAngle=getDialAngle(e);
+});
+
+window.addEventListener('mousemove',e=>{
+  if(!isDragging)return;
+  const newAngle=getDialAngle(e);
+  let delta=newAngle-lastAngle;
+  if(delta>180)delta-=360;
+  if(delta<-180)delta+=360;
+  angle+=delta;
+  lastAngle=newAngle;
+  freq=angleToFreq(angle);
+  if(freq<87)freq=87;
+  if(freq>108)freq=108;
+  angle=freqToAngle(freq);
+  updateDial();
+  updateAudio();
+});
+
+window.addEventListener('mouseup',()=>isDragging=false);
+
+dial.addEventListener('wheel',e=>{
+  e.preventDefault();
+  freq+=e.deltaY>0?-0.1:0.1;
+  if(freq<87)freq=87;
+  if(freq>108)freq=108;
+  updateDial();
+  updateAudio();
+});
+
+window.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){
+    freq+=0.1;
+    if(freq>108)freq=108;
+    updateDial();
+    updateAudio();
+  }
+  if(e.key==='ArrowLeft'){
+    freq-=0.1;
+    if(freq<87)freq=87;
+    updateDial();
+    updateAudio();
+  }
+  if(e.key===' '){
+    e.preventDefault();
+    togglePower();
+  }
+  if(e.key==='ArrowUp'){
+    volume=Math.min(1,volume+0.05);
+    if(masterGain)masterGain.gain.value=volume;
+    save();
+  }
+  if(e.key==='ArrowDown'){
+    volume=Math.max(0,volume-0.05);
+    if(masterGain)masterGain.gain.value=volume;
+    save();
+  }
+});
+
+let time=0;
+function drawVisuals(){
+  requestAnimationFrame(drawVisuals);
+  time+=0.016;
+  ctx.fillStyle='#000';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  const{strength}=getSignalStrength();
+
+  let activeStation=null;
+  for(let s of stations){
+    const dist=Math.abs(freq-s.freq);
+    if(dist<0.4)activeStation=s;
+  }
+
+  if(activeStation){
+    if(activeStation.name==='Ambient'){
+      for(let i=0;i<3;i++){
+        const x=canvas.width/2+Math.sin(time*0.5+i)*100;
+        const y=canvas.height/2+Math.cos(time*0.3+i)*100;
+        const r=50+Math.sin(time*0.8+i)*30;
+        const grad=ctx.createRadialGradient(x,y,0,x,y,r);
+        grad.addColorStop(0,`rgba(${100+i*50},${150-i*30},${200-i*20},${strength*0.4})`);
+        grad.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=grad;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+      }
+    }
+    if(activeStation.name==='Rhythm'){
+      ctx.fillStyle=`rgba(255,100,100,${strength*0.3})`;
+      const pulse=Math.abs(Math.sin(time*5));
+      ctx.beginPath();
+      ctx.arc(canvas.width/2,canvas.height/2,50+pulse*50,0,Math.PI*2);
+      ctx.fill();
+      for(let i=0;i<8;i++){
+        const a=i/8*Math.PI*2+time;
+        const x=canvas.width/2+Math.cos(a)*150;
+        const y=canvas.height/2+Math.sin(a)*150;
+        ctx.fillStyle=`rgba(255,255,100,${strength*0.5})`;
+        ctx.fillRect(x-3,y-3,6,6);
+      }
+    }
+    if(activeStation.name==='Drone'){
+      const layers=5;
+      for(let i=0;i<layers;i++){
+        const offset=time*0.2+i*0.5;
+        const x=canvas.width/2+Math.sin(offset)*200;
+        const y=canvas.height/2+Math.cos(offset*1.3)*200;
+        const grad=ctx.createRadialGradient(x,y,0,x,y,100);
+        grad.addColorStop(0,`rgba(0,${20+i*10},${80+i*20},${strength*0.2})`);
+        grad.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=grad;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+      }
+    }
+    if(activeStation.name==='Melody'){
+      ctx.strokeStyle=`rgba(200,200,255,${strength*0.3})`;
+      ctx.lineWidth=2;
+      for(let i=0;i<5;i++){
+        ctx.beginPath();
+        ctx.moveTo(0,canvas.height/2-100+i*40);
+        ctx.lineTo(canvas.width,canvas.height/2-100+i*40);
+        ctx.stroke();
+      }
+      const noteY=Math.floor((Math.sin(time*2)+1)*2.5);
+      const noteX=(time*100)%canvas.width;
+      ctx.fillStyle=`rgba(255,200,100,${strength*0.8})`;
+      ctx.beginPath();
+      ctx.arc(noteX,canvas.height/2-100+noteY*40,8,0,Math.PI*2);
+      ctx.fill();
+    }
+    if(activeStation.name==='Noise'){
+      const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+      const data=imageData.data;
+      for(let i=0;i<data.length;i+=4){
+        const v=Math.random()*255*strength*0.3;
+        data[i]=v;
+        data[i+1]=v;
+        data[i+2]=v;
+        data[i+3]=255;
+      }
+      ctx.putImageData(imageData,0,0);
+      for(let i=0;i<5;i++){
+        const y=Math.random()*canvas.height;
+        ctx.fillStyle=`rgba(255,255,255,${strength*0.2})`;
+        ctx.fillRect(0,y,canvas.width,2);
+      }
+    }
+    if(activeStation.name==='Voices'){
+      const waveHeight=100;
+      const waveY=canvas.height/2;
+      ctx.strokeStyle=`rgba(150,255,150,${strength*0.6})`;
+      ctx.lineWidth=3;
+      ctx.beginPath();
+      for(let x=0;x<canvas.width;x++){
+        const y=waveY+Math.sin(x*0.02+time*2)*waveHeight*Math.sin(time*0.5);
+        if(x===0)ctx.moveTo(x,y);
+        else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      const mouthOpen=Math.abs(Math.sin(time*0.5));
+      ctx.fillStyle=`rgba(150,255,150,${strength*0.3})`;
+      ctx.beginPath();
+      ctx.ellipse(canvas.width/2,canvas.height/2,80,40+mouthOpen*40,0,0,Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  if(strength<1){
+    const noiseAlpha=(1-strength)*0.15;
+    for(let i=0;i<200;i++){
+      const x=Math.random()*canvas.width;
+      const y=Math.random()*canvas.height;
+      const s=Math.random()*2;
+      ctx.fillStyle=`rgba(255,255,255,${noiseAlpha})`;
+      ctx.fillRect(x,y,s,s);
+    }
+  }
+}
+
+load();
+drawVisuals();
+</script>
+</body>
+</html>

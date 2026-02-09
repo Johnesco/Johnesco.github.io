@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartography - todooo 056</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+            background: #2a2520;
+        }
+
+        canvas {
+            display: block;
+            cursor: grab;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        .ui {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(245, 230, 200, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #4a3f35;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            font-size: 14px;
+            color: #2a2520;
+            z-index: 100;
+        }
+
+        .ui button {
+            background: #6b5d4f;
+            color: #f5e6c8;
+            border: 1px solid #4a3f35;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            margin-top: 8px;
+            width: 100%;
+        }
+
+        .ui button:hover {
+            background: #7d6f61;
+        }
+
+        .ui label {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .ui input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(245, 230, 200, 0.95);
+            padding: 30px 50px;
+            border-radius: 12px;
+            border: 3px solid #4a3f35;
+            font-size: 18px;
+            color: #2a2520;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="mapCanvas"></canvas>
+    <div class="ui">
+        <div><strong>Ancient Cartography</strong></div>
+        <div style="margin-top: 8px; font-size: 12px; opacity: 0.8;">
+            Drag to pan<br>
+            Scroll to zoom<br>
+            Explore to reveal
+        </div>
+        <label>
+            <input type="checkbox" id="audioToggle">
+            Ambient sounds
+        </label>
+        <button id="resetBtn">New Map</button>
+    </div>
+    <div class="loading" id="loading">Preparing cartography tools...</div>
+
+    <script>
+        // ===== STORAGE & STATE =====
+        const STORAGE_KEY = 'todooo-056';
+
+        let state = {
+            seed: Math.random() * 10000,
+            offsetX: 0,
+            offsetY: 0,
+            zoom: 1,
+            explored: new Set(),
+            realmName: '',
+            audioEnabled: false
+        };
+
+        function saveState() {
+            const saveData = {
+                seed: state.seed,
+                offsetX: state.offsetX,
+                offsetY: state.offsetY,
+                zoom: state.zoom,
+                explored: Array.from(state.explored),
+                realmName: state.realmName,
+                audioEnabled: state.audioEnabled
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    state.seed = data.seed || state.seed;
+                    state.offsetX = data.offsetX || 0;
+                    state.offsetY = data.offsetY || 0;
+                    state.zoom = data.zoom || 1;
+                    state.explored = new Set(data.explored || []);
+                    state.realmName = data.realmName || '';
+                    state.audioEnabled = data.audioEnabled || false;
+                } catch (e) {
+                    console.error('Failed to load state:', e);
+                }
+            }
+        }
+
+        // ===== RANDOM NUMBER GENERATOR =====
+        class SeededRandom {
+            constructor(seed) {
+                this.seed = seed;
+            }
+
+            random() {
+                this.seed = (this.seed * 9301 + 49297) % 233280;
+                return this.seed / 233280;
+            }
+
+            range(min, max) {
+                return min + this.random() * (max - min);
+            }
+
+            int(min, max) {
+                return Math.floor(this.range(min, max + 1));
+            }
+
+            choice(arr) {
+                return arr[this.int(0, arr.length - 1)];
+            }
+        }
+
+        // ===== NOISE GENERATION =====
+        class NoiseGenerator {
+            constructor(seed) {
+                this.rng = new SeededRandom(seed);
+                this.permutation = [];
+                for (let i = 0; i < 256; i++) {
+                    this.permutation[i] = i;
+                }
+                // Shuffle
+                for (let i = 255; i > 0; i--) {
+                    const j = this.rng.int(0, i);
+                    [this.permutation[i], this.permutation[j]] = [this.permutation[j], this.permutation[i]];
+                }
+                this.permutation = [...this.permutation, ...this.permutation];
+            }
+
+            noise2D(x, y) {
+                const X = Math.floor(x) & 255;
+                const Y = Math.floor(y) & 255;
+                const xf = x - Math.floor(x);
+                const yf = y - Math.floor(y);
+
+                const u = this.fade(xf);
+                const v = this.fade(yf);
+
+                const a = this.permutation[X] + Y;
+                const b = this.permutation[X + 1] + Y;
+
+                const grad1 = this.grad(this.permutation[a], xf, yf);
+                const grad2 = this.grad(this.permutation[b], xf - 1, yf);
+                const grad3 = this.grad(this.permutation[a + 1], xf, yf - 1);
+                const grad4 = this.grad(this.permutation[b + 1], xf - 1, yf - 1);
+
+                const lerp1 = this.lerp(grad1, grad2, u);
+                const lerp2 = this.lerp(grad3, grad4, u);
+
+                return this.lerp(lerp1, lerp2, v);
+            }
+
+            fade(t) {
+                return t * t * t * (t * (t * 6 - 15) + 10);
+            }
+
+            lerp(a, b, t) {
+                return a + t * (b - a);
+            }
+
+            grad(hash, x, y) {
+                const h = hash & 3;
+                const u = h < 2 ? x : y;
+                const v = h < 2 ? y : x;
+                return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
+            }
+
+            octaveNoise(x, y, octaves, persistence, scale) {
+                let total = 0;
+                let frequency = 1;
+                let amplitude = 1;
+                let maxValue = 0;
+
+                for (let i = 0; i < octaves; i++) {
+                    total += this.noise2D(x * frequency / scale, y * frequency / scale) * amplitude;
+                    maxValue += amplitude;
+                    amplitude *= persistence;
+                    frequency *= 2;
+                }
+
+                return total / maxValue;
+            }
+        }
+
+        // ===== NAME GENERATOR =====
+        const CONSONANTS = 'bdfghjklmnprstvwyz';
+        const VOWELS = 'aeiou';
+
+        function generateName(rng, minSyllables = 2, maxSyllables = 4) {
+            const syllableCount = rng.int(minSyllables, maxSyllables);
+            let name = '';
+
+            for (let i = 0; i < syllableCount; i++) {
+                if (rng.random() > 0.3) {
+                    name += rng.choice(CONSONANTS);
+                }
+                name += rng.choice(VOWELS);
+                if (i < syllableCount - 1 && rng.random() > 0.4) {
+                    name += rng.choice(CONSONANTS);
+                }
+            }
+
+            return name.charAt(0).toUpperCase() + name.slice(1);
+        }
+
+        // ===== MAP GENERATION =====
+        class TerrainMap {
+            constructor(seed, width, height) {
+                this.seed = seed;
+                this.width = width;
+                this.height = height;
+                this.noise = new NoiseGenerator(seed);
+                this.rng = new SeededRandom(seed);
+                this.heightMap = [];
+                this.moisture = [];
+                this.rivers = [];
+                this.features = [];
+
+                this.generate();
+            }
+
+            generate() {
+                // Generate height map
+                for (let y = 0; y < this.height; y++) {
+                    this.heightMap[y] = [];
+                    this.moisture[y] = [];
+                    for (let x = 0; x < this.width; x++) {
+                        const nx = x / this.width - 0.5;
+                        const ny = y / this.height - 0.5;
+
+                        // Island effect - lower towards edges
+                        const distFromCenter = Math.sqrt(nx * nx + ny * ny) * 2;
+                        const islandFactor = Math.max(0, 1 - distFromCenter);
+
+                        const elevation = this.noise.octaveNoise(x, y, 6, 0.5, 100) * islandFactor;
+                        this.heightMap[y][x] = elevation;
+
+                        const moist = this.noise.octaveNoise(x + 1000, y + 1000, 4, 0.5, 80);
+                        this.moisture[y][x] = moist;
+                    }
+                }
+
+                // Generate rivers
+                this.generateRivers();
+
+                // Generate features (cities, villages, etc)
+                this.generateFeatures();
+            }
+
+            generateRivers() {
+                const riverStarts = [];
+
+                // Find mountain peaks
+                for (let y = 1; y < this.height - 1; y++) {
+                    for (let x = 1; x < this.width - 1; x++) {
+                        const h = this.heightMap[y][x];
+                        if (h > 0.5 && h > 0.6) { // Mountain range
+                            if (this.rng.random() < 0.005) { // Sparse river sources
+                                riverStarts.push({x, y});
+                            }
+                        }
+                    }
+                }
+
+                // Trace rivers downhill
+                for (const start of riverStarts) {
+                    const river = [];
+                    let {x, y} = start;
+                    let steps = 0;
+                    const maxSteps = 500;
+
+                    while (steps < maxSteps) {
+                        river.push({x, y});
+
+                        const currentHeight = this.getHeight(x, y);
+                        if (currentHeight < 0) break; // Reached ocean
+
+                        // Find lowest neighbor
+                        let lowestX = x;
+                        let lowestY = y;
+                        let lowestH = currentHeight;
+
+                        for (let dy = -1; dy <= 1; dy++) {
+                            for (let dx = -1; dx <= 1; dx++) {
+                                if (dx === 0 && dy === 0) continue;
+                                const nx = x + dx;
+                                const ny = y + dy;
+                                const nh = this.getHeight(nx, ny);
+                                if (nh < lowestH) {
+                                    lowestH = nh;
+                                    lowestX = nx;
+                                    lowestY = ny;
+                                }
+                            }
+                        }
+
+                        if (lowestX === x && lowestY === y) break; // No lower neighbor
+
+                        x = lowestX;
+                        y = lowestY;
+                        steps++;
+                    }
+
+                    if (river.length > 20) {
+                        this.rivers.push(river);
+                    }
+                }
+            }
+
+            generateFeatures() {
+                const featureTypes = ['city', 'village', 'ruins', 'tower', 'monastery'];
+
+                for (let i = 0; i < 30; i++) {
+                    const x = this.rng.int(0, this.width - 1);
+                    const y = this.rng.int(0, this.height - 1);
+                    const h = this.getHeight(x, y);
+
+                    let type = null;
+                    let name = '';
+
+                    if (h > 0.05 && h < 0.15) { // Coastal
+                        type = 'city';
+                        name = generateName(this.rng, 2, 3);
+                    } else if (h > 0.15 && h < 0.35) { // Lowlands
+                        type = this.rng.choice(['village', 'village', 'monastery']);
+                        name = generateName(this.rng, 2, 3);
+                    } else if (h > 0.45 && h < 0.65) { // Mountains
+                        type = this.rng.choice(['ruins', 'tower']);
+                        name = generateName(this.rng, 2, 3);
+                    }
+
+                    if (type) {
+                        this.features.push({x, y, type, name});
+                    }
+                }
+            }
+
+            getHeight(x, y) {
+                if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+                    return -1;
+                }
+                return this.heightMap[y][x];
+            }
+
+            getMoisture(x, y) {
+                if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+                    return 0;
+                }
+                return this.moisture[y][x];
+            }
+
+            getBiome(x, y) {
+                const h = this.getHeight(x, y);
+                const m = this.getMoisture(x, y);
+
+                if (h < -0.1) return 'deepwater';
+                if (h < 0) return 'water';
+                if (h < 0.08) return 'beach';
+                if (h < 0.3) {
+                    return m > 0.2 ? 'forest' : 'grassland';
+                }
+                if (h < 0.5) return 'hills';
+                if (h < 0.7) return 'mountain';
+                return 'snow';
+            }
+        }
+
+        // ===== RENDERING =====
+        const canvas = document.getElementById('mapCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let terrain = null;
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        const BIOME_COLORS = {
+            deepwater: '#1a4d6d',
+            water: '#3a7ca5',
+            beach: '#dcc89a',
+            grassland: '#8db360',
+            forest: '#5a8f3a',
+            hills: '#6b7f5a',
+            mountain: '#6d5d4f',
+            snow: '#e8e8e8'
+        };
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function worldToScreen(wx, wy) {
+            return {
+                x: (wx - state.offsetX) * state.zoom + canvas.width / 2,
+                y: (wy - state.offsetY) * state.zoom + canvas.height / 2
+            };
+        }
+
+        function screenToWorld(sx, sy) {
+            return {
+                x: (sx - canvas.width / 2) / state.zoom + state.offsetX,
+                y: (sy - canvas.height / 2) / state.zoom + state.offsetY
+            };
+        }
+
+        function drawWobblyLine(ctx, x1, y1, x2, y2, segments = 5) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+
+            for (let i = 1; i <= segments; i++) {
+                const t = i / segments;
+                const x = x1 + (x2 - x1) * t;
+                const y = y1 + (y2 - y1) * t;
+                const wobble = 0.5;
+                const wx = x + (Math.random() - 0.5) * wobble;
+                const wy = y + (Math.random() - 0.5) * wobble;
+                ctx.lineTo(wx, wy);
+            }
+
+            ctx.stroke();
+        }
+
+        function drawMap() {
+            // Parchment background
+            ctx.fillStyle = '#f5e6c8';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const tileSize = 8 * state.zoom;
+            const startX = Math.floor((0 - canvas.width / 2) / state.zoom + state.offsetX);
+            const startY = Math.floor((0 - canvas.height / 2) / state.zoom + state.offsetY);
+            const endX = Math.ceil((canvas.width - canvas.width / 2) / state.zoom + state.offsetX);
+            const endY = Math.ceil((canvas.height - canvas.height / 2) / state.zoom + state.offsetY);
+
+            // Draw terrain
+            for (let wy = startY - 20; wy < endY + 20; wy += 1) {
+                for (let wx = startX - 20; wx < endX + 20; wx += 1) {
+                    if (wx < 0 || wx >= terrain.width || wy < 0 || wy >= terrain.height) continue;
+
+                    const biome = terrain.getBiome(wx, wy);
+                    const screen = worldToScreen(wx, wy);
+
+                    ctx.fillStyle = BIOME_COLORS[biome];
+                    ctx.fillRect(screen.x, screen.y, Math.ceil(state.zoom), Math.ceil(state.zoom));
+                }
+            }
+
+            // Draw contour lines
+            ctx.strokeStyle = 'rgba(101, 84, 63, 0.3)';
+            ctx.lineWidth = 0.5;
+            const contourInterval = 0.1;
+
+            for (let wy = startY - 20; wy < endY + 20; wy += 2) {
+                for (let wx = startX - 20; wx < endX + 20; wx += 2) {
+                    if (wx < 0 || wx >= terrain.width - 1 || wy < 0 || wy >= terrain.height - 1) continue;
+
+                    const h = terrain.getHeight(wx, wy);
+                    const hr = terrain.getHeight(wx + 1, wy);
+                    const hd = terrain.getHeight(wx, wy + 1);
+
+                    if (h > 0.2) {
+                        const level = Math.floor(h / contourInterval) * contourInterval;
+
+                        if ((h < level && hr >= level) || (h >= level && hr < level)) {
+                            const p1 = worldToScreen(wx, wy);
+                            const p2 = worldToScreen(wx + 1, wy);
+                            drawWobblyLine(ctx, p1.x, p1.y, p2.x, p2.y, 2);
+                        }
+
+                        if ((h < level && hd >= level) || (h >= level && hd < level)) {
+                            const p1 = worldToScreen(wx, wy);
+                            const p2 = worldToScreen(wx, wy + 1);
+                            drawWobblyLine(ctx, p1.x, p1.y, p2.x, p2.y, 2);
+                        }
+                    }
+                }
+            }
+
+            // Draw rivers
+            ctx.strokeStyle = '#3a7ca5';
+            ctx.lineWidth = 1.5;
+            for (const river of terrain.rivers) {
+                if (river.length < 2) continue;
+                ctx.beginPath();
+                const start = worldToScreen(river[0].x, river[0].y);
+                ctx.moveTo(start.x, start.y);
+                for (let i = 1; i < river.length; i++) {
+                    const p = worldToScreen(river[i].x, river[i].y);
+                    ctx.lineTo(p.x, p.y);
+                }
+                ctx.stroke();
+            }
+
+            // Draw forests
+            ctx.fillStyle = '#3d5a2a';
+            ctx.font = `${Math.max(6, 8 * state.zoom)}px serif`;
+            for (let wy = startY - 20; wy < endY + 20; wy += 3) {
+                for (let wx = startX - 20; wx < endX + 20; wx += 3) {
+                    if (wx < 0 || wx >= terrain.width || wy < 0 || wy >= terrain.height) continue;
+
+                    const biome = terrain.getBiome(wx, wy);
+                    if (biome === 'forest' && terrain.rng.random() < 0.3) {
+                        const screen = worldToScreen(wx, wy);
+                        ctx.fillText('^', screen.x, screen.y);
+                    }
+                }
+            }
+
+            // Draw mountain peaks
+            ctx.fillStyle = '#4a3f35';
+            for (let wy = startY - 20; wy < endY + 20; wy += 4) {
+                for (let wx = startX - 20; wx < endX + 20; wx += 4) {
+                    if (wx < 0 || wx >= terrain.width || wy < 0 || wy >= terrain.height) continue;
+
+                    const h = terrain.getHeight(wx, wy);
+                    if (h > 0.55 && terrain.rng.random() < 0.15) {
+                        const screen = worldToScreen(wx, wy);
+                        ctx.beginPath();
+                        ctx.moveTo(screen.x, screen.y + 3 * state.zoom);
+                        ctx.lineTo(screen.x - 3 * state.zoom, screen.y + 6 * state.zoom);
+                        ctx.lineTo(screen.x + 3 * state.zoom, screen.y + 6 * state.zoom);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                }
+            }
+
+            // Update exploration
+            const centerWorld = screenToWorld(canvas.width / 2, canvas.height / 2);
+            const exploreRadius = 150 / state.zoom;
+            for (let dy = -exploreRadius; dy < exploreRadius; dy += 2) {
+                for (let dx = -exploreRadius; dx < exploreRadius; dx += 2) {
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < exploreRadius) {
+                        const wx = Math.floor(centerWorld.x + dx);
+                        const wy = Math.floor(centerWorld.y + dy);
+                        const key = `${wx},${wy}`;
+                        state.explored.add(key);
+                    }
+                }
+            }
+
+            // Draw fog of war
+            ctx.fillStyle = 'rgba(139, 115, 85, 0.75)';
+            for (let wy = startY - 20; wy < endY + 20; wy += 2) {
+                for (let wx = startX - 20; wx < endX + 20; wx += 2) {
+                    if (wx < 0 || wx >= terrain.width || wy < 0 || wy >= terrain.height) continue;
+
+                    const key = `${wx},${wy}`;
+                    if (!state.explored.has(key)) {
+                        const screen = worldToScreen(wx, wy);
+                        ctx.fillRect(screen.x, screen.y, Math.ceil(state.zoom * 2), Math.ceil(state.zoom * 2));
+                    }
+                }
+            }
+
+            // Draw sea monsters in unexplored ocean
+            ctx.strokeStyle = '#2a3f52';
+            ctx.lineWidth = 1.5;
+            ctx.fillStyle = '#2a3f52';
+            ctx.font = '16px serif';
+
+            for (let i = 0; i < 10; i++) {
+                const wx = terrain.rng.int(0, terrain.width - 1);
+                const wy = terrain.rng.int(0, terrain.height - 1);
+                const h = terrain.getHeight(wx, wy);
+
+                if (h < -0.2) {
+                    const key = `${wx},${wy}`;
+                    if (!state.explored.has(key)) {
+                        const screen = worldToScreen(wx, wy);
+                        if (screen.x > 0 && screen.x < canvas.width && screen.y > 0 && screen.y < canvas.height) {
+                            // Simple sea serpent
+                            ctx.beginPath();
+                            ctx.arc(screen.x, screen.y, 5, 0, Math.PI * 2);
+                            ctx.stroke();
+                            ctx.beginPath();
+                            ctx.moveTo(screen.x, screen.y);
+                            ctx.bezierCurveTo(
+                                screen.x + 10, screen.y - 10,
+                                screen.x + 20, screen.y + 10,
+                                screen.x + 30, screen.y
+                            );
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            // Draw features (cities, villages, etc)
+            ctx.font = `${Math.max(10, 12 * state.zoom)}px serif`;
+            for (const feature of terrain.features) {
+                const key = `${feature.x},${feature.y}`;
+                if (state.explored.has(key)) {
+                    const screen = worldToScreen(feature.x, feature.y);
+
+                    // Draw icon
+                    ctx.fillStyle = '#2a2520';
+                    if (feature.type === 'city') {
+                        ctx.fillRect(screen.x - 3, screen.y - 3, 6, 6);
+                        ctx.fillRect(screen.x - 1, screen.y - 6, 2, 3);
+                    } else if (feature.type === 'village') {
+                        ctx.beginPath();
+                        ctx.arc(screen.x, screen.y, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (feature.type === 'ruins') {
+                        ctx.fillRect(screen.x - 4, screen.y - 2, 3, 4);
+                        ctx.fillRect(screen.x + 1, screen.y - 2, 3, 4);
+                    } else if (feature.type === 'tower') {
+                        ctx.fillRect(screen.x - 2, screen.y - 6, 4, 8);
+                    } else if (feature.type === 'monastery') {
+                        ctx.strokeRect(screen.x - 3, screen.y - 3, 6, 6);
+                        ctx.beginPath();
+                        ctx.moveTo(screen.x - 4, screen.y);
+                        ctx.lineTo(screen.x + 4, screen.y);
+                        ctx.stroke();
+                    }
+
+                    // Draw name
+                    ctx.fillStyle = '#2a2520';
+                    ctx.fillText(feature.name, screen.x + 8, screen.y + 4);
+                }
+            }
+
+            // Draw compass rose
+            drawCompassRose();
+
+            // Draw scale bar
+            drawScaleBar();
+
+            // Draw border and cartouche
+            drawBorder();
+        }
+
+        function drawCompassRose() {
+            const size = 50;
+            const cx = 80;
+            const cy = canvas.height - 80;
+
+            ctx.strokeStyle = '#4a3f35';
+            ctx.fillStyle = '#4a3f35';
+            ctx.lineWidth = 2;
+
+            // Outer circle
+            ctx.beginPath();
+            ctx.arc(cx, cy, size, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Cardinal points
+            const points = [
+                {angle: -Math.PI / 2, label: 'N'},
+                {angle: 0, label: 'E'},
+                {angle: Math.PI / 2, label: 'S'},
+                {angle: Math.PI, label: 'W'}
+            ];
+
+            for (const point of points) {
+                const x = cx + Math.cos(point.angle) * size * 0.7;
+                const y = cy + Math.sin(point.angle) * size * 0.7;
+
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+
+                const labelX = cx + Math.cos(point.angle) * size * 1.2;
+                const labelY = cy + Math.sin(point.angle) * size * 1.2;
+
+                ctx.font = '14px serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(point.label, labelX, labelY);
+            }
+
+            // Center dot
+            ctx.beginPath();
+            ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawScaleBar() {
+            const barWidth = 100;
+            const x = canvas.width / 2 - barWidth / 2;
+            const y = canvas.height - 30;
+
+            ctx.strokeStyle = '#4a3f35';
+            ctx.fillStyle = '#4a3f35';
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + barWidth, y);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y - 5);
+            ctx.lineTo(x, y + 5);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x + barWidth, y - 5);
+            ctx.lineTo(x + barWidth, y + 5);
+            ctx.stroke();
+
+            ctx.font = '12px serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('100 leagues', x + barWidth / 2, y + 15);
+        }
+
+        function drawBorder() {
+            const margin = 20;
+            ctx.strokeStyle = '#4a3f35';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(margin, margin, canvas.width - margin * 2, canvas.height - margin * 2);
+
+            ctx.lineWidth = 1;
+            ctx.strokeRect(margin + 5, margin + 5, canvas.width - margin * 2 - 10, canvas.height - margin * 2 - 10);
+
+            // Cartouche
+            const cartoucheWidth = 300;
+            const cartoucheHeight = 60;
+            const cartoucheX = canvas.width / 2 - cartoucheWidth / 2;
+            const cartoucheY = 40;
+
+            ctx.fillStyle = '#f5e6c8';
+            ctx.fillRect(cartoucheX, cartoucheY, cartoucheWidth, cartoucheHeight);
+            ctx.strokeStyle = '#4a3f35';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(cartoucheX, cartoucheY, cartoucheWidth, cartoucheHeight);
+
+            ctx.fillStyle = '#2a2520';
+            ctx.font = 'bold 20px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`Map of ${state.realmName}`, canvas.width / 2, cartoucheY + cartoucheHeight / 2 - 10);
+
+            ctx.font = 'italic 12px serif';
+            ctx.fillText('Anno Domini MCDLXXIII', canvas.width / 2, cartoucheY + cartoucheHeight / 2 + 12);
+        }
+
+        // ===== AUDIO =====
+        let audioContext = null;
+        let windGain = null;
+        let wavesGain = null;
+        let birdsGain = null;
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                // Wind (low frequency noise)
+                const windNoise = audioContext.createBufferSource();
+                const windBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 2, audioContext.sampleRate);
+                const windData = windBuffer.getChannelData(0);
+                for (let i = 0; i < windData.length; i++) {
+                    windData[i] = (Math.random() * 2 - 1) * 0.1;
+                }
+                windNoise.buffer = windBuffer;
+                windNoise.loop = true;
+
+                const windFilter = audioContext.createBiquadFilter();
+                windFilter.type = 'lowpass';
+                windFilter.frequency.value = 200;
+
+                windGain = audioContext.createGain();
+                windGain.gain.value = 0;
+
+                windNoise.connect(windFilter);
+                windFilter.connect(windGain);
+                windGain.connect(audioContext.destination);
+                windNoise.start();
+
+                // Waves (periodic low frequency)
+                const waves = audioContext.createOscillator();
+                waves.type = 'sine';
+                waves.frequency.value = 0.5;
+
+                const wavesFilter = audioContext.createBiquadFilter();
+                wavesFilter.type = 'lowpass';
+                wavesFilter.frequency.value = 300;
+
+                wavesGain = audioContext.createGain();
+                wavesGain.gain.value = 0;
+
+                waves.connect(wavesFilter);
+                wavesFilter.connect(wavesGain);
+                wavesGain.connect(audioContext.destination);
+                waves.start();
+
+                // Birds (high frequency chirps)
+                const birdsNoise = audioContext.createBufferSource();
+                const birdsBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 2, audioContext.sampleRate);
+                const birdsData = birdsBuffer.getChannelData(0);
+                for (let i = 0; i < birdsData.length; i++) {
+                    birdsData[i] = (Math.random() * 2 - 1) * 0.05;
+                }
+                birdsNoise.buffer = birdsBuffer;
+                birdsNoise.loop = true;
+
+                const birdsFilter = audioContext.createBiquadFilter();
+                birdsFilter.type = 'highpass';
+                birdsFilter.frequency.value = 2000;
+
+                birdsGain = audioContext.createGain();
+                birdsGain.gain.value = 0;
+
+                birdsNoise.connect(birdsFilter);
+                birdsFilter.connect(birdsGain);
+                birdsGain.connect(audioContext.destination);
+                birdsNoise.start();
+            }
+        }
+
+        function updateAudio() {
+            if (!state.audioEnabled || !audioContext) return;
+
+            const centerWorld = screenToWorld(canvas.width / 2, canvas.height / 2);
+            const viewRadius = 100 / state.zoom;
+
+            let mountainCount = 0;
+            let waterCount = 0;
+            let forestCount = 0;
+            let totalSamples = 0;
+
+            for (let dy = -viewRadius; dy < viewRadius; dy += 5) {
+                for (let dx = -viewRadius; dx < viewRadius; dx += 5) {
+                    const wx = Math.floor(centerWorld.x + dx);
+                    const wy = Math.floor(centerWorld.y + dy);
+                    const biome = terrain.getBiome(wx, wy);
+
+                    if (biome === 'mountain' || biome === 'snow') mountainCount++;
+                    if (biome === 'water' || biome === 'deepwater') waterCount++;
+                    if (biome === 'forest') forestCount++;
+                    totalSamples++;
+                }
+            }
+
+            const mountainRatio = mountainCount / totalSamples;
+            const waterRatio = waterCount / totalSamples;
+            const forestRatio = forestCount / totalSamples;
+
+            if (windGain) windGain.gain.linearRampToValueAtTime(mountainRatio * 0.15, audioContext.currentTime + 0.5);
+            if (wavesGain) wavesGain.gain.linearRampToValueAtTime(waterRatio * 0.1, audioContext.currentTime + 0.5);
+            if (birdsGain) birdsGain.gain.linearRampToValueAtTime(forestRatio * 0.08, audioContext.currentTime + 0.5);
+        }
+
+        function stopAudio() {
+            if (windGain) windGain.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.5);
+            if (wavesGain) wavesGain.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.5);
+            if (birdsGain) birdsGain.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.5);
+        }
+
+        // ===== INPUT =====
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const dx = e.clientX - lastMouseX;
+                const dy = e.clientY - lastMouseY;
+
+                state.offsetX -= dx / state.zoom;
+                state.offsetY -= dy / state.zoom;
+
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+
+                drawMap();
+                saveState();
+                updateAudio();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isDragging = false;
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            const newZoom = Math.max(0.5, Math.min(3, state.zoom * zoomFactor));
+
+            if (newZoom !== state.zoom) {
+                state.zoom = newZoom;
+                drawMap();
+                saveState();
+                updateAudio();
+            }
+        });
+
+        // Touch support
+        let touchStartDistance = 0;
+        let touchStartZoom = 1;
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                isDragging = true;
+                lastMouseX = e.touches[0].clientX;
+                lastMouseY = e.touches[0].clientY;
+            } else if (e.touches.length === 2) {
+                isDragging = false;
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                touchStartDistance = Math.sqrt(dx * dx + dy * dy);
+                touchStartZoom = state.zoom;
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+
+            if (e.touches.length === 1 && isDragging) {
+                const dx = e.touches[0].clientX - lastMouseX;
+                const dy = e.touches[0].clientY - lastMouseY;
+
+                state.offsetX -= dx / state.zoom;
+                state.offsetY -= dy / state.zoom;
+
+                lastMouseX = e.touches[0].clientX;
+                lastMouseY = e.touches[0].clientY;
+
+                drawMap();
+                saveState();
+            } else if (e.touches.length === 2) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                const newZoom = Math.max(0.5, Math.min(3, touchStartZoom * (distance / touchStartDistance)));
+                state.zoom = newZoom;
+
+                drawMap();
+                saveState();
+            }
+        });
+
+        canvas.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        // UI Controls
+        document.getElementById('audioToggle').addEventListener('change', (e) => {
+            state.audioEnabled = e.target.checked;
+            if (state.audioEnabled) {
+                initAudio();
+                updateAudio();
+            } else {
+                stopAudio();
+            }
+            saveState();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            if (confirm('Generate a new map? Current exploration will be lost.')) {
+                state.seed = Math.random() * 10000;
+                state.offsetX = 0;
+                state.offsetY = 0;
+                state.zoom = 1;
+                state.explored.clear();
+                state.realmName = '';
+                init();
+            }
+        });
+
+        // ===== INITIALIZATION =====
+        function init() {
+            resizeCanvas();
+            loadState();
+
+            if (!state.realmName) {
+                const rng = new SeededRandom(state.seed);
+                state.realmName = generateName(rng, 2, 3);
+            }
+
+            terrain = new TerrainMap(state.seed, 800, 600);
+
+            document.getElementById('audioToggle').checked = state.audioEnabled;
+            if (state.audioEnabled) {
+                initAudio();
+            }
+
+            drawMap();
+            saveState();
+            updateAudio();
+
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            drawMap();
+        });
+
+        // Start
+        setTimeout(init, 100);
+    </script>
+</body>
+</html>

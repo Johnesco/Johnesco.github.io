@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Ritual</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body, html { width: 100%; height: 100%; overflow: hidden; background: #080808; font-family: 'Georgia', serif; color: #d4c8a0; }
+canvas { display: block; }
+#ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.message { font-size: 1.2rem; text-align: center; opacity: 0; transition: opacity 0.8s; pointer-events: none; }
+.message.show { opacity: 1; }
+#intention-input { background: none; border: none; outline: none; color: #c8a050; font-family: inherit; font-size: 1.1rem; text-align: center; width: 80%; max-width: 500px; margin-top: 20px; pointer-events: auto; caret-color: #c8a050; }
+#intention-input::placeholder { color: rgba(200, 160, 80, 0.3); }
+.floating-text { position: absolute; left: 50%; transform: translateX(-50%); color: #c8a050; font-size: 1.1rem; white-space: nowrap; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="ui">
+  <div id="greeting" class="message"></div>
+  <div id="prompt" class="message"></div>
+  <input id="intention-input" type="text" maxlength="100" style="display:none;">
+</div>
+<script>
+const STORAGE_KEY = 'todooo-054';
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const greeting = document.getElementById('greeting');
+const prompt = document.getElementById('prompt');
+const intentionInput = document.getElementById('intention-input');
+
+let W, H;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// State
+let state = {
+  phase: 'greeting',
+  candleLit: false,
+  candleHeight: 80,
+  embers: [],
+  intentionCount: 0,
+  lastVisit: null,
+  visitCount: 0,
+  greetingIndex: 0,
+  todayRitual: false,
+  floatingText: null
+};
+
+// Audio
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let ambientGain, flameOsc, crackleInterval;
+
+function loadState() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    const data = JSON.parse(saved);
+    state.embers = data.embers || [];
+    state.intentionCount = data.intentionCount || 0;
+    state.lastVisit = data.lastVisit;
+    state.visitCount = data.visitCount || 0;
+    state.greetingIndex = data.greetingIndex || 0;
+    state.candleHeight = data.candleHeight || 80;
+
+    // Check if already visited today
+    const today = new Date().toDateString();
+    if (state.lastVisit === today) {
+      state.todayRitual = true;
+    }
+  }
+}
+
+function saveState() {
+  const today = new Date().toDateString();
+  const data = {
+    embers: state.embers,
+    intentionCount: state.intentionCount,
+    lastVisit: today,
+    visitCount: state.visitCount,
+    greetingIndex: state.greetingIndex,
+    candleHeight: state.candleHeight
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  const greetings = {
+    morning: ["Good morning.", "A new day.", "The light returns."],
+    afternoon: ["Good afternoon.", "Halfway through.", "Still here."],
+    evening: ["Good evening.", "The day settles.", "Almost done."],
+    night: ["It's late.", "The quiet hours.", "Rest is near."]
+  };
+
+  let period;
+  if (hour >= 5 && hour < 12) period = 'morning';
+  else if (hour >= 12 && hour < 17) period = 'afternoon';
+  else if (hour >= 17 && hour < 21) period = 'evening';
+  else period = 'night';
+
+  // Special cases
+  if (state.visitCount === 0) return "Welcome. Let's begin a practice.";
+  if (state.visitCount > 0 && state.visitCount % 5 === 0 && state.visitCount < 20) {
+    return `Day ${state.visitCount}. You keep returning.`;
+  }
+
+  const options = greetings[period];
+  let idx = state.greetingIndex % options.length;
+  state.greetingIndex++;
+  return options[idx];
+}
+
+function showGreeting() {
+  greeting.textContent = getGreeting();
+  greeting.classList.add('show');
+
+  setTimeout(() => {
+    greeting.classList.remove('show');
+    setTimeout(() => {
+      if (state.todayRitual) {
+        showAlreadyVisited();
+      } else {
+        showLightPrompt();
+      }
+    }, 800);
+  }, 4000);
+}
+
+function showAlreadyVisited() {
+  prompt.textContent = "You've already lit the candle today. Rest.";
+  prompt.classList.add('show');
+  state.phase = 'rest';
+}
+
+function showLightPrompt() {
+  prompt.textContent = "Light the candle.";
+  prompt.classList.add('show');
+  state.phase = 'ready';
+  canvas.style.cursor = 'pointer';
+}
+
+function lightCandle() {
+  if (state.phase !== 'ready') return;
+
+  canvas.style.cursor = 'default';
+  prompt.classList.remove('show');
+
+  // Match strike effect
+  playMatchStrike();
+
+  setTimeout(() => {
+    state.candleLit = true;
+    state.phase = 'writing';
+    startAmbient();
+
+    setTimeout(() => {
+      prompt.textContent = "What do you hold today?";
+      prompt.classList.add('show');
+      intentionInput.style.display = 'block';
+      intentionInput.focus();
+    }, 500);
+  }, 300);
+}
+
+function releaseIntention() {
+  const text = intentionInput.value.trim();
+  if (!text) return;
+
+  intentionInput.style.display = 'none';
+  prompt.classList.remove('show');
+
+  // Create floating text
+  const rect = intentionInput.getBoundingClientRect();
+  state.floatingText = {
+    text: text,
+    x: W / 2,
+    y: rect.top + rect.height / 2,
+    opacity: 1,
+    letterSpacing: 0,
+    time: 0
+  };
+
+  state.phase = 'releasing';
+  intentionInput.value = '';
+
+  playRelease();
+
+  setTimeout(() => {
+    // Add ember
+    state.embers.push({
+      x: W * 0.3 + Math.random() * W * 0.4,
+      y: H * 0.15 + Math.random() * 100,
+      brightness: 0.05 + Math.random() * 0.05,
+      phase: Math.random() * Math.PI * 2,
+      driftSpeed: 0.1 + Math.random() * 0.2
+    });
+
+    state.intentionCount++;
+    state.visitCount++;
+    state.todayRitual = true;
+    state.floatingText = null;
+    saveState();
+
+    setTimeout(() => {
+      prompt.textContent = "Released.";
+      prompt.classList.add('show');
+
+      setTimeout(() => {
+        prompt.classList.remove('show');
+        setTimeout(() => {
+          prompt.textContent = "The candle will burn for a while.";
+          prompt.classList.add('show');
+          state.phase = 'burning';
+          startCandleBurn();
+        }, 800);
+      }, 2000);
+    }, 500);
+  }, 4000);
+}
+
+function startCandleBurn() {
+  const burnDuration = 600000; // 10 minutes
+  const burnRate = 80 / burnDuration;
+
+  const burnInterval = setInterval(() => {
+    state.candleHeight -= burnRate * 100;
+    if (state.candleHeight <= 10) {
+      state.candleHeight = 10;
+      state.candleLit = false;
+      clearInterval(burnInterval);
+      stopAmbient();
+      prompt.classList.remove('show');
+      setTimeout(() => {
+        prompt.textContent = "The candle has gone out. Return tomorrow.";
+        prompt.classList.add('show');
+      }, 500);
+      saveState();
+    }
+  }, 100);
+}
+
+// Audio functions
+function playMatchStrike() {
+  const noise = audioCtx.createBufferSource();
+  const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / audioCtx.sampleRate / 0.03);
+  }
+  noise.buffer = buffer;
+
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0.1;
+  noise.connect(gain);
+  gain.connect(audioCtx.destination);
+  noise.start();
+}
+
+function startAmbient() {
+  // Low drone
+  flameOsc = audioCtx.createOscillator();
+  flameOsc.frequency.value = 100;
+  flameOsc.type = 'sine';
+
+  ambientGain = audioCtx.createGain();
+  ambientGain.gain.value = 0.01;
+
+  flameOsc.connect(ambientGain);
+  ambientGain.connect(audioCtx.destination);
+  flameOsc.start();
+
+  // Crackle
+  crackleInterval = setInterval(() => {
+    if (Math.random() < 0.1) {
+      const crackle = audioCtx.createBufferSource();
+      const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) {
+        d[i] = (Math.random() * 2 - 1) * 0.3 * Math.exp(-i / audioCtx.sampleRate / 0.01);
+      }
+      crackle.buffer = buf;
+
+      const g = audioCtx.createGain();
+      g.gain.value = 0.005;
+      crackle.connect(g);
+      g.connect(audioCtx.destination);
+      crackle.start();
+    }
+  }, 200);
+}
+
+function stopAmbient() {
+  if (flameOsc) flameOsc.stop();
+  if (crackleInterval) clearInterval(crackleInterval);
+}
+
+function playRelease() {
+  const osc = audioCtx.createOscillator();
+  osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+  osc.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 1);
+
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 1);
+}
+
+// Drawing
+function drawCandle() {
+  const cx = W / 2;
+  const cy = H * 0.65;
+  const candleWidth = 30;
+  const height = state.candleHeight;
+
+  // Table surface
+  ctx.fillStyle = '#1a1410';
+  ctx.fillRect(0, cy + 40, W, H - cy - 40);
+
+  // Candle body
+  ctx.fillStyle = '#e8dcc0';
+  ctx.fillRect(cx - candleWidth / 2, cy - height, candleWidth, height);
+
+  // Wick
+  ctx.fillStyle = '#2a2520';
+  ctx.fillRect(cx - 1, cy - height - 5, 2, 5);
+
+  // Flame
+  if (state.candleLit) {
+    const flicker = Math.sin(Date.now() / 100) * 2 + Math.cos(Date.now() / 137) * 1.5;
+    const flameY = cy - height - 10 + flicker;
+
+    // Glow
+    const glow = ctx.createRadialGradient(cx, flameY, 0, cx, flameY, 200);
+    glow.addColorStop(0, 'rgba(255, 180, 50, 0.15)');
+    glow.addColorStop(0.5, 'rgba(255, 140, 20, 0.05)');
+    glow.addColorStop(1, 'rgba(255, 100, 0, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, H);
+
+    // Flame shapes
+    ctx.save();
+    ctx.translate(cx, flameY);
+
+    // Inner flame
+    ctx.fillStyle = 'rgba(255, 230, 100, 0.9)';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 6, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Outer flame
+    ctx.fillStyle = 'rgba(255, 140, 30, 0.7)';
+    ctx.beginPath();
+    ctx.ellipse(0, 2, 9, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
+
+function drawEmbers() {
+  const baseGlow = Math.min(state.intentionCount / 100, 1);
+
+  // Overall warm glow from accumulated intentions
+  if (baseGlow > 0) {
+    const grad = ctx.createRadialGradient(W / 2, H * 0.2, 0, W / 2, H * 0.2, W * 0.8);
+    grad.addColorStop(0, `rgba(255, 180, 80, ${baseGlow * 0.08})`);
+    grad.addColorStop(0.5, `rgba(255, 140, 50, ${baseGlow * 0.04})`);
+    grad.addColorStop(1, 'rgba(255, 100, 20, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Individual embers
+  state.embers.forEach((ember, i) => {
+    ember.phase += ember.driftSpeed * 0.02;
+    ember.x += Math.sin(ember.phase) * 0.2;
+    ember.y += Math.cos(ember.phase * 1.3) * 0.1;
+
+    const pulse = Math.sin(Date.now() / 1000 + i) * 0.3 + 0.7;
+    ctx.fillStyle = `rgba(255, ${140 + Math.random() * 40}, 30, ${ember.brightness * pulse})`;
+    ctx.beginPath();
+    ctx.arc(ember.x, ember.y, 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function drawFloatingText() {
+  if (!state.floatingText) return;
+
+  const ft = state.floatingText;
+  ft.time += 0.016;
+
+  ft.y -= 1.5;
+  ft.opacity = Math.max(0, 1 - ft.time / 4);
+  ft.letterSpacing = ft.time * 2;
+
+  ctx.save();
+  ctx.font = '1.1rem Georgia';
+  ctx.fillStyle = `rgba(200, 160, 80, ${ft.opacity})`;
+  ctx.textAlign = 'center';
+
+  // Spread letters
+  const letters = ft.text.split('');
+  const totalWidth = ctx.measureText(ft.text).width + ft.letterSpacing * letters.length;
+  let x = ft.x - totalWidth / 2;
+
+  letters.forEach(letter => {
+    ctx.fillText(letter, x, ft.y);
+    x += ctx.measureText(letter).width + ft.letterSpacing;
+  });
+
+  ctx.restore();
+}
+
+function draw() {
+  ctx.fillStyle = '#080808';
+  ctx.fillRect(0, 0, W, H);
+
+  drawEmbers();
+  drawCandle();
+  drawFloatingText();
+
+  requestAnimationFrame(draw);
+}
+
+// Events
+canvas.addEventListener('click', (e) => {
+  const cx = W / 2;
+  const cy = H * 0.65;
+  const dx = e.clientX - cx;
+  const dy = e.clientY - cy;
+
+  if (Math.abs(dx) < 50 && dy > -state.candleHeight - 30 && dy < 40) {
+    lightCandle();
+  }
+});
+
+intentionInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && state.phase === 'writing') {
+    releaseIntention();
+  }
+});
+
+// Initialize
+loadState();
+showGreeting();
+draw();
+</script>
+</body>
+</html>

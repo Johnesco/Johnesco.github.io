@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evolving 053 — Archaeology Dig</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; font-family: 'Courier New', monospace; background: #000; }
+canvas { display: block; cursor: crosshair; }
+#toolbar { position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; color: #fff; font-size: 12px; }
+.tool { display: block; padding: 5px 10px; margin: 5px 0; background: #444; border: 2px solid #666; cursor: pointer; border-radius: 4px; }
+.tool.active { background: #8ab4d4; border-color: #fff; }
+#collection { position: fixed; bottom: 20px; left: 20px; right: 20px; height: 80px; background: rgba(0,0,0,0.8); border-radius: 8px; padding: 10px; display: flex; gap: 10px; overflow-x: auto; align-items: center; }
+.artifact-thumb { width: 60px; height: 60px; border: 2px solid #666; border-radius: 4px; flex-shrink: 0; position: relative; cursor: pointer; }
+.artifact-thumb:hover { border-color: #fff; }
+#collection-view { position: fixed; inset: 0; background: rgba(0,0,0,0.95); color: #fff; padding: 40px; overflow-y: auto; display: none; z-index: 100; }
+#collection-view.show { display: block; }
+.collection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; }
+.collection-item { padding: 15px; background: #222; border-radius: 8px; border: 2px solid #444; }
+.collection-item canvas { width: 100%; height: 80px; border-radius: 4px; margin-bottom: 10px; }
+.collection-item p { font-size: 11px; line-height: 1.4; color: #aaa; }
+#tooltip { position: fixed; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 11px; pointer-events: none; display: none; z-index: 50; white-space: nowrap; }
+.sound-toggle { position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.7); color: #fff; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="toolbar">
+<div class="tool active" data-brush="20">Brush (1)</div>
+<div class="tool" data-brush="8">Fine (2)</div>
+<div class="tool" data-brush="40">Wide (3)</div>
+</div>
+<div id="collection"></div>
+<div id="collection-view">
+<h2 style="margin-bottom: 20px;">Collection — Press C to close</h2>
+<div class="collection-grid"></div>
+</div>
+<div id="tooltip"></div>
+<div class="sound-toggle">Sound: ON</div>
+<script>
+const STORAGE_KEY = 'todooo-053';
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+const collectionEl = document.getElementById('collection');
+const collectionView = document.getElementById('collection-view');
+const collectionGrid = collectionView.querySelector('.collection-grid');
+
+let W, H, skyHeight, earthTop;
+let brushSize = 20;
+let isDragging = false;
+let soundEnabled = true;
+let hoveredArtifact = null;
+
+const LAYERS = [
+  { name: 'Topsoil', depth: 0, thickness: 100, color: '#6a4a2a', maxAge: 1 },
+  { name: 'Clay', depth: 100, thickness: 100, color: '#8a5a3a', maxAge: 7 },
+  { name: 'Sand', depth: 200, thickness: 100, color: '#b89a5a', maxAge: 28 },
+  { name: 'Limestone', depth: 300, thickness: 100, color: '#9a9a8a', maxAge: 365 },
+  { name: 'Bedrock', depth: 400, thickness: 80, color: '#4a4a5a', maxAge: 99999 }
+];
+
+const COLORS = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f7b731', '#5f27cd', '#00d2d3', '#ff9ff3', '#54a0ff', '#48dbfb', '#ff6348'];
+const WORDS = ['reme', 'brea', 'lis', 'sile', 'mem', 'frag', 'echo', 'whis', 'shar', 'crys'];
+
+let state = {
+  earth: [],
+  artifacts: [],
+  collected: [],
+  visits: [],
+  dustParticles: []
+};
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  skyHeight = H * 0.2;
+  earthTop = skyHeight;
+  initEarth();
+}
+
+function initEarth() {
+  if (state.earth.length !== W) {
+    state.earth = new Array(W).fill(0).map(() => ({
+      removed: 0,
+      texture: Math.random() * 10 - 5
+    }));
+  }
+}
+
+function save() {
+  const saved = {
+    earth: state.earth.map(col => col.removed),
+    artifacts: state.artifacts,
+    collected: state.collected,
+    visits: state.visits
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+}
+
+function load() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    const data = JSON.parse(saved);
+    if (data.earth && data.earth.length === W) {
+      state.earth.forEach((col, i) => col.removed = data.earth[i] || 0);
+    }
+    state.artifacts = data.artifacts || [];
+    state.collected = data.collected || [];
+    state.visits = data.visits || [];
+  }
+
+  const now = Date.now();
+  state.visits.push(now);
+
+  if (state.artifacts.length === 0) {
+    seedArtifacts(true);
+  } else {
+    seedArtifacts(false);
+  }
+
+  save();
+}
+
+function seedArtifacts(initial) {
+  const count = initial ? 18 : 3;
+  const now = Date.now();
+
+  for (let i = 0; i < count; i++) {
+    const depth = initial ? Math.random() * 480 : Math.random() * 150;
+    const layer = LAYERS.find(l => depth >= l.depth && depth < l.depth + l.thickness) || LAYERS[0];
+
+    const ageMax = layer.maxAge * 24 * 60 * 60 * 1000;
+    const age = Math.random() * ageMax;
+    const timestamp = now - age;
+
+    const type = ['color', 'timestamp', 'pattern', 'text', 'crystal'][Math.floor(Math.random() * 5)];
+    const x = Math.random() * (W - 100) + 50;
+    const y = earthTop + depth;
+
+    state.artifacts.push({
+      id: Date.now() + Math.random(),
+      type,
+      x, y,
+      depth,
+      timestamp,
+      found: false,
+      data: generateArtifactData(type, timestamp)
+    });
+  }
+}
+
+function generateArtifactData(type, timestamp) {
+  switch(type) {
+    case 'color':
+      return { color: COLORS[Math.floor(Math.random() * COLORS.length)] };
+    case 'timestamp':
+      return { date: new Date(timestamp).toLocaleString() };
+    case 'pattern':
+      return { pattern: ['stripes', 'dots', 'checkers'][Math.floor(Math.random() * 3)] };
+    case 'text':
+      return { word: WORDS[Math.floor(Math.random() * WORDS.length)] + '...' };
+    case 'crystal':
+      return { shape: ['hexagon', 'diamond'][Math.floor(Math.random() * 2)] };
+  }
+}
+
+function dig(x, y) {
+  if (y < earthTop) return;
+
+  const depth = y - earthTop;
+  const affected = [];
+
+  for (let dx = -brushSize; dx <= brushSize; dx++) {
+    for (let dy = -brushSize; dy <= brushSize; dy++) {
+      if (dx*dx + dy*dy <= brushSize*brushSize) {
+        const px = Math.floor(x + dx);
+        const py = y + dy;
+
+        if (px >= 0 && px < W && py >= earthTop && py < H) {
+          const localDepth = py - earthTop;
+          const col = state.earth[px];
+
+          if (col && localDepth > col.removed) {
+            const oldRemoved = col.removed;
+            col.removed = Math.max(col.removed, localDepth);
+            if (col.removed !== oldRemoved) {
+              affected.push({ x: px, y: py, depth: localDepth });
+
+              if (Math.random() < 0.3) {
+                addDust(px, py);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (affected.length > 0 && soundEnabled) {
+    playDigSound(affected.length);
+  }
+
+  checkArtifacts();
+  applyGravity();
+}
+
+function addDust(x, y) {
+  for (let i = 0; i < 3; i++) {
+    state.dustParticles.push({
+      x: x + (Math.random() - 0.5) * 10,
+      y,
+      vx: (Math.random() - 0.5) * 2,
+      vy: -Math.random() * 3 - 1,
+      life: 60,
+      size: Math.random() * 3 + 1,
+      color: '#8a6a4a'
+    });
+  }
+}
+
+function applyGravity() {
+  for (let x = 0; x < W; x++) {
+    const col = state.earth[x];
+    if (!col) continue;
+
+    let needsCollapse = false;
+    for (let dy = 1; dy <= 5; dy++) {
+      const leftX = x - dy;
+      const rightX = x + dy;
+
+      if (leftX >= 0 && state.earth[leftX] && state.earth[leftX].removed > col.removed + dy * 2) {
+        needsCollapse = true;
+      }
+      if (rightX < W && state.earth[rightX] && state.earth[rightX].removed > col.removed + dy * 2) {
+        needsCollapse = true;
+      }
+    }
+
+    if (needsCollapse && Math.random() < 0.05) {
+      col.removed = Math.max(0, col.removed - 5);
+    }
+  }
+}
+
+function checkArtifacts() {
+  state.artifacts.forEach(art => {
+    if (art.found) return;
+
+    const col = state.earth[Math.floor(art.x)];
+    if (!col) return;
+
+    const artDepth = art.y - earthTop;
+    if (col.removed >= artDepth - 15) {
+      art.found = true;
+      if (soundEnabled) playDiscoverySound();
+    }
+  });
+}
+
+function collectArtifact(art) {
+  if (!state.collected.find(a => a.id === art.id)) {
+    state.collected.push(art);
+    if (soundEnabled) playCollectSound();
+    updateCollectionTray();
+    save();
+  }
+}
+
+function updateCollectionTray() {
+  collectionEl.innerHTML = '';
+  state.collected.forEach(art => {
+    const thumb = document.createElement('div');
+    thumb.className = 'artifact-thumb';
+    const thumbCanvas = document.createElement('canvas');
+    thumbCanvas.width = 60;
+    thumbCanvas.height = 60;
+    drawArtifact(thumbCanvas.getContext('2d'), art, 30, 30, 25);
+    thumb.appendChild(thumbCanvas);
+    thumb.onclick = () => showCollectionView();
+    collectionEl.appendChild(thumb);
+  });
+}
+
+function showCollectionView() {
+  collectionView.classList.add('show');
+  collectionGrid.innerHTML = '';
+
+  state.collected.forEach(art => {
+    const item = document.createElement('div');
+    item.className = 'collection-item';
+
+    const itemCanvas = document.createElement('canvas');
+    itemCanvas.width = 120;
+    itemCanvas.height = 80;
+    drawArtifact(itemCanvas.getContext('2d'), art, 60, 40, 30);
+
+    const info = document.createElement('p');
+    info.innerHTML = `<b>${art.type.toUpperCase()}</b><br>Depth: ${Math.floor(art.depth)}px<br>Age: ${getAgeString(art.timestamp)}`;
+
+    item.appendChild(itemCanvas);
+    item.appendChild(info);
+    collectionGrid.appendChild(item);
+  });
+}
+
+function getAgeString(timestamp) {
+  const days = Math.floor((Date.now() - timestamp) / (1000 * 60 * 60 * 24));
+  if (days === 0) return 'Today';
+  if (days === 1) return '1 day ago';
+  if (days < 7) return `${days} days ago`;
+  if (days < 28) return `${Math.floor(days/7)} weeks ago`;
+  if (days < 365) return `${Math.floor(days/30)} months ago`;
+  return `${Math.floor(days/365)} years ago`;
+}
+
+function drawArtifact(c, art, x, y, size) {
+  c.save();
+  c.translate(x, y);
+
+  switch(art.type) {
+    case 'color':
+      c.fillStyle = art.data.color;
+      c.fillRect(-size/2, -size/2, size, size);
+      break;
+    case 'timestamp':
+      c.fillStyle = '#aaa';
+      c.beginPath();
+      c.roundRect(-size/2, -size/2, size, size, 5);
+      c.fill();
+      c.fillStyle = '#000';
+      c.font = '8px monospace';
+      c.textAlign = 'center';
+      c.fillText(art.data.date.slice(0, 10), 0, 0);
+      break;
+    case 'pattern':
+      if (art.data.pattern === 'stripes') {
+        for (let i = 0; i < 5; i++) {
+          c.fillStyle = i % 2 ? '#fff' : '#000';
+          c.fillRect(-size/2 + i * size/5, -size/2, size/5, size);
+        }
+      } else if (art.data.pattern === 'dots') {
+        c.fillStyle = '#333';
+        c.fillRect(-size/2, -size/2, size, size);
+        c.fillStyle = '#fff';
+        for (let i = 0; i < 9; i++) {
+          c.beginPath();
+          c.arc(-size/3 + (i%3)*size/3, -size/3 + Math.floor(i/3)*size/3, 3, 0, Math.PI*2);
+          c.fill();
+        }
+      } else {
+        for (let i = 0; i < 4; i++) {
+          for (let j = 0; j < 4; j++) {
+            c.fillStyle = (i+j) % 2 ? '#fff' : '#000';
+            c.fillRect(-size/2 + i*size/4, -size/2 + j*size/4, size/4, size/4);
+          }
+        }
+      }
+      break;
+    case 'text':
+      c.fillStyle = '#ddd';
+      c.fillRect(-size/2, -size/2, size, size);
+      c.fillStyle = '#000';
+      c.font = 'bold 12px monospace';
+      c.textAlign = 'center';
+      c.fillText(art.data.word, 0, 5);
+      break;
+    case 'crystal':
+      c.strokeStyle = '#4ecdc4';
+      c.lineWidth = 2;
+      c.fillStyle = 'rgba(78, 205, 196, 0.3)';
+      c.beginPath();
+      if (art.data.shape === 'hexagon') {
+        for (let i = 0; i < 6; i++) {
+          const angle = i * Math.PI / 3;
+          const px = Math.cos(angle) * size/2;
+          const py = Math.sin(angle) * size/2;
+          if (i === 0) c.moveTo(px, py);
+          else c.lineTo(px, py);
+        }
+      } else {
+        c.moveTo(0, -size/2);
+        c.lineTo(size/2, 0);
+        c.lineTo(0, size/2);
+        c.lineTo(-size/2, 0);
+      }
+      c.closePath();
+      c.fill();
+      c.stroke();
+      break;
+  }
+
+  c.restore();
+}
+
+function draw() {
+  ctx.fillStyle = '#8ab4d4';
+  ctx.fillRect(0, 0, W, skyHeight);
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, skyHeight);
+  gradient.addColorStop(0, '#8ab4d4');
+  gradient.addColorStop(1, '#fff');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, skyHeight);
+
+  for (let x = 0; x < W; x++) {
+    const col = state.earth[x];
+    if (!col) continue;
+
+    for (let d = col.removed; d < 480; d++) {
+      const y = earthTop + d;
+      if (y >= H) break;
+
+      const layer = LAYERS.find(l => d >= l.depth && d < l.depth + l.thickness);
+      if (!layer) continue;
+
+      let baseColor = layer.color;
+      const transition = 10;
+      const distFromTop = d - layer.depth;
+      const distFromBottom = (layer.depth + layer.thickness) - d;
+
+      if (distFromTop < transition && LAYERS.indexOf(layer) > 0) {
+        const prevLayer = LAYERS[LAYERS.indexOf(layer) - 1];
+        const blend = distFromTop / transition;
+        baseColor = blendColors(prevLayer.color, layer.color, blend);
+      } else if (distFromBottom < transition && LAYERS.indexOf(layer) < LAYERS.length - 1) {
+        const nextLayer = LAYERS[LAYERS.indexOf(layer) + 1];
+        const blend = distFromBottom / transition;
+        baseColor = blendColors(layer.color, nextLayer.color, blend);
+      }
+
+      ctx.fillStyle = adjustColor(baseColor, col.texture);
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 10; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * W / 10, earthTop);
+    ctx.lineTo(i * W / 10, H);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0, earthTop + i * 50);
+    ctx.lineTo(W, earthTop + i * 50);
+    ctx.stroke();
+  }
+
+  state.artifacts.forEach(art => {
+    if (!art.found) return;
+
+    ctx.save();
+    ctx.shadowColor = art.type === 'crystal' ? '#4ecdc4' : '#fff';
+    ctx.shadowBlur = 10;
+    drawArtifact(ctx, art, art.x, art.y, 20);
+    ctx.restore();
+  });
+
+  state.dustParticles.forEach((p, i) => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.1;
+    p.life--;
+
+    ctx.fillStyle = `rgba(138, 106, 74, ${p.life / 60})`;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  });
+
+  state.dustParticles = state.dustParticles.filter(p => p.life > 0);
+}
+
+function blendColors(c1, c2, ratio) {
+  const r1 = parseInt(c1.slice(1,3), 16);
+  const g1 = parseInt(c1.slice(3,5), 16);
+  const b1 = parseInt(c1.slice(5,7), 16);
+  const r2 = parseInt(c2.slice(1,3), 16);
+  const g2 = parseInt(c2.slice(3,5), 16);
+  const b2 = parseInt(c2.slice(5,7), 16);
+
+  const r = Math.floor(r1 * (1-ratio) + r2 * ratio);
+  const g = Math.floor(g1 * (1-ratio) + g2 * ratio);
+  const b = Math.floor(b1 * (1-ratio) + b2 * ratio);
+
+  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
+
+function adjustColor(color, offset) {
+  const r = Math.max(0, Math.min(255, parseInt(color.slice(1,3), 16) + offset));
+  const g = Math.max(0, Math.min(255, parseInt(color.slice(3,5), 16) + offset));
+  const b = Math.max(0, Math.min(255, parseInt(color.slice(5,7), 16) + offset));
+  return `rgb(${r},${g},${b})`;
+}
+
+function getArtifactAt(x, y) {
+  for (let i = state.artifacts.length - 1; i >= 0; i--) {
+    const art = state.artifacts[i];
+    if (!art.found) continue;
+    const dx = x - art.x;
+    const dy = y - art.y;
+    if (Math.abs(dx) < 15 && Math.abs(dy) < 15) {
+      return art;
+    }
+  }
+  return null;
+}
+
+function showTooltip(art, x, y) {
+  const layer = LAYERS.find(l => art.depth >= l.depth && art.depth < l.depth + l.thickness);
+  tooltip.innerHTML = `${art.type.toUpperCase()} • ${layer ? layer.name : 'Unknown'} • ${Math.floor(art.depth)}px deep • ${getAgeString(art.timestamp)}`;
+  tooltip.style.left = x + 15 + 'px';
+  tooltip.style.top = y + 15 + 'px';
+  tooltip.style.display = 'block';
+}
+
+function hideTooltip() {
+  tooltip.style.display = 'none';
+}
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playDigSound(intensity) {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = 'square';
+  osc.frequency.value = 80 + Math.random() * 40;
+
+  const noise = audioCtx.createBufferSource();
+  const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  noise.buffer = buffer;
+
+  const noiseGain = audioCtx.createGain();
+  noiseGain.gain.value = Math.min(0.05, intensity / 1000);
+
+  noise.connect(noiseGain);
+  noiseGain.connect(audioCtx.destination);
+
+  noise.start();
+  noise.stop(audioCtx.currentTime + 0.05);
+}
+
+function playDiscoverySound() {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.frequency.value = 800;
+  gain.gain.value = 0.1;
+
+  osc.start();
+
+  setTimeout(() => {
+    osc.frequency.value = 1200;
+  }, 50);
+
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+  osc.stop(audioCtx.currentTime + 0.3);
+}
+
+function playCollectSound() {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.frequency.value = 600;
+  gain.gain.value = 0.08;
+
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+  osc.stop(audioCtx.currentTime + 0.1);
+}
+
+canvas.addEventListener('mousedown', e => {
+  isDragging = true;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  const art = getArtifactAt(x, y);
+  if (art && art.found) {
+    collectArtifact(art);
+  } else {
+    dig(x, y);
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  const art = getArtifactAt(x, y);
+  if (art && art.found) {
+    if (hoveredArtifact !== art) {
+      hoveredArtifact = art;
+      showTooltip(art, e.clientX, e.clientY);
+    }
+    canvas.style.cursor = 'pointer';
+  } else {
+    if (hoveredArtifact) {
+      hoveredArtifact = null;
+      hideTooltip();
+    }
+    canvas.style.cursor = 'crosshair';
+  }
+
+  if (isDragging && !art) {
+    dig(x, y);
+  }
+});
+
+canvas.addEventListener('mouseup', () => {
+  isDragging = false;
+  if (state.earth.some(c => c.removed > 0)) {
+    save();
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === '1') {
+    brushSize = 20;
+    updateToolbar();
+  } else if (e.key === '2') {
+    brushSize = 8;
+    updateToolbar();
+  } else if (e.key === '3') {
+    brushSize = 40;
+    updateToolbar();
+  } else if (e.key === 'c' || e.key === 'C') {
+    collectionView.classList.toggle('show');
+  }
+});
+
+document.querySelectorAll('.tool').forEach(tool => {
+  tool.addEventListener('click', () => {
+    brushSize = parseInt(tool.dataset.brush);
+    updateToolbar();
+  });
+});
+
+function updateToolbar() {
+  document.querySelectorAll('.tool').forEach(tool => {
+    tool.classList.toggle('active', parseInt(tool.dataset.brush) === brushSize);
+  });
+}
+
+document.querySelector('.sound-toggle').addEventListener('click', e => {
+  soundEnabled = !soundEnabled;
+  e.target.textContent = `Sound: ${soundEnabled ? 'ON' : 'OFF'}`;
+});
+
+function animate() {
+  draw();
+  requestAnimationFrame(animate);
+}
+
+resize();
+window.addEventListener('resize', resize);
+load();
+updateCollectionTray();
+animate();
+</script>
+</body>
+</html>

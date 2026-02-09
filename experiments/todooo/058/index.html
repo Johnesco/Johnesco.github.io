@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>058 - Séance</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+  font-family: 'Cinzel', 'Georgia', serif;
+  cursor: default;
+}
+
+#canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.candle {
+  position: absolute;
+  width: 60px;
+  height: 100px;
+  bottom: 10%;
+}
+
+.candle.left { left: 8%; }
+.candle.right { right: 8%; }
+
+.candle-body {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 70px;
+  background: linear-gradient(to bottom, #e8d5b7 0%, #c9a96e 100%);
+  border-radius: 5px 5px 0 0;
+}
+
+.wick {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 8px;
+  background: #2a2a2a;
+}
+
+.flame {
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 40px;
+  background: radial-gradient(ellipse at center bottom, #ffcc00 0%, #ff6600 50%, transparent 100%);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  animation: flicker 2s ease-in-out infinite;
+  filter: blur(1px);
+}
+
+.flame::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 25px;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, #ffffcc 0%, #ffaa00 40%, transparent 70%);
+  border-radius: 50%;
+  animation: flicker-inner 1.8s ease-in-out infinite;
+}
+
+@keyframes flicker {
+  0%, 100% { transform: translateX(-50%) scaleY(1) scaleX(1); opacity: 1; }
+  25% { transform: translateX(-48%) scaleY(1.05) scaleX(0.95); opacity: 0.95; }
+  50% { transform: translateX(-52%) scaleY(0.95) scaleX(1.02); opacity: 0.9; }
+  75% { transform: translateX(-50%) scaleY(1.02) scaleX(0.98); opacity: 0.95; }
+}
+
+@keyframes flicker-inner {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 1; }
+}
+
+.glow {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(255, 150, 50, 0.3) 0%, transparent 70%);
+  pointer-events: none;
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+  50% { opacity: 0.8; transform: translateX(-50%) scale(1.1); }
+}
+
+#question-display {
+  position: absolute;
+  top: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(200, 180, 150, 0.6);
+  font-size: 18px;
+  letter-spacing: 3px;
+  text-align: center;
+  max-width: 80%;
+  min-height: 30px;
+  font-style: italic;
+}
+
+#message-display {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(200, 180, 150, 0.9);
+  font-size: 24px;
+  letter-spacing: 8px;
+  text-align: center;
+  max-width: 90%;
+  text-shadow: 0 0 10px rgba(255, 200, 100, 0.5);
+}
+
+.particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: radial-gradient(circle, rgba(150, 150, 150, 0.4) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: rise 8s linear infinite;
+}
+
+@keyframes rise {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  10% { opacity: 0.3; }
+  90% { opacity: 0.2; }
+  100% {
+    transform: translateY(-100vh) translateX(var(--drift, 20px));
+    opacity: 0;
+  }
+}
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div class="candle left">
+  <div class="glow"></div>
+  <div class="candle-body">
+    <div class="wick"></div>
+    <div class="flame"></div>
+  </div>
+</div>
+
+<div class="candle right">
+  <div class="glow"></div>
+  <div class="candle-body">
+    <div class="wick"></div>
+    <div class="flame"></div>
+  </div>
+</div>
+
+<div id="question-display"></div>
+<div id="message-display"></div>
+
+<script>
+// Audio context for ambient sounds
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let droneOscillator = null;
+let droneGain = null;
+
+// Initialize ambient drone
+function initAmbientDrone() {
+  if (droneOscillator) return;
+
+  droneOscillator = audioCtx.createOscillator();
+  droneGain = audioCtx.createGain();
+
+  droneOscillator.type = 'sine';
+  droneOscillator.frequency.value = 40;
+  droneGain.gain.value = 0.03;
+
+  droneOscillator.connect(droneGain);
+  droneGain.connect(audioCtx.destination);
+  droneOscillator.start();
+
+  // Add subtle LFO
+  const lfo = audioCtx.createOscillator();
+  const lfoGain = audioCtx.createGain();
+  lfo.frequency.value = 0.1;
+  lfoGain.gain.value = 0.01;
+  lfo.connect(lfoGain);
+  lfoGain.connect(droneGain.gain);
+  lfo.start();
+}
+
+// Play subtle chime sound
+function playChime() {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.frequency.value = 800 + Math.random() * 400;
+  gain.gain.value = 0.05;
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+  osc.stop(audioCtx.currentTime + 0.5);
+}
+
+// Play creaking sound
+function playCreak() {
+  const noise = audioCtx.createBufferSource();
+  const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.3, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+
+  for (let i = 0; i < data.length; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.1));
+  }
+
+  noise.buffer = buffer;
+
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 200 + Math.random() * 300;
+
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0.02;
+
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  noise.start();
+}
+
+// Play whisper effect
+function playWhisper() {
+  const noise = audioCtx.createBufferSource();
+  const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+
+  for (let i = 0; i < data.length; i++) {
+    data[i] = (Math.random() * 2 - 1) * 0.5;
+  }
+
+  noise.buffer = buffer;
+
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 2000 + Math.random() * 2000;
+  filter.Q.value = 5;
+
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0;
+  gain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime + 0.3);
+  gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.7);
+
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  noise.start();
+}
+
+// Canvas setup
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// Ouija board layout
+const board = {
+  letters: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+  numbers: '0123456789'.split(''),
+  yes: { x: 0.2, y: 0.25, text: 'YES' },
+  no: { x: 0.8, y: 0.25, text: 'NO' },
+  goodbye: { x: 0.5, y: 0.85, text: 'GOODBYE' },
+  positions: {}
+};
+
+// Calculate letter positions in arc
+function calculatePositions() {
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+  const letterRadius = Math.min(canvas.width, canvas.height) * 0.35;
+  const numberRadius = Math.min(canvas.width, canvas.height) * 0.25;
+
+  // Letter arc
+  const letterStartAngle = Math.PI * 0.75;
+  const letterEndAngle = Math.PI * 0.25;
+  const letterAngleStep = (letterEndAngle - letterStartAngle) / (board.letters.length - 1);
+
+  board.letters.forEach((letter, i) => {
+    const angle = letterStartAngle + i * letterAngleStep;
+    board.positions[letter] = {
+      x: centerX + Math.cos(angle) * letterRadius,
+      y: centerY + Math.sin(angle) * letterRadius
+    };
+  });
+
+  // Number line
+  const numberSpacing = Math.min(canvas.width, canvas.height) * 0.05;
+  const numberStartX = centerX - (board.numbers.length - 1) * numberSpacing / 2;
+  const numberY = centerY + numberRadius;
+
+  board.numbers.forEach((num, i) => {
+    board.positions[num] = {
+      x: numberStartX + i * numberSpacing,
+      y: numberY
+    };
+  });
+
+  // Special positions
+  board.positions['YES'] = { x: canvas.width * board.yes.x, y: canvas.height * board.yes.y };
+  board.positions['NO'] = { x: canvas.width * board.no.x, y: canvas.height * board.no.y };
+  board.positions['GOODBYE'] = { x: canvas.width * board.goodbye.x, y: canvas.height * board.goodbye.y };
+}
+
+// Planchette
+const planchette = {
+  x: canvas.width / 2,
+  y: canvas.height / 2,
+  targetX: canvas.width / 2,
+  targetY: canvas.height / 2,
+  size: 60,
+  angle: 0,
+  targetAngle: 0,
+  moving: false,
+  currentLetter: null,
+  path: [],
+  pathIndex: 0
+};
+
+// Mouse tracking
+let mouseX = canvas.width / 2;
+let mouseY = canvas.height / 2;
+
+canvas.addEventListener('mousemove', (e) => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+});
+
+canvas.addEventListener('click', (e) => {
+  initAmbientDrone();
+
+  // Check if clicked GOODBYE
+  const pos = board.positions['GOODBYE'];
+  if (pos) {
+    const dist = Math.hypot(e.clientX - pos.x, e.clientY - pos.y);
+    if (dist < 50) {
+      currentMessage = '';
+      messageLetters = [];
+      document.getElementById('message-display').textContent = '';
+      generateNewMessage();
+    }
+  }
+});
+
+// Question input
+let currentQuestion = '';
+const questionDisplay = document.getElementById('question-display');
+
+document.addEventListener('keydown', (e) => {
+  initAmbientDrone();
+
+  if (e.key === 'Enter') {
+    if (currentQuestion.length > 0) {
+      generateResponseToQuestion(currentQuestion);
+      setTimeout(() => {
+        currentQuestion = '';
+        questionDisplay.textContent = '';
+      }, 3000);
+    }
+  } else if (e.key === 'Backspace') {
+    currentQuestion = currentQuestion.slice(0, -1);
+    questionDisplay.textContent = currentQuestion;
+  } else if (e.key.length === 1 && /[a-zA-Z0-9\s\?]/.test(e.key)) {
+    currentQuestion += e.key.toUpperCase();
+    questionDisplay.textContent = currentQuestion;
+  }
+});
+
+// LocalStorage scanning
+function scanLocalStorage() {
+  const data = [];
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    const value = localStorage.getItem(key);
+
+    try {
+      const parsed = JSON.parse(value);
+      data.push({ key, value: parsed, raw: value });
+    } catch {
+      data.push({ key, value: value, raw: value });
+    }
+  }
+
+  return data;
+}
+
+// Extract interesting fragments
+function extractFragments(data) {
+  const fragments = {
+    words: [],
+    numbers: [],
+    dates: [],
+    urls: [],
+    todoooData: {}
+  };
+
+  data.forEach(item => {
+    // Extract from key
+    if (item.key.includes('todooo')) {
+      fragments.todoooData[item.key] = item.value;
+    }
+
+    // Extract from value string
+    const str = item.raw;
+
+    // Words (3-12 chars)
+    const wordMatches = str.match(/\b[a-zA-Z]{3,12}\b/g);
+    if (wordMatches) {
+      fragments.words.push(...wordMatches.slice(0, 5));
+    }
+
+    // Numbers
+    const numberMatches = str.match(/\b\d+\b/g);
+    if (numberMatches) {
+      fragments.numbers.push(...numberMatches.slice(0, 3));
+    }
+
+    // URLs
+    const urlMatches = str.match(/https?:\/\/[^\s"']+/g);
+    if (urlMatches) {
+      fragments.urls.push(...urlMatches);
+    }
+
+    // Dates
+    const dateMatches = str.match(/\d{4}-\d{2}-\d{2}/g);
+    if (dateMatches) {
+      fragments.dates.push(...dateMatches);
+    }
+  });
+
+  return fragments;
+}
+
+// Message templates
+const templates = [
+  (f) => `REMEMBER ${pickRandom(['TUESDAY', 'THE PAST', 'YESTERDAY', 'LAST TIME'])}`,
+  (f) => `THE LIST GROWS`,
+  (f) => `YOU WERE HERE BEFORE`,
+  (f) => `I SEE ${pickRandom(f.numbers) || 'MANY'} THINGS`,
+  (f) => `${pickRandom(f.words)?.toUpperCase() || 'SOMETHING'} RETURNS`,
+  (f) => `FORGOTTEN ${pickRandom(['MEMORIES', 'TASKS', 'DREAMS', 'PROMISES'])}`,
+  (f) => `THE VOID REMEMBERS`,
+  (f) => `VERSION ${pickRandom(f.numbers) || '???'}`,
+  (f) => `${pickRandom(f.numbers) || 'MANY'} REMAIN`,
+  (f) => `STILL WAITING`,
+  (f) => `NEVER FINISHED`,
+  (f) => `${pickRandom(f.words)?.toUpperCase() || 'IT'} WATCHES`,
+  (f) => `TIME FADES`,
+  (f) => `THEY LISTEN`,
+  (f) => `INCOMPLETE`,
+  (f) => `${pickRandom(['SOON', 'PERHAPS', 'MAYBE', 'NEVER'])}`,
+  (f) => `ECHO OF ${pickRandom(f.words)?.toUpperCase() || 'SOMETHING'}`,
+  (f) => `THE ${pickRandom(f.numbers) || 'MANY'}TH TIME`,
+];
+
+function pickRandom(arr) {
+  return arr && arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)] : null;
+}
+
+// Generate message
+function generateMessage() {
+  const data = scanLocalStorage();
+  const fragments = extractFragments(data);
+
+  const template = pickRandom(templates);
+  const message = template(fragments);
+
+  return message.substring(0, 30); // Keep reasonable length
+}
+
+function generateResponseToQuestion(question) {
+  const responses = [
+    'YES',
+    'NO',
+    'PERHAPS',
+    'SOON',
+    'NEVER',
+    'ALWAYS',
+    'FORGOTTEN',
+    'REMEMBERED',
+    'THE VOID KNOWS',
+    'ASK AGAIN',
+    'UNCLEAR',
+    'INEVITABLE'
+  ];
+
+  const message = pickRandom(responses);
+  startMessageSpelling(message);
+}
+
+// Message spelling
+let currentMessage = '';
+let messageLetters = [];
+let messageIndex = 0;
+let lastMessageTime = Date.now();
+
+function startMessageSpelling(message) {
+  currentMessage = message;
+  messageLetters = message.split('');
+  messageIndex = 0;
+  planchette.moving = true;
+
+  // Build path through letters
+  planchette.path = messageLetters.map(letter => {
+    const pos = board.positions[letter] || board.positions['GOODBYE'];
+    return { x: pos.x, y: pos.y, letter };
+  });
+  planchette.pathIndex = 0;
+
+  if (Math.random() < 0.15) {
+    playWhisper();
+  }
+}
+
+function generateNewMessage() {
+  const message = generateMessage();
+  startMessageSpelling(message);
+
+  // Save to persistence
+  saveData.messagesChanneled++;
+  saveData.messages.push({
+    text: message,
+    timestamp: Date.now()
+  });
+  saveToPersistence();
+}
+
+// Bezier curve movement
+function generateBezierPath(start, end) {
+  const points = [];
+  const steps = 50;
+
+  // Random control points for curve
+  const cp1x = start.x + (Math.random() - 0.5) * 200;
+  const cp1y = start.y + (Math.random() - 0.5) * 200;
+  const cp2x = end.x + (Math.random() - 0.5) * 200;
+  const cp2y = end.y + (Math.random() - 0.5) * 200;
+
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const mt = 1 - t;
+    const mt2 = mt * mt;
+    const mt3 = mt2 * mt;
+    const t2 = t * t;
+    const t3 = t2 * t;
+
+    const x = mt3 * start.x + 3 * mt2 * t * cp1x + 3 * mt * t2 * cp2x + t3 * end.x;
+    const y = mt3 * start.y + 3 * mt2 * t * cp1y + 3 * mt * t2 * cp2y + t3 * end.y;
+
+    // Add wobble
+    const wobble = Math.sin(t * Math.PI * 4) * 5;
+    points.push({
+      x: x + wobble,
+      y: y + wobble * 0.5
+    });
+  }
+
+  return points;
+}
+
+let currentPath = [];
+let pathStep = 0;
+let pauseCounter = 0;
+
+// Drawing functions
+function drawWoodTexture() {
+  const gradient = ctx.createRadialGradient(
+    canvas.width / 2, canvas.height / 2, 0,
+    canvas.width / 2, canvas.height / 2, canvas.width * 0.7
+  );
+  gradient.addColorStop(0, '#0a0a0a');
+  gradient.addColorStop(1, '#000000');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Wood grain
+  ctx.strokeStyle = 'rgba(40, 30, 20, 0.3)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 50; i++) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const length = Math.random() * 100 + 50;
+    const angle = Math.random() * Math.PI * 2;
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length);
+    ctx.stroke();
+  }
+}
+
+function drawBoard() {
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+
+  // Ornate border
+  ctx.strokeStyle = 'rgba(150, 120, 80, 0.8)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(
+    canvas.width * 0.1, canvas.height * 0.15,
+    canvas.width * 0.8, canvas.height * 0.7,
+    20
+  );
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(120, 90, 60, 0.5)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(
+    canvas.width * 0.1 + 10, canvas.height * 0.15 + 10,
+    canvas.width * 0.8 - 20, canvas.height * 0.7 - 20,
+    15
+  );
+  ctx.stroke();
+
+  // Letters
+  ctx.font = 'bold 32px Georgia';
+  ctx.fillStyle = 'rgba(200, 180, 150, 0.9)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  board.letters.forEach(letter => {
+    const pos = board.positions[letter];
+    if (pos) {
+      const highlight = planchette.currentLetter === letter;
+      if (highlight) {
+        ctx.fillStyle = 'rgba(255, 220, 150, 1)';
+        ctx.shadowColor = 'rgba(255, 200, 100, 0.8)';
+        ctx.shadowBlur = 20;
+      } else {
+        ctx.fillStyle = 'rgba(200, 180, 150, 0.9)';
+        ctx.shadowBlur = 0;
+      }
+      ctx.fillText(letter, pos.x, pos.y);
+    }
+  });
+
+  // Numbers
+  ctx.font = 'bold 28px Georgia';
+  board.numbers.forEach(num => {
+    const pos = board.positions[num];
+    if (pos) {
+      const highlight = planchette.currentLetter === num;
+      if (highlight) {
+        ctx.fillStyle = 'rgba(255, 220, 150, 1)';
+        ctx.shadowColor = 'rgba(255, 200, 100, 0.8)';
+        ctx.shadowBlur = 20;
+      } else {
+        ctx.fillStyle = 'rgba(200, 180, 150, 0.9)';
+        ctx.shadowBlur = 0;
+      }
+      ctx.fillText(num, pos.x, pos.y);
+    }
+  });
+
+  // YES / NO
+  ctx.font = 'italic bold 36px Georgia';
+  ['YES', 'NO', 'GOODBYE'].forEach(word => {
+    const pos = board.positions[word];
+    if (pos) {
+      const highlight = planchette.currentLetter === word;
+      if (highlight) {
+        ctx.fillStyle = 'rgba(255, 220, 150, 1)';
+        ctx.shadowColor = 'rgba(255, 200, 100, 0.8)';
+        ctx.shadowBlur = 20;
+      } else {
+        ctx.fillStyle = 'rgba(200, 180, 150, 0.9)';
+        ctx.shadowBlur = 0;
+      }
+      ctx.fillText(word, pos.x, pos.y);
+    }
+  });
+
+  ctx.shadowBlur = 0;
+
+  // Decorative sun
+  ctx.strokeStyle = 'rgba(200, 180, 100, 0.6)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(canvas.width * 0.15, canvas.height * 0.2, 25, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Sun rays
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(
+      canvas.width * 0.15 + Math.cos(angle) * 30,
+      canvas.height * 0.2 + Math.sin(angle) * 30
+    );
+    ctx.lineTo(
+      canvas.width * 0.15 + Math.cos(angle) * 40,
+      canvas.height * 0.2 + Math.sin(angle) * 40
+    );
+    ctx.stroke();
+  }
+
+  // Moon
+  ctx.beginPath();
+  ctx.arc(canvas.width * 0.85, canvas.height * 0.2, 25, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(canvas.width * 0.85 + 10, canvas.height * 0.2, 25, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(10, 10, 10, 0.8)';
+  ctx.fill();
+}
+
+function drawPlanchette() {
+  ctx.save();
+  ctx.translate(planchette.x, planchette.y);
+  ctx.rotate(planchette.angle);
+
+  // Shadow
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+  ctx.shadowBlur = 15;
+  ctx.shadowOffsetX = 5;
+  ctx.shadowOffsetY = 5;
+
+  // Planchette body (heart/teardrop shape)
+  ctx.fillStyle = 'rgba(180, 140, 90, 0.9)';
+  ctx.beginPath();
+  ctx.moveTo(0, -30);
+  ctx.bezierCurveTo(-25, -30, -35, -10, -35, 5);
+  ctx.bezierCurveTo(-35, 25, 0, 40, 0, 40);
+  ctx.bezierCurveTo(0, 40, 35, 25, 35, 5);
+  ctx.bezierCurveTo(35, -10, 25, -30, 0, -30);
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+
+  // Border
+  ctx.strokeStyle = 'rgba(100, 70, 40, 0.9)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Glass window
+  ctx.fillStyle = 'rgba(200, 220, 255, 0.3)';
+  ctx.beginPath();
+  ctx.arc(0, 0, 12, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(150, 170, 200, 0.6)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Glass highlight
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.beginPath();
+  ctx.arc(-3, -3, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// Update logic
+function update(deltaTime) {
+  // Calculate distance to mouse
+  const distToMouse = Math.hypot(mouseX - planchette.x, mouseY - planchette.y);
+  const speedMultiplier = distToMouse < 150 ? 2 : 1;
+
+  // Move planchette along path
+  if (planchette.moving && planchette.path.length > 0) {
+    if (pauseCounter > 0) {
+      pauseCounter--;
+      return;
+    }
+
+    const currentTarget = planchette.path[planchette.pathIndex];
+
+    if (!currentPath || currentPath.length === 0) {
+      currentPath = generateBezierPath(
+        { x: planchette.x, y: planchette.y },
+        currentTarget
+      );
+      pathStep = 0;
+
+      if (Math.random() < 0.3) {
+        playCreak();
+      }
+    }
+
+    if (pathStep < currentPath.length) {
+      const step = currentPath[pathStep];
+      planchette.x = step.x;
+      planchette.y = step.y;
+
+      // Rotate towards movement
+      if (pathStep > 0) {
+        const prev = currentPath[pathStep - 1];
+        planchette.angle = Math.atan2(step.y - prev.y, step.x - prev.x) + Math.PI / 2;
+      }
+
+      pathStep += speedMultiplier;
+    } else {
+      // Reached target letter
+      planchette.currentLetter = currentTarget.letter;
+
+      // Add to displayed message
+      const messageDisplay = document.getElementById('message-display');
+      messageDisplay.textContent += currentTarget.letter;
+
+      playChime();
+
+      // Pause on letter
+      pauseCounter = 30;
+
+      // Move to next letter
+      planchette.pathIndex++;
+      if (planchette.pathIndex >= planchette.path.length) {
+        planchette.moving = false;
+        planchette.currentLetter = null;
+        currentPath = [];
+        lastMessageTime = Date.now();
+      } else {
+        currentPath = [];
+      }
+    }
+  }
+
+  // Generate new message periodically
+  if (!planchette.moving && Date.now() - lastMessageTime > (30000 + Math.random() * 30000)) {
+    document.getElementById('message-display').textContent = '';
+    generateNewMessage();
+  }
+}
+
+// Render loop
+let lastTime = Date.now();
+let flickerOpacity = 1;
+
+function render() {
+  const now = Date.now();
+  const deltaTime = now - lastTime;
+  lastTime = now;
+
+  update(deltaTime);
+
+  // Flicker effect
+  flickerOpacity = 0.95 + Math.random() * 0.05;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  ctx.globalAlpha = flickerOpacity;
+
+  drawWoodTexture();
+  drawBoard();
+  drawPlanchette();
+
+  ctx.restore();
+
+  requestAnimationFrame(render);
+}
+
+// Smoke particles
+function createParticles() {
+  for (let i = 0; i < 20; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
+    particle.style.left = (10 + Math.random() * 10) + '%';
+    particle.style.bottom = '10%';
+    particle.style.animationDelay = (Math.random() * 8) + 's';
+    particle.style.setProperty('--drift', (Math.random() * 40 - 20) + 'px');
+    document.body.appendChild(particle);
+
+    const particle2 = document.createElement('div');
+    particle2.className = 'particle';
+    particle2.style.left = (80 + Math.random() * 10) + '%';
+    particle2.style.bottom = '10%';
+    particle2.style.animationDelay = (Math.random() * 8) + 's';
+    particle2.style.setProperty('--drift', (Math.random() * 40 - 20) + 'px');
+    document.body.appendChild(particle2);
+  }
+}
+
+// Persistence
+const STORAGE_KEY = 'todooo-058';
+let saveData = {
+  sessions: 0,
+  messagesChanneled: 0,
+  messages: [],
+  firstVisit: Date.now()
+};
+
+function loadFromPersistence() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      saveData = { ...saveData, ...JSON.parse(stored) };
+    }
+  } catch (e) {
+    console.error('Failed to load:', e);
+  }
+
+  saveData.sessions++;
+  saveToPersistence();
+}
+
+function saveToPersistence() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
+  } catch (e) {
+    console.error('Failed to save:', e);
+  }
+}
+
+// Initialize
+function init() {
+  loadFromPersistence();
+  calculatePositions();
+  createParticles();
+  render();
+
+  // Start first message after a delay
+  setTimeout(() => {
+    generateNewMessage();
+  }, 5000);
+}
+
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  calculatePositions();
+});
+
+init();
+</script>
+
+</body>
+</html>

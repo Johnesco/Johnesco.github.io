@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migration - todooo 062</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: Georgia, serif;
+            cursor: crosshair;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="info"></div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const info = document.getElementById('info');
+
+        let width, height;
+        let flocks = [];
+        let clouds = [];
+        let stars = [];
+        let releasedBird = null;
+        let perchedBird = null;
+        let mouseX = 0;
+        let mouseY = 0;
+        let lastMoveTime = Date.now();
+        let windForce = { x: 0, y: 0 };
+        let nextFlockTime = 0;
+
+        // Audio context
+        let audioCtx;
+        let windGainNode;
+        let windOscillator;
+
+        // Stats
+        let stats = {
+            flocksSeenCount: 0,
+            birdsReleased: 0,
+            totalWatchTime: 0,
+            sessionStart: Date.now()
+        };
+
+        // Season and time data
+        let currentSeason = '';
+        let timeOfDay = '';
+
+        // Text fragments by category
+        const textFragments = {
+            spring: ['return', 'rebirth', 'awakening', 'bloom', 'renewal', 'north'],
+            summer: ['warmth', 'soaring', 'endless', 'bright', 'circling', 'drift'],
+            autumn: ['harvest', 'amber', 'departure', 'falling', 'south', 'golden'],
+            winter: ['stillness', 'silence', 'cold', 'alone', 'waiting', 'frost'],
+            poetic: ['almost home', 'the long way', 'never the same river', 'horizons',
+                    'between earth and sky', 'carried on wind', 'memory of wings'],
+            time: []
+        };
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function getSeason() {
+            const month = new Date().getMonth();
+            if (month >= 2 && month <= 4) return 'spring';
+            if (month >= 5 && month <= 7) return 'summer';
+            if (month >= 8 && month <= 10) return 'autumn';
+            return 'winter';
+        }
+
+        function getTimeOfDay() {
+            const hour = new Date().getHours();
+            if (hour >= 5 && hour < 8) return 'dawn';
+            if (hour >= 8 && hour < 17) return 'day';
+            if (hour >= 17 && hour < 20) return 'dusk';
+            return 'night';
+        }
+
+        function updateTimeBasedFragments() {
+            const hour = new Date().getHours();
+            const month = new Date().toLocaleString('en', { month: 'long' }).toLowerCase();
+
+            textFragments.time = [month];
+            if (hour < 6) textFragments.time.push('before dawn');
+            else if (hour < 12) textFragments.time.push('morning');
+            else if (hour < 17) textFragments.time.push('afternoon');
+            else if (hour < 21) textFragments.time.push('evening');
+            else textFragments.time.push('midnight');
+        }
+
+        function getSkyGradient() {
+            const time = getTimeOfDay();
+
+            if (currentSeason === 'spring') {
+                if (time === 'dawn') return ['#FFB3BA', '#FFE5B4', '#87CEEB'];
+                if (time === 'night') return ['#1a1a2e', '#16213e', '#0f3460'];
+                return ['#87CEEB', '#B0E0E6', '#F0F8FF'];
+            }
+
+            if (currentSeason === 'summer') {
+                if (time === 'dawn') return ['#FFD194', '#FFE5B4', '#87CEEB'];
+                if (time === 'night') return ['#0f1c3f', '#1a2845', '#243b55'];
+                return ['#4A90E2', '#87CEEB', '#B0E0E6'];
+            }
+
+            if (currentSeason === 'autumn') {
+                if (time === 'dusk') return ['#FF6B35', '#F7931E', '#FDB750'];
+                if (time === 'night') return ['#1a1a2e', '#25274d', '#2e4057'];
+                return ['#FDB750', '#FFA07A', '#FF8C69'];
+            }
+
+            // winter
+            if (time === 'dawn' || time === 'dusk') return ['#B0C4DE', '#C0D4E8', '#D3E4F0'];
+            if (time === 'night') return ['#0d1b2a', '#1b263b', '#2d3e50'];
+            return ['#778899', '#B0C4DE', '#D3E4F0'];
+        }
+
+        function drawSky() {
+            const colors = getSkyGradient();
+            const gradient = ctx.createLinearGradient(0, 0, 0, height);
+            colors.forEach((color, i) => {
+                gradient.addColorStop(i / (colors.length - 1), color);
+            });
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        function drawCelestialBody() {
+            const time = getTimeOfDay();
+            const hour = new Date().getHours();
+
+            let x, y;
+            if (time === 'night') {
+                // Moon
+                x = width * 0.75;
+                y = height * 0.2;
+                ctx.fillStyle = 'rgba(255, 255, 230, 0.9)';
+                ctx.beginPath();
+                ctx.arc(x, y, 40, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = 'rgba(255, 255, 230, 0.2)';
+                ctx.beginPath();
+                ctx.arc(x, y, 60, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                // Sun
+                const progress = (hour - 6) / 12;
+                x = width * 0.2 + (width * 0.6 * progress);
+                y = height * 0.3 - Math.sin(progress * Math.PI) * height * 0.2;
+
+                const sunAlpha = time === 'dawn' || time === 'dusk' ? 0.8 : 0.6;
+                const sunColor = time === 'dawn' || time === 'dusk' ?
+                    'rgba(255, 200, 100, ' + sunAlpha + ')' :
+                    'rgba(255, 255, 200, ' + sunAlpha + ')';
+
+                ctx.fillStyle = sunColor;
+                ctx.beginPath();
+                ctx.arc(x, y, 45, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = sunColor.replace(/[\d.]+\)$/, '0.15)');
+                ctx.beginPath();
+                ctx.arc(x, y, 70, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initStars() {
+            stars = [];
+            for (let i = 0; i < 100; i++) {
+                stars.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height * 0.6,
+                    size: Math.random() * 1.5 + 0.5,
+                    twinkle: Math.random() * Math.PI * 2,
+                    twinkleSpeed: Math.random() * 0.02 + 0.01
+                });
+            }
+        }
+
+        function drawStars() {
+            if (getTimeOfDay() !== 'night') return;
+
+            stars.forEach(star => {
+                star.twinkle += star.twinkleSpeed;
+                const alpha = 0.3 + Math.sin(star.twinkle) * 0.3;
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function initClouds() {
+            clouds = [];
+            const cloudCount = currentSeason === 'winter' ? 3 : 6;
+            for (let i = 0; i < cloudCount; i++) {
+                clouds.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height * 0.4,
+                    width: Math.random() * 150 + 100,
+                    height: Math.random() * 40 + 30,
+                    speed: Math.random() * 0.2 + 0.1,
+                    layer: Math.random()
+                });
+            }
+        }
+
+        function drawClouds() {
+            clouds.forEach(cloud => {
+                cloud.x += cloud.speed;
+                if (cloud.x > width + cloud.width) {
+                    cloud.x = -cloud.width;
+                }
+
+                const alpha = currentSeason === 'summer' ? 0.4 : 0.2;
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha * cloud.layer})`;
+
+                ctx.beginPath();
+                ctx.ellipse(cloud.x, cloud.y, cloud.width / 2, cloud.height / 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.ellipse(cloud.x + cloud.width * 0.3, cloud.y - cloud.height * 0.2,
+                    cloud.width / 3, cloud.height / 3, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.ellipse(cloud.x - cloud.width * 0.2, cloud.y - cloud.height * 0.1,
+                    cloud.width / 4, cloud.height / 4, 0, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        class Bird {
+            constructor(x, y, flock) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.flock = flock;
+                this.wingPhase = Math.random() * Math.PI * 2;
+                this.color = this.randomBirdColor();
+                this.trail = [];
+                this.maxTrailLength = 20;
+                this.scattered = false;
+                this.scatterTime = 0;
+            }
+
+            randomBirdColor() {
+                const colors = [
+                    'rgba(60, 40, 30, 0.8)',
+                    'rgba(80, 60, 50, 0.8)',
+                    'rgba(50, 50, 50, 0.8)',
+                    'rgba(70, 50, 40, 0.8)',
+                    'rgba(90, 70, 60, 0.8)'
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            update() {
+                if (this.scattered && Date.now() - this.scatterTime > 2000) {
+                    this.scattered = false;
+                }
+
+                if (!this.scattered && this.flock) {
+                    this.flock.applyFlockingBehavior(this);
+                }
+
+                // Apply wind
+                this.vx += windForce.x * 0.1;
+                this.vy += windForce.y * 0.1;
+
+                // Velocity limits
+                const maxSpeed = this.scattered ? 6 : 3;
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed > maxSpeed) {
+                    this.vx = (this.vx / speed) * maxSpeed;
+                    this.vy = (this.vy / speed) * maxSpeed;
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                this.wingPhase += 0.15;
+
+                // Trail
+                this.trail.push({ x: this.x, y: this.y });
+                if (this.trail.length > this.maxTrailLength) {
+                    this.trail.shift();
+                }
+            }
+
+            draw() {
+                // Draw trail
+                if (this.trail.length > 1) {
+                    ctx.strokeStyle = this.color.replace('0.8)', '0.1)');
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for (let i = 1; i < this.trail.length; i++) {
+                        ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    }
+                    ctx.stroke();
+                }
+
+                // Draw bird
+                const wingAngle = Math.sin(this.wingPhase) * 0.4;
+                const size = 8;
+                const angle = Math.atan2(this.vy, this.vx);
+
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(angle);
+
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+
+                // Left wing
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-size * Math.cos(0.6 + wingAngle), -size * Math.sin(0.6 + wingAngle));
+                ctx.stroke();
+
+                // Right wing
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-size * Math.cos(-0.6 - wingAngle), -size * Math.sin(-0.6 - wingAngle));
+                ctx.stroke();
+
+                ctx.restore();
+            }
+
+            scatter() {
+                this.scattered = true;
+                this.scatterTime = Date.now();
+                const angle = Math.random() * Math.PI * 2;
+                this.vx += Math.cos(angle) * 5;
+                this.vy += Math.sin(angle) * 5;
+            }
+        }
+
+        class Flock {
+            constructor() {
+                this.birds = [];
+                this.text = this.getRandomText();
+                this.direction = this.getSeasonalDirection();
+                this.opacity = 0;
+                this.fadeIn = true;
+                this.isActive = true;
+
+                const count = Math.floor(Math.random() * 10) + 5;
+                const startPos = this.getStartPosition();
+
+                // Create V formation
+                for (let i = 0; i < count; i++) {
+                    const row = Math.floor(i / 2);
+                    const side = i % 2 === 0 ? 1 : -1;
+                    const offset = row * 30;
+
+                    const bird = new Bird(
+                        startPos.x - offset,
+                        startPos.y + side * offset * 0.5,
+                        this
+                    );
+
+                    bird.vx = this.direction.vx;
+                    bird.vy = this.direction.vy;
+
+                    this.birds.push(bird);
+                }
+
+                stats.flocksSeenCount++;
+            }
+
+            getRandomText() {
+                const categories = [currentSeason, 'poetic', 'time'];
+                const category = categories[Math.floor(Math.random() * categories.length)];
+                const fragments = textFragments[category];
+
+                // Try to get from localStorage
+                if (Math.random() < 0.3) {
+                    const stored = loadStats();
+                    if (stored && stored.randomText) {
+                        return stored.randomText;
+                    }
+                }
+
+                return fragments[Math.floor(Math.random() * fragments.length)];
+            }
+
+            getSeasonalDirection() {
+                if (currentSeason === 'spring') {
+                    return { vx: -1.5, vy: -0.8 }; // Northwest
+                } else if (currentSeason === 'summer') {
+                    const angle = Math.random() * Math.PI * 2;
+                    return { vx: Math.cos(angle) * 1, vy: Math.sin(angle) * 1 }; // Circling
+                } else if (currentSeason === 'autumn') {
+                    return { vx: 2, vy: 1.2 }; // Southeast
+                } else {
+                    // Winter: mostly horizontal, rare
+                    return { vx: 1.5, vy: 0.2 };
+                }
+            }
+
+            getStartPosition() {
+                if (currentSeason === 'spring') {
+                    return { x: width + 100, y: height * 0.7 };
+                } else if (currentSeason === 'summer') {
+                    const side = Math.floor(Math.random() * 4);
+                    if (side === 0) return { x: -100, y: height * 0.5 };
+                    if (side === 1) return { x: width + 100, y: height * 0.5 };
+                    if (side === 2) return { x: width * 0.5, y: -100 };
+                    return { x: width * 0.5, y: height + 100 };
+                } else if (currentSeason === 'autumn') {
+                    return { x: -100, y: height * 0.3 };
+                } else {
+                    return { x: -100, y: height * 0.4 };
+                }
+            }
+
+            applyFlockingBehavior(bird) {
+                let separationX = 0, separationY = 0;
+                let alignmentX = 0, alignmentY = 0;
+                let cohesionX = 0, cohesionY = 0;
+                let nearbyCount = 0;
+
+                const separationDist = 40;
+                const alignmentDist = 80;
+                const cohesionDist = 100;
+
+                this.birds.forEach(other => {
+                    if (other === bird || other.scattered) return;
+
+                    const dx = bird.x - other.x;
+                    const dy = bird.y - other.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < separationDist && dist > 0) {
+                        separationX += dx / dist;
+                        separationY += dy / dist;
+                    }
+
+                    if (dist < alignmentDist) {
+                        alignmentX += other.vx;
+                        alignmentY += other.vy;
+                        nearbyCount++;
+                    }
+
+                    if (dist < cohesionDist) {
+                        cohesionX += other.x;
+                        cohesionY += other.y;
+                    }
+                });
+
+                if (nearbyCount > 0) {
+                    alignmentX /= nearbyCount;
+                    alignmentY /= nearbyCount;
+                    cohesionX /= nearbyCount;
+                    cohesionY /= nearbyCount;
+
+                    cohesionX = (cohesionX - bird.x) * 0.01;
+                    cohesionY = (cohesionY - bird.y) * 0.01;
+                }
+
+                bird.vx += separationX * 0.05 + alignmentX * 0.05 + cohesionX + this.direction.vx * 0.02;
+                bird.vy += separationY * 0.05 + alignmentY * 0.05 + cohesionY + this.direction.vy * 0.02;
+            }
+
+            update() {
+                if (this.fadeIn && this.opacity < 1) {
+                    this.opacity += 0.01;
+                }
+
+                this.birds.forEach(bird => bird.update());
+
+                // Check if flock has left screen
+                const allOffscreen = this.birds.every(bird => {
+                    return bird.x < -100 || bird.x > width + 100 ||
+                           bird.y < -100 || bird.y > height + 100;
+                });
+
+                if (allOffscreen) {
+                    this.isActive = false;
+                }
+            }
+
+            draw() {
+                this.birds.forEach(bird => bird.draw());
+
+                // Draw text
+                if (this.birds.length > 0) {
+                    const centerX = this.birds.reduce((sum, b) => sum + b.x, 0) / this.birds.length;
+                    const centerY = this.birds.reduce((sum, b) => sum + b.y, 0) / this.birds.length;
+
+                    ctx.save();
+                    ctx.globalAlpha = this.opacity * 0.6;
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                    ctx.font = '14px Georgia, serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.text, centerX, centerY + 40);
+                    ctx.restore();
+                }
+            }
+
+            checkMouseProximity(mx, my) {
+                this.birds.forEach(bird => {
+                    const dx = bird.x - mx;
+                    const dy = bird.y - my;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 80 && !bird.scattered) {
+                        bird.scatter();
+                        playWingFlutter();
+                    }
+                });
+            }
+        }
+
+        function createFlock() {
+            if (currentSeason === 'winter' && Math.random() > 0.3) {
+                return; // Fewer flocks in winter
+            }
+
+            const flock = new Flock();
+            flocks.push(flock);
+            playBirdCall();
+        }
+
+        function updateWind() {
+            // Occasional wind gusts
+            if (Math.random() < 0.01) {
+                windForce.x = (Math.random() - 0.5) * 0.5;
+                windForce.y = (Math.random() - 0.5) * 0.3;
+            }
+
+            // Decay wind
+            windForce.x *= 0.95;
+            windForce.y *= 0.95;
+        }
+
+        function checkPerch() {
+            const stillTime = Date.now() - lastMoveTime;
+
+            if (stillTime > 30000 && !perchedBird) {
+                perchedBird = {
+                    x: mouseX,
+                    y: mouseY - 20,
+                    settlePhase: 0,
+                    wingPhase: 0,
+                    color: 'rgba(70, 50, 40, 0.9)'
+                };
+            } else if (stillTime < 30000 && perchedBird) {
+                perchedBird = null;
+            }
+        }
+
+        function drawPerchedBird() {
+            if (!perchedBird) return;
+
+            perchedBird.settlePhase += 0.05;
+            perchedBird.wingPhase += 0.08;
+
+            const settle = Math.sin(perchedBird.settlePhase) * 2;
+            const wing = Math.sin(perchedBird.wingPhase) * 0.2;
+
+            const x = perchedBird.x;
+            const y = perchedBird.y + settle;
+
+            ctx.save();
+            ctx.translate(x, y);
+
+            ctx.strokeStyle = perchedBird.color;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+
+            // Folded wings
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-6 + wing, -4);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(6 - wing, -4);
+            ctx.stroke();
+
+            // Body
+            ctx.fillStyle = perchedBird.color;
+            ctx.beginPath();
+            ctx.arc(0, 0, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function updateReleasedBird() {
+            if (!releasedBird) return;
+
+            // Find nearest flock
+            let nearestFlock = null;
+            let nearestDist = Infinity;
+
+            flocks.forEach(flock => {
+                if (flock.birds.length > 0) {
+                    const centerX = flock.birds.reduce((sum, b) => sum + b.x, 0) / flock.birds.length;
+                    const centerY = flock.birds.reduce((sum, b) => sum + b.y, 0) / flock.birds.length;
+                    const dist = Math.sqrt(
+                        (releasedBird.x - centerX) ** 2 +
+                        (releasedBird.y - centerY) ** 2
+                    );
+                    if (dist < nearestDist) {
+                        nearestDist = dist;
+                        nearestFlock = flock;
+                    }
+                }
+            });
+
+            if (nearestFlock && nearestDist < 50) {
+                nearestFlock.birds.push(releasedBird);
+                releasedBird = null;
+            } else {
+                releasedBird.update();
+                releasedBird.draw();
+            }
+        }
+
+        // Audio functions
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+            // Wind ambience
+            windOscillator = audioCtx.createOscillator();
+            windOscillator.type = 'sawtooth';
+            windOscillator.frequency.value = 80;
+
+            const windFilter = audioCtx.createBiquadFilter();
+            windFilter.type = 'lowpass';
+            windFilter.frequency.value = 200;
+
+            windGainNode = audioCtx.createGain();
+            windGainNode.gain.value = 0.03;
+
+            windOscillator.connect(windFilter);
+            windFilter.connect(windGainNode);
+            windGainNode.connect(audioCtx.destination);
+
+            windOscillator.start();
+        }
+
+        function playBirdCall() {
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800 + Math.random() * 400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(600 + Math.random() * 200,
+                audioCtx.currentTime + 0.1);
+
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.15);
+        }
+
+        function playWingFlutter() {
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(150, audioCtx.currentTime + 0.1);
+
+            gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        // Storage
+        function saveStats() {
+            stats.totalWatchTime = Math.floor((Date.now() - stats.sessionStart) / 1000);
+            localStorage.setItem('todooo-062', JSON.stringify(stats));
+        }
+
+        function loadStats() {
+            const stored = localStorage.getItem('todooo-062');
+            if (stored) {
+                const data = JSON.parse(stored);
+                stats.flocksSeenCount = data.flocksSeenCount || 0;
+                stats.birdsReleased = data.birdsReleased || 0;
+                stats.totalWatchTime = data.totalWatchTime || 0;
+                return data;
+            }
+            return null;
+        }
+
+        function updateInfo() {
+            const sessionTime = Math.floor((Date.now() - stats.sessionStart) / 1000);
+            const totalTime = stats.totalWatchTime + sessionTime;
+
+            info.innerHTML = `
+                ${currentSeason} / ${timeOfDay}<br>
+                flocks seen: ${stats.flocksSeenCount}<br>
+                birds released: ${stats.birdsReleased}<br>
+                time watching: ${totalTime}s
+            `;
+        }
+
+        // Animation loop
+        function animate() {
+            currentSeason = getSeason();
+            timeOfDay = getTimeOfDay();
+
+            drawSky();
+            drawCelestialBody();
+            drawStars();
+            drawClouds();
+
+            // Update and draw flocks
+            flocks = flocks.filter(flock => {
+                flock.update();
+                flock.draw();
+                return flock.isActive;
+            });
+
+            updateReleasedBird();
+            updateWind();
+            checkPerch();
+            drawPerchedBird();
+
+            // Create new flocks
+            if (Date.now() > nextFlockTime) {
+                createFlock();
+                const delay = currentSeason === 'winter' ?
+                    (30000 + Math.random() * 30000) :
+                    (15000 + Math.random() * 15000);
+                nextFlockTime = Date.now() + delay;
+            }
+
+            updateInfo();
+            requestAnimationFrame(animate);
+        }
+
+        // Event listeners
+        window.addEventListener('resize', resize);
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            lastMoveTime = Date.now();
+            perchedBird = null;
+
+            flocks.forEach(flock => flock.checkMouseProximity(mouseX, mouseY));
+        });
+
+        window.addEventListener('click', (e) => {
+            if (!audioCtx) {
+                initAudio();
+            }
+
+            const bird = new Bird(e.clientX, e.clientY, null);
+            bird.vx = (Math.random() - 0.5) * 2;
+            bird.vy = (Math.random() - 0.5) * 2;
+            releasedBird = bird;
+
+            stats.birdsReleased++;
+            playWingFlutter();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                createFlock();
+            }
+        });
+
+        window.addEventListener('beforeunload', saveStats);
+
+        // Initialize
+        resize();
+        loadStats();
+        updateTimeBasedFragments();
+        initStars();
+        initClouds();
+
+        nextFlockTime = Date.now() + 3000;
+
+        animate();
+
+        // Update time fragments periodically
+        setInterval(updateTimeBasedFragments, 60000);
+    </script>
+</body>
+</html>
