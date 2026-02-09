@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>077 - Whispering Gallery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #050508;
+            font-family: Georgia, 'Times New Roman', serif;
+            cursor: crosshair;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #taskInput {
+            position: fixed;
+            background: rgba(20, 20, 30, 0.9);
+            border: 1px solid rgba(232, 208, 160, 0.3);
+            color: #e8d0a0;
+            font-family: Georgia, serif;
+            font-size: 18px;
+            font-style: italic;
+            padding: 8px 12px;
+            outline: none;
+            border-radius: 4px;
+            min-width: 200px;
+            box-shadow: 0 0 20px rgba(232, 208, 160, 0.2);
+        }
+
+        #taskInput::placeholder {
+            color: rgba(232, 208, 160, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <input type="text" id="taskInput" placeholder="whisper your task..." style="display: none;">
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const input = document.getElementById('taskInput');
+
+        let width, height;
+        let tasks = [];
+        let candles = [];
+        let dustMotes = [];
+        let echos = [];
+        let dissolvingTasks = [];
+        let audioCtx = null;
+        let whisperNodes = new Map();
+        let ambienceNode = null;
+
+        const STORAGE_KEY = 'todooo-077';
+
+        // Resize canvas
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        // Task class
+        class Task {
+            constructor(text, x, y, isNew = false) {
+                this.id = Date.now() + Math.random();
+                this.text = text;
+                this.x = x || width / 2;
+                this.y = y || height / 2;
+                this.targetX = Math.random() * width;
+                this.targetY = Math.random() * height * 0.7 + height * 0.1;
+                this.vx = (Math.random() - 0.5) * 0.3;
+                this.vy = (Math.random() - 0.5) * 0.2;
+                this.depth = Math.random() * 0.7 + 0.3; // 0.3 to 1.0 (close to far)
+                this.opacity = 0;
+                this.targetOpacity = Math.random() * 0.5 + 0.3;
+                this.opacityPhase = Math.random() * Math.PI * 2;
+                this.age = 0;
+                this.rising = isNew;
+                this.riseSpeed = isNew ? -2 : 0;
+            }
+
+            update(deltaTime) {
+                this.age += deltaTime;
+
+                if (this.rising) {
+                    this.y += this.riseSpeed;
+                    this.riseSpeed *= 0.98;
+                    if (Math.abs(this.riseSpeed) < 0.1) {
+                        this.rising = false;
+                    }
+                } else {
+                    // Drift slowly
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    // Gentle oscillation
+                    this.x += Math.sin(this.age * 0.5 + this.opacityPhase) * 0.1;
+                    this.y += Math.cos(this.age * 0.3 + this.opacityPhase) * 0.05;
+
+                    // Wrap around
+                    if (this.x < -100) this.x = width + 100;
+                    if (this.x > width + 100) this.x = -100;
+                    if (this.y < -100) this.y = height + 100;
+                    if (this.y > height + 100) this.y = -100;
+                }
+
+                // Pulsing opacity
+                const opacityWave = Math.sin(this.age * 0.8 + this.opacityPhase) * 0.2;
+                this.targetOpacity = Math.max(0.2, Math.min(0.8, 0.5 + opacityWave));
+                this.opacity += (this.targetOpacity - this.opacity) * 0.02;
+            }
+
+            draw(ctx, mouseX, mouseY) {
+                const dist = Math.hypot(this.x - mouseX, this.y - mouseY);
+                const hoverBoost = Math.max(0, 1 - dist / 200);
+
+                const size = 14 + (1 - this.depth) * 20;
+                const alpha = this.opacity * (1 - this.depth * 0.5) + hoverBoost * 0.4;
+
+                // Color: warm candlelight for close, cool gray for far
+                const warmth = 1 - this.depth;
+                const r = Math.floor(232 * warmth + 128 * (1 - warmth));
+                const g = Math.floor(208 * warmth + 128 * (1 - warmth));
+                const b = Math.floor(160 * warmth + 144 * (1 - warmth));
+
+                ctx.save();
+                ctx.font = `italic ${size}px Georgia, serif`;
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // Glow
+                const glowStrength = 10 + hoverBoost * 20;
+                ctx.shadowBlur = glowStrength;
+                ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${alpha * 0.5})`;
+
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.restore();
+            }
+
+            isNear(x, y, radius) {
+                return Math.hypot(this.x - x, this.y - y) < radius;
+            }
+        }
+
+        // Echo class (fading copies)
+        class Echo {
+            constructor(text, x, y, depth, angle) {
+                this.text = text;
+                this.x = x;
+                this.y = y;
+                this.depth = depth;
+                this.vx = Math.cos(angle) * 0.5;
+                this.vy = Math.sin(angle) * 0.5;
+                this.opacity = 0.4;
+                this.life = 1.0;
+            }
+
+            update(deltaTime) {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= deltaTime * 0.3;
+                this.opacity = this.life * 0.3;
+            }
+
+            draw(ctx) {
+                if (this.life <= 0) return;
+
+                const size = 12 + (1 - this.depth) * 8;
+                const alpha = this.opacity;
+
+                ctx.save();
+                ctx.font = `italic ${size}px Georgia, serif`;
+                ctx.fillStyle = `rgba(200, 200, 200, ${alpha})`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = `rgba(200, 200, 200, ${alpha * 0.5})`;
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.restore();
+            }
+        }
+
+        // Candle class
+        class Candle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.brightness = 0.8 + Math.random() * 0.2;
+                this.flicker = 0;
+                this.phase = Math.random() * Math.PI * 2;
+            }
+
+            update(deltaTime) {
+                this.phase += deltaTime * (3 + Math.random());
+                this.flicker = Math.sin(this.phase) * 0.2 + Math.sin(this.phase * 2.3) * 0.1;
+                this.brightness = 0.7 + this.flicker + Math.random() * 0.1;
+            }
+
+            draw(ctx) {
+                const size = 3 + this.flicker * 2;
+                const glow = 30 + this.flicker * 10;
+
+                ctx.save();
+                ctx.fillStyle = `rgba(255, 160, 64, ${this.brightness})`;
+                ctx.shadowBlur = glow;
+                ctx.shadowColor = `rgba(255, 160, 64, ${this.brightness * 0.6})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Upward glow
+                const gradient = ctx.createRadialGradient(this.x, this.y - 20, 0, this.x, this.y - 20, 60);
+                gradient.addColorStop(0, `rgba(255, 200, 100, ${this.brightness * 0.1})`);
+                gradient.addColorStop(1, 'rgba(255, 200, 100, 0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(this.x - 60, this.y - 100, 120, 100);
+
+                ctx.restore();
+            }
+
+            flare() {
+                this.brightness = 1.2;
+            }
+
+            dim() {
+                this.brightness *= 0.9;
+            }
+        }
+
+        // Dust mote class
+        class DustMote {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = Math.random() * 1.5 + 0.5;
+                this.vy = Math.random() * 0.2 + 0.1;
+                this.vx = (Math.random() - 0.5) * 0.1;
+                this.opacity = Math.random() * 0.3 + 0.1;
+                this.phase = Math.random() * Math.PI * 2;
+            }
+
+            update(deltaTime) {
+                this.y += this.vy;
+                this.x += this.vx;
+                this.x += Math.sin(this.phase) * 0.2;
+                this.phase += deltaTime * 0.5;
+
+                if (this.y > height + 10) {
+                    this.reset();
+                    this.y = -10;
+                }
+            }
+
+            draw(ctx) {
+                // Brightness affected by nearby candles
+                let brightness = 0.5;
+                candles.forEach(candle => {
+                    const dist = Math.hypot(this.x - candle.x, this.y - candle.y);
+                    if (dist < 150) {
+                        brightness += (1 - dist / 150) * 0.5;
+                    }
+                });
+
+                ctx.save();
+                ctx.fillStyle = `rgba(232, 208, 160, ${this.opacity * brightness})`;
+                ctx.shadowBlur = 3;
+                ctx.shadowColor = `rgba(232, 208, 160, ${this.opacity * brightness})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Dissolving task (characters scatter)
+        class DissolvingTask {
+            constructor(task) {
+                this.chars = [];
+                const words = task.text.split('');
+                const startX = task.x - (words.length * 8);
+
+                words.forEach((char, i) => {
+                    this.chars.push({
+                        char: char,
+                        x: startX + i * 16,
+                        y: task.y,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: -(Math.random() * 3 + 2),
+                        opacity: 1,
+                        rotation: (Math.random() - 0.5) * 0.2
+                    });
+                });
+                this.life = 1.0;
+            }
+
+            update(deltaTime) {
+                this.life -= deltaTime * 0.5;
+                this.chars.forEach(char => {
+                    char.x += char.vx;
+                    char.y += char.vy;
+                    char.vy += 0.05; // Slight gravity
+                    char.rotation += 0.1;
+                    char.opacity = this.life;
+                });
+            }
+
+            draw(ctx) {
+                this.chars.forEach(char => {
+                    ctx.save();
+                    ctx.translate(char.x, char.y);
+                    ctx.rotate(char.rotation);
+                    ctx.font = 'italic 16px Georgia, serif';
+                    ctx.fillStyle = `rgba(232, 208, 160, ${char.opacity})`;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = `rgba(255, 200, 100, ${char.opacity})`;
+                    ctx.fillText(char.char, 0, 0);
+                    ctx.restore();
+                });
+            }
+        }
+
+        // Audio system
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function createAmbience() {
+            if (!audioCtx) return;
+
+            const bufferSize = audioCtx.sampleRate * 2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * 0.02;
+            }
+
+            const source = audioCtx.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 200;
+
+            const convolver = audioCtx.createConvolver();
+            const impulseLength = audioCtx.sampleRate * 4;
+            const impulse = audioCtx.createBuffer(2, impulseLength, audioCtx.sampleRate);
+
+            for (let channel = 0; channel < 2; channel++) {
+                const impulseData = impulse.getChannelData(channel);
+                for (let i = 0; i < impulseLength; i++) {
+                    impulseData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / impulseLength, 2) * 0.3;
+                }
+            }
+            convolver.buffer = impulse;
+
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0.05;
+
+            source.connect(filter);
+            filter.connect(convolver);
+            convolver.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            source.start();
+            ambienceNode = { source, gain };
+        }
+
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash = hash & hash;
+            }
+            return Math.abs(hash);
+        }
+
+        function createWhisperForTask(task) {
+            if (!audioCtx) return;
+
+            const freq = 200 + (hashString(task.text) % 400);
+
+            const bufferSize = audioCtx.sampleRate * 2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * 0.01;
+            }
+
+            const source = audioCtx.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = freq;
+            filter.Q.value = 10;
+
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0.008;
+
+            source.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            source.start();
+            whisperNodes.set(task.id, { source, gain });
+        }
+
+        function removeWhisperForTask(taskId) {
+            const node = whisperNodes.get(taskId);
+            if (node) {
+                node.gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                setTimeout(() => {
+                    node.source.stop();
+                    whisperNodes.delete(taskId);
+                }, 500);
+            }
+        }
+
+        function playBellToll() {
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            osc.frequency.value = 100;
+            osc.type = 'sine';
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 3);
+        }
+
+        // Cathedral architecture drawing
+        function drawArchitecture() {
+            ctx.strokeStyle = 'rgba(21, 21, 32, 0.6)';
+            ctx.lineWidth = 1;
+
+            // Vertical pillars
+            ctx.beginPath();
+            ctx.moveTo(width * 0.15, 0);
+            ctx.lineTo(width * 0.15, height);
+            ctx.moveTo(width * 0.85, 0);
+            ctx.lineTo(width * 0.85, height);
+            ctx.stroke();
+
+            // Gothic arches
+            const archY = height * 0.15;
+            const archWidth = width * 0.25;
+
+            for (let i = 0; i < 3; i++) {
+                const archX = width * 0.2 + i * width * 0.3;
+                ctx.beginPath();
+                ctx.arc(archX - archWidth / 2, archY, archWidth / 2, 0, Math.PI);
+                ctx.arc(archX + archWidth / 2, archY, archWidth / 2, 0, Math.PI);
+                ctx.stroke();
+            }
+
+            // Rose window (top center)
+            const roseX = width / 2;
+            const roseY = height * 0.1;
+            const roseR = 40;
+
+            ctx.strokeStyle = 'rgba(21, 21, 32, 0.4)';
+            ctx.beginPath();
+            ctx.arc(roseX, roseY, roseR, 0, Math.PI * 2);
+            ctx.stroke();
+
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(roseX, roseY);
+                ctx.lineTo(roseX + Math.cos(angle) * roseR, roseY + Math.sin(angle) * roseR);
+                ctx.stroke();
+            }
+
+            // Floor perspective lines
+            const vanishX = width / 2;
+            const vanishY = height * 0.6;
+
+            ctx.strokeStyle = 'rgba(21, 21, 32, 0.3)';
+            for (let i = -3; i <= 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(width * 0.3 + i * 40, height);
+                ctx.lineTo(vanishX, vanishY);
+                ctx.stroke();
+            }
+        }
+
+        // Stone texture (subtle noise)
+        function drawStoneTexture() {
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const noise = Math.random() * 10;
+                data[i] = 5 + noise;
+                data[i + 1] = 5 + noise;
+                data[i + 2] = 8 + noise;
+                data[i + 3] = 255;
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // Save/load
+        function saveTasks() {
+            const data = tasks.map(t => ({ text: t.text, x: t.x, y: t.y, depth: t.depth }));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function loadTasks() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                const parsed = JSON.parse(data);
+                parsed.forEach(t => {
+                    const task = new Task(t.text, t.x, t.y, false);
+                    task.depth = t.depth || Math.random() * 0.7 + 0.3;
+                    tasks.push(task);
+                });
+            }
+        }
+
+        // Init
+        function init() {
+            resize();
+            loadTasks();
+
+            // Create candles
+            const candleCount = 7;
+            const spacing = width / (candleCount + 1);
+            for (let i = 1; i <= candleCount; i++) {
+                candles.push(new Candle(spacing * i, height - 30));
+            }
+
+            // Create dust motes
+            for (let i = 0; i < 50; i++) {
+                dustMotes.push(new DustMote());
+            }
+
+            // Create whispers for existing tasks
+            tasks.forEach(task => {
+                initAudio();
+                createWhisperForTask(task);
+            });
+
+            // Start ambience
+            if (tasks.length > 0) {
+                initAudio();
+                createAmbience();
+            }
+        }
+
+        // Animation
+        let lastTime = Date.now();
+        let mouseX = -1000;
+        let mouseY = -1000;
+
+        function animate() {
+            const now = Date.now();
+            const deltaTime = Math.min((now - lastTime) / 1000, 0.1);
+            lastTime = now;
+
+            // Draw stone texture once per frame (very subtle)
+            if (Math.random() < 0.01) {
+                drawStoneTexture();
+            } else {
+                ctx.fillStyle = '#050508';
+                ctx.fillRect(0, 0, width, height);
+            }
+
+            // Draw architecture
+            drawArchitecture();
+
+            // Update and draw dust
+            dustMotes.forEach(mote => {
+                mote.update(deltaTime);
+                mote.draw(ctx);
+            });
+
+            // Update and draw candles
+            candles.forEach(candle => {
+                candle.update(deltaTime);
+                candle.draw(ctx);
+            });
+
+            // Update and draw echos
+            echos = echos.filter(echo => {
+                echo.update(deltaTime);
+                echo.draw(ctx);
+                return echo.life > 0;
+            });
+
+            // Update and draw tasks (sort by depth for correct layering)
+            tasks.sort((a, b) => b.depth - a.depth);
+            tasks.forEach(task => {
+                task.update(deltaTime);
+                task.draw(ctx, mouseX, mouseY);
+            });
+
+            // Update and draw dissolving tasks
+            dissolvingTasks = dissolvingTasks.filter(dt => {
+                dt.update(deltaTime);
+                dt.draw(ctx);
+                return dt.life > 0;
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Input handling
+        canvas.addEventListener('click', (e) => {
+            if (input.style.display === 'block') return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Check if clicked on a task to complete it
+            let clickedTask = null;
+            for (let i = tasks.length - 1; i >= 0; i--) {
+                if (tasks[i].isNear(x, y, 50)) {
+                    clickedTask = tasks[i];
+                    break;
+                }
+            }
+
+            if (clickedTask) {
+                // Complete task
+                initAudio();
+                playBellToll();
+                removeWhisperForTask(clickedTask.id);
+                dissolvingTasks.push(new DissolvingTask(clickedTask));
+
+                // Random candle flares
+                const randomCandle = candles[Math.floor(Math.random() * candles.length)];
+                randomCandle.flare();
+                setTimeout(() => randomCandle.dim(), 200);
+
+                tasks = tasks.filter(t => t.id !== clickedTask.id);
+                saveTasks();
+            } else {
+                // Show input
+                input.style.display = 'block';
+                input.style.left = x + 'px';
+                input.style.top = y + 'px';
+                input.value = '';
+                input.focus();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const text = input.value.trim();
+                if (text) {
+                    initAudio();
+
+                    const x = parseFloat(input.style.left);
+                    const y = parseFloat(input.style.top);
+                    const task = new Task(text, x, y, true);
+                    tasks.push(task);
+
+                    // Create echos
+                    for (let i = 0; i < 3; i++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const depth = 0.5 + i * 0.15;
+                        echos.push(new Echo(text, x, y, depth, angle));
+                    }
+
+                    createWhisperForTask(task);
+
+                    if (!ambienceNode) {
+                        createAmbience();
+                    }
+
+                    saveTasks();
+                }
+                input.style.display = 'none';
+                input.value = '';
+            } else if (e.key === 'Escape') {
+                input.style.display = 'none';
+                input.value = '';
+            }
+        });
+
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                input.style.display = 'none';
+                input.value = '';
+            }, 100);
+        });
+
+        window.addEventListener('resize', resize);
+
+        init();
+        animate();
+    </script>
+</body>
+</html>

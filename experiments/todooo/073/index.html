@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>073 - The Oracle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Georgia, serif;
+            background: #0d0015;
+            color: #e8dcc4;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        #particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        h1 {
+            text-align: center;
+            color: #c9a84c;
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(201, 168, 76, 0.5);
+            letter-spacing: 3px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #8a7a5c;
+            font-size: 1em;
+            margin-bottom: 40px;
+            font-style: italic;
+        }
+
+        .daily-spread {
+            background: rgba(201, 168, 76, 0.05);
+            border: 2px solid #c9a84c;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 0 30px rgba(201, 168, 76, 0.2);
+        }
+
+        .daily-spread h2 {
+            color: #c9a84c;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            letter-spacing: 2px;
+        }
+
+        .spread-cards {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .spread-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .spread-card-label {
+            color: #c9a84c;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-container {
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        #taskInput {
+            width: 100%;
+            padding: 18px 24px;
+            background: rgba(201, 168, 76, 0.05);
+            border: 2px solid #c9a84c;
+            border-radius: 8px;
+            color: #e8dcc4;
+            font-size: 1.1em;
+            font-family: Georgia, serif;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(201, 168, 76, 0.1);
+        }
+
+        #taskInput::placeholder {
+            color: #8a7a5c;
+            font-style: italic;
+        }
+
+        #taskInput:focus {
+            box-shadow: 0 0 30px rgba(201, 168, 76, 0.3);
+            border-color: #d4b55f;
+        }
+
+        .tasks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .task-item {
+            background: rgba(201, 168, 76, 0.03);
+            border: 2px solid #4a3a2a;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .task-item:hover {
+            border-color: #c9a84c;
+            box-shadow: 0 0 30px rgba(201, 168, 76, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .task-item.completed {
+            opacity: 0.5;
+            border-color: #3a2a1a;
+        }
+
+        .card-container {
+            position: relative;
+            width: 80px;
+            height: 120px;
+            flex-shrink: 0;
+            perspective: 1000px;
+        }
+
+        .card-flipper {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.8s ease;
+        }
+
+        .card-container.flipped .card-flipper {
+            transform: rotateY(180deg);
+        }
+
+        .card-face, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .card-back {
+            background: #1a0a2e;
+            border: 2px solid #c9a84c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-face {
+            transform: rotateY(180deg);
+        }
+
+        .card-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover .card-canvas {
+            filter: brightness(1.2);
+        }
+
+        .task-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .task-text {
+            font-size: 1.2em;
+            color: #e8dcc4;
+            cursor: pointer;
+            user-select: none;
+            line-height: 1.4;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        .card-name {
+            color: #c9a84c;
+            font-style: italic;
+            font-size: 0.95em;
+            letter-spacing: 1px;
+        }
+
+        .reading-text {
+            color: #a89674;
+            font-size: 0.9em;
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        .fate-sealed {
+            color: #6a5a4a;
+            font-size: 0.85em;
+            font-style: italic;
+            margin-top: 5px;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: transparent;
+            border: 1px solid #6a5a4a;
+            color: #6a5a4a;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+
+        .task-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .delete-btn:hover {
+            border-color: #c9a84c;
+            color: #c9a84c;
+            background: rgba(201, 168, 76, 0.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6a5a4a;
+            font-style: italic;
+            padding: 60px 20px;
+            font-size: 1.1em;
+        }
+
+        @keyframes glow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+
+        .card-container:hover {
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #c9a84c;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: fall linear infinite;
+            box-shadow: 0 0 4px #c9a84c;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particles"></canvas>
+
+    <div class="container">
+        <h1>THE ORACLE</h1>
+        <div class="subtitle">Consult the cards about your tasks</div>
+
+        <div class="daily-spread">
+            <h2>Daily Spread</h2>
+            <div class="spread-cards">
+                <div class="spread-card">
+                    <div class="spread-card-label">Past</div>
+                    <canvas class="card-canvas" width="80" height="120" id="past-card"></canvas>
+                </div>
+                <div class="spread-card">
+                    <div class="spread-card-label">Present</div>
+                    <canvas class="card-canvas" width="80" height="120" id="present-card"></canvas>
+                </div>
+                <div class="spread-card">
+                    <div class="spread-card-label">Future</div>
+                    <canvas class="card-canvas" width="80" height="120" id="future-card"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <input type="text" id="taskInput" placeholder="Ask the cards..." />
+        </div>
+
+        <div class="tasks-list" id="tasksList"></div>
+    </div>
+
+    <script>
+        // Tarot Deck - Major Arcana
+        const TAROT_DECK = [
+            {
+                name: "The Fool",
+                numeral: "0",
+                upright: "New beginnings, innocence, spontaneity",
+                reversed: "Recklessness, distraction, chaos",
+                keywords: ["journey", "leap", "innocence", "potential"],
+                symbol: "star"
+            },
+            {
+                name: "The Magician",
+                numeral: "I",
+                upright: "Manifestation, resourcefulness, power",
+                reversed: "Manipulation, poor planning, untapped talents",
+                keywords: ["power", "skill", "concentration", "action"],
+                symbol: "wand"
+            },
+            {
+                name: "The High Priestess",
+                numeral: "II",
+                upright: "Intuition, sacred knowledge, divine feminine",
+                reversed: "Secrets, disconnected from intuition, withdrawal",
+                keywords: ["intuition", "mystery", "wisdom", "silence"],
+                symbol: "moon"
+            },
+            {
+                name: "The Empress",
+                numeral: "III",
+                upright: "Femininity, beauty, nature, abundance",
+                reversed: "Creative block, dependence on others",
+                keywords: ["abundance", "nature", "nurture", "fertility"],
+                symbol: "heart"
+            },
+            {
+                name: "The Emperor",
+                numeral: "IV",
+                upright: "Authority, establishment, structure, father figure",
+                reversed: "Domination, excessive control, rigidity",
+                keywords: ["authority", "structure", "control", "foundation"],
+                symbol: "crown"
+            },
+            {
+                name: "The Hierophant",
+                numeral: "V",
+                upright: "Spiritual wisdom, religious beliefs, conformity",
+                reversed: "Personal beliefs, freedom, challenging tradition",
+                keywords: ["tradition", "conformity", "morality", "ethics"],
+                symbol: "key"
+            },
+            {
+                name: "The Lovers",
+                numeral: "VI",
+                upright: "Love, harmony, relationships, values alignment",
+                reversed: "Self-love, disharmony, imbalance",
+                keywords: ["love", "union", "choices", "harmony"],
+                symbol: "heart"
+            },
+            {
+                name: "The Chariot",
+                numeral: "VII",
+                upright: "Control, willpower, success, determination",
+                reversed: "Self-discipline, opposition, lack of direction",
+                keywords: ["willpower", "victory", "determination", "control"],
+                symbol: "wheel"
+            },
+            {
+                name: "Strength",
+                numeral: "VIII",
+                upright: "Strength, courage, patience, control",
+                reversed: "Self-doubt, weakness, insecurity",
+                keywords: ["courage", "patience", "compassion", "inner strength"],
+                symbol: "lion"
+            },
+            {
+                name: "The Hermit",
+                numeral: "IX",
+                upright: "Soul-searching, introspection, inner guidance",
+                reversed: "Isolation, loneliness, withdrawal",
+                keywords: ["solitude", "wisdom", "guidance", "introspection"],
+                symbol: "lantern"
+            },
+            {
+                name: "Wheel of Fortune",
+                numeral: "X",
+                upright: "Good luck, karma, life cycles, destiny",
+                reversed: "Bad luck, resistance to change, breaking cycles",
+                keywords: ["destiny", "fortune", "cycles", "turning point"],
+                symbol: "wheel"
+            },
+            {
+                name: "Justice",
+                numeral: "XI",
+                upright: "Justice, fairness, truth, cause and effect",
+                reversed: "Unfairness, lack of accountability, dishonesty",
+                keywords: ["fairness", "truth", "law", "balance"],
+                symbol: "scales"
+            },
+            {
+                name: "The Hanged Man",
+                numeral: "XII",
+                upright: "Pause, surrender, letting go, new perspectives",
+                reversed: "Delays, resistance, stalling, indecision",
+                keywords: ["surrender", "pause", "perspective", "sacrifice"],
+                symbol: "triangle"
+            },
+            {
+                name: "Death",
+                numeral: "XIII",
+                upright: "Endings, change, transformation, transition",
+                reversed: "Resistance to change, personal transformation",
+                keywords: ["transformation", "endings", "change", "transition"],
+                symbol: "skull"
+            },
+            {
+                name: "Temperance",
+                numeral: "XIV",
+                upright: "Balance, moderation, patience, purpose",
+                reversed: "Imbalance, excess, self-healing, realignment",
+                keywords: ["balance", "moderation", "patience", "harmony"],
+                symbol: "cup"
+            },
+            {
+                name: "The Devil",
+                numeral: "XV",
+                upright: "Shadow self, attachment, addiction, restriction",
+                reversed: "Releasing limiting beliefs, exploring dark thoughts",
+                keywords: ["bondage", "addiction", "materialism", "temptation"],
+                symbol: "chains"
+            },
+            {
+                name: "The Tower",
+                numeral: "XVI",
+                upright: "Sudden change, upheaval, chaos, revelation",
+                reversed: "Personal transformation, fear of change, averting disaster",
+                keywords: ["upheaval", "chaos", "revelation", "awakening"],
+                symbol: "tower"
+            },
+            {
+                name: "The Star",
+                numeral: "XVII",
+                upright: "Hope, faith, purpose, renewal, spirituality",
+                reversed: "Lack of faith, despair, self-trust, disconnection",
+                keywords: ["hope", "faith", "renewal", "inspiration"],
+                symbol: "star"
+            },
+            {
+                name: "The Moon",
+                numeral: "XVIII",
+                upright: "Illusion, fear, anxiety, subconscious, intuition",
+                reversed: "Release of fear, repressed emotion, inner confusion",
+                keywords: ["illusion", "intuition", "dreams", "unconscious"],
+                symbol: "moon"
+            },
+            {
+                name: "The Sun",
+                numeral: "XIX",
+                upright: "Positivity, fun, warmth, success, vitality",
+                reversed: "Inner child, feeling down, overly optimistic",
+                keywords: ["joy", "success", "celebration", "vitality"],
+                symbol: "sun"
+            },
+            {
+                name: "Judgement",
+                numeral: "XX",
+                upright: "Judgement, rebirth, inner calling, absolution",
+                reversed: "Self-doubt, inner critic, ignoring the call",
+                keywords: ["rebirth", "reckoning", "awakening", "renewal"],
+                symbol: "trumpet"
+            },
+            {
+                name: "The World",
+                numeral: "XXI",
+                upright: "Completion, integration, accomplishment, travel",
+                reversed: "Seeking closure, shortcuts, delays",
+                keywords: ["completion", "accomplishment", "travel", "fulfillment"],
+                symbol: "wreath"
+            }
+        ];
+
+        // Storage
+        const STORAGE_KEY = 'todooo-073';
+
+        // Audio Context
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playCardFlip() {
+            const ctx = getAudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const filter = ctx.createBiquadFilter();
+
+            filter.type = 'bandpass';
+            filter.frequency.value = 2000;
+            filter.Q.value = 10;
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1600, ctx.currentTime + 0.1);
+
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.3);
+        }
+
+        function playCompletion() {
+            const ctx = getAudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(120, ctx.currentTime);
+
+            gain.gain.setValueAtTime(0.4, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 1.5);
+        }
+
+        // Hash function
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return Math.abs(hash);
+        }
+
+        // Get card for task
+        function getCardForTask(taskText) {
+            const hash = hashString(taskText);
+            const cardIndex = hash % TAROT_DECK.length;
+            const isReversed = (hash % 2) === 0;
+            return {
+                card: TAROT_DECK[cardIndex],
+                reversed: isReversed
+            };
+        }
+
+        // Get daily cards
+        function getDailyCards() {
+            const today = new Date().toISOString().split('T')[0];
+            const hash = hashString(today);
+
+            return [
+                { card: TAROT_DECK[hash % 22], reversed: (hash % 2) === 0 },
+                { card: TAROT_DECK[(hash + 7) % 22], reversed: ((hash + 7) % 2) === 0 },
+                { card: TAROT_DECK[(hash + 13) % 22], reversed: ((hash + 13) % 2) === 0 }
+            ];
+        }
+
+        // Generate reading
+        function generateReading(taskText, cardData) {
+            const { card, reversed } = cardData;
+            const words = taskText.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+            const keyword = card.keywords[hashString(taskText) % card.keywords.length];
+
+            const templates = [
+                `${card.name} speaks of ${keyword} in your path. ${words[0] ? `What you call "${words[0]}" carries deeper meaning.` : 'The cards see beyond the surface.'}`,
+                `The cards reveal ${keyword} here. ${words.length > 1 ? `"${words[0]}" and "${words[1]}" are intertwined in your fate.` : 'Your intention shapes the outcome.'}`,
+                `${card.name} whispers of ${keyword}. ${words[0] ? `Through "${words[0]}" you will find transformation.` : 'Trust the journey ahead.'}`,
+                `${keyword} manifests through ${card.name}. ${words.length > 0 ? `The essence of "${words[words.length - 1]}" holds power.` : 'Your destiny unfolds as written.'}`,
+                `Behold ${card.name} and its ${keyword}. ${words.length > 1 ? `Between "${words[0]}" and completion lies growth.` : 'The path is illuminated.'}`,
+            ];
+
+            const template = templates[hashString(taskText + card.name) % templates.length];
+
+            if (reversed) {
+                return template + " Yet the card stands reversed—expect the unexpected.";
+            }
+
+            return template;
+        }
+
+        // Draw card symbols
+        function drawCardSymbol(ctx, symbol, x, y, size) {
+            ctx.save();
+            ctx.strokeStyle = '#c9a84c';
+            ctx.fillStyle = '#c9a84c';
+            ctx.lineWidth = 2;
+
+            switch(symbol) {
+                case 'star':
+                    drawStar(ctx, x, y, 5, size, size/2);
+                    break;
+                case 'moon':
+                    ctx.beginPath();
+                    ctx.arc(x, y, size/2, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(x + size/4, y, size/2.5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#0d0015';
+                    ctx.fill();
+                    break;
+                case 'sun':
+                    ctx.beginPath();
+                    ctx.arc(x, y, size/3, 0, Math.PI * 2);
+                    ctx.stroke();
+                    for (let i = 0; i < 8; i++) {
+                        const angle = (Math.PI * 2 / 8) * i;
+                        ctx.beginPath();
+                        ctx.moveTo(x + Math.cos(angle) * size/2.5, y + Math.sin(angle) * size/2.5);
+                        ctx.lineTo(x + Math.cos(angle) * size/1.8, y + Math.sin(angle) * size/1.8);
+                        ctx.stroke();
+                    }
+                    break;
+                case 'heart':
+                    ctx.beginPath();
+                    ctx.moveTo(x, y + size/4);
+                    ctx.bezierCurveTo(x, y, x - size/2, y, x - size/2, y + size/4);
+                    ctx.bezierCurveTo(x - size/2, y + size/2, x, y + size/1.5, x, y + size/1.2);
+                    ctx.bezierCurveTo(x, y + size/1.5, x + size/2, y + size/2, x + size/2, y + size/4);
+                    ctx.bezierCurveTo(x + size/2, y, x, y, x, y + size/4);
+                    ctx.stroke();
+                    break;
+                case 'skull':
+                    ctx.beginPath();
+                    ctx.arc(x, y - size/6, size/2.5, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.fillRect(x - size/6, y + size/8, size/8, size/6);
+                    ctx.fillRect(x + size/12, y + size/8, size/8, size/6);
+                    break;
+                case 'tower':
+                    ctx.strokeRect(x - size/3, y, size/1.5, size/1.2);
+                    ctx.beginPath();
+                    ctx.moveTo(x - size/2.5, y);
+                    ctx.lineTo(x, y - size/3);
+                    ctx.lineTo(x + size/2.5, y);
+                    ctx.stroke();
+                    break;
+                case 'wheel':
+                    ctx.beginPath();
+                    ctx.arc(x, y, size/2, 0, Math.PI * 2);
+                    ctx.stroke();
+                    for (let i = 0; i < 8; i++) {
+                        const angle = (Math.PI * 2 / 8) * i;
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + Math.cos(angle) * size/2, y + Math.sin(angle) * size/2);
+                        ctx.stroke();
+                    }
+                    break;
+                case 'crown':
+                    ctx.beginPath();
+                    ctx.moveTo(x - size/2, y + size/4);
+                    ctx.lineTo(x - size/3, y - size/4);
+                    ctx.lineTo(x - size/6, y + size/8);
+                    ctx.lineTo(x, y - size/3);
+                    ctx.lineTo(x + size/6, y + size/8);
+                    ctx.lineTo(x + size/3, y - size/4);
+                    ctx.lineTo(x + size/2, y + size/4);
+                    ctx.stroke();
+                    break;
+                case 'key':
+                    ctx.beginPath();
+                    ctx.arc(x - size/4, y, size/4, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + size/2, y);
+                    ctx.stroke();
+                    ctx.strokeRect(x + size/3, y - size/8, size/10, size/4);
+                    break;
+                case 'wand':
+                    ctx.beginPath();
+                    ctx.moveTo(x, y - size/2);
+                    ctx.lineTo(x, y + size/2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(x, y - size/2, size/6, 0, Math.PI * 2);
+                    ctx.stroke();
+                    break;
+                case 'lion':
+                    ctx.beginPath();
+                    ctx.arc(x, y, size/3, 0, Math.PI * 2);
+                    ctx.stroke();
+                    // Mane
+                    for (let i = 0; i < 12; i++) {
+                        const angle = (Math.PI * 2 / 12) * i;
+                        ctx.beginPath();
+                        ctx.moveTo(x + Math.cos(angle) * size/3, y + Math.sin(angle) * size/3);
+                        ctx.lineTo(x + Math.cos(angle) * size/2, y + Math.sin(angle) * size/2);
+                        ctx.stroke();
+                    }
+                    break;
+                case 'lantern':
+                    ctx.strokeRect(x - size/4, y - size/4, size/2, size/2);
+                    ctx.beginPath();
+                    ctx.moveTo(x, y - size/4);
+                    ctx.lineTo(x, y - size/1.5);
+                    ctx.stroke();
+                    ctx.fillStyle = '#c9a84c';
+                    ctx.globalAlpha = 0.5;
+                    ctx.fillRect(x - size/5, y - size/5, size/2.5, size/2.5);
+                    ctx.globalAlpha = 1;
+                    break;
+                case 'scales':
+                    ctx.beginPath();
+                    ctx.moveTo(x, y - size/2);
+                    ctx.lineTo(x, y + size/4);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(x - size/2, y);
+                    ctx.lineTo(x + size/2, y);
+                    ctx.stroke();
+                    ctx.strokeRect(x - size/2, y, size/4, size/6);
+                    ctx.strokeRect(x + size/4, y, size/4, size/6);
+                    break;
+                case 'triangle':
+                    ctx.beginPath();
+                    ctx.moveTo(x, y - size/2);
+                    ctx.lineTo(x - size/2, y + size/2);
+                    ctx.lineTo(x + size/2, y + size/2);
+                    ctx.closePath();
+                    ctx.stroke();
+                    break;
+                case 'cup':
+                    ctx.beginPath();
+                    ctx.moveTo(x - size/3, y - size/4);
+                    ctx.lineTo(x - size/4, y + size/4);
+                    ctx.lineTo(x + size/4, y + size/4);
+                    ctx.lineTo(x + size/3, y - size/4);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(x, y + size/4);
+                    ctx.lineTo(x, y + size/2);
+                    ctx.stroke();
+                    break;
+                case 'chains':
+                    // Two chain links
+                    ctx.beginPath();
+                    ctx.arc(x - size/4, y - size/6, size/4, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(x + size/4, y + size/6, size/4, 0, Math.PI * 2);
+                    ctx.stroke();
+                    break;
+                case 'trumpet':
+                    ctx.beginPath();
+                    ctx.moveTo(x - size/3, y);
+                    ctx.lineTo(x + size/6, y);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(x + size/6, y - size/4);
+                    ctx.lineTo(x + size/2, y - size/3);
+                    ctx.lineTo(x + size/2, y + size/3);
+                    ctx.lineTo(x + size/6, y + size/4);
+                    ctx.closePath();
+                    ctx.stroke();
+                    break;
+                case 'wreath':
+                    ctx.beginPath();
+                    ctx.arc(x, y, size/2.5, 0, Math.PI * 2);
+                    ctx.stroke();
+                    // Decorative elements
+                    for (let i = 0; i < 8; i++) {
+                        const angle = (Math.PI * 2 / 8) * i;
+                        ctx.fillRect(
+                            x + Math.cos(angle) * size/2.5 - 2,
+                            y + Math.sin(angle) * size/2.5 - 2,
+                            4, 4
+                        );
+                    }
+                    break;
+            }
+
+            ctx.restore();
+        }
+
+        function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
+            let rot = Math.PI / 2 * 3;
+            let x = cx;
+            let y = cy;
+            const step = Math.PI / spikes;
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - outerRadius);
+            for (let i = 0; i < spikes; i++) {
+                x = cx + Math.cos(rot) * outerRadius;
+                y = cy + Math.sin(rot) * outerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+
+                x = cx + Math.cos(rot) * innerRadius;
+                y = cy + Math.sin(rot) * innerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+            }
+            ctx.lineTo(cx, cy - outerRadius);
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        // Draw card on canvas
+        function drawCard(canvas, cardData, size = 'small') {
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // Background
+            ctx.fillStyle = '#1a0a2e';
+            ctx.fillRect(0, 0, width, height);
+
+            // Border
+            ctx.strokeStyle = '#c9a84c';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(2, 2, width - 4, height - 4);
+
+            // Card name
+            ctx.fillStyle = '#c9a84c';
+            ctx.font = size === 'small' ? '8px Georgia' : '10px Georgia';
+            ctx.textAlign = 'center';
+            ctx.fillText(cardData.card.name, width / 2, 15);
+
+            // Numeral
+            ctx.font = size === 'small' ? '10px Georgia' : '12px Georgia';
+            ctx.fillText(cardData.card.numeral, width / 2, 30);
+
+            // Symbol
+            const symbolY = size === 'small' ? 60 : 70;
+            const symbolSize = size === 'small' ? 20 : 25;
+            drawCardSymbol(ctx, cardData.card.symbol, width / 2, symbolY, symbolSize);
+
+            // Reversed indicator
+            if (cardData.reversed) {
+                ctx.save();
+                ctx.translate(width / 2, height - 10);
+                ctx.rotate(Math.PI);
+                ctx.font = '8px Georgia';
+                ctx.fillStyle = '#8a7a5c';
+                ctx.fillText('R', 0, 0);
+                ctx.restore();
+            }
+        }
+
+        // Draw card back
+        function drawCardBack(canvas) {
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.fillStyle = '#1a0a2e';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.strokeStyle = '#c9a84c';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(2, 2, width - 4, height - 4);
+
+            // Ornate pattern
+            ctx.strokeStyle = '#c9a84c';
+            ctx.lineWidth = 1;
+
+            // Center star
+            drawStar(ctx, width / 2, height / 2, 8, 25, 12);
+
+            // Corner decorations
+            const corners = [
+                [15, 15], [width - 15, 15], [15, height - 15], [width - 15, height - 15]
+            ];
+            corners.forEach(([x, y]) => {
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+        }
+
+        // Task management
+        let tasks = [];
+
+        function loadTasks() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                tasks = JSON.parse(saved);
+            }
+            renderTasks();
+        }
+
+        function saveTasks() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+        }
+
+        function addTask(text) {
+            if (!text.trim()) return;
+
+            const task = {
+                id: Date.now(),
+                text: text.trim(),
+                completed: false,
+                cardData: getCardForTask(text.trim()),
+                reading: generateReading(text.trim(), getCardForTask(text.trim()))
+            };
+
+            tasks.unshift(task);
+            saveTasks();
+            renderTasks();
+
+            // Trigger flip animation
+            setTimeout(() => {
+                const cardContainer = document.querySelector(`[data-task-id="${task.id}"] .card-container`);
+                if (cardContainer) {
+                    cardContainer.classList.add('flipped');
+                    playCardFlip();
+                }
+            }, 100);
+        }
+
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                saveTasks();
+                renderTasks();
+                if (task.completed) {
+                    playCompletion();
+                }
+            }
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveTasks();
+            renderTasks();
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('tasksList');
+
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="empty-state">The cards await your questions...</div>';
+                return;
+            }
+
+            container.innerHTML = tasks.map(task => `
+                <div class="task-item ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
+                    <div class="card-container">
+                        <div class="card-flipper">
+                            <div class="card-back">
+                                <canvas class="card-canvas" width="80" height="120" data-card-back="${task.id}"></canvas>
+                            </div>
+                            <div class="card-face">
+                                <canvas class="card-canvas" width="80" height="120" data-card-id="${task.id}"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="task-content">
+                        <div class="task-text" onclick="toggleTask(${task.id})">${task.text}</div>
+                        <div class="card-name">${task.cardData.card.name}${task.cardData.reversed ? ' (Reversed)' : ''}</div>
+                        <div class="reading-text">${task.reading}</div>
+                        ${task.completed ? '<div class="fate-sealed">This fate is sealed.</div>' : ''}
+                    </div>
+                    <button class="delete-btn" onclick="deleteTask(${task.id})">×</button>
+                </div>
+            `).join('');
+
+            // Draw cards
+            tasks.forEach(task => {
+                const canvas = document.querySelector(`[data-card-id="${task.id}"]`);
+                const backCanvas = document.querySelector(`[data-card-back="${task.id}"]`);
+                if (canvas) drawCard(canvas, task.cardData);
+                if (backCanvas) drawCardBack(backCanvas);
+            });
+        }
+
+        // Daily spread
+        function renderDailySpread() {
+            const dailyCards = getDailyCards();
+            const canvases = ['past-card', 'present-card', 'future-card'];
+
+            dailyCards.forEach((cardData, index) => {
+                const canvas = document.getElementById(canvases[index]);
+                if (canvas) {
+                    drawCard(canvas, cardData, 'small');
+                }
+            });
+        }
+
+        // Particles
+        function initParticles() {
+            const canvas = document.getElementById('particles');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                particle.style.opacity = Math.random() * 0.5 + 0.2;
+                document.body.appendChild(particle);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('taskInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addTask(e.target.value);
+                e.target.value = '';
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            const canvas = document.getElementById('particles');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Initialize
+        loadTasks();
+        renderDailySpread();
+        initParticles();
+    </script>
+</body>
+</html>

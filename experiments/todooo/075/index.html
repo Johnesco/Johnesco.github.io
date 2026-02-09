@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dream Journal - todooo 075</title>
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Georgia, serif;
+  background: #0f0a1a;
+  color: #c8b8e8;
+  min-height: 100vh;
+  padding: 3rem 1.5rem;
+  overflow-x: hidden;
+  transition: background-color 300s ease-in-out;
+}
+
+#canvas-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.15;
+}
+
+.container {
+  max-width: 700px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+h1 {
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 20px rgba(200, 184, 232, 0.3);
+  filter: blur(0.3px);
+  font-weight: normal;
+  letter-spacing: 3px;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: 0.6;
+  margin-bottom: 3rem;
+  font-style: italic;
+  text-shadow: 0 0 10px rgba(200, 184, 232, 0.2);
+}
+
+.input-container {
+  margin-bottom: 4rem;
+}
+
+#task-input {
+  width: 100%;
+  background: rgba(200, 184, 232, 0.05);
+  border: 1px solid rgba(200, 184, 232, 0.2);
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  font-family: Georgia, serif;
+  font-size: 1rem;
+  color: #c8b8e8;
+  outline: none;
+  transition: all 0.3s ease;
+  text-shadow: 0 0 8px rgba(200, 184, 232, 0.2);
+}
+
+#task-input::placeholder {
+  color: rgba(200, 184, 232, 0.4);
+  font-style: italic;
+}
+
+#task-input:focus {
+  background: rgba(200, 184, 232, 0.08);
+  border-color: rgba(200, 184, 232, 0.4);
+  box-shadow: 0 0 20px rgba(200, 184, 232, 0.1);
+}
+
+.section-title {
+  font-size: 1.3rem;
+  margin: 3rem 0 1.5rem;
+  opacity: 0.7;
+  text-align: center;
+  font-weight: normal;
+  letter-spacing: 2px;
+  text-shadow: 0 0 15px rgba(200, 184, 232, 0.2);
+}
+
+.dream-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.dream-entry {
+  background: rgba(200, 184, 232, 0.03);
+  border: 1px solid rgba(200, 184, 232, 0.1);
+  border-radius: 12px;
+  padding: 2rem;
+  position: relative;
+  transition: all 0.4s ease;
+  filter: blur(0.2px);
+}
+
+.dream-entry:hover {
+  background: rgba(200, 184, 232, 0.05);
+  border-color: rgba(200, 184, 232, 0.15);
+  filter: blur(0px);
+}
+
+.dream-entry.completed {
+  opacity: 0.5;
+  filter: blur(0.4px);
+}
+
+.dream-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dream-glyph {
+  font-size: 1.5rem;
+  opacity: 0.6;
+  flex-shrink: 0;
+  text-shadow: 0 0 10px rgba(200, 184, 232, 0.3);
+}
+
+.task-text {
+  font-size: 0.85rem;
+  opacity: 0.5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.dream-interpretation {
+  font-size: 1.15rem;
+  font-style: italic;
+  line-height: 1.7;
+  text-shadow: 0 0 12px rgba(200, 184, 232, 0.25);
+  color: #d4c4f0;
+}
+
+.dream-controls {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: flex-end;
+}
+
+.dream-btn {
+  background: none;
+  border: 1px solid rgba(200, 184, 232, 0.2);
+  color: #c8b8e8;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-family: Georgia, serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-shadow: 0 0 8px rgba(200, 184, 232, 0.2);
+}
+
+.dream-btn:hover {
+  background: rgba(200, 184, 232, 0.08);
+  border-color: rgba(200, 184, 232, 0.3);
+}
+
+.dream-btn.complete {
+  opacity: 0.6;
+}
+
+.dream-btn.delete {
+  opacity: 0.4;
+}
+
+.dream-btn.delete:hover {
+  border-color: rgba(255, 100, 100, 0.4);
+  color: #ffb8b8;
+}
+
+.empty-state {
+  text-align: center;
+  opacity: 0.3;
+  font-style: italic;
+  margin: 3rem 0;
+  font-size: 0.95rem;
+}
+
+@keyframes float-glyph {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+.dream-glyph {
+  animation: float-glyph 4s ease-in-out infinite;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  body {
+    padding: 2rem 1rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  .dream-entry {
+    padding: 1.5rem;
+  }
+
+  .dream-interpretation {
+    font-size: 1rem;
+  }
+}
+</style>
+</head>
+<body>
+
+<canvas id="canvas-bg"></canvas>
+
+<div class="container">
+  <h1>Dream Journal</h1>
+  <div class="subtitle">Your tasks, reimagined as symbols from sleep</div>
+
+  <div class="input-container">
+    <input type="text" id="task-input" placeholder="What did you need to do today?" autocomplete="off">
+  </div>
+
+  <div id="waking-section">
+    <div class="section-title">Waking Dreams</div>
+    <div class="dream-list" id="active-dreams"></div>
+    <div class="empty-state" id="empty-active" style="display: none;">
+      The night is empty. No dreams remain.
+    </div>
+  </div>
+
+  <div id="resolved-section" style="display: none;">
+    <div class="section-title">Recurring Dreams</div>
+    <div class="dream-list" id="resolved-dreams"></div>
+  </div>
+</div>
+
+<script>
+// Dream symbol mappings
+const dreamSymbols = {
+  milk: ["white rivers flowing upward", "mother's voice made liquid", "porcelain flooding through cracks"],
+  call: ["echoing corridors with no end", "a phone that rings underwater", "voices without mouths"],
+  buy: ["exchange of shadows for light", "hands full of disappearing coins", "a market where everything is still alive"],
+  fix: ["the crack in the wall that breathes", "things reassembling themselves backward", "your hands becoming tools"],
+  meeting: ["a room of faceless strangers who know your name", "everyone speaking at once but you hear each word clearly", "chairs arranged in a circle that never closes"],
+  dentist: ["opening your mouth and birds fly out", "teeth falling like rain", "mirrors inside mirrors inside teeth"],
+  doctor: ["the waiting room that leads to another waiting room", "someone checking your pulse counts backwards", "white coats flowing like water"],
+  work: ["climbing stairs that become horizontal", "your desk floating in an empty field", "the office where time moves sideways"],
+  email: ["letters rearranging themselves as you read", "sending messages to yourself from tomorrow", "an inbox that breathes"],
+  clean: ["dust becoming stars", "the floor reflecting a sky you don't recognize", "everything sorting itself while you sleep"],
+  write: ["words dripping off the page", "your hand moving but someone else's writing appears", "sentences that read themselves aloud"],
+  read: ["books with pages that show different stories each time", "reading by a light that hasn't been invented", "words you understand but don't remember learning"],
+  cook: ["ingredients that remember being alive", "the kitchen where fire is cold and ice burns", "tasting colors, seeing flavors"],
+  eat: ["chewing slowly and each bite lasts an hour", "food that whispers as you swallow", "the meal that never ends but you're never full"],
+  sleep: ["dreaming about dreaming about dreaming", "the bed that drifts through rooms", "closing your eyes and opening someone else's"],
+  wake: ["standing up before you remember lying down", "the alarm that rings yesterday", "opening your eyes but still seeing the dream"],
+  drive: ["roads that curl back on themselves", "the car knowing where you're going before you do", "arriving before you leave"],
+  walk: ["each step covering miles", "sidewalks that remember everyone who walked them", "your footprints filling with light"],
+  run: ["running but the world moves with you", "your legs knowing a rhythm you never learned", "fleeing from something that's already caught you"],
+  talk: ["speaking in a language you invented", "conversations with your past selves", "words that cast shadows"],
+  listen: ["hearing the thoughts between words", "silence that has texture", "sounds from rooms that don't exist"],
+  remember: ["memories arriving like mail", "the past updating itself", "forgetting how to forget"],
+  forget: ["losing something you never had", "the name on the tip of your tongue belongs to someone you haven't met", "erasing yourself from photographs"],
+  find: ["discovering rooms in your house that were always there", "the thing you lost finding you instead", "everything you seek is already in your hands"],
+  lose: ["misplacing time itself", "the feeling of something missing but you don't know what", "keys that unlock nothing but you keep them anyway"],
+  learn: ["knowledge arriving without studying", "understanding languages spoken by objects", "lessons taught by your future self"],
+  teach: ["explaining colors to the wind", "students who know more than you but listen anyway", "the classroom at the edge of waking"],
+  pay: ["counting money that changes value as you touch it", "the debt that pays itself", "coins with faces you recognize"],
+  get: ["receiving packages addressed to who you'll become", "gifts that unwrap themselves", "the delivery that arrives before you order"],
+  make: ["creating with materials that don't exist yet", "building things that were already built", "your hands shaping light"],
+  break: ["shattering carefully", "the sound of breaking that heals", "fragments that remember being whole"],
+  build: ["constructing impossible architecture", "buildings that grow like plants", "foundations laid in the air"],
+  plan: ["maps of places that haven't been discovered", "schedules written in water", "plotting a course through dreams"],
+  finish: ["completing tasks that start themselves over", "the end that curves back to beginning", "done but never finished"],
+  start: ["beginning in the middle", "the first step taken while sleeping", "starting lines that move ahead of you"],
+  help: ["hands reaching from unexpected places", "assistance from your shadow", "being saved by something you can't see"],
+  ask: ["questions that answer themselves", "inquiries made of smoke", "asking the walls and they respond"],
+  answer: ["replies arriving before questions", "speaking truths you don't remember knowing", "the answer that changes the question"],
+  go: ["departure without moving", "going everywhere by going nowhere", "the journey that is the destination"],
+  stay: ["remaining while everything moves", "stillness that travels", "staying gone"]
+};
+
+const dreamGlyphs = ["🌙", "👁", "🌀", "🗝", "🚪", "🦷", "✋", "⭐", "🕳", "🔮"];
+
+const dreamTemplates = [
+  (symbols) => `You dreamed of ${symbols[0]}. ${symbols[1] ? `In the dream, ${symbols[1]}.` : ''} When you woke, the feeling remained.`,
+  (symbols) => `Last night, ${symbols[0]} appeared again. ${symbols[1] ? `This time, ${symbols[1]}.` : 'Nothing more.'}`,
+  (symbols) => `The dream was simple: ${symbols[0]}. ${symbols[1] ? `But then ${symbols[1]}, and` : 'Nothing more. But'} it stayed with you.`,
+  (symbols) => `In sleep, you witnessed ${symbols[0]}. ${symbols[1] ? `You tried to touch it but instead ${symbols[1]}.` : ''}`,
+  (symbols) => `The night brought visions: ${symbols[0]}. ${symbols[1] ? symbols[1].charAt(0).toUpperCase() + symbols[1].slice(1) + '.' : 'That was all.'}`,
+  (symbols) => `${symbols[0] ? symbols[0].charAt(0).toUpperCase() + symbols[0].slice(1) : 'Something you can\'t name'}. ${symbols[1] ? `Then ${symbols[1]}.` : ''} You woke with your hand outstretched.`,
+  (symbols) => `Behind your eyelids: ${symbols[0]}. ${symbols[1] ? `The part you remember most is ${symbols[1]}.` : 'The rest is silence.'}`,
+  (symbols) => `You were somewhere else. ${symbols[0] ? symbols[0].charAt(0).toUpperCase() + symbols[0].slice(1) : 'Everything'} surrounded you. ${symbols[1] ? symbols[1].charAt(0).toUpperCase() + symbols[1].slice(1) + '.' : ''}`
+];
+
+const nightTemplates = [
+  (symbols) => `In the deep hours, you dreamed of ${symbols[0]}, and ${symbols[1] || 'nothing else mattered'}.`,
+  (symbols) => `The darkest dreams: ${symbols[0]}. ${symbols[1] ? `From the void came ${symbols[1]}.` : 'The void watched back.'}`,
+  (symbols) => `At 3 AM, ${symbols[0]} consumed everything. ${symbols[1] ? symbols[1].charAt(0).toUpperCase() + symbols[1].slice(1) + '.' : 'You couldn\'t look away.'}`,
+  (symbols) => `When sleep is deepest: ${symbols[0]}. ${symbols[1] ? `Reality bends and ${symbols[1]}.` : 'Reality ceases to be.'}`,
+  (symbols) => `The witching hour revealed ${symbols[0]}. ${symbols[1] ? `You understood that ${symbols[1]}.` : 'Understanding arrived without words.'}`
+];
+
+const stopWords = ['the', 'a', 'an', 'to', 'my', 'and', 'or', 'of', 'in', 'on', 'at', 'for', 'with', 'is', 'it', 'be'];
+
+// Simple hash function for seeded randomness
+function hashCode(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+}
+
+function seededRandom(seed, index = 0) {
+  const x = Math.sin(seed + index) * 10000;
+  return x - Math.floor(x);
+}
+
+function extractWords(text) {
+  return text.toLowerCase()
+    .replace(/[^\w\s]/g, '')
+    .split(/\s+/)
+    .filter(word => word.length > 2 && !stopWords.includes(word));
+}
+
+function generateDreamSymbol(word, seed) {
+  if (dreamSymbols[word]) {
+    const options = dreamSymbols[word];
+    const index = Math.floor(seededRandom(seed, word.length) * options.length);
+    return options[index];
+  }
+
+  // Generate surreal imagery from unknown words
+  const patterns = [
+    `${word} spelled backward in light`,
+    `the essence of ${word} without form`,
+    `${word} as it exists between moments`,
+    `what ${word} becomes when unnamed`,
+    `the shape that ${word} leaves behind`
+  ];
+
+  const index = Math.floor(seededRandom(seed, word.charCodeAt(0)) * patterns.length);
+  return patterns[index];
+}
+
+function generateDreamInterpretation(taskText) {
+  const hash = hashCode(taskText);
+  const words = extractWords(taskText);
+  const symbols = [];
+
+  // Extract up to 3 symbols
+  for (let i = 0; i < Math.min(words.length, 3); i++) {
+    symbols.push(generateDreamSymbol(words[i], hash + i));
+  }
+
+  // If no words extracted, create abstract dream
+  if (symbols.length === 0) {
+    symbols.push("something you cannot name but recognize deeply");
+  }
+
+  // Check time for intensity
+  const hour = new Date().getHours();
+  const isNight = hour >= 0 && hour < 6;
+
+  const templates = isNight ? nightTemplates : dreamTemplates;
+  const templateIndex = Math.floor(seededRandom(hash, 999) * templates.length);
+
+  return templates[templateIndex](symbols);
+}
+
+function getDreamGlyph(taskText) {
+  const hash = hashCode(taskText);
+  const index = hash % dreamGlyphs.length;
+  return dreamGlyphs[index];
+}
+
+// Audio context
+let audioContext;
+let ambientGain;
+
+function initAudio() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Create ambient pad
+    ambientGain = audioContext.createGain();
+    ambientGain.gain.value = 0.02;
+    ambientGain.connect(audioContext.destination);
+
+    const osc1 = audioContext.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.value = 55; // A1
+    osc1.connect(ambientGain);
+    osc1.start();
+
+    const osc2 = audioContext.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.value = 82.5; // E2
+    osc2.connect(ambientGain);
+    osc2.start();
+  }
+
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
+}
+
+function playDreamSound() {
+  if (!audioContext) return;
+
+  const now = audioContext.currentTime;
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(880, now);
+  osc.frequency.exponentialRampToValueAtTime(1760, now + 0.3);
+
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.08, now + 0.1);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
+
+  osc.start(now);
+  osc.stop(now + 1.5);
+}
+
+// Canvas background
+const canvas = document.getElementById('canvas-bg');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const particles = [];
+const particleSymbols = ['👁', '🌙', '🗝', '🚪', '🦷', '✋', '⭐'];
+
+class Particle {
+  constructor() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.vx = (Math.random() - 0.5) * 0.2;
+    this.vy = (Math.random() - 0.5) * 0.2;
+    this.symbol = particleSymbols[Math.floor(Math.random() * particleSymbols.length)];
+    this.size = 20 + Math.random() * 20;
+    this.opacity = 0.1 + Math.random() * 0.2;
+  }
+
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+
+    if (this.x < -50) this.x = canvas.width + 50;
+    if (this.x > canvas.width + 50) this.x = -50;
+    if (this.y < -50) this.y = canvas.height + 50;
+    if (this.y > canvas.height + 50) this.y = -50;
+  }
+
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.opacity;
+    ctx.font = `${this.size}px serif`;
+    ctx.fillStyle = '#c8b8e8';
+    ctx.fillText(this.symbol, this.x, this.y);
+    ctx.restore();
+  }
+}
+
+// Create particles
+for (let i = 0; i < 15; i++) {
+  particles.push(new Particle());
+}
+
+function animateCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => {
+    p.update();
+    p.draw();
+  });
+  requestAnimationFrame(animateCanvas);
+}
+
+animateCanvas();
+
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+// Sleep cycle - background oscillation
+let breathPhase = 0;
+function breathe() {
+  breathPhase += 0.001;
+  const darkness = 0.0f0a1a + Math.sin(breathPhase) * 0.0005;
+  // Subtle color interpolation
+  const base = 0x0f0a1a;
+  const target = 0x0a0715;
+  const mix = (Math.sin(breathPhase) + 1) / 2;
+
+  const r = Math.floor(((base >> 16) & 0xff) * (1 - mix) + ((target >> 16) & 0xff) * mix);
+  const g = Math.floor(((base >> 8) & 0xff) * (1 - mix) + ((target >> 8) & 0xff) * mix);
+  const b = Math.floor((base & 0xff) * (1 - mix) + (target & 0xff) * mix);
+
+  document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+
+  requestAnimationFrame(breathe);
+}
+
+breathe();
+
+// Task management
+const STORAGE_KEY = 'todooo-075';
+
+let tasks = [];
+
+function loadTasks() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    tasks = JSON.parse(stored);
+  }
+  render();
+}
+
+function saveTasks() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+function addTask(text) {
+  if (!text.trim()) return;
+
+  const task = {
+    id: Date.now(),
+    text: text.trim(),
+    dream: generateDreamInterpretation(text.trim()),
+    glyph: getDreamGlyph(text.trim()),
+    completed: false,
+    createdAt: Date.now()
+  };
+
+  tasks.unshift(task);
+  saveTasks();
+  render();
+  playDreamSound();
+}
+
+function toggleComplete(id) {
+  const task = tasks.find(t => t.id === id);
+  if (task) {
+    task.completed = !task.completed;
+    saveTasks();
+    render();
+  }
+}
+
+function deleteTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  saveTasks();
+  render();
+}
+
+function createDreamElement(task) {
+  const div = document.createElement('div');
+  div.className = 'dream-entry';
+  if (task.completed) div.classList.add('completed');
+
+  div.innerHTML = `
+    <div class="dream-header">
+      <div class="dream-glyph">${task.glyph}</div>
+      <div style="flex: 1;">
+        <div class="task-text">${task.text}</div>
+      </div>
+    </div>
+    <div class="dream-interpretation">${task.dream}</div>
+    <div class="dream-controls">
+      <button class="dream-btn complete" data-id="${task.id}">
+        ${task.completed ? 'Restore' : 'Resolve'}
+      </button>
+      <button class="dream-btn delete" data-id="${task.id}">Forget</button>
+    </div>
+  `;
+
+  const completeBtn = div.querySelector('.complete');
+  const deleteBtn = div.querySelector('.delete');
+
+  completeBtn.addEventListener('click', () => toggleComplete(task.id));
+  deleteBtn.addEventListener('click', () => deleteTask(task.id));
+
+  return div;
+}
+
+function render() {
+  const activeDreams = document.getElementById('active-dreams');
+  const resolvedDreams = document.getElementById('resolved-dreams');
+  const emptyActive = document.getElementById('empty-active');
+  const resolvedSection = document.getElementById('resolved-section');
+
+  const active = tasks.filter(t => !t.completed);
+  const completed = tasks.filter(t => t.completed);
+
+  activeDreams.innerHTML = '';
+  resolvedDreams.innerHTML = '';
+
+  if (active.length === 0) {
+    emptyActive.style.display = 'block';
+  } else {
+    emptyActive.style.display = 'none';
+    active.forEach(task => {
+      activeDreams.appendChild(createDreamElement(task));
+    });
+  }
+
+  if (completed.length > 0) {
+    resolvedSection.style.display = 'block';
+    completed.forEach(task => {
+      resolvedDreams.appendChild(createDreamElement(task));
+    });
+  } else {
+    resolvedSection.style.display = 'none';
+  }
+}
+
+// Input handling
+const input = document.getElementById('task-input');
+
+input.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    initAudio();
+    addTask(input.value);
+    input.value = '';
+  }
+});
+
+// Click anywhere to ensure audio context
+document.body.addEventListener('click', initAudio, { once: true });
+
+// Initialize
+loadTasks();
+</script>
+
+</body>
+</html>
