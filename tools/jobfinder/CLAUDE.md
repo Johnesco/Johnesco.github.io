@@ -1,7 +1,7 @@
 # JobFinder - Project Context
 
 ## Overview
-JobFinder is a vanilla HTML/JS/CSS app that aggregates job search links across 17 job boards. Users can add custom search terms (individually or in bulk), set a location, and customize which job boards to use. Each job board supports up to three search types: keyword-only, keyword+location, and keyword+remote. Search terms have priority tiers (Core/Growth/Reach) for organizing daily must-searches vs aspirational pivots. Click tracking shows at-a-glance staleness per board. All preferences persist via localStorage.
+JobFinder is a vanilla HTML/JS/CSS app that aggregates job search links across 17 job boards. Users can add custom search terms (individually or in bulk), set a location, and customize which job boards to use. Each job board supports two search types: keyword+location and keyword+remote. Search terms have priority tiers (Core/Growth/Reach) for organizing daily must-searches vs aspirational pivots. Click tracking shows at-a-glance staleness per board. All preferences persist via localStorage.
 
 ## Files
 ```
@@ -13,8 +13,7 @@ CLAUDE.md    # This file - project documentation
 ## How It Works
 1. User adds search terms (single, or bulk comma/newline-separated) with a priority tier
 2. User optionally sets a location (city, state) that applies to all searches
-3. App generates links to all enabled job boards with three options per board:
-   - **Keyword** - searches by keyword only
+3. App generates links to all enabled job boards with two options per board:
    - **Location** - searches by keyword + city/state (only shown if location is set)
    - **Remote** - searches for remote jobs with that keyword
 4. User clicks individual links to search specific boards
@@ -51,7 +50,6 @@ const CONFIG = {
 ### Categories
 - **General** (7): LinkedIn, Indeed, Glassdoor, ZipRecruiter, Monster, CareerBuilder, SimplyHired
 - **Tech** (4): Dice, Built In, Stack Overflow, Crunchboard
-- **Remote** (3): RemoteOK, Working Nomads, JustRemote (keyword-only, inherently remote)
 - **Startup** (3): The Muse, Idealist, VentureLoop
 
 ## localStorage Keys & Data Formats

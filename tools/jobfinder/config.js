@@ -103,29 +103,6 @@ const CONFIG = {
       ]
     },
     {
-      name: "Remote",
-      sites: [
-        {
-          name: "RemoteOK",
-          urls: {
-            keyword: "https://remoteok.com/?search={keyword}"
-          }
-        },
-        {
-          name: "Working Nomads",
-          urls: {
-            keyword: "https://www.workingnomads.com/jobs?tag={keyword}"
-          }
-        },
-        {
-          name: "JustRemote",
-          urls: {
-            keyword: "https://justremote.co/remote-jobs?search={keyword}"
-          }
-        }
-      ]
-    },
-    {
       name: "Startup",
       sites: [
         {
