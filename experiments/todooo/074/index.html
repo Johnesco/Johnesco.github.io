@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>074 Aurora</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #060618;
+      cursor: crosshair;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #taskInput {
+      position: fixed;
+      background: rgba(6, 6, 24, 0.95);
+      border: 1px solid rgba(61, 255, 122, 0.3);
+      color: #3dff7a;
+      padding: 8px 12px;
+      font-size: 14px;
+      outline: none;
+      border-radius: 4px;
+      display: none;
+      z-index: 100;
+      min-width: 200px;
+      font-family: inherit;
+    }
+
+    #taskInput::placeholder {
+      color: rgba(61, 255, 122, 0.4);
+    }
+
+    #temperature {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 18px;
+      font-weight: 300;
+      letter-spacing: 2px;
+      pointer-events: none;
+      text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+    }
+
+    #selectedTask {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 16px;
+      max-width: 80%;
+      text-align: center;
+      pointer-events: none;
+      text-shadow: 0 0 20px rgba(0, 0, 0, 0.9);
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="aurora"></canvas>
+  <input type="text" id="taskInput" placeholder="Enter task..." />
+  <div id="temperature">-15°C</div>
+  <div id="selectedTask"></div>
+
+  <script>
+    // Config
+    const STORAGE_KEY = 'todooo-074';
+    const AURORA_COLORS = [
+      { r: 61, g: 255, b: 122 },   // green
+      { r: 0, g: 255, b: 213 },    // cyan
+      { r: 185, g: 79, b: 255 },   // purple
+      { r: 255, g: 107, b: 223 },  // pink
+      { r: 79, g: 168, b: 255 }    // blue
+    ];
+    const BASE_TEMP = -15;
+    const TEMP_DROP_PER_TASK = 2;
+
+    // State
+    let tasks = [];
+    let canvas, ctx;
+    let width, height;
+    let stars = [];
+    let mountains = [];
+    let snowflakes = [];
+    let selectedTaskId = null;
+    let mouseX = 0;
+    let mouseY = 0;
+    let windX = 0;
+    let windY = 0;
+    let audioContext = null;
+    let masterGain = null;
+    let oscillators = {};
+    let time = 0;
+
+    // Simple noise function using layered sine waves
+    function noise(x, y) {
+      return (
+        Math.sin(x * 0.5 + y * 0.3) * 0.5 +
+        Math.sin(x * 1.2 - y * 0.7) * 0.3 +
+        Math.sin(x * 2.1 + y * 1.3) * 0.2
+      );
+    }
+
+    // Hash function for consistent color assignment
+    function hashString(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash = hash & hash;
+      }
+      return Math.abs(hash);
+    }
+
+    // Get color for task
+    function getTaskColor(task) {
+      const hash = hashString(task.text);
+      return AURORA_COLORS[hash % AURORA_COLORS.length];
+    }
+
+    // Initialize
+    function init() {
+      canvas = document.getElementById('aurora');
+      ctx = canvas.getContext('2d');
+
+      resize();
+      window.addEventListener('resize', resize);
+
+      // Load tasks
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          tasks = JSON.parse(saved);
+        } catch (e) {
+          tasks = [];
+        }
+      }
+
+      // Generate stars
+      generateStars();
+
+      // Generate mountain silhouette
+      generateMountains();
+
+      // Generate snowflakes
+      for (let i = 0; i < 30; i++) {
+        snowflakes.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          radius: Math.random() * 1.5 + 0.5,
+          speed: Math.random() * 0.3 + 0.1,
+          drift: Math.random() * 0.5 - 0.25
+        });
+      }
+
+      // Event listeners
+      canvas.addEventListener('click', handleClick);
+      canvas.addEventListener('dblclick', handleDoubleClick);
+      canvas.addEventListener('contextmenu', handleRightClick);
+      canvas.addEventListener('mousemove', handleMouseMove);
+
+      const input = document.getElementById('taskInput');
+      input.addEventListener('keydown', handleInputKeydown);
+      input.addEventListener('blur', hideInput);
+
+      updateTemperature();
+      animate();
+    }
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      generateMountains();
+    }
+
+    function generateStars() {
+      stars = [];
+      for (let i = 0; i < 250; i++) {
+        stars.push({
+          x: Math.random() * width,
+          y: Math.random() * height * 0.75, // Upper 75% of screen
+          radius: Math.random() * 1.2 + 0.3,
+          brightness: Math.random(),
+          twinkle: Math.random() < 0.1,
+          twinklePhase: Math.random() * Math.PI * 2,
+          twinkleSpeed: Math.random() * 0.02 + 0.01
+        });
+      }
+    }
+
+    function generateMountains() {
+      mountains = [];
+      const mountainTop = height * 0.85;
+      const segments = 100;
+      const segmentWidth = width / segments;
+
+      for (let i = 0; i <= segments; i++) {
+        const x = i * segmentWidth;
+        const baseHeight = height * 0.15;
+        const variation = noise(x * 0.003, 0) * height * 0.08;
+        const treeNoise = noise(x * 0.05, 100) * 20;
+        const y = mountainTop + variation + treeNoise;
+        mountains.push({ x, y });
+      }
+    }
+
+    function saveTasks() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+      updateTemperature();
+    }
+
+    function updateTemperature() {
+      const temp = BASE_TEMP - (tasks.length * TEMP_DROP_PER_TASK);
+      document.getElementById('temperature').textContent = `${temp}°C`;
+    }
+
+    // Audio
+    function initAudio() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioContext.createGain();
+        masterGain.gain.value = 0.08;
+        masterGain.connect(audioContext.destination);
+      }
+
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+    }
+
+    function updateAudio() {
+      if (!audioContext) return;
+
+      // Remove oscillators for completed tasks
+      const currentTaskIds = new Set(tasks.map(t => t.id));
+      Object.keys(oscillators).forEach(id => {
+        if (!currentTaskIds.has(id)) {
+          oscillators[id].osc.stop();
+          delete oscillators[id];
+        }
+      });
+
+      // Add oscillators for new tasks
+      tasks.forEach((task, index) => {
+        if (!oscillators[task.id] && !task.completing) {
+          const osc = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+
+          // Create harmonic frequencies based on task index
+          const baseFreq = 110; // A2
+          const harmonic = [1, 1.5, 2, 3, 4, 5][index % 6];
+          osc.frequency.value = baseFreq * harmonic;
+          osc.type = 'sine';
+
+          gain.gain.value = 0.15 / (tasks.length + 1);
+
+          osc.connect(gain);
+          gain.connect(masterGain);
+          osc.start();
+
+          oscillators[task.id] = { osc, gain };
+        }
+      });
+    }
+
+    // Input handling
+    let inputCallback = null;
+
+    function showInput(x, y, callback) {
+      const input = document.getElementById('taskInput');
+      input.style.left = `${x}px`;
+      input.style.top = `${y}px`;
+      input.style.display = 'block';
+      input.value = '';
+      input.focus();
+      inputCallback = callback;
+    }
+
+    function hideInput() {
+      const input = document.getElementById('taskInput');
+      input.style.display = 'none';
+      inputCallback = null;
+    }
+
+    function handleInputKeydown(e) {
+      if (e.key === 'Enter' && inputCallback) {
+        const value = e.target.value.trim();
+        if (value) {
+          inputCallback(value);
+        }
+        hideInput();
+      } else if (e.key === 'Escape') {
+        hideInput();
+      }
+    }
+
+    // Task operations
+    function addTask(text) {
+      initAudio();
+
+      const task = {
+        id: Date.now().toString() + Math.random(),
+        text,
+        created: Date.now(),
+        igniting: true
+      };
+
+      const wasEmpty = tasks.length === 0;
+      tasks.push(task);
+      saveTasks();
+      updateAudio();
+
+      // Ignition animation
+      if (wasEmpty) {
+        setTimeout(() => {
+          task.igniting = false;
+        }, 1000);
+      } else {
+        task.igniting = false;
+      }
+    }
+
+    function completeTask(taskId) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      task.completing = true;
+      task.completionStart = Date.now();
+      task.flareIntensity = 2;
+
+      // Create completion wave
+      tasks.forEach(t => {
+        if (t.id !== taskId && !t.completing) {
+          t.waveIntensity = (t.waveIntensity || 0) + 0.5;
+        }
+      });
+
+      setTimeout(() => {
+        tasks = tasks.filter(t => t.id !== taskId);
+        saveTasks();
+        updateAudio();
+        if (selectedTaskId === taskId) {
+          selectedTaskId = null;
+          document.getElementById('selectedTask').style.display = 'none';
+        }
+      }, 5000);
+    }
+
+    function deleteTask(taskId) {
+      tasks = tasks.filter(t => t.id !== taskId);
+      saveTasks();
+      updateAudio();
+      if (selectedTaskId === taskId) {
+        selectedTaskId = null;
+        document.getElementById('selectedTask').style.display = 'none';
+      }
+    }
+
+    // Interaction
+    function handleClick(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      // Check if clicking on aurora band
+      const clickedTask = getTaskAtPosition(x, y);
+
+      if (clickedTask) {
+        selectedTaskId = clickedTask.id;
+        document.getElementById('selectedTask').textContent = clickedTask.text;
+        document.getElementById('selectedTask').style.display = 'block';
+      } else {
+        // Add new task
+        selectedTaskId = null;
+        document.getElementById('selectedTask').style.display = 'none';
+        showInput(e.clientX, e.clientY, addTask);
+      }
+    }
+
+    function handleDoubleClick(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const clickedTask = getTaskAtPosition(x, y);
+      if (clickedTask) {
+        completeTask(clickedTask.id);
+      }
+    }
+
+    function handleRightClick(e) {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const clickedTask = getTaskAtPosition(x, y);
+      if (clickedTask) {
+        deleteTask(clickedTask.id);
+      }
+    }
+
+    function handleMouseMove(e) {
+      const rect = canvas.getBoundingClientRect();
+      const newX = e.clientX - rect.left;
+      const newY = e.clientY - rect.top;
+
+      // Calculate wind effect from movement
+      const dx = newX - mouseX;
+      const dy = newY - mouseY;
+
+      windX += dx * 0.02;
+      windY += dy * 0.02;
+
+      mouseX = newX;
+      mouseY = newY;
+    }
+
+    function getTaskAtPosition(x, y) {
+      // Check if position is near any aurora band's bright region
+      for (let i = 0; i < tasks.length; i++) {
+        const task = tasks[i];
+        const bandY = height * 0.2 + (i * height * 0.08);
+        const bandHeight = height * 0.15;
+
+        if (y >= bandY && y <= bandY + bandHeight) {
+          // Check if in bright region (center of screen horizontally)
+          const centerDist = Math.abs(x - width / 2);
+          if (centerDist < width * 0.3) {
+            return task;
+          }
+        }
+      }
+      return null;
+    }
+
+    // Rendering
+    function animate() {
+      time += 0.01;
+
+      // Decay wind
+      windX *= 0.95;
+      windY *= 0.95;
+
+      // Decay wave intensity
+      tasks.forEach(t => {
+        if (t.waveIntensity) {
+          t.waveIntensity *= 0.98;
+        }
+      });
+
+      // Clear
+      ctx.fillStyle = '#060618';
+      ctx.fillRect(0, 0, width, height);
+
+      // Draw stars
+      drawStars();
+
+      // Draw aurora
+      if (tasks.length > 0) {
+        drawAurora();
+      } else {
+        // Empty state: faint green haze
+        drawEmptyHaze();
+      }
+
+      // Draw reflection
+      drawReflection();
+
+      // Draw mountains
+      drawMountains();
+
+      // Draw snowflakes
+      drawSnowflakes();
+
+      requestAnimationFrame(animate);
+    }
+
+    function drawStars() {
+      tasks.forEach((task, index) => {
+        const bandY = height * 0.2 + (index * height * 0.08);
+        const bandHeight = height * 0.15;
+
+        stars.forEach(star => {
+          // Dim stars behind aurora
+          let alpha = star.brightness * 0.8;
+
+          if (star.y >= bandY && star.y <= bandY + bandHeight) {
+            alpha *= 0.3;
+          }
+
+          if (star.twinkle) {
+            star.twinklePhase += star.twinkleSpeed;
+            alpha *= 0.7 + Math.sin(star.twinklePhase) * 0.3;
+          }
+
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+
+      if (tasks.length === 0) {
+        stars.forEach(star => {
+          let alpha = star.brightness * 0.8;
+
+          if (star.twinkle) {
+            star.twinklePhase += star.twinkleSpeed;
+            alpha *= 0.7 + Math.sin(star.twinklePhase) * 0.3;
+          }
+
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+    }
+
+    function drawEmptyHaze() {
+      const gradient = ctx.createLinearGradient(0, height * 0.6, 0, height * 0.85);
+      gradient.addColorStop(0, 'rgba(61, 255, 122, 0)');
+      gradient.addColorStop(1, 'rgba(61, 255, 122, 0.05)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, height * 0.6, width, height * 0.25);
+    }
+
+    function drawAurora() {
+      tasks.forEach((task, index) => {
+        const color = getTaskColor(task);
+        const bandY = height * 0.2 + (index * height * 0.08);
+        const bandHeight = height * 0.15;
+        const strips = 150;
+
+        let baseIntensity = 1;
+        if (task.igniting) {
+          const elapsed = Date.now() - task.created;
+          baseIntensity = Math.min(elapsed / 1000, 1);
+        }
+
+        if (task.completing) {
+          const elapsed = Date.now() - task.completionStart;
+          const progress = elapsed / 5000;
+          task.flareIntensity = 2 * (1 - progress);
+          baseIntensity *= (1 - progress);
+        }
+
+        const flare = task.flareIntensity || 1;
+        const wave = task.waveIntensity || 0;
+
+        for (let i = 0; i < strips; i++) {
+          const x = (i / strips) * width;
+          const nextX = ((i + 1) / strips) * width;
+
+          // Noise-based wave motion
+          const noiseVal = noise(x * 0.002 + time, index * 10);
+          const waveOffset = noiseVal * 30 + windX * 0.5;
+          const y = bandY + waveOffset;
+
+          const nextNoiseVal = noise(nextX * 0.002 + time, index * 10);
+          const nextWaveOffset = nextNoiseVal * 30 + windX * 0.5;
+          const nextY = bandY + nextWaveOffset;
+
+          // Opacity varies along length (brightest in center)
+          const centerDist = Math.abs(x - width / 2) / (width / 2);
+          const baseOpacity = (1 - centerDist * 0.7) * 0.4;
+
+          // Add wave pulse
+          const pulsePhase = time + i * 0.05;
+          const pulse = Math.sin(pulsePhase) * 0.1 + 0.9;
+
+          const opacity = baseOpacity * pulse * baseIntensity * flare * (1 + wave);
+
+          // Draw vertical gradient strip
+          const gradient = ctx.createLinearGradient(x, y, x, y + bandHeight);
+          gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+          gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity})`);
+          gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(nextX, nextY);
+          ctx.lineTo(nextX, nextY + bandHeight);
+          ctx.lineTo(x, y + bandHeight);
+          ctx.closePath();
+          ctx.fill();
+        }
+      });
+    }
+
+    function drawReflection() {
+      if (tasks.length === 0) return;
+
+      const lakeTop = height * 0.85;
+      const lakeHeight = height * 0.15;
+
+      tasks.forEach((task, index) => {
+        const color = getTaskColor(task);
+        const bandY = height * 0.2 + (index * height * 0.08);
+        const strips = 80;
+
+        let baseIntensity = 1;
+        if (task.igniting) {
+          const elapsed = Date.now() - task.created;
+          baseIntensity = Math.min(elapsed / 1000, 1);
+        }
+
+        if (task.completing) {
+          const elapsed = Date.now() - task.completionStart;
+          const progress = elapsed / 5000;
+          baseIntensity *= (1 - progress);
+        }
+
+        for (let i = 0; i < strips; i++) {
+          const x = (i / strips) * width;
+          const nextX = ((i + 1) / strips) * width;
+
+          // Simplified reflection with distortion
+          const distortion = noise(x * 0.005, time * 0.5) * 15;
+          const reflectY = lakeTop + distortion;
+
+          const centerDist = Math.abs(x - width / 2) / (width / 2);
+          const baseOpacity = (1 - centerDist * 0.7) * 0.15;
+          const opacity = baseOpacity * baseIntensity;
+
+          const gradient = ctx.createLinearGradient(x, reflectY, x, reflectY + lakeHeight * 0.5);
+          gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity})`);
+          gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+
+          ctx.fillStyle = gradient;
+          ctx.fillRect(x, reflectY, nextX - x, lakeHeight * 0.5);
+        }
+      });
+    }
+
+    function drawMountains() {
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.moveTo(0, height);
+
+      mountains.forEach(point => {
+        ctx.lineTo(point.x, point.y);
+      });
+
+      ctx.lineTo(width, height);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawSnowflakes() {
+      snowflakes.forEach(flake => {
+        flake.y += flake.speed;
+        flake.x += flake.drift + windX * 0.1;
+
+        if (flake.y > height) {
+          flake.y = -10;
+          flake.x = Math.random() * width;
+        }
+
+        if (flake.x < 0) flake.x = width;
+        if (flake.x > width) flake.x = 0;
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.beginPath();
+        ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    // Start
+    init();
+  </script>
+</body>
+</html>

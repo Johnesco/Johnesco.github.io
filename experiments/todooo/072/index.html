@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>072: Palimpsest</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            cursor: crosshair;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .marginalia {
+            position: fixed;
+            background: rgba(250, 240, 220, 0.95);
+            border: 1px solid rgba(100, 80, 60, 0.3);
+            padding: 8px 12px;
+            font-size: 11px;
+            color: #4a3c2a;
+            font-style: italic;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 200px;
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .marginalia::before {
+            content: '✍';
+            margin-right: 4px;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="parchment"></canvas>
+    <script>
+        const canvas = document.getElementById('parchment');
+        const ctx = canvas.getContext('2d');
+
+        const STORAGE_KEY = 'todooo-072';
+        const LAYER_COUNT = 5;
+        const AGING_INTERVAL = 300000; // 5 minutes
+
+        let tasks = [];
+        let inkBlots = [];
+        let inputMode = false;
+        let inputPosition = null;
+        let inputText = '';
+        let cursorBlink = true;
+        let hoveredTask = null;
+        let parchmentYellow = 0;
+        let lastAging = Date.now();
+        let audioContext = null;
+
+        // Parchment noise seed
+        let noiseSeed = Math.random() * 1000;
+
+        function initCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        // Simple noise function
+        function noise(x, y, seed = 0) {
+            const n = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453;
+            return n - Math.floor(n);
+        }
+
+        function drawParchment() {
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Base color - warm cream that yellows over time
+            const yellowFactor = Math.min(parchmentYellow / 100, 0.3);
+            const baseR = 250 - Math.floor(yellowFactor * 30);
+            const baseG = 245 - Math.floor(yellowFactor * 50);
+            const baseB = 230 - Math.floor(yellowFactor * 80);
+
+            ctx.fillStyle = `rgb(${baseR}, ${baseG}, ${baseB})`;
+            ctx.fillRect(0, 0, w, h);
+
+            // Fiber texture and noise
+            const imageData = ctx.getImageData(0, 0, w, h);
+            const data = imageData.data;
+
+            for (let y = 0; y < h; y += 2) {
+                for (let x = 0; x < w; x += 2) {
+                    const idx = (y * w + x) * 4;
+                    const n = noise(x * 0.1, y * 0.1, noiseSeed) * 20 - 10;
+                    const fiber = noise(x * 0.05, y * 0.5, noiseSeed + 100) * 15 - 7.5;
+
+                    data[idx] += n + fiber;
+                    data[idx + 1] += n + fiber;
+                    data[idx + 2] += n + fiber;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            // Vignette - darker edges
+            const gradient = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.7);
+            gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            gradient.addColorStop(1, 'rgba(80, 60, 40, 0.15)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, w, h);
+
+            // Rough edges
+            drawRoughEdges();
+        }
+
+        function drawRoughEdges() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const margin = 40;
+
+            ctx.fillStyle = '#e8dcc8';
+
+            // Top edge
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            for (let x = 0; x < w; x += 5) {
+                const roughness = noise(x * 0.05, 0, noiseSeed + 200) * margin * 0.6;
+                ctx.lineTo(x, roughness);
+            }
+            ctx.lineTo(w, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            // Bottom edge
+            ctx.beginPath();
+            ctx.moveTo(0, h);
+            for (let x = 0; x < w; x += 5) {
+                const roughness = noise(x * 0.05, h, noiseSeed + 300) * margin * 0.6;
+                ctx.lineTo(x, h - roughness);
+            }
+            ctx.lineTo(w, h);
+            ctx.closePath();
+            ctx.fill();
+
+            // Left edge
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            for (let y = 0; y < h; y += 5) {
+                const roughness = noise(0, y * 0.05, noiseSeed + 400) * margin * 0.4;
+                ctx.lineTo(roughness, y);
+            }
+            ctx.lineTo(0, h);
+            ctx.closePath();
+            ctx.fill();
+
+            // Right edge
+            ctx.beginPath();
+            ctx.moveTo(w, 0);
+            for (let y = 0; y < h; y += 5) {
+                const roughness = noise(w, y * 0.05, noiseSeed + 500) * margin * 0.4;
+                ctx.lineTo(w - roughness, y);
+            }
+            ctx.lineTo(w, h);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawInkBlots() {
+            inkBlots.forEach(blot => {
+                ctx.save();
+                ctx.globalAlpha = 0.3;
+                ctx.fillStyle = '#1a1410';
+
+                ctx.beginPath();
+                const points = blot.points;
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        function createInkBlot(x, y) {
+            const points = [];
+            const numPoints = 8 + Math.floor(Math.random() * 8);
+            const radius = 10 + Math.random() * 20;
+
+            for (let i = 0; i < numPoints; i++) {
+                const angle = (i / numPoints) * Math.PI * 2;
+                const r = radius * (0.5 + Math.random() * 0.8);
+                points.push({
+                    x: x + Math.cos(angle) * r,
+                    y: y + Math.sin(angle) * r
+                });
+            }
+
+            return { x, y, points };
+        }
+
+        function getTaskLayer(task) {
+            if (!task.completedAt) return LAYER_COUNT - 1; // Current layer
+
+            const age = Date.now() - task.completedAt;
+            const ageInMinutes = age / 60000;
+
+            // Layer shifts every 5 minutes
+            const layerShift = Math.floor(ageInMinutes / 5);
+            const layer = Math.max(0, LAYER_COUNT - 2 - layerShift);
+
+            return layer;
+        }
+
+        function getLayerAlpha(layer) {
+            const alphas = [0.05, 0.10, 0.20, 0.40, 1.0];
+            return alphas[layer];
+        }
+
+        function getLayerColor(layer) {
+            const colors = [
+                'rgba(120, 70, 50, ', // Oldest - red-brown
+                'rgba(100, 70, 50, ', // Faded brown
+                'rgba(90, 65, 45, ',  // Light brown
+                'rgba(70, 50, 35, ',  // Medium brown
+                'rgba(40, 30, 20, '   // Current - dark ink
+            ];
+            return colors[layer];
+        }
+
+        function drawText(text, x, y, layer, isFirstTask = false) {
+            const alpha = getLayerAlpha(layer);
+            const baseColor = getLayerColor(layer);
+            const fontSize = 18;
+
+            ctx.font = `${fontSize}px "Courier New", monospace`;
+
+            let charX = x;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const isDropCap = isFirstTask && i === 0;
+
+                ctx.save();
+
+                if (isDropCap) {
+                    // Red drop cap
+                    ctx.font = `${fontSize * 2}px "Courier New", monospace`;
+                    ctx.fillStyle = `rgba(140, 30, 20, ${alpha})`;
+                } else {
+                    ctx.fillStyle = baseColor + alpha + ')';
+                }
+
+                // Quill variation - subtle rotation and offset
+                const rotationVar = (noise(i, y, text.length) - 0.5) * 0.05;
+                const offsetY = (noise(i * 10, y, text.length + 50) - 0.5) * 2;
+
+                ctx.translate(charX, y + offsetY);
+                ctx.rotate(rotationVar);
+
+                ctx.fillText(char, 0, 0);
+
+                ctx.restore();
+
+                const metrics = ctx.measureText(char);
+                charX += metrics.width + (isDropCap ? 5 : 0);
+            }
+
+            return charX - x;
+        }
+
+        function drawTasks() {
+            // Sort tasks: active first, then by completion time
+            const sortedTasks = [...tasks].sort((a, b) => {
+                if (!a.completedAt && b.completedAt) return -1;
+                if (a.completedAt && !b.completedAt) return 1;
+                if (a.completedAt && b.completedAt) {
+                    return b.completedAt - a.completedAt;
+                }
+                return 0;
+            });
+
+            const lineHeight = 40;
+            let currentY = 100;
+            let activeTaskIndex = 0;
+
+            sortedTasks.forEach((task, index) => {
+                const layer = getTaskLayer(task);
+                const isFirstTask = index === 0 && !task.completedAt;
+
+                // Use fixed position for this task
+                const y = task.y || currentY;
+                task.y = y;
+
+                drawText(task.text, task.x, y, layer, isFirstTask);
+
+                // Store bounds for hover detection
+                task.bounds = {
+                    x: task.x,
+                    y: y - 20,
+                    width: ctx.measureText(task.text).width * 1.5,
+                    height: 30
+                };
+
+                if (!task.completedAt) {
+                    activeTaskIndex++;
+                    currentY += lineHeight;
+                } else {
+                    currentY += lineHeight * 0.8; // Completed tasks take less space
+                }
+            });
+        }
+
+        function drawCursor() {
+            if (!inputMode || !inputPosition) return;
+
+            const x = inputPosition.x;
+            const y = inputPosition.y;
+
+            // Draw input text
+            if (inputText) {
+                drawText(inputText, x, y, LAYER_COUNT - 1);
+            }
+
+            // Blinking cursor
+            if (cursorBlink) {
+                const textWidth = inputText ? ctx.measureText(inputText).width : 0;
+                ctx.fillStyle = 'rgba(40, 30, 20, 0.7)';
+                ctx.fillRect(x + textWidth, y - 15, 2, 20);
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawParchment();
+            drawInkBlots();
+            drawTasks();
+            drawCursor();
+        }
+
+        function save() {
+            const data = {
+                tasks,
+                inkBlots,
+                parchmentYellow,
+                lastAging,
+                noiseSeed
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+            // Random ink blot on save (10% chance)
+            if (Math.random() < 0.1) {
+                const x = 100 + Math.random() * (canvas.width - 200);
+                const y = 100 + Math.random() * (canvas.height - 200);
+                inkBlots.push(createInkBlot(x, y));
+            }
+        }
+
+        function load() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    tasks = parsed.tasks || [];
+                    inkBlots = parsed.inkBlots || [];
+                    parchmentYellow = parsed.parchmentYellow || 0;
+                    lastAging = parsed.lastAging || Date.now();
+                    noiseSeed = parsed.noiseSeed || Math.random() * 1000;
+                } catch (e) {
+                    console.error('Failed to load data:', e);
+                }
+            }
+        }
+
+        function ageTasks() {
+            const now = Date.now();
+            if (now - lastAging > AGING_INTERVAL) {
+                // Age the parchment slightly
+                parchmentYellow += 1;
+                lastAging = now;
+                save();
+            }
+        }
+
+        function getAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioContext;
+        }
+
+        function playQuillScratch() {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+
+                // Create noise-based scratch sound
+                const bufferSize = ctx.sampleRate * 0.05; // 50ms
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * 0.02;
+                }
+
+                const source = ctx.createBufferSource();
+                source.buffer = buffer;
+
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.value = 2000;
+
+                const gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+
+                source.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+
+                source.start(now);
+                source.stop(now + 0.05);
+            } catch (e) {
+                // Silent fail
+            }
+        }
+
+        function playCrumpleSound() {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+
+                // Create crumple sound
+                const bufferSize = ctx.sampleRate * 0.3; // 300ms
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+
+                for (let i = 0; i < bufferSize; i++) {
+                    const envelope = Math.exp(-i / bufferSize * 5);
+                    data[i] = (Math.random() * 2 - 1) * envelope * 0.1;
+                }
+
+                const source = ctx.createBufferSource();
+                source.buffer = buffer;
+
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 1000;
+                filter.Q.value = 2;
+
+                const gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+                source.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+
+                source.start(now);
+                source.stop(now + 0.3);
+            } catch (e) {
+                // Silent fail
+            }
+        }
+
+        function findTaskAtPosition(x, y) {
+            return tasks.find(task => {
+                if (!task.bounds) return false;
+                return x >= task.bounds.x &&
+                       x <= task.bounds.x + task.bounds.width &&
+                       y >= task.bounds.y &&
+                       y <= task.bounds.y + task.bounds.height;
+            });
+        }
+
+        function showMarginalia(task, x, y) {
+            if (!task.completedAt) return;
+
+            hideMarginalia();
+
+            const div = document.createElement('div');
+            div.className = 'marginalia';
+            div.textContent = `"${task.text}" — completed ${new Date(task.completedAt).toLocaleDateString()}`;
+            div.style.left = (x + 20) + 'px';
+            div.style.top = (y - 30) + 'px';
+            document.body.appendChild(div);
+        }
+
+        function hideMarginalia() {
+            const existing = document.querySelector('.marginalia');
+            if (existing) {
+                existing.remove();
+            }
+        }
+
+        // Event handlers
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const clickedTask = findTaskAtPosition(x, y);
+
+            if (!clickedTask) {
+                // Start input mode
+                inputMode = true;
+                inputPosition = {
+                    x: Math.max(80, Math.min(x, canvas.width - 200)),
+                    y: Math.max(80, Math.min(y, canvas.height - 100))
+                };
+                inputText = '';
+                render();
+            }
+        });
+
+        canvas.addEventListener('dblclick', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const clickedTask = findTaskAtPosition(x, y);
+
+            if (clickedTask && !clickedTask.completedAt) {
+                clickedTask.completedAt = Date.now();
+                playCrumpleSound();
+                save();
+                render();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const task = findTaskAtPosition(x, y);
+
+            if (task !== hoveredTask) {
+                hoveredTask = task;
+                hideMarginalia();
+
+                if (task && task.completedAt) {
+                    showMarginalia(task, e.clientX, e.clientY);
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            hoveredTask = null;
+            hideMarginalia();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (!inputMode) return;
+
+            if (e.key === 'Enter') {
+                if (inputText.trim()) {
+                    tasks.push({
+                        id: Date.now(),
+                        text: inputText.trim(),
+                        x: inputPosition.x,
+                        y: inputPosition.y,
+                        completedAt: null
+                    });
+                    save();
+                }
+                inputMode = false;
+                inputPosition = null;
+                inputText = '';
+                render();
+            } else if (e.key === 'Escape') {
+                inputMode = false;
+                inputPosition = null;
+                inputText = '';
+                render();
+            } else if (e.key === 'Backspace') {
+                inputText = inputText.slice(0, -1);
+                render();
+            } else if (e.key.length === 1) {
+                inputText += e.key;
+                playQuillScratch();
+                render();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            initCanvas();
+            render();
+        });
+
+        // Cursor blink
+        setInterval(() => {
+            cursorBlink = !cursorBlink;
+            if (inputMode) render();
+        }, 500);
+
+        // Aging check
+        setInterval(() => {
+            ageTasks();
+            render();
+        }, 60000); // Check every minute
+
+        // Initialize
+        initCanvas();
+        load();
+        ageTasks();
+        render();
+    </script>
+</body>
+</html>
