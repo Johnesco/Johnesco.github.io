@@ -820,6 +820,36 @@
     .search-card.growth { border-left: 3px solid #4ade80; }
     .search-card.reach { border-left: 3px solid #c084fc; }
 
+    /* In-card skill groups (board view) */
+    .card-skill-group { margin-top: 0.4rem; }
+    .card-skill-group + .card-skill-group { margin-top: 0.25rem; }
+
+    .card-skill-header {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      padding: 0.2rem 0;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      color: #aaa;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 0.2rem;
+    }
+    .card-skill-header:hover { opacity: 0.8; }
+    .card-skill-header.core { color: #00d9ff; }
+    .card-skill-header.growth { color: #4ade80; }
+    .card-skill-header.reach { color: #c084fc; }
+
+    .card-skill-header .collapse-arrow {
+      font-size: 0.5rem;
+    }
+
+    .card-skill-group.collapsed .card-skill-rows { display: none; }
+    .card-skill-group.collapsed .collapse-arrow { transform: rotate(-90deg); }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
@@ -1804,6 +1834,7 @@
 
     function buildBoardCard(site, hasLocation) {
       const safeSiteName = escapeHtml(site.name);
+      const safeSiteAttr = escapeAttr(site.name);
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
       const ts = todayStart.getTime();
@@ -1813,6 +1844,9 @@
         if (clickData[key] && clickData[key] >= ts) todayDone++;
       });
 
+      const priorities = ['core', 'growth', 'reach', ''];
+      const priorityLabels = { core: 'Core', growth: 'Growth', reach: 'Reach', '': 'General' };
+
       let html = `
         <div class="search-card">
           <div class="search-card-header">
@@ -1820,35 +1854,50 @@
           </div>
       `;
 
-      searches.forEach(search => {
-        const term = search.term;
-        const priority = search.priority || '';
-        const safeTerm = escapeHtml(term);
-        const safeAttr = escapeAttr(term);
-        const age = getClickAge(term, site.name);
-        const statusHtml = age
-          ? `<span class="site-status ${age.tier}">${age.tier === 'fresh' ? '✓ ' : ''}${age.label}</span>`
-          : '';
+      priorities.forEach(priority => {
+        const group = searches.filter(s => (s.priority || '') === priority);
+        if (group.length === 0) return;
 
-        html += `<div class="site-row">
-          <span class="site-name${priority ? ' ' + priority : ''}">${safeTerm}</span>
-          <div class="site-links">`;
+        const groupKey = safeSiteAttr + '::' + (priority || 'general');
+        const isCollapsed = collapsedGroups[groupKey];
 
-        if (site.urls.location) {
-          if (hasLocation) {
-            const locationUrl = buildUrl(site.urls.location, term, userLocation.city, userLocation.state);
-            html += `<a href="${locationUrl}" target="_blank" class="site-link location" data-keyword="${safeAttr}" data-site="${escapeAttr(site.name)}">Location</a>`;
-          } else {
-            html += `<span class="site-link location disabled">Location</span>`;
+        html += `<div class="card-skill-group${isCollapsed ? ' collapsed' : ''}">`;
+        html += `<div class="card-skill-header${priority ? ' ' + priority : ''}" onclick="toggleGroup('${escapeAttr(groupKey)}')">
+          <span class="collapse-arrow">▾</span> ${priorityLabels[priority]} <span class="group-count">(${group.length})</span>
+        </div>`;
+        html += `<div class="card-skill-rows">`;
+
+        group.forEach(search => {
+          const term = search.term;
+          const safeTerm = escapeHtml(term);
+          const safeAttr = escapeAttr(term);
+          const age = getClickAge(term, site.name);
+          const statusHtml = age
+            ? `<span class="site-status ${age.tier}">${age.tier === 'fresh' ? '✓ ' : ''}${age.label}</span>`
+            : '';
+
+          html += `<div class="site-row">
+            <span class="site-name${priority ? ' ' + priority : ''}">${safeTerm}</span>
+            <div class="site-links">`;
+
+          if (site.urls.location) {
+            if (hasLocation) {
+              const locationUrl = buildUrl(site.urls.location, term, userLocation.city, userLocation.state);
+              html += `<a href="${locationUrl}" target="_blank" class="site-link location" data-keyword="${safeAttr}" data-site="${safeSiteAttr}">Location</a>`;
+            } else {
+              html += `<span class="site-link location disabled">Location</span>`;
+            }
           }
-        }
 
-        if (site.urls.remote) {
-          const remoteUrl = buildUrl(site.urls.remote, term, '', '');
-          html += `<a href="${remoteUrl}" target="_blank" class="site-link remote" data-keyword="${safeAttr}" data-site="${escapeAttr(site.name)}">Remote</a>`;
-        }
+          if (site.urls.remote) {
+            const remoteUrl = buildUrl(site.urls.remote, term, '', '');
+            html += `<a href="${remoteUrl}" target="_blank" class="site-link remote" data-keyword="${safeAttr}" data-site="${safeSiteAttr}">Remote</a>`;
+          }
 
-        html += `</div>${statusHtml}</div>`;
+          html += `</div>${statusHtml}</div>`;
+        });
+
+        html += '</div></div>';
       });
 
       html += '</div>';
