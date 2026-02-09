@@ -1,7 +1,7 @@
 # JobFinder - Project Context
 
 ## Overview
-JobFinder is a vanilla HTML/JS/CSS app that aggregates job search links across 17 job boards. Users can add custom search terms, set a location, and customize which job boards to use. Each job board supports up to three search types: keyword-only, keyword+location, and keyword+remote. All preferences persist via localStorage.
+JobFinder is a vanilla HTML/JS/CSS app that aggregates job search links across 17 job boards. Users can add custom search terms (individually or in bulk), set a location, and customize which job boards to use. Each job board supports up to three search types: keyword-only, keyword+location, and keyword+remote. Search terms have priority tiers (Core/Growth/Reach) for organizing daily must-searches vs aspirational pivots. Click tracking shows at-a-glance staleness per board. All preferences persist via localStorage.
 
 ## Files
 ```
@@ -11,7 +11,7 @@ CLAUDE.md    # This file - project documentation
 ```
 
 ## How It Works
-1. User adds a search term (e.g., "Software Engineer")
+1. User adds search terms (single, or bulk comma/newline-separated) with a priority tier
 2. User optionally sets a location (city, state) that applies to all searches
 3. App generates links to all enabled job boards with three options per board:
    - **Keyword** - searches by keyword only
@@ -57,10 +57,16 @@ const CONFIG = {
 ## localStorage Keys & Data Formats
 
 ### `jobfinder_searches`
-Array of saved search terms (strings).
+Array of search objects with term and priority tier.
 ```javascript
-["Software Engineer", "Product Manager", "Data Analyst"]
+[
+  { "term": "QA Engineer", "priority": "core" },
+  { "term": "DevOps Engineer", "priority": "growth" },
+  { "term": "Product Manager", "priority": "reach" }
+]
 ```
+**Priority tiers**: `core` (strong fit, search daily), `growth` (adjacent roles), `reach` (aspirational pivots).
+**Migration**: Old format was a plain string array. On load, strings are auto-migrated to `{ term, priority: "core" }`.
 
 ### `jobfinder_enabled_sites`
 Array of enabled site names. Defaults to all sites if not set.
@@ -73,6 +79,16 @@ User's location for location-based searches.
 ```javascript
 { "city": "Austin", "state": "Texas" }
 ```
+
+### `jobfinder_clicks`
+Tracks the last time each keyword×board combo was clicked. Key format is `"keyword::siteName"`, value is a Unix timestamp (ms). Any click type (Keyword, Location, or Remote) updates the same entry.
+```javascript
+{
+  "Software Engineer::LinkedIn": 1707500000000,
+  "QA Engineer::Indeed": 1707400000000
+}
+```
+Used for at-a-glance staleness indicators: green "✓ time" if searched today, muted "Xd ago" if recent, amber "Xd ago" if stale (3+ days).
 
 ### `jobfinder_custom_sites` (v2 - Current)
 Array of user-added custom job boards.

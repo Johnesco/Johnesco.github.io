@@ -450,9 +450,11 @@ function addDoodle() {
 }
 
 // Play sound
+let _audioCtx;
+function getAudioCtx() { if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (_audioCtx.state === 'suspended') _audioCtx.resume(); return _audioCtx; }
 function playSound(type) {
   if (!soundEnabled) return;
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const audioCtx = getAudioCtx();
   const oscillator = audioCtx.createOscillator();
   const gainNode = audioCtx.createGain();
 

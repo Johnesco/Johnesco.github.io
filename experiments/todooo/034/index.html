@@ -400,7 +400,11 @@ function drawShootingStars(time) {
     // Trail
     const gradient = ctx.createLinearGradient(star.startX, star.startY, x, y);
     gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha * 0.8})`);
-    gradient.addColorStop(0.5, star.color.replace(')', `, ${alpha * 0.5})`).replace('rgb', 'rgba'));
+    const mc = star.color;
+    const r = parseInt(mc.length > 4 ? mc.slice(1,3) : mc[1]+mc[1], 16);
+    const g = parseInt(mc.length > 4 ? mc.slice(3,5) : mc[2]+mc[2], 16);
+    const b = parseInt(mc.length > 4 ? mc.slice(5,7) : mc[3]+mc[3], 16);
+    gradient.addColorStop(0.5, `rgba(${r},${g},${b},${alpha * 0.5})`);
     gradient.addColorStop(1, 'transparent');
 
     ctx.strokeStyle = gradient;

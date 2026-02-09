@@ -488,7 +488,7 @@ setInterval(applyTimeTheme, 60000);
 // AUDIO
 // =========================================================================
 let audioCtx = null, soundOn = true;
-function getAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+function getAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); return audioCtx; }
 function playTone(f, d, type='sine', v=0.15) {
     if (!soundOn) return;
     const c = getAudio(), o = c.createOscillator(), g = c.createGain();

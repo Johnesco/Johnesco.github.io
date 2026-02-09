@@ -793,9 +793,11 @@ function showNotification(text, color) {
 }
 
 // Sound
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let audioContext;
+function getAudioContext() { if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)(); if (audioContext.state === 'suspended') audioContext.resume(); return audioContext; }
 function playSound(type) {
   if (!soundEnabled) return;
+  const audioContext = getAudioContext();
 
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();

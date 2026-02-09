@@ -51,7 +51,8 @@
       flex-wrap: wrap;
     }
 
-    .add-search input {
+    .add-search input,
+    .add-search textarea {
       padding: 0.75rem 1.25rem;
       font-size: 1rem;
       border: 2px solid #1f4068;
@@ -60,15 +61,55 @@
       color: #fff;
     }
 
-    .add-search input:focus {
+    .add-search input:focus,
+    .add-search textarea:focus {
       outline: none;
       border-color: #00d9ff;
       box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.2);
     }
 
-    .add-search input::placeholder { color: #666; }
+    .add-search input::placeholder,
+    .add-search textarea::placeholder { color: #666; }
 
-    .add-search .keyword-input { width: 300px; }
+    .add-search .keyword-input {
+      width: 350px;
+      resize: vertical;
+      min-height: 2.75rem;
+      font-family: inherit;
+      line-height: 1.4;
+    }
+
+    .add-search .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .add-search .input-hint {
+      font-size: 0.7rem;
+      color: #555;
+    }
+
+    .add-search select {
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      border: 2px solid #1f4068;
+      border-radius: 8px;
+      background: #16213e;
+      color: #aaa;
+      cursor: pointer;
+      appearance: auto;
+    }
+
+    .add-search select:focus {
+      outline: none;
+      border-color: #00d9ff;
+    }
+
+    .add-search select.core { color: #00d9ff; border-color: #00d9ff; }
+    .add-search select.growth { color: #4ade80; border-color: #4ade80; }
+    .add-search select.reach { color: #c084fc; border-color: #c084fc; }
 
     .add-search button {
       padding: 0.75rem 1.5rem;
@@ -600,6 +641,43 @@
     .site-link.location:hover { background: #40916c; }
     .site-link.remote:hover { background: #9d4edd; }
 
+    .site-status {
+      font-size: 0.7rem;
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    .site-status.fresh { color: #4ade80; }
+    .site-status.recent { color: #666; }
+    .site-status.stale { color: #f59e0b; }
+
+    .search-progress {
+      font-size: 0.75rem;
+      color: #666;
+      font-weight: normal;
+    }
+
+    .search-progress .done { color: #4ade80; font-weight: bold; }
+
+    .priority-group { margin-bottom: 2rem; }
+
+    .priority-header {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #333;
+    }
+
+    .priority-header.core { color: #00d9ff; }
+    .priority-header.growth { color: #4ade80; }
+    .priority-header.reach { color: #c084fc; }
+
+    .search-card.core { border-left: 3px solid #00d9ff; }
+    .search-card.growth { border-left: 3px solid #4ade80; }
+    .search-card.reach { border-left: 3px solid #c084fc; }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
@@ -611,7 +689,8 @@
       body { padding: 1rem; }
       .stats { gap: 1.5rem; }
       .add-search { flex-direction: column; align-items: center; }
-      .add-search input { width: 100% !important; }
+      .add-search input,
+      .add-search textarea { width: 100% !important; }
       .searches-grid { grid-template-columns: 1fr; }
       .site-name { min-width: 100px; }
     }
@@ -630,10 +709,23 @@
         <div class="stat-value" id="board-count">0</div>
         <div class="stat-label">Active Boards</div>
       </div>
+      <div class="stat">
+        <div class="stat-value" id="today-count">0</div>
+        <div class="stat-label">Searched Today</div>
+      </div>
     </div>
     <form class="add-search" onsubmit="addSearch(event)">
-      <input type="text" id="search-input" class="keyword-input" placeholder="Job title (e.g., Software Engineer)" autocomplete="off">
-      <button type="submit">Add Search</button>
+      <div class="input-group">
+        <textarea id="search-input" class="keyword-input" rows="2" placeholder="Job titles — comma or newline separated&#10;e.g., QA Engineer, SDET, Test Automation"></textarea>
+        <span class="input-hint">Enter to submit &middot; Shift+Enter for new line</span>
+      </div>
+      <select id="priority-select" onchange="this.className = this.value">
+        <option value="">Priority</option>
+        <option value="core">Core</option>
+        <option value="growth">Growth</option>
+        <option value="reach">Reach</option>
+      </select>
+      <button type="submit">Add</button>
     </form>
     <div class="location-section">
       <label class="location-label">Location (applies to all searches):</label>
@@ -657,12 +749,14 @@
     let enabledSites = [];
     let customSites = [];
     let userLocation = { city: '', state: '' };
+    let clickData = {};
 
     // LocalStorage keys
     const SEARCHES_KEY = 'jobfinder_searches';
     const SITES_KEY = 'jobfinder_enabled_sites';
     const CUSTOM_SITES_KEY = 'jobfinder_custom_sites';
     const LOCATION_KEY = 'jobfinder_location';
+    const CLICKS_KEY = 'jobfinder_clicks';
 
     // Initialize
     document.addEventListener('DOMContentLoaded', init);
@@ -679,6 +773,23 @@
       loadCustomSites();
       loadEnabledSites();
       loadLocation();
+      loadClicks();
+
+      // Enter to submit textarea, Shift+Enter for newline
+      document.getElementById('search-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          document.querySelector('.add-search').dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+      });
+
+      // Track link clicks via event delegation
+      document.addEventListener('click', function(e) {
+        const link = e.target.closest('.site-link');
+        if (link && link.dataset.keyword && link.dataset.site) {
+          trackClick(link.dataset.keyword, link.dataset.site);
+        }
+      });
 
       // Render everything
       renderBoardsPanel();
@@ -689,7 +800,16 @@
     function loadSearches() {
       try {
         const saved = localStorage.getItem(SEARCHES_KEY);
-        searches = saved ? JSON.parse(saved) : [];
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          // Migrate from string array to object array
+          searches = parsed.map(s => {
+            if (typeof s === 'string') return { term: s, priority: 'core' };
+            return s;
+          });
+        } else {
+          searches = [];
+        }
       } catch (e) {
         searches = [];
       }
@@ -752,6 +872,83 @@
       userLocation = { city: '', state: '' };
       saveLocation();
       render();
+    }
+
+    // Click tracking functions
+    function loadClicks() {
+      try {
+        const saved = localStorage.getItem(CLICKS_KEY);
+        clickData = saved ? JSON.parse(saved) : {};
+      } catch (e) {
+        clickData = {};
+      }
+    }
+
+    function saveClicks() {
+      localStorage.setItem(CLICKS_KEY, JSON.stringify(clickData));
+    }
+
+    function trackClick(keyword, siteName) {
+      const key = keyword + '::' + siteName;
+      clickData[key] = Date.now();
+      saveClicks();
+      setTimeout(() => render(), 150);
+    }
+
+    function getClickAge(keyword, siteName) {
+      const key = keyword + '::' + siteName;
+      const ts = clickData[key];
+      if (!ts) return null;
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      if (ts >= todayStart.getTime()) {
+        const d = new Date(ts);
+        const h = d.getHours();
+        const m = d.getMinutes();
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const hour = h % 12 || 12;
+        const min = m.toString().padStart(2, '0');
+        return { tier: 'fresh', label: hour + ':' + min + ' ' + ampm };
+      }
+      const days = Math.floor((Date.now() - ts) / 86400000);
+      if (days <= 2) return { tier: 'recent', label: days + 'd ago' };
+      return { tier: 'stale', label: days + 'd ago' };
+    }
+
+    function getEnabledSiteNames() {
+      const names = [];
+      CONFIG.categories.forEach(cat => {
+        cat.sites.forEach(site => {
+          if (enabledSites.includes(site.name)) names.push(site.name);
+        });
+      });
+      customSites.forEach(site => {
+        if (enabledSites.includes(site.name)) names.push(site.name);
+      });
+      return names;
+    }
+
+    function getTodayCount(keyword, siteNames) {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const ts = todayStart.getTime();
+      let count = 0;
+      siteNames.forEach(name => {
+        const key = keyword + '::' + name;
+        if (clickData[key] && clickData[key] >= ts) count++;
+      });
+      return count;
+    }
+
+    function getAllTodayCount() {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const ts = todayStart.getTime();
+      let count = 0;
+      for (const key in clickData) {
+        if (clickData[key] >= ts) count++;
+      }
+      return count;
     }
 
     function getAllSiteNames() {
@@ -934,26 +1131,30 @@
     function addSearch(e) {
       e.preventDefault();
       const input = document.getElementById('search-input');
-      const term = input.value.trim();
+      const priority = document.getElementById('priority-select').value;
+      const raw = input.value;
 
-      if (!term) return;
+      // Split by commas and newlines
+      const terms = raw.split(/[,\n]/).map(s => s.trim()).filter(s => s.length > 0);
+      if (terms.length === 0) return;
 
-      // Prevent duplicates (case-insensitive)
-      if (searches.some(s => s.toLowerCase() === term.toLowerCase())) {
-        input.value = '';
-        input.focus();
-        return;
+      let added = 0;
+      terms.forEach(term => {
+        if (searches.some(s => s.term.toLowerCase() === term.toLowerCase())) return;
+        searches.unshift({ term, priority });
+        added++;
+      });
+
+      if (added > 0) {
+        saveSearches();
+        render();
       }
-
-      searches.unshift(term);
-      saveSearches();
       input.value = '';
       input.focus();
-      render();
     }
 
     function deleteSearch(term) {
-      searches = searches.filter(s => s !== term);
+      searches = searches.filter(s => s.term !== term);
       saveSearches();
       render();
     }
@@ -984,7 +1185,8 @@
         searches: searches,
         enabledSites: enabledSites,
         customSites: customSites,
-        location: userLocation
+        location: userLocation,
+        clicks: clickData
       };
 
       const json = JSON.stringify(data, null, 2);
@@ -1014,9 +1216,12 @@
             throw new Error('Invalid file format');
           }
 
-          // Import searches
+          // Import searches (with migration from string to object format)
           if (Array.isArray(data.searches)) {
-            searches = data.searches.filter(s => typeof s === 'string');
+            searches = data.searches.map(s => {
+              if (typeof s === 'string') return { term: s, priority: 'core' };
+              return s;
+            }).filter(s => s.term);
             saveSearches();
           }
 
@@ -1050,6 +1255,12 @@
             saveLocation();
             document.getElementById('city-input').value = userLocation.city;
             document.getElementById('state-input').value = userLocation.state;
+          }
+
+          // Import clicks
+          if (data.clicks && typeof data.clicks === 'object') {
+            clickData = data.clicks;
+            saveClicks();
           }
 
           // Re-run enabled sites loading to handle new custom sites
@@ -1193,6 +1404,7 @@
       // Update stats
       document.getElementById('search-count').textContent = searches.length;
       document.getElementById('board-count').textContent = enabledSites.length;
+      document.getElementById('today-count').textContent = getAllTodayCount();
 
       // Re-render boards panel
       renderBoardsPanel();
@@ -1216,22 +1428,41 @@
         return;
       }
 
-      let html = '<div class="searches-grid">';
-      searches.forEach(term => {
-        html += buildSearchCard(term);
+      const priorities = ['core', 'growth', 'reach', ''];
+      const priorityLabels = { core: 'Core', growth: 'Growth', reach: 'Reach' };
+      let html = '';
+
+      priorities.forEach(priority => {
+        const group = searches.filter(s => (s.priority || '') === priority);
+        if (group.length === 0) return;
+        html += `<div class="priority-group">`;
+        if (priority) {
+          html += `<h2 class="priority-header ${priority}">${priorityLabels[priority]}</h2>`;
+        }
+        html += `<div class="searches-grid">`;
+        group.forEach(search => {
+          html += buildSearchCard(search);
+        });
+        html += '</div></div>';
       });
-      html += '</div>';
+
       container.innerHTML = html;
     }
 
-    function buildSearchCard(term) {
+    function buildSearchCard(search) {
+      const term = search.term;
+      const priority = search.priority || 'core';
       const hasLocation = userLocation.city && userLocation.state;
       const safeTerm = escapeHtml(term);
+      const safeAttr = escapeAttr(term);
+
+      const allEnabled = getEnabledSiteNames();
+      const todayDone = getTodayCount(term, allEnabled);
 
       let html = `
-        <div class="search-card">
+        <div class="search-card ${priority}">
           <div class="search-card-header">
-            <h3>${safeTerm}</h3>
+            <h3>${safeTerm} <span class="search-progress"><span class="done">${todayDone}</span>/${allEnabled.length} today</span></h3>
             <button class="delete-btn" onclick="deleteSearch('${safeTerm}')" title="Delete search">&times;</button>
           </div>
       `;
@@ -1244,29 +1475,31 @@
           <div class="link-category-name">${cat.name}</div>`;
 
         enabledInCategory.forEach(site => {
+          const age = getClickAge(term, site.name);
+          const statusHtml = age
+            ? `<span class="site-status ${age.tier}">${age.tier === 'fresh' ? '✓ ' : ''}${age.label}</span>`
+            : '';
+
           html += `<div class="site-row">
             <span class="site-name">${site.name}</span>
             <div class="site-links">`;
 
-          // Keyword link (always shown if available)
           if (site.urls.keyword) {
             const keywordUrl = buildUrl(site.urls.keyword, term, '', '');
-            html += `<a href="${keywordUrl}" target="_blank" class="site-link keyword">Keyword</a>`;
+            html += `<a href="${keywordUrl}" target="_blank" class="site-link keyword" data-keyword="${safeAttr}" data-site="${escapeAttr(site.name)}">Keyword</a>`;
           }
 
-          // Location link (only shown if location is set and site supports it)
           if (hasLocation && site.urls.location) {
             const locationUrl = buildUrl(site.urls.location, term, userLocation.city, userLocation.state);
-            html += `<a href="${locationUrl}" target="_blank" class="site-link location">Location</a>`;
+            html += `<a href="${locationUrl}" target="_blank" class="site-link location" data-keyword="${safeAttr}" data-site="${escapeAttr(site.name)}">Location</a>`;
           }
 
-          // Remote link (always shown if available)
           if (site.urls.remote) {
             const remoteUrl = buildUrl(site.urls.remote, term, '', '');
-            html += `<a href="${remoteUrl}" target="_blank" class="site-link remote">Remote</a>`;
+            html += `<a href="${remoteUrl}" target="_blank" class="site-link remote" data-keyword="${safeAttr}" data-site="${escapeAttr(site.name)}">Remote</a>`;
           }
 
-          html += '</div></div>';
+          html += `</div>${statusHtml}</div>`;
         });
 
         html += '</div>';
@@ -1279,26 +1512,31 @@
           <div class="link-category-name">Custom</div>`;
 
         enabledCustom.forEach(site => {
+          const age = getClickAge(term, site.name);
+          const statusHtml = age
+            ? `<span class="site-status ${age.tier}">${age.tier === 'fresh' ? '✓ ' : ''}${age.label}</span>`
+            : '';
+
           html += `<div class="site-row">
             <span class="site-name">${escapeHtml(site.name)}</span>
             <div class="site-links">`;
 
           if (site.urls.keyword) {
             const keywordUrl = buildUrl(site.urls.keyword, term, '', '');
-            html += `<a href="${keywordUrl}" target="_blank" class="site-link keyword">Keyword</a>`;
+            html += `<a href="${keywordUrl}" target="_blank" class="site-link keyword" data-keyword="${safeAttr}" data-site="${escapeAttr(site.name)}">Keyword</a>`;
           }
 
           if (hasLocation && site.urls.location) {
             const locationUrl = buildUrl(site.urls.location, term, userLocation.city, userLocation.state);
-            html += `<a href="${locationUrl}" target="_blank" class="site-link location">Location</a>`;
+            html += `<a href="${locationUrl}" target="_blank" class="site-link location" data-keyword="${safeAttr}" data-site="${escapeAttr(site.name)}">Location</a>`;
           }
 
           if (site.urls.remote) {
             const remoteUrl = buildUrl(site.urls.remote, term, '', '');
-            html += `<a href="${remoteUrl}" target="_blank" class="site-link remote">Remote</a>`;
+            html += `<a href="${remoteUrl}" target="_blank" class="site-link remote" data-keyword="${safeAttr}" data-site="${escapeAttr(site.name)}">Remote</a>`;
           }
 
-          html += '</div></div>';
+          html += `</div>${statusHtml}</div>`;
         });
 
         html += '</div>';
@@ -1313,6 +1551,10 @@
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML.replace(/'/g, "\\'");
+    }
+
+    function escapeAttr(text) {
+      return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
   </script>
 </body>

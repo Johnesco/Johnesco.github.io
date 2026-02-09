@@ -647,7 +647,8 @@ function render() {
   });
 
   existing.forEach(el => {
-    if (!filtered.find(t => t.dataset && t.id == el.dataset.id)) {
+    if (el.classList.contains('ghost')) return;
+    if (!filtered.find(t => t.id == el.dataset.id)) {
       el.remove();
     }
   });
