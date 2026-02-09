@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stained Glass | todooo 070</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #1a1410;
+  font-family: 'Georgia', serif;
+  cursor: crosshair;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#ui {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  pointer-events: none;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  line-height: 1.6;
+}
+
+#ui div {
+  margin-bottom: 4px;
+}
+
+#title {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  pointer-events: none;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+}
+
+#instructions {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  text-align: right;
+  pointer-events: none;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div id="ui">
+  <div id="visits">Visit: 1</div>
+  <div id="panes">Panes: 0</div>
+  <div id="time">Time: Dawn</div>
+</div>
+
+<div id="title">Stained Glass · todooo 070</div>
+
+<div id="instructions">
+  Click: place seed<br>
+  Click pane: cycle color<br>
+  Double-click: remove seed<br>
+  L: toggle light lock<br>
+  C: clear all<br>
+  R: rosette<br>
+  S: suggested layout<br>
+  Scroll: time of day
+</div>
+
+<script>
+// ============================================================================
+// AUDIO ENGINE
+// ============================================================================
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const masterGain = audioCtx.createGain();
+masterGain.gain.value = 0.3;
+masterGain.connect(audioCtx.destination);
+
+// Reverb for cathedral ambience
+let reverbNode = null;
+
+async function createReverb() {
+  const convolver = audioCtx.createConvolver();
+  const rate = audioCtx.sampleRate;
+  const length = rate * 3; // 3 second reverb
+  const impulse = audioCtx.createBuffer(2, length, rate);
+
+  for (let channel = 0; channel < 2; channel++) {
+    const data = impulse.getChannelData(channel);
+    for (let i = 0; i < length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+    }
+  }
+
+  convolver.buffer = impulse;
+  reverbNode = convolver;
+  reverbNode.connect(masterGain);
+}
+
+createReverb();
+
+// Glass chime sound
+function playChime(colorIndex) {
+  const frequencies = [523.25, 659.25, 783.99, 880, 1046.5, 1174.66]; // C, E, G, A, C, D
+  const freq = frequencies[colorIndex % frequencies.length];
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  const filter = audioCtx.createBiquadFilter();
+
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+
+  filter.type = 'bandpass';
+  filter.frequency.value = freq;
+  filter.Q.value = 10;
+
+  gain.gain.value = 0.15;
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(reverbNode || masterGain);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 1.5);
+}
+
+// Deep removal tone
+function playRemoveTone() {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = 'sine';
+  osc.frequency.value = 110;
+  osc.frequency.exponentialRampToValueAtTime(55, audioCtx.currentTime + 0.8);
+
+  gain.gain.value = 0.2;
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+
+  osc.connect(gain);
+  gain.connect(reverbNode || masterGain);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.8);
+}
+
+// Ambient pad
+let padOscillators = [];
+
+function startAmbientPad() {
+  const notes = [130.81, 164.81, 196.00, 246.94]; // C3, E3, G3, B3
+
+  notes.forEach((freq, i) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+
+    filter.type = 'lowpass';
+    filter.frequency.value = 800;
+    filter.Q.value = 1;
+
+    gain.gain.value = 0;
+    gain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime + 2 + i * 0.5);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(reverbNode || masterGain);
+
+    osc.start();
+    padOscillators.push({ osc, gain });
+  });
+}
+
+// Start pad after user interaction
+let padStarted = false;
+function ensurePadStarted() {
+  if (!padStarted && audioCtx.state === 'running') {
+    startAmbientPad();
+    padStarted = true;
+  }
+}
+
+// ============================================================================
+// STATE
+// ============================================================================
+
+const STORAGE_KEY = 'todooo-070';
+
+const state = {
+  seeds: [], // { x, y, colorIndex }
+  lightAngle: 0, // 0 to 2*PI
+  lightLocked: false,
+  brightness: 1.0, // time of day multiplier
+  visits: 1,
+  mouseX: 0,
+  mouseY: 0
+};
+
+// Glass colors
+const glassColors = [
+  { name: 'Ruby', base: [139, 0, 0], light: [220, 20, 60] },
+  { name: 'Sapphire', base: [0, 0, 139], light: [65, 105, 225] },
+  { name: 'Emerald', base: [0, 100, 0], light: [50, 205, 50] },
+  { name: 'Amber', base: [218, 165, 32], light: [255, 215, 0] },
+  { name: 'Amethyst', base: [75, 0, 130], light: [138, 43, 226] },
+  { name: 'Clear', base: [200, 200, 220], light: [240, 248, 255] }
+];
+
+// ============================================================================
+// PERSISTENCE
+// ============================================================================
+
+function saveState() {
+  const data = {
+    seeds: state.seeds,
+    lightAngle: state.lightAngle,
+    brightness: state.brightness,
+    visits: state.visits
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function loadState() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      state.seeds = data.seeds || [];
+      state.lightAngle = data.lightAngle || 0;
+      state.brightness = data.brightness !== undefined ? data.brightness : 1.0;
+      state.visits = (data.visits || 0) + 1;
+    } catch (e) {
+      console.error('Failed to load state:', e);
+    }
+  }
+}
+
+// ============================================================================
+// CANVAS SETUP
+// ============================================================================
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let width, height;
+let archPath; // Path2D for the gothic arch
+
+function resize() {
+  width = canvas.width = window.innerWidth;
+  height = canvas.height = window.innerHeight;
+  createArchPath();
+}
+
+window.addEventListener('resize', resize);
+resize();
+
+// Create the gothic arch path
+function createArchPath() {
+  const cx = width / 2;
+  const cy = height / 2;
+  const w = Math.min(width, height) * 0.5;
+  const h = w * 1.4;
+
+  archPath = new Path2D();
+
+  // Gothic pointed arch
+  const baseY = cy + h / 2;
+  const topY = cy - h / 2;
+  const leftX = cx - w / 2;
+  const rightX = cx + w / 2;
+  const peakX = cx;
+  const peakY = topY - 30;
+
+  archPath.moveTo(leftX, baseY);
+  archPath.lineTo(leftX, cy);
+  archPath.quadraticCurveTo(leftX, topY + 50, peakX, peakY);
+  archPath.quadraticCurveTo(rightX, topY + 50, rightX, cy);
+  archPath.lineTo(rightX, baseY);
+  archPath.lineTo(leftX, baseY);
+  archPath.closePath();
+}
+
+// ============================================================================
+// VORONOI COMPUTATION
+// ============================================================================
+
+function computeVoronoi() {
+  if (state.seeds.length === 0) return [];
+
+  const cells = [];
+  const bounds = getArchBounds();
+  const margin = 20;
+
+  // For each seed, compute its Voronoi cell
+  state.seeds.forEach((seed, seedIndex) => {
+    const vertices = [];
+
+    // Sample points around the boundary and test which are closest to this seed
+    // We'll use a more sophisticated clipping approach
+    const clipRect = [
+      bounds.left - margin,
+      bounds.top - margin,
+      bounds.right + margin,
+      bounds.bottom + margin
+    ];
+
+    // Generate polygon for this seed by finding perpendicular bisectors
+    const edges = [];
+
+    state.seeds.forEach((otherSeed, otherIndex) => {
+      if (seedIndex === otherSeed) return;
+
+      // Perpendicular bisector between seed and otherSeed
+      const mx = (seed.x + otherSeed.x) / 2;
+      const my = (seed.y + otherSeed.y) / 2;
+      const dx = otherSeed.x - seed.x;
+      const dy = otherSeed.y - seed.y;
+
+      // Perpendicular direction
+      const px = -dy;
+      const py = dx;
+
+      edges.push({ mx, my, px, py });
+    });
+
+    // Start with a large bounding polygon
+    let polygon = [
+      { x: clipRect[0], y: clipRect[1] },
+      { x: clipRect[2], y: clipRect[1] },
+      { x: clipRect[2], y: clipRect[3] },
+      { x: clipRect[0], y: clipRect[3] }
+    ];
+
+    // Clip polygon by each edge
+    edges.forEach(edge => {
+      polygon = clipPolygonByLine(polygon, edge);
+    });
+
+    // Clip by arch bounds
+    polygon = clipPolygonByArch(polygon);
+
+    if (polygon.length >= 3) {
+      cells.push({
+        seed: seedIndex,
+        vertices: polygon,
+        colorIndex: seed.colorIndex
+      });
+    }
+  });
+
+  return cells;
+}
+
+function clipPolygonByLine(polygon, edge) {
+  const { mx, my, px, py } = edge;
+  const result = [];
+
+  for (let i = 0; i < polygon.length; i++) {
+    const current = polygon[i];
+    const next = polygon[(i + 1) % polygon.length];
+
+    const currentSide = (current.x - mx) * px + (current.y - my) * py;
+    const nextSide = (next.x - mx) * px + (next.y - my) * py;
+
+    if (currentSide >= 0) {
+      result.push(current);
+    }
+
+    if ((currentSide >= 0 && nextSide < 0) || (currentSide < 0 && nextSide >= 0)) {
+      // Intersection
+      const t = currentSide / (currentSide - nextSide);
+      const ix = current.x + t * (next.x - current.x);
+      const iy = current.y + t * (next.y - current.y);
+      result.push({ x: ix, y: iy });
+    }
+  }
+
+  return result;
+}
+
+function clipPolygonByArch(polygon) {
+  // Simple rectangular clip for now (arch bounds)
+  const bounds = getArchBounds();
+  const margin = 5;
+
+  return polygon.filter(p =>
+    p.x >= bounds.left - margin &&
+    p.x <= bounds.right + margin &&
+    p.y >= bounds.top - margin &&
+    p.y <= bounds.bottom + margin
+  );
+}
+
+function getArchBounds() {
+  const cx = width / 2;
+  const cy = height / 2;
+  const w = Math.min(width, height) * 0.5;
+  const h = w * 1.4;
+
+  return {
+    left: cx - w / 2,
+    right: cx + w / 2,
+    top: cy - h / 2,
+    bottom: cy + h / 2,
+    centerX: cx,
+    centerY: cy
+  };
+}
+
+// ============================================================================
+// RENDERING
+// ============================================================================
+
+function render() {
+  // Background - warm glow
+  const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width/1.5);
+  gradient.addColorStop(0, `rgba(255, 220, 150, ${0.15 * state.brightness})`);
+  gradient.addColorStop(1, '#1a1410');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+
+  // Draw stone arch frame
+  drawStoneArch();
+
+  // Compute and draw Voronoi cells
+  const cells = computeVoronoi();
+
+  // Draw colored floor reflections first
+  drawFloorReflections(cells);
+
+  // Draw glass panes
+  ctx.save();
+  ctx.clip(archPath);
+
+  cells.forEach(cell => {
+    drawGlassPane(cell);
+  });
+
+  ctx.restore();
+
+  // Draw lead came (dark lines between panes)
+  cells.forEach(cell => {
+    drawLeadCame(cell);
+  });
+
+  // Draw seed points (small dots)
+  state.seeds.forEach(seed => {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.beginPath();
+    ctx.arc(seed.x, seed.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Draw light indicator if locked
+  if (state.lightLocked) {
+    const bounds = getArchBounds();
+    const lightDist = 300;
+    const lx = bounds.centerX + Math.cos(state.lightAngle) * lightDist;
+    const ly = bounds.centerY + Math.sin(state.lightAngle) * lightDist;
+
+    ctx.fillStyle = 'rgba(255, 255, 200, 0.5)';
+    ctx.beginPath();
+    ctx.arc(lx, ly, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255, 255, 200, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(bounds.centerX, bounds.centerY);
+    ctx.lineTo(lx, ly);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function drawStoneArch() {
+  ctx.save();
+
+  // Stone texture with noise
+  ctx.fillStyle = '#5a5a52';
+  ctx.fill(archPath);
+
+  // Add texture
+  const bounds = getArchBounds();
+  ctx.globalAlpha = 0.1;
+  for (let i = 0; i < 2000; i++) {
+    const x = bounds.left + Math.random() * (bounds.right - bounds.left);
+    const y = bounds.top + Math.random() * (bounds.bottom - bounds.top);
+
+    if (ctx.isPointInPath(archPath, x, y)) {
+      ctx.fillStyle = Math.random() > 0.5 ? '#000' : '#fff';
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // Inner shadow for depth
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+  ctx.shadowBlur = 15;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.strokeStyle = '#3a3a32';
+  ctx.lineWidth = 25;
+  ctx.stroke(archPath);
+
+  ctx.shadowColor = 'transparent';
+
+  // Highlight edge
+  ctx.strokeStyle = '#6a6a62';
+  ctx.lineWidth = 2;
+  ctx.stroke(archPath);
+
+  ctx.restore();
+}
+
+function drawGlassPane(cell) {
+  if (cell.vertices.length < 3) return;
+
+  const color = glassColors[cell.colorIndex];
+  const bounds = getArchBounds();
+
+  // Calculate light intensity based on angle
+  const centerX = cell.vertices.reduce((sum, v) => sum + v.x, 0) / cell.vertices.length;
+  const centerY = cell.vertices.reduce((sum, v) => sum + v.y, 0) / cell.vertices.length;
+
+  const lightDist = 300;
+  const lx = bounds.centerX + Math.cos(state.lightAngle) * lightDist;
+  const ly = bounds.centerY + Math.sin(state.lightAngle) * lightDist;
+
+  const dx = centerX - lx;
+  const dy = centerY - ly;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const intensity = Math.max(0, 1 - dist / 600) * state.brightness;
+
+  // Interpolate between base and light color
+  const r = Math.round(color.base[0] + (color.light[0] - color.base[0]) * intensity);
+  const g = Math.round(color.base[1] + (color.light[1] - color.base[1]) * intensity);
+  const b = Math.round(color.base[2] + (color.light[2] - color.base[2]) * intensity);
+
+  // Draw filled pane
+  ctx.beginPath();
+  ctx.moveTo(cell.vertices[0].x, cell.vertices[0].y);
+  for (let i = 1; i < cell.vertices.length; i++) {
+    ctx.lineTo(cell.vertices[i].x, cell.vertices[i].y);
+  }
+  ctx.closePath();
+
+  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.75)`;
+  ctx.fill();
+
+  // Add subtle texture variation
+  ctx.globalAlpha = 0.1;
+  for (let i = 0; i < 30; i++) {
+    const vx = centerX + (Math.random() - 0.5) * 50;
+    const vy = centerY + (Math.random() - 0.5) * 50;
+
+    if (ctx.isPointInPath(vx, vy)) {
+      ctx.fillStyle = Math.random() > 0.5 ? `rgba(${r+20}, ${g+20}, ${b+20}, 0.3)` : `rgba(${r-20}, ${g-20}, ${b-20}, 0.3)`;
+      ctx.fillRect(vx, vy, 2, 2);
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // Glow effect for lit panes
+  if (intensity > 0.5) {
+    ctx.save();
+    ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${intensity * 0.6})`;
+    ctx.shadowBlur = 20;
+    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${intensity * 0.4})`;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawLeadCame(cell) {
+  if (cell.vertices.length < 3) return;
+
+  ctx.strokeStyle = '#2a2a2a';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(cell.vertices[0].x, cell.vertices[0].y);
+  for (let i = 1; i < cell.vertices.length; i++) {
+    ctx.lineTo(cell.vertices[i].x, cell.vertices[i].y);
+  }
+  ctx.closePath();
+  ctx.stroke();
+
+  // Slight highlight on lead
+  ctx.strokeStyle = '#4a4a4a';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function drawFloorReflections(cells) {
+  const bounds = getArchBounds();
+  const floorY = bounds.bottom + 10;
+
+  if (floorY >= height) return;
+
+  cells.forEach(cell => {
+    const color = glassColors[cell.colorIndex];
+    const centerX = cell.vertices.reduce((sum, v) => sum + v.x, 0) / cell.vertices.length;
+    const centerY = cell.vertices.reduce((sum, v) => sum + v.y, 0) / cell.vertices.length;
+
+    // Light intensity
+    const lightDist = 300;
+    const lx = bounds.centerX + Math.cos(state.lightAngle) * lightDist;
+    const ly = bounds.centerY + Math.sin(state.lightAngle) * lightDist;
+    const dx = centerX - lx;
+    const dy = centerY - ly;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const intensity = Math.max(0, 1 - dist / 600) * state.brightness;
+
+    if (intensity < 0.3) return;
+
+    const r = Math.round(color.light[0]);
+    const g = Math.round(color.light[1]);
+    const b = Math.round(color.light[2]);
+
+    // Project colored light onto floor
+    const gradient = ctx.createRadialGradient(centerX, floorY, 0, centerX, floorY, 100);
+    gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${intensity * 0.3})`);
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(centerX, floorY, 100, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ============================================================================
+// INTERACTION
+// ============================================================================
+
+let lastClickTime = 0;
+let lastClickPos = null;
+
+canvas.addEventListener('click', (e) => {
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  ensurePadStarted();
+
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  // Check for double-click
+  const now = Date.now();
+  const isDoubleClick = now - lastClickTime < 300 &&
+                       lastClickPos &&
+                       Math.hypot(x - lastClickPos.x, y - lastClickPos.y) < 10;
+
+  lastClickTime = now;
+  lastClickPos = { x, y };
+
+  if (isDoubleClick) {
+    handleDoubleClick(x, y);
+    return;
+  }
+
+  // Check if clicking inside the arch
+  if (!ctx.isPointInPath(archPath, x, y)) {
+    return;
+  }
+
+  // Check if clicking on existing pane
+  const cells = computeVoronoi();
+  let clickedCell = null;
+
+  for (const cell of cells) {
+    if (cell.vertices.length < 3) continue;
+
+    ctx.beginPath();
+    ctx.moveTo(cell.vertices[0].x, cell.vertices[0].y);
+    for (let i = 1; i < cell.vertices.length; i++) {
+      ctx.lineTo(cell.vertices[i].x, cell.vertices[i].y);
+    }
+    ctx.closePath();
+
+    if (ctx.isPointInPath(x, y)) {
+      clickedCell = cell;
+      break;
+    }
+  }
+
+  if (clickedCell) {
+    // Cycle color
+    const seed = state.seeds[clickedCell.seed];
+    seed.colorIndex = (seed.colorIndex + 1) % glassColors.length;
+    playChime(seed.colorIndex);
+    saveState();
+  } else {
+    // Add new seed
+    const colorIndex = Math.floor(Math.random() * glassColors.length);
+    state.seeds.push({ x, y, colorIndex });
+    playChime(colorIndex);
+    saveState();
+  }
+
+  updateUI();
+});
+
+function handleDoubleClick(x, y) {
+  // Find closest seed and remove it
+  let closest = null;
+  let closestDist = Infinity;
+
+  state.seeds.forEach((seed, index) => {
+    const dist = Math.hypot(seed.x - x, seed.y - y);
+    if (dist < closestDist && dist < 50) {
+      closestDist = dist;
+      closest = index;
+    }
+  });
+
+  if (closest !== null) {
+    state.seeds.splice(closest, 1);
+    playRemoveTone();
+    saveState();
+    updateUI();
+  }
+}
+
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  state.mouseX = e.clientX - rect.left;
+  state.mouseY = e.clientY - rect.top;
+
+  if (state.lightLocked) {
+    const bounds = getArchBounds();
+    const dx = state.mouseX - bounds.centerX;
+    const dy = state.mouseY - bounds.centerY;
+    state.lightAngle = Math.atan2(dy, dx);
+  }
+});
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+
+  state.brightness = Math.max(0.1, Math.min(2, state.brightness - e.deltaY * 0.001));
+  saveState();
+  updateUI();
+}, { passive: false });
+
+// Keyboard controls
+document.addEventListener('keydown', (e) => {
+  const key = e.key.toLowerCase();
+
+  if (key === 'c') {
+    // Clear all
+    state.seeds = [];
+    saveState();
+    updateUI();
+    playRemoveTone();
+  } else if (key === 'l') {
+    // Toggle light lock
+    state.lightLocked = !state.lightLocked;
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    ensurePadStarted();
+  } else if (key === 'r') {
+    // Generate rosette pattern
+    generateRosette();
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    ensurePadStarted();
+  } else if (key === 's') {
+    // Suggested layout
+    cycleSuggestedLayout();
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    ensurePadStarted();
+  }
+});
+
+// ============================================================================
+// PATTERN GENERATION
+// ============================================================================
+
+function generateRosette() {
+  state.seeds = [];
+  const bounds = getArchBounds();
+  const cx = bounds.centerX;
+  const cy = bounds.centerY;
+  const radius = Math.min(bounds.right - bounds.left, bounds.bottom - bounds.top) / 3;
+
+  // Central seed
+  state.seeds.push({
+    x: cx,
+    y: cy,
+    colorIndex: Math.floor(Math.random() * glassColors.length)
+  });
+
+  // Rings
+  for (let ring = 1; ring <= 3; ring++) {
+    const r = radius * (ring / 3);
+    const count = ring * 6;
+
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r;
+
+      state.seeds.push({
+        x,
+        y,
+        colorIndex: Math.floor(Math.random() * glassColors.length)
+      });
+    }
+  }
+
+  playChime(0);
+  saveState();
+  updateUI();
+}
+
+let layoutIndex = 0;
+
+function cycleSuggestedLayout() {
+  const layouts = [
+    generateSimpleLayout,
+    generateCathedralLayout,
+    generateAbstractLayout,
+    generateRoseWindow
+  ];
+
+  layouts[layoutIndex % layouts.length]();
+  layoutIndex++;
+
+  playChime(layoutIndex % glassColors.length);
+  saveState();
+  updateUI();
+}
+
+function generateSimpleLayout() {
+  state.seeds = [];
+  const bounds = getArchBounds();
+  const cols = 3;
+  const rows = 4;
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const x = bounds.left + (bounds.right - bounds.left) * (col + 0.5) / cols;
+      const y = bounds.top + (bounds.bottom - bounds.top) * (row + 0.5) / rows;
+
+      state.seeds.push({
+        x: x + (Math.random() - 0.5) * 20,
+        y: y + (Math.random() - 0.5) * 20,
+        colorIndex: Math.floor(Math.random() * glassColors.length)
+      });
+    }
+  }
+}
+
+function generateCathedralLayout() {
+  state.seeds = [];
+  const bounds = getArchBounds();
+
+  // Tall vertical panes
+  const cols = 4;
+  const rows = 5;
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const x = bounds.left + (bounds.right - bounds.left) * (col + 0.5) / cols;
+      const y = bounds.top + (bounds.bottom - bounds.top) * (row + 0.5) / rows;
+
+      state.seeds.push({
+        x,
+        y,
+        colorIndex: (col + row) % glassColors.length
+      });
+    }
+  }
+}
+
+function generateAbstractLayout() {
+  state.seeds = [];
+  const bounds = getArchBounds();
+  const count = 15 + Math.floor(Math.random() * 15);
+
+  for (let i = 0; i < count; i++) {
+    const x = bounds.left + Math.random() * (bounds.right - bounds.left);
+    const y = bounds.top + Math.random() * (bounds.bottom - bounds.top);
+
+    state.seeds.push({
+      x,
+      y,
+      colorIndex: Math.floor(Math.random() * glassColors.length)
+    });
+  }
+}
+
+function generateRoseWindow() {
+  generateRosette(); // Same as rosette
+}
+
+// ============================================================================
+// UI UPDATES
+// ============================================================================
+
+function updateUI() {
+  document.getElementById('visits').textContent = `Visit: ${state.visits}`;
+  document.getElementById('panes').textContent = `Panes: ${state.seeds.length}`;
+
+  const times = ['Night', 'Dawn', 'Morning', 'Noon', 'Afternoon', 'Dusk', 'Evening', 'Night'];
+  const timeIndex = Math.floor(state.brightness * 3.5);
+  document.getElementById('time').textContent = `Time: ${times[Math.min(timeIndex, times.length - 1)]}`;
+}
+
+// ============================================================================
+// ANIMATION LOOP
+// ============================================================================
+
+function animate() {
+  // Auto-rotate light if not locked
+  if (!state.lightLocked) {
+    state.lightAngle += 0.001;
+  }
+
+  render();
+  requestAnimationFrame(animate);
+}
+
+// ============================================================================
+// INIT
+// ============================================================================
+
+loadState();
+updateUI();
+animate();
+
+// Initial audio unlock prompt
+document.addEventListener('click', () => {
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  ensurePadStarted();
+}, { once: true });
+
+</script>
+
+</body>
+</html>

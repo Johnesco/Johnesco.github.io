@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rain on a Window · 064</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #0a0a0f;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            cursor: crosshair;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+            z-index: 10;
+            line-height: 1.6;
+        }
+
+        #ui .label {
+            opacity: 0.5;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            text-align: right;
+            pointer-events: none;
+            z-index: 10;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="ui">
+        <div class="label">Rain Intensity</div>
+        <div id="intensity">Medium</div>
+        <div class="label" style="margin-top: 12px;">Watching</div>
+        <div id="timer">0:00</div>
+    </div>
+    <div id="controls">
+        Move: Clear condensation<br>
+        Click: Create drop<br>
+        R: Toggle intensity
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let drops = [];
+        let bokehLights = [];
+        let condensation = [];
+        let fingerTrails = [];
+        let audioCtx, rainNoise, thunderTimeout;
+
+        // State
+        const STORAGE_KEY = 'todooo-064';
+        let state = {
+            rainIntensity: 1, // 0: light, 1: medium, 2: heavy
+            visitCount: 0,
+            totalTime: 0,
+            startTime: Date.now()
+        };
+
+        const intensityNames = ['Light', 'Medium', 'Heavy'];
+        const intensityConfigs = [
+            { spawnRate: 0.3, speed: 1, maxDrops: 30 },
+            { spawnRate: 0.6, speed: 1.5, maxDrops: 60 },
+            { spawnRate: 1.2, speed: 2.2, maxDrops: 100 }
+        ];
+
+        // Rain cycle (2 min = 120 sec)
+        let cycleTime = 0;
+        const CYCLE_DURATION = 120;
+
+        // Resize handler
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            generateBokeh();
+            generateCondensation();
+        }
+
+        // Load state
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    state.rainIntensity = data.rainIntensity || 1;
+                    state.visitCount = (data.visitCount || 0) + 1;
+                    state.totalTime = data.totalTime || 0;
+                } else {
+                    state.visitCount = 1;
+                }
+            } catch (e) {
+                state.visitCount = 1;
+            }
+            updateUI();
+        }
+
+        // Save state
+        function saveState() {
+            const elapsed = (Date.now() - state.startTime) / 1000;
+            state.totalTime += elapsed;
+            state.startTime = Date.now();
+
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    rainIntensity: state.rainIntensity,
+                    visitCount: state.visitCount,
+                    totalTime: state.totalTime
+                }));
+            } catch (e) {}
+        }
+
+        // Update UI
+        function updateUI() {
+            document.getElementById('intensity').textContent = intensityNames[state.rainIntensity];
+        }
+
+        // Generate bokeh background
+        function generateBokeh() {
+            bokehLights = [];
+            const count = 80 + Math.random() * 40;
+
+            for (let i = 0; i < count; i++) {
+                bokehLights.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    radius: 10 + Math.random() * 80,
+                    hue: 20 + Math.random() * 60, // warm lights: yellows, oranges
+                    saturation: 40 + Math.random() * 40,
+                    lightness: 50 + Math.random() * 30,
+                    alpha: 0.3 + Math.random() * 0.5,
+                    twinkle: Math.random() * Math.PI * 2,
+                    twinkleSpeed: 0.001 + Math.random() * 0.002
+                });
+            }
+        }
+
+        // Generate static condensation droplets
+        function generateCondensation() {
+            condensation = [];
+            const count = 200 + Math.random() * 300;
+
+            for (let i = 0; i < count; i++) {
+                condensation.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    radius: 0.5 + Math.random() * 2,
+                    alpha: 0.2 + Math.random() * 0.4
+                });
+            }
+        }
+
+        // Raindrop class
+        class Drop {
+            constructor(x, y, radius, velocity = 0) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.velocity = velocity;
+                this.mass = radius * radius; // mass proportional to area
+                this.trail = [];
+                this.maxTrailLength = 20;
+                this.jitterX = 0;
+                this.pauseTimer = 0;
+            }
+
+            update(config) {
+                // Pause mechanism (surface tension)
+                if (this.pauseTimer > 0) {
+                    this.pauseTimer--;
+                    return;
+                }
+
+                // Occasionally pause
+                if (Math.random() < 0.01) {
+                    this.pauseTimer = 5 + Math.random() * 15;
+                }
+
+                // Gravity acceleration based on mass
+                const gravity = 0.08 * config.speed;
+                this.velocity += gravity;
+                this.velocity = Math.min(this.velocity, 8 * config.speed);
+
+                // Jitter left/right
+                this.jitterX += (Math.random() - 0.5) * 0.3;
+                this.jitterX *= 0.95; // damping
+                this.jitterX = Math.max(-2, Math.min(2, this.jitterX));
+
+                // Record trail
+                this.trail.push({ x: this.x, y: this.y });
+                if (this.trail.length > this.maxTrailLength) {
+                    this.trail.shift();
+                }
+
+                // Move
+                this.y += this.velocity;
+                this.x += this.jitterX;
+
+                // Bounds
+                if (this.x < this.radius) {
+                    this.x = this.radius;
+                    this.jitterX *= -0.5;
+                }
+                if (this.x > width - this.radius) {
+                    this.x = width - this.radius;
+                    this.jitterX *= -0.5;
+                }
+            }
+
+            merge(other) {
+                // Absorb smaller drop into this one
+                const totalMass = this.mass + other.mass;
+                this.radius = Math.sqrt(totalMass);
+                this.mass = totalMass;
+                // Momentum transfer
+                this.velocity = (this.velocity * this.mass + other.velocity * other.mass) / totalMass;
+                this.velocity += 0.5; // acceleration boost from merge
+            }
+
+            draw() {
+                // Draw trail (wet streak)
+                if (this.trail.length > 1) {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+                    ctx.lineWidth = this.radius * 0.8;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+
+                    ctx.beginPath();
+                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for (let i = 1; i < this.trail.length; i++) {
+                        const alpha = (i / this.trail.length) * 0.03;
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+                        ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    }
+                    ctx.stroke();
+                }
+
+                // Draw drop body
+                const gradient = ctx.createRadialGradient(
+                    this.x - this.radius * 0.3,
+                    this.y - this.radius * 0.3,
+                    0,
+                    this.x,
+                    this.y,
+                    this.radius
+                );
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+                gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)');
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Refraction effect: draw distorted bokeh through drop
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius * 0.8, 0, Math.PI * 2);
+                ctx.clip();
+
+                // Draw a few bokeh lights refracted through drop
+                for (let i = 0; i < Math.min(5, bokehLights.length); i++) {
+                    const light = bokehLights[Math.floor(Math.random() * bokehLights.length)];
+                    const offsetX = (light.x - this.x) * 0.3;
+                    const offsetY = (light.y - this.y) * 0.3;
+
+                    const refractGrad = ctx.createRadialGradient(
+                        this.x + offsetX,
+                        this.y + offsetY,
+                        0,
+                        this.x + offsetX,
+                        this.y + offsetY,
+                        this.radius * 0.6
+                    );
+                    refractGrad.addColorStop(0, `hsla(${light.hue}, ${light.saturation}%, ${light.lightness}%, 0.4)`);
+                    refractGrad.addColorStop(1, `hsla(${light.hue}, ${light.saturation}%, ${light.lightness}%, 0)`);
+
+                    ctx.fillStyle = refractGrad;
+                    ctx.fillRect(
+                        this.x - this.radius,
+                        this.y - this.radius,
+                        this.radius * 2,
+                        this.radius * 2
+                    );
+                }
+
+                ctx.restore();
+
+                // Specular highlight
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.beginPath();
+                ctx.arc(
+                    this.x - this.radius * 0.4,
+                    this.y - this.radius * 0.4,
+                    this.radius * 0.25,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fill();
+            }
+
+            isDead() {
+                return this.y - this.radius > height;
+            }
+        }
+
+        // Spawn drop
+        function spawnDrop() {
+            const x = Math.random() * width;
+            const y = -10;
+            const radius = 3 + Math.random() * 5;
+            drops.push(new Drop(x, y, radius));
+        }
+
+        // Check drop collisions and merge
+        function checkMerges() {
+            for (let i = drops.length - 1; i >= 0; i--) {
+                for (let j = i - 1; j >= 0; j--) {
+                    const d1 = drops[i];
+                    const d2 = drops[j];
+                    const dx = d1.x - d2.x;
+                    const dy = d1.y - d2.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < d1.radius + d2.radius) {
+                        // Merge: absorb smaller into larger
+                        if (d1.radius >= d2.radius) {
+                            d1.merge(d2);
+                            drops.splice(j, 1);
+                            i--; // adjust index
+                        } else {
+                            d2.merge(d1);
+                            drops.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Finger trail class
+        class FingerTrail {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = 40;
+                this.alpha = 1;
+                this.fadeSpeed = 0.003;
+            }
+
+            update() {
+                this.alpha -= this.fadeSpeed;
+            }
+
+            draw() {
+                const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+                gradient.addColorStop(0, `rgba(255, 255, 255, ${0.15 * this.alpha})`);
+                gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            isDead() {
+                return this.alpha <= 0;
+            }
+        }
+
+        // Mouse tracking
+        let mouseX = -1000;
+        let mouseY = -1000;
+        let lastMouseX = -1000;
+        let lastMouseY = -1000;
+
+        canvas.addEventListener('mousemove', (e) => {
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+
+            // Create finger trail
+            if (lastMouseX !== -1000) {
+                const dx = mouseX - lastMouseX;
+                const dy = mouseY - lastMouseY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const steps = Math.ceil(dist / 20);
+
+                for (let i = 0; i < steps; i++) {
+                    const t = i / steps;
+                    const x = lastMouseX + dx * t;
+                    const y = lastMouseY + dy * t;
+                    fingerTrails.push(new FingerTrail(x, y));
+                }
+            }
+        });
+
+        canvas.addEventListener('click', (e) => {
+            const x = e.clientX;
+            const y = e.clientY;
+            const radius = 5 + Math.random() * 8;
+            drops.push(new Drop(x, y, radius, 2));
+        });
+
+        // Keyboard
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'r' || e.key === 'R') {
+                state.rainIntensity = (state.rainIntensity + 1) % 3;
+                updateUI();
+                saveState();
+            }
+        });
+
+        // Audio setup
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                createRainNoise();
+            }
+        }
+
+        function createRainNoise() {
+            if (!audioCtx) return;
+
+            // Rain noise: filtered white noise
+            const bufferSize = audioCtx.sampleRate * 2;
+            const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = noiseBuffer;
+            noise.loop = true;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 800;
+
+            const gainNode = audioCtx.createGain();
+
+            noise.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            noise.start();
+            rainNoise = { noise, filter, gainNode };
+
+            updateRainSound();
+        }
+
+        function updateRainSound() {
+            if (!rainNoise) return;
+
+            const config = intensityConfigs[state.rainIntensity];
+            const baseVolume = 0.05;
+            const volume = baseVolume * (config.speed / 1.5);
+
+            rainNoise.gainNode.gain.setTargetAtTime(volume, audioCtx.currentTime, 0.5);
+            rainNoise.filter.frequency.setTargetAtTime(400 + config.speed * 200, audioCtx.currentTime, 0.5);
+        }
+
+        function playDropSound() {
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.value = 800 + Math.random() * 400;
+
+            gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playThunder() {
+            if (!audioCtx) return;
+
+            const noise = audioCtx.createBufferSource();
+            const bufferSize = audioCtx.sampleRate * 3;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = (Math.random() * 2 - 1) * Math.exp(-i / bufferSize * 2);
+            }
+
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 100;
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            noise.start();
+        }
+
+        function scheduleThunder() {
+            if (thunderTimeout) clearTimeout(thunderTimeout);
+
+            if (state.rainIntensity === 2) { // Heavy rain
+                const delay = 30000 + Math.random() * 30000; // 30-60 seconds
+                thunderTimeout = setTimeout(() => {
+                    playThunder();
+                    scheduleThunder();
+                }, delay);
+            }
+        }
+
+        // Timer display
+        function updateTimer() {
+            const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('timer').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // Animation loop
+        let lastSpawn = 0;
+        let dropSoundCounter = 0;
+
+        function animate(timestamp) {
+            // Update cycle time
+            cycleTime = (timestamp / 1000) % CYCLE_DURATION;
+
+            // Clear canvas
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw bokeh background
+            for (const light of bokehLights) {
+                light.twinkle += light.twinkleSpeed;
+                const twinkleAlpha = light.alpha * (0.8 + Math.sin(light.twinkle) * 0.2);
+
+                const gradient = ctx.createRadialGradient(
+                    light.x,
+                    light.y,
+                    0,
+                    light.x,
+                    light.y,
+                    light.radius
+                );
+                gradient.addColorStop(0, `hsla(${light.hue}, ${light.saturation}%, ${light.lightness}%, ${twinkleAlpha})`);
+                gradient.addColorStop(0.6, `hsla(${light.hue}, ${light.saturation}%, ${light.lightness}%, ${twinkleAlpha * 0.5})`);
+                gradient.addColorStop(1, `hsla(${light.hue}, ${light.saturation}%, ${light.lightness}%, 0)`);
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(light.x, light.y, light.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Draw glass overlay (slight darkening + condensation texture)
+            ctx.fillStyle = 'rgba(10, 10, 15, 0.3)';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw condensation droplets
+            for (const drop of condensation) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${drop.alpha})`;
+                ctx.beginPath();
+                ctx.arc(drop.x, drop.y, drop.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Draw finger trails (cleared condensation)
+            for (let i = fingerTrails.length - 1; i >= 0; i--) {
+                const trail = fingerTrails[i];
+                trail.update();
+                trail.draw();
+
+                if (trail.isDead()) {
+                    fingerTrails.splice(i, 1);
+                }
+            }
+
+            // Spawn raindrops
+            const config = intensityConfigs[state.rainIntensity];
+            if (drops.length < config.maxDrops) {
+                if (Math.random() < config.spawnRate * 0.1) {
+                    spawnDrop();
+                    lastSpawn = timestamp;
+                }
+            }
+
+            // Update and draw drops
+            for (let i = drops.length - 1; i >= 0; i--) {
+                const drop = drops[i];
+                drop.update(config);
+
+                if (drop.isDead()) {
+                    drops.splice(i, 1);
+
+                    // Play drop sound occasionally
+                    dropSoundCounter++;
+                    if (dropSoundCounter % 10 === 0) {
+                        playDropSound();
+                    }
+                } else {
+                    drop.draw();
+                }
+            }
+
+            // Check for merges
+            checkMerges();
+
+            // Vignette (window frame)
+            const vignetteGradient = ctx.createRadialGradient(
+                width / 2,
+                height / 2,
+                Math.min(width, height) * 0.3,
+                width / 2,
+                height / 2,
+                Math.max(width, height) * 0.8
+            );
+            vignetteGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            vignetteGradient.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+            ctx.fillStyle = vignetteGradient;
+            ctx.fillRect(0, 0, width, height);
+
+            requestAnimationFrame(animate);
+        }
+
+        // Initialize
+        function init() {
+            resize();
+            loadState();
+
+            // Start audio on first user interaction
+            const startAudio = () => {
+                initAudio();
+                scheduleThunder();
+                document.removeEventListener('click', startAudio);
+                document.removeEventListener('keydown', startAudio);
+            };
+            document.addEventListener('click', startAudio);
+            document.addEventListener('keydown', startAudio);
+
+            // Timer update
+            setInterval(updateTimer, 1000);
+            setInterval(saveState, 5000); // Auto-save every 5 seconds
+
+            // Start animation
+            requestAnimationFrame(animate);
+        }
+
+        // Event listeners
+        window.addEventListener('resize', resize);
+        window.addEventListener('beforeunload', saveState);
+
+        // Start
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telescope — todooo 067</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: #000;
+      color: #fff;
+      overflow: hidden;
+      cursor: move;
+    }
+
+    body.grabbing {
+      cursor: grabbing;
+    }
+
+    #canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #ui {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      pointer-events: none;
+      user-select: none;
+      text-shadow: 0 0 4px #000;
+    }
+
+    #discoveries {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+      text-align: right;
+      pointer-events: none;
+      user-select: none;
+      text-shadow: 0 0 4px #000;
+    }
+
+    #panel {
+      position: fixed;
+      right: -400px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 350px;
+      background: rgba(10, 10, 20, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-right: none;
+      padding: 30px;
+      transition: right 0.4s ease;
+      pointer-events: all;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.8);
+    }
+
+    #panel.visible {
+      right: 0;
+    }
+
+    #panel h2 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: #ffd700;
+      font-weight: normal;
+    }
+
+    #panel .type {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+
+    #panel .description {
+      font-size: 12px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 20px;
+    }
+
+    #panel .stats {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+      line-height: 1.8;
+    }
+
+    #panel .close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 20px;
+      cursor: pointer;
+      pointer-events: all;
+    }
+
+    #panel .close:hover {
+      color: #fff;
+    }
+
+    #hint {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+      pointer-events: none;
+      user-select: none;
+      text-shadow: 0 0 4px #000;
+      text-align: center;
+    }
+
+    .discovery-marker {
+      position: fixed;
+      font-size: 20px;
+      color: rgba(255, 215, 0, 0.6);
+      pointer-events: none;
+      user-select: none;
+      text-shadow: 0 0 8px #ffd700;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.2); }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div id="ui">
+    <div>ZOOM: <span id="zoom-level">WIDE FIELD</span></div>
+    <div>RA: <span id="ra">0h 00m</span> | DEC: <span id="dec">+00°</span></div>
+    <div style="margin-top: 8px; opacity: 0.4;">DRAG TO PAN | SCROLL TO ZOOM | G: GRID | CLICK: OBSERVE</div>
+  </div>
+
+  <div id="discoveries">
+    <div>DISCOVERED: <span id="discovered-count">0</span> / <span id="total-objects">15</span></div>
+    <div style="margin-top: 4px; opacity: 0.5;">VISIT: <span id="visit-count">1</span></div>
+  </div>
+
+  <div id="panel">
+    <button class="close">&times;</button>
+    <h2 id="object-name">—</h2>
+    <div class="type" id="object-type">—</div>
+    <div class="description" id="object-desc">—</div>
+    <div class="stats" id="object-stats"></div>
+  </div>
+
+  <div id="hint"></div>
+
+  <script>
+    // ======================
+    // STATE & STORAGE
+    // ======================
+    const STORAGE_KEY = 'todooo-067';
+
+    const state = {
+      pan: { x: 0, y: 0 },
+      zoom: 0, // 0=wide, 1=medium, 2=deep
+      showGrid: false,
+      discovered: new Set(),
+      seed: 42,
+      visitCount: 1,
+      nearbyObject: null
+    };
+
+    function loadState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const data = JSON.parse(saved);
+        state.pan = data.pan || { x: 0, y: 0 };
+        state.zoom = data.zoom || 0;
+        state.discovered = new Set(data.discovered || []);
+        state.seed = data.seed || 42;
+        state.visitCount = (data.visitCount || 0) + 1;
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        pan: state.pan,
+        zoom: state.zoom,
+        discovered: Array.from(state.discovered),
+        seed: state.seed,
+        visitCount: state.visitCount
+      }));
+    }
+
+    // ======================
+    // SEEDED RANDOM
+    // ======================
+    class Random {
+      constructor(seed) {
+        this.seed = seed;
+      }
+      next() {
+        this.seed = (this.seed * 1103515245 + 12345) & 0x7fffffff;
+        return this.seed / 0x7fffffff;
+      }
+      range(min, max) {
+        return min + this.next() * (max - min);
+      }
+      int(min, max) {
+        return Math.floor(this.range(min, max + 1));
+      }
+      pick(arr) {
+        return arr[this.int(0, arr.length - 1)];
+      }
+    }
+
+    // ======================
+    // CELESTIAL OBJECTS
+    // ======================
+    const objects = [];
+
+    function generateCelestialObjects() {
+      const rng = new Random(state.seed);
+      objects.length = 0;
+
+      // Background stars (~2000)
+      for (let i = 0; i < 2000; i++) {
+        const mag = rng.range(3, 8); // magnitude (lower = brighter)
+        const temp = rng.range(3000, 30000); // kelvin
+        objects.push({
+          type: 'star',
+          x: rng.range(-10000, 10000),
+          y: rng.range(-10000, 10000),
+          magnitude: mag,
+          temperature: temp,
+          twinkle: mag < 4.5,
+          discoverable: false
+        });
+      }
+
+      // Double stars (3 pairs)
+      for (let i = 0; i < 3; i++) {
+        const cx = rng.range(-8000, 8000);
+        const cy = rng.range(-8000, 8000);
+        const sep = rng.range(15, 40);
+        const angle = rng.range(0, Math.PI * 2);
+        const mag1 = rng.range(3, 5);
+        const mag2 = mag1 + rng.range(0.5, 2);
+
+        objects.push({
+          type: 'double-star',
+          id: `HD ${rng.int(10000, 99999)}`,
+          x: cx,
+          y: cy,
+          magnitude: mag1,
+          magnitude2: mag2,
+          temperature: rng.range(5000, 15000),
+          temperature2: rng.range(5000, 15000),
+          separation: sep,
+          angle: angle,
+          discoverable: true,
+          description: `A binary star system, two stellar companions locked in an eternal dance. Separation: ${sep.toFixed(1)} arcseconds.`
+        });
+      }
+
+      // Star clusters (4)
+      for (let i = 0; i < 4; i++) {
+        const cx = rng.range(-7000, 7000);
+        const cy = rng.range(-7000, 7000);
+        const stars = [];
+        const count = rng.int(30, 80);
+        const radius = rng.range(100, 250);
+
+        for (let j = 0; j < count; j++) {
+          const r = rng.range(0, radius);
+          const a = rng.range(0, Math.PI * 2);
+          stars.push({
+            dx: Math.cos(a) * r,
+            dy: Math.sin(a) * r,
+            mag: rng.range(5, 8)
+          });
+        }
+
+        objects.push({
+          type: 'cluster',
+          id: `NGC ${rng.int(1000, 9999)}`,
+          x: cx,
+          y: cy,
+          stars: stars,
+          radius: radius,
+          discoverable: true,
+          description: `An open cluster of young stars, born from the same molecular cloud. ${count} members shine together in the darkness.`
+        });
+      }
+
+      // Nebulae (3)
+      const nebulaTypes = [
+        { name: 'emission', colors: ['#ff1493', '#ff69b4', '#8b008b'], desc: 'A dying star wrapped in its own exhaled gases, glowing pink and teal as ultraviolet light ionizes the expelled material.' },
+        { name: 'planetary', colors: ['#00ffff', '#00bfff', '#4169e1'], desc: 'The ethereal ghost of a sun-like star, a planetary nebula expanding into the void. Oxygen glows blue-green at its heart.' },
+        { name: 'dark', colors: ['#ff4500', '#ff6347', '#20b2aa'], desc: 'Stellar nursery shrouded in dust and gas. Newborn stars kindle within, their light scattered into coral and turquoise hues.' }
+      ];
+
+      for (let i = 0; i < 3; i++) {
+        const nebType = nebulaTypes[i];
+        objects.push({
+          type: 'nebula',
+          id: `NGC ${rng.int(1000, 9999)}`,
+          x: rng.range(-6000, 6000),
+          y: rng.range(-6000, 6000),
+          size: rng.range(200, 400),
+          colors: nebType.colors,
+          rotation: rng.range(0, Math.PI * 2),
+          discoverable: true,
+          description: nebType.desc
+        });
+      }
+
+      // Planets (2)
+      objects.push({
+        type: 'planet',
+        id: 'Jupiter-like',
+        x: rng.range(-5000, 5000),
+        y: rng.range(-5000, 5000),
+        size: 40,
+        color: '#d4a574',
+        bands: ['#c19a6b', '#8b7355', '#a0826d'],
+        discoverable: true,
+        description: 'A gas giant, banded with swirling storms of ammonia and methane. No solid surface exists beneath those churning clouds.'
+      });
+
+      objects.push({
+        type: 'planet',
+        id: 'Saturn-like',
+        x: rng.range(-5000, 5000),
+        y: rng.range(-5000, 5000),
+        size: 35,
+        color: '#f4e4c1',
+        rings: true,
+        discoverable: true,
+        description: 'Jewel of the night. Rings of ice and rock orbit in a plane so thin they vanish edge-on. A world adorned.'
+      });
+
+      // Galaxy (1)
+      objects.push({
+        type: 'galaxy',
+        id: `M ${rng.int(1, 110)}`,
+        x: rng.range(-4000, 4000),
+        y: rng.range(-4000, 4000),
+        size: 150,
+        angle: rng.range(0, Math.PI * 2),
+        discoverable: true,
+        description: 'A distant island universe, home to billions of stars. Light from its core began its journey before life arose on Earth.'
+      });
+    }
+
+    // ======================
+    // CANVAS & RENDERING
+    // ======================
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height, centerX, centerY, eyeRadius;
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      centerX = width / 2;
+      centerY = height / 2;
+      eyeRadius = Math.min(width, height) * 0.4;
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Convert temp to color
+    function tempToColor(temp) {
+      if (temp < 5000) return `rgb(255, ${100 + temp/50}, ${temp/100})`;
+      if (temp < 10000) return `rgb(255, 255, ${200 + temp/100})`;
+      return `rgb(${200 + (temp-10000)/100}, ${220 + (temp-10000)/100}, 255)`;
+    }
+
+    // Zoom scales
+    const zoomScales = [1, 2.5, 6];
+
+    function worldToScreen(wx, wy) {
+      const scale = zoomScales[state.zoom];
+      const sx = centerX + (wx - state.pan.x) * scale;
+      const sy = centerY + (wy - state.pan.y) * scale;
+      return { x: sx, y: sy };
+    }
+
+    function screenToWorld(sx, sy) {
+      const scale = zoomScales[state.zoom];
+      const wx = state.pan.x + (sx - centerX) / scale;
+      const wy = state.pan.y + (sy - centerY) / scale;
+      return { x: wx, y: wy };
+    }
+
+    function isInEyepiece(sx, sy) {
+      const dx = sx - centerX;
+      const dy = sy - centerY;
+      return Math.sqrt(dx*dx + dy*dy) <= eyeRadius;
+    }
+
+    let twinklePhase = 0;
+
+    function render() {
+      // Clear
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, width, height);
+
+      twinklePhase += 0.02;
+
+      // Save context for eyepiece clipping
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, eyeRadius, 0, Math.PI * 2);
+      ctx.clip();
+
+      // Background gradient inside eyepiece
+      const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, eyeRadius);
+      grad.addColorStop(0, '#000008');
+      grad.addColorStop(1, '#000000');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+
+      // Draw grid if enabled
+      if (state.showGrid) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.lineWidth = 0.5;
+        const gridSize = 500;
+        const scale = zoomScales[state.zoom];
+
+        for (let x = -10000; x <= 10000; x += gridSize) {
+          const pos = worldToScreen(x, 0);
+          ctx.beginPath();
+          ctx.moveTo(pos.x, 0);
+          ctx.lineTo(pos.x, height);
+          ctx.stroke();
+        }
+
+        for (let y = -10000; y <= 10000; y += gridSize) {
+          const pos = worldToScreen(0, y);
+          ctx.beginPath();
+          ctx.moveTo(0, pos.y);
+          ctx.lineTo(width, pos.y);
+          ctx.stroke();
+        }
+      }
+
+      const scale = zoomScales[state.zoom];
+
+      // Draw objects
+      for (const obj of objects) {
+        const pos = worldToScreen(obj.x, obj.y);
+        if (!isInEyepiece(pos.x, pos.y)) continue;
+
+        if (obj.type === 'star') {
+          const brightness = Math.max(0, 1 - (obj.magnitude - 3) / 5);
+          let size = brightness * 2;
+
+          if (obj.twinkle) {
+            size *= 0.8 + 0.2 * Math.sin(twinklePhase + obj.x * 0.001);
+          }
+
+          const color = tempToColor(obj.temperature);
+
+          ctx.fillStyle = color;
+          ctx.globalAlpha = brightness * 0.8;
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Diffraction spikes for brightest
+          if (obj.magnitude < 3.8) {
+            ctx.strokeStyle = color;
+            ctx.globalAlpha = brightness * 0.3;
+            ctx.lineWidth = 0.5;
+            const spikeLen = size * 4;
+            ctx.beginPath();
+            ctx.moveTo(pos.x - spikeLen, pos.y);
+            ctx.lineTo(pos.x + spikeLen, pos.y);
+            ctx.moveTo(pos.x, pos.y - spikeLen);
+            ctx.lineTo(pos.x, pos.y + spikeLen);
+            ctx.stroke();
+          }
+
+          ctx.globalAlpha = 1;
+        }
+
+        if (obj.type === 'double-star') {
+          const pos2 = worldToScreen(
+            obj.x + Math.cos(obj.angle) * obj.separation,
+            obj.y + Math.sin(obj.angle) * obj.separation
+          );
+
+          const brightness1 = Math.max(0, 1 - (obj.magnitude - 3) / 5);
+          const brightness2 = Math.max(0, 1 - (obj.magnitude2 - 3) / 5);
+
+          ctx.fillStyle = tempToColor(obj.temperature);
+          ctx.globalAlpha = brightness1 * 0.8;
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, brightness1 * 2.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (state.zoom >= 1) { // Only show second star at medium+ zoom
+            ctx.fillStyle = tempToColor(obj.temperature2);
+            ctx.globalAlpha = brightness2 * 0.8;
+            ctx.beginPath();
+            ctx.arc(pos2.x, pos2.y, brightness2 * 2.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          ctx.globalAlpha = 1;
+        }
+
+        if (obj.type === 'cluster') {
+          if (state.zoom >= 2) {
+            // Resolved: draw individual stars
+            for (const star of obj.stars) {
+              const spos = worldToScreen(obj.x + star.dx, obj.y + star.dy);
+              if (!isInEyepiece(spos.x, spos.y)) continue;
+
+              const brightness = Math.max(0, 1 - (star.mag - 5) / 3);
+              ctx.fillStyle = tempToColor(6000);
+              ctx.globalAlpha = brightness * 0.7;
+              ctx.beginPath();
+              ctx.arc(spos.x, spos.y, 1.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+          } else {
+            // Fuzzy patch
+            const displayRadius = obj.radius * scale * 0.5;
+            const grd = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, displayRadius);
+            grd.addColorStop(0, 'rgba(200, 200, 255, 0.15)');
+            grd.addColorStop(1, 'rgba(200, 200, 255, 0)');
+            ctx.fillStyle = grd;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, displayRadius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        if (obj.type === 'nebula') {
+          const displaySize = obj.size * scale;
+
+          ctx.save();
+          ctx.translate(pos.x, pos.y);
+          ctx.rotate(obj.rotation);
+
+          for (let i = 0; i < obj.colors.length; i++) {
+            const offset = (i - 1) * displaySize * 0.15;
+            const grd = ctx.createRadialGradient(offset, 0, 0, offset, 0, displaySize * 0.6);
+            grd.addColorStop(0, obj.colors[i] + '40');
+            grd.addColorStop(0.5, obj.colors[i] + '20');
+            grd.addColorStop(1, obj.colors[i] + '00');
+            ctx.fillStyle = grd;
+            ctx.beginPath();
+            ctx.arc(offset, 0, displaySize * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          ctx.restore();
+        }
+
+        if (obj.type === 'planet') {
+          if (state.zoom >= 2) {
+            // Show as disk
+            const displaySize = obj.size * scale;
+
+            ctx.fillStyle = obj.color;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, displaySize * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (obj.bands) {
+              ctx.globalAlpha = 0.5;
+              for (let i = 0; i < obj.bands.length; i++) {
+                const y = pos.y - displaySize * 0.2 + i * displaySize * 0.15;
+                ctx.fillStyle = obj.bands[i];
+                ctx.fillRect(pos.x - displaySize * 0.4, y, displaySize * 0.8, displaySize * 0.08);
+              }
+              ctx.globalAlpha = 1;
+            }
+
+            if (obj.rings) {
+              ctx.strokeStyle = 'rgba(200, 180, 150, 0.6)';
+              ctx.lineWidth = displaySize * 0.15;
+              ctx.beginPath();
+              ctx.ellipse(pos.x, pos.y, displaySize * 0.7, displaySize * 0.2, Math.PI * 0.1, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          } else {
+            // Tiny dot
+            ctx.fillStyle = obj.color;
+            ctx.globalAlpha = 0.9;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+          }
+        }
+
+        if (obj.type === 'galaxy') {
+          const displaySize = obj.size * scale;
+
+          ctx.save();
+          ctx.translate(pos.x, pos.y);
+          ctx.rotate(obj.angle);
+
+          const grd = ctx.createRadialGradient(0, 0, 0, 0, 0, displaySize);
+          grd.addColorStop(0, 'rgba(255, 240, 220, 0.3)');
+          grd.addColorStop(0.3, 'rgba(255, 240, 220, 0.15)');
+          grd.addColorStop(1, 'rgba(255, 240, 220, 0)');
+          ctx.fillStyle = grd;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, displaySize, displaySize * 0.4, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (state.zoom >= 2) {
+            // Spiral hints
+            ctx.strokeStyle = 'rgba(200, 190, 180, 0.2)';
+            ctx.lineWidth = 2;
+            for (let arm = 0; arm < 2; arm++) {
+              ctx.beginPath();
+              for (let t = 0; t < Math.PI * 2; t += 0.1) {
+                const r = t * displaySize * 0.15;
+                const angle = t * 1.5 + arm * Math.PI;
+                const x = Math.cos(angle) * r;
+                const y = Math.sin(angle) * r * 0.4;
+                if (t === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+              }
+              ctx.stroke();
+            }
+          }
+
+          ctx.restore();
+        }
+      }
+
+      ctx.restore(); // End eyepiece clip
+
+      // Draw eyepiece frame
+      ctx.strokeStyle = 'rgba(80, 80, 80, 0.8)';
+      ctx.lineWidth = 20;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, eyeRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Vignette
+      const vignette = ctx.createRadialGradient(centerX, centerY, eyeRadius * 0.7, centerX, centerY, eyeRadius);
+      vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      vignette.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+      ctx.fillStyle = vignette;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, eyeRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Crosshairs
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1;
+      const crossSize = 15;
+      ctx.beginPath();
+      ctx.moveTo(centerX - crossSize, centerY);
+      ctx.lineTo(centerX + crossSize, centerY);
+      ctx.moveTo(centerX, centerY - crossSize);
+      ctx.lineTo(centerX, centerY + crossSize);
+      ctx.stroke();
+
+      // Check for nearby discoverable objects
+      state.nearbyObject = null;
+      const centerWorld = screenToWorld(centerX, centerY);
+      const threshold = 200 / zoomScales[state.zoom];
+
+      for (const obj of objects) {
+        if (!obj.discoverable) continue;
+        const dx = obj.x - centerWorld.x;
+        const dy = obj.y - centerWorld.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+
+        if (dist < threshold) {
+          state.nearbyObject = obj;
+          break;
+        }
+      }
+
+      updateUI();
+    }
+
+    // ======================
+    // UI UPDATES
+    // ======================
+    function updateUI() {
+      // Zoom level
+      const zoomNames = ['WIDE FIELD', 'MEDIUM', 'DEEP'];
+      document.getElementById('zoom-level').textContent = zoomNames[state.zoom];
+
+      // Coordinates (convert pan to RA/DEC style)
+      const ra = ((state.pan.x / 1000) % 24 + 24) % 24;
+      const raH = Math.floor(ra);
+      const raM = Math.floor((ra - raH) * 60);
+      document.getElementById('ra').textContent = `${raH}h ${raM.toString().padStart(2, '0')}m`;
+
+      const dec = Math.max(-90, Math.min(90, state.pan.y / 100));
+      const decSign = dec >= 0 ? '+' : '';
+      document.getElementById('dec').textContent = `${decSign}${Math.floor(dec)}°`;
+
+      // Discoveries
+      const totalDiscoverable = objects.filter(o => o.discoverable).length;
+      document.getElementById('discovered-count').textContent = state.discovered.size;
+      document.getElementById('total-objects').textContent = totalDiscoverable;
+      document.getElementById('visit-count').textContent = state.visitCount;
+
+      // Nearby object marker
+      const existingMarkers = document.querySelectorAll('.discovery-marker');
+      existingMarkers.forEach(m => m.remove());
+
+      if (state.nearbyObject && !state.discovered.has(state.nearbyObject.id)) {
+        const marker = document.createElement('div');
+        marker.className = 'discovery-marker';
+        marker.textContent = '?';
+        marker.style.left = centerX + 'px';
+        marker.style.top = (centerY - 40) + 'px';
+        marker.style.transform = 'translateX(-50%)';
+        document.body.appendChild(marker);
+      }
+    }
+
+    // ======================
+    // INTERACTION
+    // ======================
+    let dragging = false;
+    let lastMouse = { x: 0, y: 0 };
+
+    canvas.addEventListener('mousedown', (e) => {
+      dragging = true;
+      lastMouse = { x: e.clientX, y: e.clientY };
+      document.body.classList.add('grabbing');
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (dragging) {
+        const dx = e.clientX - lastMouse.x;
+        const dy = e.clientY - lastMouse.y;
+        const scale = zoomScales[state.zoom];
+        state.pan.x -= dx / scale;
+        state.pan.y -= dy / scale;
+        lastMouse = { x: e.clientX, y: e.clientY };
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      dragging = false;
+      document.body.classList.remove('grabbing');
+      saveState();
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      dragging = false;
+      document.body.classList.remove('grabbing');
+    });
+
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const oldZoom = state.zoom;
+
+      if (e.deltaY < 0) {
+        state.zoom = Math.min(2, state.zoom + 1);
+      } else {
+        state.zoom = Math.max(0, state.zoom - 1);
+      }
+
+      if (oldZoom !== state.zoom) {
+        playSound('zoom');
+        saveState();
+      }
+    });
+
+    canvas.addEventListener('click', (e) => {
+      if (state.nearbyObject && !state.discovered.has(state.nearbyObject.id)) {
+        discoverObject(state.nearbyObject);
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'g' || e.key === 'G') {
+        state.showGrid = !state.showGrid;
+      }
+    });
+
+    // ======================
+    // DISCOVERY
+    // ======================
+    function discoverObject(obj) {
+      state.discovered.add(obj.id);
+      saveState();
+      playSound('discovery');
+
+      // Update panel
+      document.getElementById('object-name').textContent = obj.id;
+
+      const typeNames = {
+        'double-star': 'Binary Star System',
+        'cluster': 'Open Star Cluster',
+        'nebula': 'Emission Nebula',
+        'planet': 'Gas Giant',
+        'galaxy': 'Spiral Galaxy'
+      };
+      document.getElementById('object-type').textContent = typeNames[obj.type] || obj.type;
+      document.getElementById('object-desc').textContent = obj.description;
+
+      let stats = '';
+      if (obj.magnitude) stats += `Magnitude: ${obj.magnitude.toFixed(1)}<br>`;
+      if (obj.temperature) stats += `Temperature: ${Math.floor(obj.temperature)}K<br>`;
+      if (obj.stars) stats += `Members: ${obj.stars.length}<br>`;
+      if (obj.size) stats += `Angular size: ${(obj.size / 60).toFixed(1)} arcmin<br>`;
+
+      document.getElementById('object-stats').innerHTML = stats;
+
+      document.getElementById('panel').classList.add('visible');
+    }
+
+    document.querySelector('#panel .close').addEventListener('click', () => {
+      document.getElementById('panel').classList.remove('visible');
+    });
+
+    // ======================
+    // AUDIO
+    // ======================
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Ambient drone
+    let droneOscillator = null;
+
+    function startAmbient() {
+      if (droneOscillator) return;
+
+      droneOscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      droneOscillator.type = 'sine';
+      droneOscillator.frequency.setValueAtTime(55, audioContext.currentTime); // A1
+      gainNode.gain.setValueAtTime(0.02, audioContext.currentTime);
+
+      droneOscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      droneOscillator.start();
+    }
+
+    function playSound(type) {
+      const now = audioContext.currentTime;
+
+      if (type === 'discovery') {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(1760, now + 0.3);
+
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.5);
+      }
+
+      if (type === 'zoom') {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(200, now);
+
+        gain.gain.setValueAtTime(0.03, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.1);
+      }
+    }
+
+    // Start ambient on first interaction
+    canvas.addEventListener('click', () => {
+      startAmbient();
+    }, { once: true });
+
+    // ======================
+    // INIT
+    // ======================
+    loadState();
+    generateCelestialObjects();
+
+    function animate() {
+      render();
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+
+    // Show hint briefly
+    const hint = document.getElementById('hint');
+    hint.textContent = 'Looking up. Finding things that were always there.';
+    setTimeout(() => {
+      hint.style.opacity = '0';
+    }, 5000);
+  </script>
+</body>
+</html>

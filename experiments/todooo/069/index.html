@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sand Garden - Karesansui</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: #1a1512;
+            font-family: 'Georgia', serif;
+            cursor: none;
+        }
+
+        #container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow:
+                inset 0 0 40px rgba(0,0,0,0.5),
+                0 10px 40px rgba(0,0,0,0.7);
+        }
+
+        #frame {
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            background: linear-gradient(135deg, #3d2f1f 0%, #2a1f15 50%, #3d2f1f 100%);
+            border: 2px solid #1a1512;
+            pointer-events: none;
+            z-index: 10;
+            box-shadow:
+                inset 0 0 20px rgba(0,0,0,0.6),
+                inset 3px 3px 10px rgba(0,0,0,0.4),
+                inset -3px -3px 10px rgba(80,60,40,0.2);
+        }
+
+        #canvas {
+            display: block;
+            background: #d4c8a0;
+            cursor: none;
+        }
+
+        #cursor {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(0,0,0,0.5);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1000;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s;
+        }
+
+        #cursor.raking {
+            width: 16px;
+            height: 16px;
+            background: rgba(100,70,40,0.4);
+        }
+
+        #cursor.smoothing {
+            width: 20px;
+            height: 20px;
+            background: rgba(200,180,140,0.3);
+        }
+
+        #info {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: #3d2f1f;
+            font-size: 12px;
+            text-align: right;
+            opacity: 0.6;
+            z-index: 100;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
+            pointer-events: none;
+        }
+
+        #info div {
+            margin: 4px 0;
+        }
+
+        .fade-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #3d2f1f;
+            font-size: 24px;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 200;
+            text-shadow: 2px 2px 4px rgba(255,255,255,0.7);
+            transition: opacity 0.5s;
+        }
+
+        .show {
+            opacity: 0.8 !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="frame"></div>
+        <canvas id="canvas"></canvas>
+    </div>
+    <div id="cursor"></div>
+    <div id="info">
+        <div>Drag to rake</div>
+        <div>Right-click to smooth</div>
+        <div>C: clear | N: new stones | A: auto-rake</div>
+        <div>1-3: rake width | P: patterns | G: grid</div>
+        <div id="visitCount"></div>
+    </div>
+    <div id="message" class="fade-message"></div>
+
+    <script>
+        const STORAGE_KEY = 'todooo-069';
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const cursor = document.getElementById('cursor');
+        const messageEl = document.getElementById('message');
+
+        // Grid configuration
+        const CELL_SIZE = 8;
+        let gridWidth, gridHeight;
+        let grid = []; // Each cell: {dir: angle, age: timestamp, intensity: 0-1}
+
+        // Stones
+        let stones = [];
+        const STONE_COUNT = 5;
+
+        // Rake settings
+        let rakeWidth = 2; // 1=narrow, 2=medium, 3=wide
+        const RAKE_TINES = [3, 5, 7]; // number of tines per width
+
+        // Interaction state
+        let isRaking = false;
+        let isSmoothing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let showGrid = false;
+
+        // Audio context
+        let audioCtx;
+        let windGainNode;
+        let chimeTimeout;
+
+        // Initialize
+        function init() {
+            resizeCanvas();
+            initGrid();
+            loadState();
+            initAudio();
+            setupEventListeners();
+            scheduleChime();
+            render();
+
+            // Update visit count
+            const visitCount = parseInt(localStorage.getItem(STORAGE_KEY + '-visits') || '0') + 1;
+            localStorage.setItem(STORAGE_KEY + '-visits', visitCount);
+            document.getElementById('visitCount').textContent = `Visit ${visitCount}`;
+        }
+
+        function resizeCanvas() {
+            const maxWidth = window.innerWidth - 100;
+            const maxHeight = window.innerHeight - 100;
+            const aspect = 4/3;
+
+            let width = Math.min(maxWidth, maxHeight * aspect);
+            let height = width / aspect;
+
+            if (height > maxHeight) {
+                height = maxHeight;
+                width = height * aspect;
+            }
+
+            canvas.width = Math.floor(width);
+            canvas.height = Math.floor(height);
+
+            gridWidth = Math.floor(canvas.width / CELL_SIZE);
+            gridHeight = Math.floor(canvas.height / CELL_SIZE);
+        }
+
+        function initGrid() {
+            grid = [];
+            for (let y = 0; y < gridHeight; y++) {
+                const row = [];
+                for (let x = 0; x < gridWidth; x++) {
+                    row.push({
+                        dir: 0,
+                        age: 0,
+                        intensity: 0
+                    });
+                }
+                grid.push(row);
+            }
+        }
+
+        function generateStones() {
+            stones = [];
+            const margin = 80;
+
+            for (let i = 0; i < STONE_COUNT; i++) {
+                const size = 30 + Math.random() * 50;
+                const x = margin + Math.random() * (canvas.width - margin * 2);
+                const y = margin + Math.random() * (canvas.height - margin * 2);
+
+                // Avoid overlap
+                let overlap = false;
+                for (const stone of stones) {
+                    const dx = stone.x - x;
+                    const dy = stone.y - y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < (stone.size + size) / 2 + 20) {
+                        overlap = true;
+                        break;
+                    }
+                }
+
+                if (!overlap) {
+                    stones.push({
+                        x,
+                        y,
+                        size,
+                        ratio: 0.7 + Math.random() * 0.2,
+                        rotation: Math.random() * Math.PI,
+                        hasMoss: Math.random() > 0.5
+                    });
+                }
+            }
+
+            // Ensure we have at least 3
+            while (stones.length < 3) {
+                const size = 30 + Math.random() * 50;
+                stones.push({
+                    x: margin + Math.random() * (canvas.width - margin * 2),
+                    y: margin + Math.random() * (canvas.height - margin * 2),
+                    size,
+                    ratio: 0.7 + Math.random() * 0.2,
+                    rotation: Math.random() * Math.PI,
+                    hasMoss: Math.random() > 0.5
+                });
+            }
+        }
+
+        function setupEventListeners() {
+            // Mouse tracking
+            document.addEventListener('mousemove', (e) => {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+
+                if (isRaking || isSmoothing) {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+
+                    if (isRaking) {
+                        rake(x, y);
+                    } else if (isSmoothing) {
+                        smooth(x, y);
+                    }
+
+                    lastX = x;
+                    lastY = y;
+                }
+            });
+
+            canvas.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                lastX = e.clientX - rect.left;
+                lastY = e.clientY - rect.top;
+
+                if (e.button === 0) {
+                    isRaking = true;
+                    cursor.classList.add('raking');
+                    startRakingSound();
+                } else if (e.button === 2) {
+                    isSmoothing = true;
+                    cursor.classList.add('smoothing');
+                }
+            });
+
+            document.addEventListener('mouseup', (e) => {
+                if (e.button === 0) {
+                    isRaking = false;
+                    cursor.classList.remove('raking');
+                    stopRakingSound();
+                } else if (e.button === 2) {
+                    isSmoothing = false;
+                    cursor.classList.remove('smoothing');
+                }
+            });
+
+            canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            // Keyboard
+            document.addEventListener('keydown', (e) => {
+                switch(e.key.toLowerCase()) {
+                    case 'c':
+                        clearGarden();
+                        break;
+                    case 'n':
+                        generateStones();
+                        showMessage('New stones arranged');
+                        saveState();
+                        break;
+                    case 'a':
+                        autoRake();
+                        break;
+                    case '1':
+                        rakeWidth = 1;
+                        showMessage('Narrow rake');
+                        saveState();
+                        break;
+                    case '2':
+                        rakeWidth = 2;
+                        showMessage('Medium rake');
+                        saveState();
+                        break;
+                    case '3':
+                        rakeWidth = 3;
+                        showMessage('Wide rake');
+                        saveState();
+                        break;
+                    case 'p':
+                        cyclePattern();
+                        break;
+                    case 'g':
+                        showGrid = !showGrid;
+                        showMessage(showGrid ? 'Grid on' : 'Grid off');
+                        break;
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                initGrid();
+                generateStones();
+            });
+        }
+
+        function rake(x, y) {
+            if (!isRaking) return;
+
+            const dx = x - lastX;
+            const dy = y - lastY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < 1) return;
+
+            const dir = Math.atan2(dy, dx);
+            const tines = RAKE_TINES[rakeWidth - 1];
+            const spacing = 8;
+            const offset = -(tines - 1) * spacing / 2;
+
+            // Interpolate points along the path
+            const steps = Math.ceil(dist / 2);
+            for (let i = 0; i <= steps; i++) {
+                const t = i / steps;
+                const px = lastX + dx * t;
+                const py = lastY + dy * t;
+
+                // Check if hitting stone
+                let hitStone = false;
+                for (const stone of stones) {
+                    const sdx = px - stone.x;
+                    const sdy = py - stone.y;
+                    const sdist = Math.sqrt(sdx * sdx + sdy * sdy);
+                    if (sdist < stone.size / 2) {
+                        hitStone = true;
+                        playStoneSound();
+                        break;
+                    }
+                }
+
+                if (!hitStone) {
+                    // Draw each tine
+                    for (let j = 0; j < tines; j++) {
+                        const tineOffset = offset + j * spacing;
+                        const tx = px - Math.sin(dir) * tineOffset;
+                        const ty = py + Math.cos(dir) * tineOffset;
+
+                        rakeCell(tx, ty, dir);
+                    }
+                }
+            }
+        }
+
+        function rakeCell(x, y, dir) {
+            const gx = Math.floor(x / CELL_SIZE);
+            const gy = Math.floor(y / CELL_SIZE);
+
+            if (gx < 0 || gx >= gridWidth || gy < 0 || gy >= gridHeight) return;
+
+            // Rake with smooth falloff
+            const radius = 1.5;
+            for (let dy = -Math.ceil(radius); dy <= Math.ceil(radius); dy++) {
+                for (let dx = -Math.ceil(radius); dx <= Math.ceil(radius); dx++) {
+                    const tx = gx + dx;
+                    const ty = gy + dy;
+                    if (tx >= 0 && tx < gridWidth && ty >= 0 && ty < gridHeight) {
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist <= radius) {
+                            const falloff = 1 - (dist / radius);
+                            const cell = grid[ty][tx];
+                            cell.dir = dir;
+                            cell.intensity = Math.min(1, cell.intensity + falloff * 0.5);
+                            cell.age = Date.now();
+                        }
+                    }
+                }
+            }
+        }
+
+        function smooth(x, y) {
+            const gx = Math.floor(x / CELL_SIZE);
+            const gy = Math.floor(y / CELL_SIZE);
+
+            const radius = 3;
+            for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                    const tx = gx + dx;
+                    const ty = gy + dy;
+                    if (tx >= 0 && tx < gridWidth && ty >= 0 && ty < gridHeight) {
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist <= radius) {
+                            const cell = grid[ty][tx];
+                            cell.intensity *= 0.8;
+                            if (cell.intensity < 0.05) cell.intensity = 0;
+                        }
+                    }
+                }
+            }
+        }
+
+        function clearGarden() {
+            showMessage('Clearing garden...');
+
+            // Animate clear
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 0.05;
+
+                for (let y = 0; y < gridHeight; y++) {
+                    for (let x = 0; x < gridWidth; x++) {
+                        grid[y][x].intensity *= 0.9;
+                    }
+                }
+
+                if (progress >= 1) {
+                    clearInterval(interval);
+                    initGrid();
+                }
+            }, 50);
+        }
+
+        function autoRake() {
+            showMessage('Auto-raking around stones...');
+
+            for (const stone of stones) {
+                const rings = 8;
+                const spacing = 12;
+
+                for (let ring = 1; ring <= rings; ring++) {
+                    const radius = stone.size / 2 + ring * spacing;
+                    const points = Math.floor(radius * Math.PI / 2);
+
+                    for (let i = 0; i < points; i++) {
+                        const angle = (i / points) * Math.PI * 2;
+                        const x = stone.x + Math.cos(angle) * radius;
+                        const y = stone.y + Math.sin(angle) * radius;
+                        const dir = angle + Math.PI / 2;
+
+                        rakeCell(x, y, dir);
+                    }
+                }
+            }
+        }
+
+        let patternIndex = 0;
+        function cyclePattern() {
+            const patterns = ['horizontal', 'circles', 'waves', 'spiral'];
+            patternIndex = (patternIndex + 1) % patterns.length;
+            const pattern = patterns[patternIndex];
+
+            showMessage(`Pattern: ${pattern}`);
+            applyPattern(pattern);
+        }
+
+        function applyPattern(pattern) {
+            const cx = gridWidth / 2;
+            const cy = gridHeight / 2;
+
+            for (let y = 0; y < gridHeight; y++) {
+                for (let x = 0; x < gridWidth; x++) {
+                    let dir = 0;
+
+                    switch(pattern) {
+                        case 'horizontal':
+                            dir = 0;
+                            break;
+                        case 'circles':
+                            dir = Math.atan2(y - cy, x - cx) + Math.PI / 2;
+                            break;
+                        case 'waves':
+                            dir = Math.sin(x * 0.1) * 0.5;
+                            break;
+                        case 'spiral':
+                            const dx = x - cx;
+                            const dy = y - cy;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            dir = Math.atan2(dy, dx) + dist * 0.05;
+                            break;
+                    }
+
+                    grid[y][x].dir = dir;
+                    grid[y][x].intensity = 0.6;
+                    grid[y][x].age = Date.now();
+                }
+            }
+        }
+
+        function render() {
+            // Base sand texture
+            ctx.fillStyle = '#d4c8a0';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Add subtle noise
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const noise = (Math.random() - 0.5) * 10;
+                data[i] += noise;
+                data[i + 1] += noise;
+                data[i + 2] += noise;
+            }
+            ctx.putImageData(imageData, 0, 0);
+
+            // Render rake marks
+            const now = Date.now();
+            for (let y = 0; y < gridHeight; y++) {
+                for (let x = 0; x < gridWidth; x++) {
+                    const cell = grid[y][x];
+                    if (cell.intensity > 0) {
+                        // Age fading
+                        const age = now - cell.age;
+                        const ageFactor = Math.max(0, 1 - age / 60000); // Fade over 1 minute
+                        const intensity = cell.intensity * ageFactor * 0.4;
+
+                        if (intensity > 0.05) {
+                            const px = x * CELL_SIZE;
+                            const py = y * CELL_SIZE;
+
+                            // Draw groove lines
+                            const lineLength = CELL_SIZE;
+                            const dx = Math.cos(cell.dir) * lineLength / 2;
+                            const dy = Math.sin(cell.dir) * lineLength / 2;
+
+                            // Shadow side
+                            ctx.strokeStyle = `rgba(100, 80, 50, ${intensity})`;
+                            ctx.lineWidth = 1.5;
+                            ctx.beginPath();
+                            ctx.moveTo(px + CELL_SIZE/2 - dx, py + CELL_SIZE/2 - dy);
+                            ctx.lineTo(px + CELL_SIZE/2 + dx, py + CELL_SIZE/2 + dy);
+                            ctx.stroke();
+
+                            // Highlight side
+                            ctx.strokeStyle = `rgba(230, 220, 190, ${intensity * 0.6})`;
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            const offset = 1;
+                            const ox = Math.sin(cell.dir) * offset;
+                            const oy = -Math.cos(cell.dir) * offset;
+                            ctx.moveTo(px + CELL_SIZE/2 - dx + ox, py + CELL_SIZE/2 - dy + oy);
+                            ctx.lineTo(px + CELL_SIZE/2 + dx + ox, py + CELL_SIZE/2 + dy + oy);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            // Render stones
+            for (const stone of stones) {
+                ctx.save();
+                ctx.translate(stone.x, stone.y);
+                ctx.rotate(stone.rotation);
+
+                // Shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.beginPath();
+                ctx.ellipse(3, 3, stone.size / 2, stone.size / 2 * stone.ratio, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Stone body
+                const gradient = ctx.createRadialGradient(
+                    -stone.size * 0.2, -stone.size * 0.2, 0,
+                    0, 0, stone.size / 2
+                );
+                gradient.addColorStop(0, '#4a4a4a');
+                gradient.addColorStop(0.5, '#2a2a2a');
+                gradient.addColorStop(1, '#1a1a1a');
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, stone.size / 2, stone.size / 2 * stone.ratio, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Highlight
+                ctx.fillStyle = 'rgba(100, 100, 100, 0.4)';
+                ctx.beginPath();
+                ctx.ellipse(-stone.size * 0.15, -stone.size * 0.15, stone.size / 4, stone.size / 4 * stone.ratio, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Moss patches
+                if (stone.hasMoss) {
+                    for (let i = 0; i < 3; i++) {
+                        const mx = (Math.random() - 0.5) * stone.size * 0.4;
+                        const my = (Math.random() - 0.5) * stone.size * 0.3;
+                        const ms = 3 + Math.random() * 4;
+
+                        ctx.fillStyle = 'rgba(80, 100, 60, 0.6)';
+                        ctx.beginPath();
+                        ctx.arc(mx, my, ms, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                ctx.restore();
+            }
+
+            // Grid overlay
+            if (showGrid) {
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.lineWidth = 0.5;
+
+                for (let x = 0; x <= gridWidth; x++) {
+                    ctx.beginPath();
+                    ctx.moveTo(x * CELL_SIZE, 0);
+                    ctx.lineTo(x * CELL_SIZE, canvas.height);
+                    ctx.stroke();
+                }
+
+                for (let y = 0; y <= gridHeight; y++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y * CELL_SIZE);
+                    ctx.lineTo(canvas.width, y * CELL_SIZE);
+                    ctx.stroke();
+                }
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        function showMessage(text) {
+            messageEl.textContent = text;
+            messageEl.classList.add('show');
+
+            setTimeout(() => {
+                messageEl.classList.remove('show');
+            }, 1500);
+        }
+
+        // Audio
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+            // Ambient wind
+            const windBuffer = createWindNoise();
+            const windSource = audioCtx.createBufferSource();
+            windSource.buffer = windBuffer;
+            windSource.loop = true;
+
+            windGainNode = audioCtx.createGain();
+            windGainNode.gain.value = 0.02;
+
+            windSource.connect(windGainNode);
+            windGainNode.connect(audioCtx.destination);
+            windSource.start();
+        }
+
+        function createWindNoise() {
+            const duration = 4;
+            const sampleRate = audioCtx.sampleRate;
+            const buffer = audioCtx.createBuffer(1, duration * sampleRate, sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < data.length; i++) {
+                data[i] = (Math.random() * 2 - 1) * 0.1;
+            }
+
+            return buffer;
+        }
+
+        let rakingSource = null;
+        function startRakingSound() {
+            if (!audioCtx || rakingSource) return;
+
+            const buffer = createRakingNoise();
+            rakingSource = audioCtx.createBufferSource();
+            rakingSource.buffer = buffer;
+            rakingSource.loop = true;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 800;
+            filter.Q.value = 1;
+
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0.08;
+
+            rakingSource.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            rakingSource.start();
+        }
+
+        function stopRakingSound() {
+            if (rakingSource) {
+                rakingSource.stop();
+                rakingSource = null;
+            }
+        }
+
+        function createRakingNoise() {
+            const duration = 0.5;
+            const sampleRate = audioCtx.sampleRate;
+            const buffer = audioCtx.createBuffer(1, duration * sampleRate, sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < data.length; i++) {
+                data[i] = (Math.random() * 2 - 1) * 0.5;
+            }
+
+            return buffer;
+        }
+
+        function playStoneSound() {
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            osc.frequency.value = 80;
+            osc.type = 'sine';
+
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0.1;
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+
+        function playChime() {
+            if (!audioCtx) return;
+
+            const frequencies = [523, 659, 784, 1047];
+            const freq = frequencies[Math.floor(Math.random() * frequencies.length)];
+
+            const osc = audioCtx.createOscillator();
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0.05;
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 2);
+
+            scheduleChime();
+        }
+
+        function scheduleChime() {
+            const delay = 20000 + Math.random() * 20000; // 20-40 seconds
+            chimeTimeout = setTimeout(playChime, delay);
+        }
+
+        // Persistence
+        function saveState() {
+            const state = {
+                stones: stones,
+                rakeWidth: rakeWidth,
+                gridData: compressGrid()
+            };
+
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {
+                console.warn('Could not save state:', e);
+            }
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const state = JSON.parse(saved);
+                    stones = state.stones || [];
+                    rakeWidth = state.rakeWidth || 2;
+
+                    if (state.gridData) {
+                        decompressGrid(state.gridData);
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not load state:', e);
+            }
+
+            // Generate stones if none loaded
+            if (stones.length === 0) {
+                generateStones();
+            }
+        }
+
+        function compressGrid() {
+            // Store only cells with intensity > 0
+            const compressed = [];
+
+            for (let y = 0; y < gridHeight; y++) {
+                for (let x = 0; x < gridWidth; x++) {
+                    const cell = grid[y][x];
+                    if (cell.intensity > 0.05) {
+                        compressed.push({
+                            x, y,
+                            d: Math.round(cell.dir * 100) / 100,
+                            i: Math.round(cell.intensity * 100) / 100,
+                            a: cell.age
+                        });
+                    }
+                }
+            }
+
+            return compressed;
+        }
+
+        function decompressGrid(compressed) {
+            initGrid();
+
+            for (const c of compressed) {
+                if (c.y < gridHeight && c.x < gridWidth) {
+                    grid[c.y][c.x] = {
+                        dir: c.d,
+                        intensity: c.i,
+                        age: c.a
+                    };
+                }
+            }
+        }
+
+        // Auto-save periodically
+        setInterval(saveState, 10000);
+
+        // Save on exit
+        window.addEventListener('beforeunload', saveState);
+
+        // Start
+        init();
+    </script>
+</body>
+</html>

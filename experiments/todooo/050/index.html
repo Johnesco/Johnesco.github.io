@@ -42,7 +42,7 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const soundToggle = document.getElementById('soundToggle');
 
-let W, H, audioCtx, soundEnabled = true, mouseX = W/2, mouseY = H/2, mouseActive = false;
+let W, H, audioCtx, soundEnabled = true, mouseX = 0, mouseY = 0, mouseActive = false;
 let shapes = [], currentWord = [], mode = 0, typewriterX = 40, typewriterY = 80;
 const modes = ['free', 'radial', 'gravity', 'orbit'];
 const STORAGE_KEY = 'todooo-050';
@@ -68,6 +68,7 @@ function init() {
 function resize() {
   W = canvas.width = window.innerWidth;
   H = canvas.height = window.innerHeight;
+  if (!mouseActive) { mouseX = W/2; mouseY = H/2; }
 }
 
 function toggleSound() {

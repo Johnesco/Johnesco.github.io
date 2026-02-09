@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendulum Wave - 063</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a14;
+            overflow: hidden;
+            font-family: 'Georgia', serif;
+            color: #d4af37;
+        }
+
+        canvas {
+            display: block;
+            cursor: grab;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 14px;
+            line-height: 1.8;
+            opacity: 0.7;
+            pointer-events: none;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            opacity: 0.6;
+            transition: opacity 0.3s;
+        }
+
+        #controls:hover {
+            opacity: 1;
+        }
+
+        .control-btn {
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            color: #d4af37;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Georgia', serif;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: rgba(212, 175, 55, 0.2);
+            border-color: rgba(212, 175, 55, 0.5);
+        }
+
+        .control-btn.active {
+            background: rgba(212, 175, 55, 0.3);
+            border-color: #d4af37;
+        }
+
+        #phase-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 12px;
+            opacity: 0.5;
+            text-align: right;
+        }
+
+        .help-text {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            opacity: 0.4;
+            text-align: center;
+            width: 80%;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div id="info">
+        <div>Pendulum Wave</div>
+        <div id="visit-count"></div>
+        <div id="mode-display"></div>
+    </div>
+
+    <div id="phase-indicator">
+        <div id="phase-text"></div>
+        <div id="cycle-progress"></div>
+    </div>
+
+    <div id="controls">
+        <button class="control-btn active" data-mode="1">Classic</button>
+        <button class="control-btn" data-mode="2">Double</button>
+        <button class="control-btn" data-mode="3">Circular</button>
+        <button class="control-btn" data-mode="4">Chaos</button>
+    </div>
+
+    <div class="help-text">
+        Space: Reset | T: Toggle Trails | S: Toggle Sound | Click: Push | Drag Bobs
+    </div>
+
+    <script>
+        // Configuration
+        const STORAGE_KEY = 'todooo-063';
+        const GRAVITY = 9.81;
+        const CYCLE_TIME = 60; // seconds
+        const NUM_PENDULUMS = 18;
+        const BASE_OSCILLATIONS = 51; // shortest pendulum completes this many
+
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // State
+        let state = {
+            mode: 1,
+            trailsOn: false,
+            soundOn: false,
+            visitCount: 0,
+            perspective: 0
+        };
+
+        // Load state
+        function loadState() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                state = { ...state, ...parsed };
+                state.visitCount = (state.visitCount || 0) + 1;
+            } else {
+                state.visitCount = 1;
+            }
+            saveState();
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        loadState();
+
+        // Audio context
+        let audioCtx = null;
+        let masterGain = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = 0.3;
+                masterGain.connect(audioCtx.destination);
+            }
+        }
+
+        function playTick(frequency) {
+            if (!state.soundOn || !audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            osc.type = 'sine';
+            osc.frequency.value = frequency;
+
+            filter.type = 'lowpass';
+            filter.frequency.value = 2000;
+
+            gain.gain.value = 0.1;
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        // Pendulum class
+        class Pendulum {
+            constructor(index, total, mode) {
+                this.index = index;
+                this.total = total;
+                this.mode = mode;
+                this.setupGeometry();
+                this.reset();
+                this.trail = [];
+                this.maxTrailLength = 100;
+                this.lastTickTime = -1;
+                this.hasTickedThisCycle = false;
+            }
+
+            setupGeometry() {
+                if (this.mode === 3) { // Circular
+                    const angle = (this.index / this.total) * Math.PI * 2;
+                    const radius = Math.min(width, height) * 0.25;
+                    this.pivotX = width / 2 + Math.cos(angle) * radius;
+                    this.pivotY = height / 2 + Math.sin(angle) * radius;
+                } else if (this.mode === 2) { // Double
+                    const row = Math.floor(this.index / (this.total / 2));
+                    const idx = this.index % (this.total / 2);
+                    const spacing = width / (this.total / 2 + 1);
+                    this.pivotX = spacing * (idx + 1);
+                    this.pivotY = height * (row === 0 ? 0.15 : 0.85);
+                } else { // Classic and Chaos
+                    const spacing = width / (this.total + 1);
+                    this.pivotX = spacing * (this.index + 1);
+                    this.pivotY = height * 0.1;
+                }
+
+                // Calculate length based on mode
+                if (this.mode === 4) { // Chaos
+                    this.length = height * (0.3 + Math.random() * 0.4);
+                } else {
+                    // Each pendulum completes a different number of oscillations in CYCLE_TIME
+                    const oscillations = BASE_OSCILLATIONS - this.index;
+                    const period = CYCLE_TIME / oscillations;
+                    // T = 2π√(L/g) => L = g(T/2π)²
+                    this.length = GRAVITY * Math.pow(period / (2 * Math.PI), 2);
+                    // Scale to fit screen
+                    this.length = this.length * (height * 0.06);
+                }
+
+                this.bobRadius = 12;
+                this.frequency = 200 + (this.index / this.total) * 400;
+            }
+
+            reset() {
+                this.angle = Math.PI * 0.25; // 45 degrees
+                this.velocity = 0;
+                this.isDragging = false;
+                this.trail = [];
+                this.startTime = Date.now() / 1000;
+            }
+
+            update(dt, currentTime) {
+                if (this.isDragging) return;
+
+                // Simple pendulum motion: θ'' = -(g/L)sin(θ)
+                // For small angles: θ(t) = θ₀cos(ωt) where ω = √(g/L)
+                const omega = Math.sqrt(GRAVITY / this.length);
+                const elapsed = currentTime - this.startTime;
+                this.angle = this.angle * Math.cos(omega * dt) - (this.velocity / omega) * Math.sin(omega * dt);
+                this.velocity = -this.angle * omega * Math.sin(omega * dt) + this.velocity * Math.cos(omega * dt);
+
+                // Check for tick at lowest point
+                const bobX = this.pivotX + Math.sin(this.angle) * this.length;
+                const bobY = this.pivotY + Math.cos(this.angle) * this.length;
+
+                // Detect crossing center point
+                const prevAngle = this.prevAngle || 0;
+                if (prevAngle < 0 && this.angle >= 0 && Math.abs(this.velocity) > 0.1) {
+                    if (currentTime - this.lastTickTime > 0.2) {
+                        playTick(this.frequency);
+                        this.lastTickTime = currentTime;
+                    }
+                }
+                this.prevAngle = this.angle;
+
+                // Update trail
+                if (state.trailsOn) {
+                    this.trail.push({ x: bobX, y: bobY, alpha: 1 });
+                    if (this.trail.length > this.maxTrailLength) {
+                        this.trail.shift();
+                    }
+                }
+            }
+
+            draw() {
+                const bobX = this.pivotX + Math.sin(this.angle) * this.length;
+                const bobY = this.pivotY + Math.cos(this.angle) * this.length;
+
+                // Draw trail
+                if (state.trailsOn && this.trail.length > 1) {
+                    ctx.beginPath();
+                    for (let i = 0; i < this.trail.length; i++) {
+                        const point = this.trail[i];
+                        const alpha = (i / this.trail.length) * 0.3;
+                        if (i === 0) {
+                            ctx.moveTo(point.x, point.y);
+                        } else {
+                            ctx.lineTo(point.x, point.y);
+                        }
+                    }
+                    ctx.strokeStyle = `rgba(212, 175, 55, ${0.3})`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                // Draw string
+                ctx.beginPath();
+                ctx.moveTo(this.pivotX, this.pivotY);
+                ctx.lineTo(bobX, bobY);
+                ctx.strokeStyle = 'rgba(200, 200, 200, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Draw bob with motion blur
+                const blur = Math.abs(this.velocity) * 5;
+                for (let i = 3; i >= 0; i--) {
+                    const blurOffset = (i / 3) * blur * (this.velocity > 0 ? 1 : -1);
+                    const blurX = bobX + Math.cos(this.angle) * blurOffset;
+                    const blurY = bobY - Math.sin(this.angle) * blurOffset;
+                    const alpha = 0.1 * (1 - i / 3);
+
+                    const gradient = ctx.createRadialGradient(
+                        blurX - this.bobRadius * 0.3,
+                        blurY - this.bobRadius * 0.3,
+                        0,
+                        blurX,
+                        blurY,
+                        this.bobRadius
+                    );
+                    gradient.addColorStop(0, `rgba(255, 235, 150, ${alpha})`);
+                    gradient.addColorStop(0.7, `rgba(212, 175, 55, ${alpha})`);
+                    gradient.addColorStop(1, `rgba(150, 120, 30, ${alpha})`);
+
+                    ctx.beginPath();
+                    ctx.arc(blurX, blurY, this.bobRadius, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                }
+
+                // Draw main bob
+                const gradient = ctx.createRadialGradient(
+                    bobX - this.bobRadius * 0.3,
+                    bobY - this.bobRadius * 0.3,
+                    0,
+                    bobX,
+                    bobY,
+                    this.bobRadius
+                );
+                gradient.addColorStop(0, '#ffeb96');
+                gradient.addColorStop(0.7, '#d4af37');
+                gradient.addColorStop(1, '#96781e');
+
+                ctx.beginPath();
+                ctx.arc(bobX, bobY, this.bobRadius, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Highlight
+                ctx.beginPath();
+                ctx.arc(bobX - this.bobRadius * 0.3, bobY - this.bobRadius * 0.3, this.bobRadius * 0.3, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.fill();
+
+                // Shadow on floor
+                if (this.mode !== 2 || this.index < this.total / 2) {
+                    const floorY = this.mode === 2 ? height / 2 : height * 0.9;
+                    const shadowY = floorY;
+                    const shadowAlpha = 0.2 * (1 - Math.abs(bobY - shadowY) / (height * 0.5));
+                    if (shadowAlpha > 0) {
+                        ctx.beginPath();
+                        ctx.ellipse(bobX, shadowY, this.bobRadius * 0.8, this.bobRadius * 0.3, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = `rgba(0, 0, 0, ${shadowAlpha})`;
+                        ctx.fill();
+                    }
+                }
+
+                // Draw pivot
+                ctx.beginPath();
+                ctx.arc(this.pivotX, this.pivotY, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#d4af37';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            contains(x, y) {
+                const bobX = this.pivotX + Math.sin(this.angle) * this.length;
+                const bobY = this.pivotY + Math.cos(this.angle) * this.length;
+                const dx = x - bobX;
+                const dy = y - bobY;
+                return Math.sqrt(dx * dx + dy * dy) < this.bobRadius;
+            }
+
+            startDrag() {
+                this.isDragging = true;
+            }
+
+            drag(x, y) {
+                if (!this.isDragging) return;
+                const dx = x - this.pivotX;
+                const dy = y - this.pivotY;
+                this.angle = Math.atan2(dx, dy);
+                this.velocity = 0;
+            }
+
+            endDrag() {
+                if (this.isDragging) {
+                    this.isDragging = false;
+                    this.startTime = Date.now() / 1000;
+                }
+            }
+        }
+
+        // Pendulum array
+        let pendulums = [];
+
+        function createPendulums() {
+            const count = state.mode === 2 ? NUM_PENDULUMS * 2 : NUM_PENDULUMS;
+            pendulums = [];
+            for (let i = 0; i < count; i++) {
+                pendulums.push(new Pendulum(i, count, state.mode));
+            }
+        }
+
+        createPendulums();
+
+        // Interaction
+        let draggedPendulum = null;
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            for (let p of pendulums) {
+                if (p.contains(x, y)) {
+                    draggedPendulum = p;
+                    p.startDrag();
+                    return;
+                }
+            }
+
+            // Click empty space = push
+            const pushStrength = 0.3;
+            for (let p of pendulums) {
+                p.velocity += (Math.random() - 0.5) * pushStrength;
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (draggedPendulum) {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                draggedPendulum.drag(x, y);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (draggedPendulum) {
+                draggedPendulum.endDrag();
+                draggedPendulum = null;
+            }
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            state.perspective += e.deltaY * 0.001;
+            state.perspective = Math.max(-0.5, Math.min(0.5, state.perspective));
+        }, { passive: false });
+
+        // Keyboard
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                for (let p of pendulums) {
+                    p.reset();
+                }
+            } else if (e.code === 'KeyT') {
+                state.trailsOn = !state.trailsOn;
+                if (!state.trailsOn) {
+                    for (let p of pendulums) {
+                        p.trail = [];
+                    }
+                }
+                saveState();
+            } else if (e.code === 'KeyS') {
+                state.soundOn = !state.soundOn;
+                if (state.soundOn) {
+                    initAudio();
+                }
+                saveState();
+            } else if (e.code.startsWith('Digit')) {
+                const mode = parseInt(e.code.charAt(5));
+                if (mode >= 1 && mode <= 4) {
+                    state.mode = mode;
+                    createPendulums();
+                    saveState();
+                    updateUI();
+                }
+            }
+        });
+
+        // Mode buttons
+        document.querySelectorAll('.control-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const mode = parseInt(btn.dataset.mode);
+                state.mode = mode;
+                createPendulums();
+                saveState();
+                updateUI();
+            });
+        });
+
+        function updateUI() {
+            document.querySelectorAll('.control-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.mode) === state.mode);
+            });
+
+            const modeNames = ['', 'Classic Wave', 'Double Mirror', 'Circular', 'Chaos'];
+            document.getElementById('mode-display').textContent = `Mode: ${modeNames[state.mode]}`;
+            document.getElementById('visit-count').textContent = `Visit: ${state.visitCount}`;
+        }
+
+        updateUI();
+
+        // Animation loop
+        let lastTime = Date.now() / 1000;
+        let globalTime = 0;
+
+        function animate() {
+            const currentTime = Date.now() / 1000;
+            const dt = Math.min(currentTime - lastTime, 0.1);
+            lastTime = currentTime;
+            globalTime += dt;
+
+            // Clear with slight trail effect
+            if (state.trailsOn) {
+                ctx.fillStyle = 'rgba(10, 10, 20, 0.1)';
+            } else {
+                ctx.fillStyle = '#0a0a14';
+            }
+            ctx.fillRect(0, 0, width, height);
+
+            // Apply perspective transform
+            if (state.perspective !== 0) {
+                ctx.save();
+                ctx.translate(width / 2, height / 2);
+                ctx.scale(1 + state.perspective * 0.2, 1 - state.perspective * 0.1);
+                ctx.translate(-width / 2, -height / 2);
+            }
+
+            // Update and draw pendulums
+            for (let p of pendulums) {
+                p.update(dt, currentTime);
+                p.draw();
+            }
+
+            if (state.perspective !== 0) {
+                ctx.restore();
+            }
+
+            // Draw floor reflection line
+            if (state.mode !== 3) {
+                const floorY = state.mode === 2 ? height / 2 : height * 0.9;
+                ctx.beginPath();
+                ctx.moveTo(0, floorY);
+                ctx.lineTo(width, floorY);
+                ctx.strokeStyle = 'rgba(212, 175, 55, 0.1)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            // Update phase indicator
+            const cycleProgress = (globalTime % CYCLE_TIME) / CYCLE_TIME;
+            const phasePercent = (cycleProgress * 100).toFixed(1);
+            document.getElementById('phase-text').textContent = `Phase: ${phasePercent}%`;
+
+            // Calculate coherence (how aligned the pendulums are)
+            let avgAngle = 0;
+            for (let p of pendulums) {
+                avgAngle += p.angle;
+            }
+            avgAngle /= pendulums.length;
+
+            let coherence = 0;
+            for (let p of pendulums) {
+                coherence += Math.cos(p.angle - avgAngle);
+            }
+            coherence = Math.abs(coherence / pendulums.length);
+
+            const coherencePercent = (coherence * 100).toFixed(0);
+            document.getElementById('cycle-progress').textContent = `Sync: ${coherencePercent}%`;
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

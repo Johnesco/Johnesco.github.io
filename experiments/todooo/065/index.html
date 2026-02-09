@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pressed Flowers - v065</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            background: #f5f0e0;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            position: relative;
+            cursor: crosshair;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(180, 160, 120, 0.03) 19px, rgba(180, 160, 120, 0.03) 20px),
+                repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(180, 160, 120, 0.03) 19px, rgba(180, 160, 120, 0.03) 20px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+        }
+
+        .specimen {
+            position: absolute;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 3;
+        }
+
+        .specimen.examining {
+            z-index: 1000;
+        }
+
+        .specimen:hover {
+            transform: scale(1.02);
+        }
+
+        .label {
+            position: absolute;
+            font-size: 11px;
+            color: #3a3a3a;
+            opacity: 0.8;
+            white-space: nowrap;
+            pointer-events: none;
+            font-style: italic;
+        }
+
+        .tape {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(200, 200, 200, 0.4);
+            pointer-events: none;
+        }
+
+        .stats-overlay {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(245, 240, 224, 0.95);
+            border: 1px solid rgba(100, 80, 60, 0.3);
+            padding: 20px;
+            font-size: 12px;
+            color: #3a3a3a;
+            z-index: 10;
+            display: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            max-width: 300px;
+        }
+
+        .stats-overlay.visible {
+            display: block;
+        }
+
+        .stats-overlay h3 {
+            margin-bottom: 10px;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(100, 80, 60, 0.2);
+            padding-bottom: 5px;
+        }
+
+        .stats-overlay p {
+            margin: 5px 0;
+            line-height: 1.4;
+        }
+
+        .tooltip {
+            position: fixed;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(100, 80, 60, 0.4);
+            padding: 10px 15px;
+            font-size: 11px;
+            color: #2a2a2a;
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            max-width: 250px;
+        }
+
+        .tooltip.visible {
+            display: block;
+        }
+
+        .tooltip .name {
+            font-weight: bold;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+
+        .tooltip .detail {
+            margin: 2px 0;
+            opacity: 0.8;
+        }
+
+        @keyframes pressIn {
+            from {
+                transform: scale(0) rotate(0deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1) rotate(2deg);
+            }
+            to {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes petalScatter {
+            to {
+                transform: translate(var(--tx), var(--ty)) rotate(var(--r)) scale(0);
+                opacity: 0;
+            }
+        }
+
+        .specimen.appearing {
+            animation: pressIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .examining-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(245, 240, 224, 0.98);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .examining-overlay.visible {
+            display: flex;
+        }
+
+        .page-curl {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, transparent 0%, rgba(0, 0, 0, 0.05) 100%);
+            pointer-events: none;
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="examining-overlay" id="examineOverlay"></div>
+    <div class="tooltip" id="tooltip">
+        <div class="name"></div>
+        <div class="detail date"></div>
+        <div class="detail age"></div>
+        <div class="detail location"></div>
+    </div>
+    <div class="stats-overlay" id="statsOverlay">
+        <h3>Collection Statistics</h3>
+        <p id="statsContent"></p>
+    </div>
+    <div class="page-curl"></div>
+
+    <script>
+        const STORAGE_KEY = 'todooo-065';
+        const MAX_SPECIMENS = 30;
+
+        // Audio context for subtle sounds
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let audioEnabled = false;
+
+        // Enable audio on first interaction
+        document.addEventListener('click', () => {
+            if (!audioEnabled) {
+                audioCtx.resume();
+                audioEnabled = true;
+            }
+        }, { once: true });
+
+        // Botanical name generation
+        const prefixes = ['Rosa', 'Flora', 'Viola', 'Bella', 'Luna', 'Stella', 'Marina', 'Silva', 'Aurea', 'Alba', 'Purpur', 'Cerule', 'Viridi', 'Rubra', 'Flav'];
+        const suffixes = ['aria', 'ensis', 'iana', 'ensis', 'antha', 'ella', 'osa', 'ina', 'alis', 'ata'];
+        const species = ['vulgaris', 'elegans', 'gracilis', 'delicata', 'formosa', 'pulchra', 'tenuis', 'robusta', 'minima', 'maxima'];
+
+        const locations = [
+            'Found in the garden',
+            'Roadside collection',
+            'Mountain path',
+            'Meadow edge',
+            'Forest clearing',
+            'Riverside walk',
+            'Coastal dunes',
+            'Ancient hedgerow',
+            'Abandoned orchard',
+            'Cottage garden',
+            'Wild heath',
+            'Woodland margin'
+        ];
+
+        const colors = [
+            { name: 'lavender', base: [180, 160, 220], age: [160, 140, 180] },
+            { name: 'rose', base: [220, 140, 160], age: [180, 120, 130] },
+            { name: 'golden', base: [240, 200, 80], age: [200, 170, 90] },
+            { name: 'pale-blue', base: [160, 180, 220], age: [140, 150, 180] },
+            { name: 'white', base: [250, 245, 240], age: [220, 210, 200] },
+            { name: 'orange', base: [240, 160, 80], age: [200, 140, 90] },
+            { name: 'pink', base: [240, 180, 200], age: [200, 160, 170] },
+            { name: 'yellow', base: [250, 230, 100], age: [210, 190, 110] }
+        ];
+
+        function generateName() {
+            const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+            const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+            const spec = species[Math.floor(Math.random() * species.length)];
+            return `${prefix}${suffix} ${spec}`;
+        }
+
+        function generateLocation() {
+            return locations[Math.floor(Math.random() * locations.length)];
+        }
+
+        function playPageTurn() {
+            if (!audioEnabled) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.frequency.value = 100;
+            gain.gain.value = 0.02;
+
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playCrinkle() {
+            if (!audioEnabled) return;
+            const bufferSize = audioCtx.sampleRate * 0.05;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * 0.02;
+            }
+
+            const source = audioCtx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioCtx.destination);
+            source.start();
+        }
+
+        class Specimen {
+            constructor(data = null) {
+                if (data) {
+                    Object.assign(this, data);
+                } else {
+                    this.id = Date.now() + Math.random();
+                    this.name = generateName();
+                    this.location = generateLocation();
+                    this.createdAt = Date.now();
+                    this.x = Math.random() * 0.8 + 0.1; // 10-90% of width
+                    this.y = Math.random() * 0.8 + 0.1; // 10-90% of height
+                    this.rotation = (Math.random() - 0.5) * 20; // -10 to 10 degrees
+                    this.scale = Math.random() * 0.4 + 0.8; // 0.8 to 1.2
+                    this.colorIndex = Math.floor(Math.random() * colors.length);
+                    this.petalCount = Math.floor(Math.random() * 4) + 5; // 5-8
+                    this.leafCount = Math.floor(Math.random() * 5) + 3; // 3-7
+                    this.seed = Math.random(); // For consistent randomness
+                }
+            }
+
+            getAge() {
+                return Date.now() - this.createdAt;
+            }
+
+            getAgeFactor() {
+                const age = this.getAge();
+                const day = 24 * 60 * 60 * 1000;
+                if (age < day) return age / day; // 0-1 for first day
+                if (age < day * 7) return 1 + (age - day) / (day * 6); // 1-2 for week
+                if (age < day * 28) return 2 + (age - day * 7) / (day * 21); // 2-3 for month
+                return 3 + Math.min((age - day * 28) / (day * 28), 2); // 3-5+ for older
+            }
+
+            getAgeDescription() {
+                const age = this.getAge();
+                const day = 24 * 60 * 60 * 1000;
+                const hours = Math.floor(age / (60 * 60 * 1000));
+                const days = Math.floor(age / day);
+                const weeks = Math.floor(age / (day * 7));
+
+                if (age < day) return `${hours} hours old`;
+                if (age < day * 7) return `${days} days old`;
+                if (age < day * 28) return `${weeks} weeks old`;
+                return `${Math.floor(weeks / 4)} months old`;
+            }
+
+            getColor() {
+                const colorData = colors[this.colorIndex];
+                const ageFactor = this.getAgeFactor();
+                const base = colorData.base;
+                const aged = colorData.age;
+
+                // Interpolate between base and aged color
+                const t = Math.min(ageFactor / 3, 1); // 0-1 over first 3 stages
+                const r = Math.floor(base[0] + (aged[0] - base[0]) * t);
+                const g = Math.floor(base[1] + (aged[1] - base[1]) * t);
+                const b = Math.floor(base[2] + (aged[2] - base[2]) * t);
+
+                // Add sepia tone for very old specimens
+                if (ageFactor > 2) {
+                    const sepia = (ageFactor - 2) / 3;
+                    const sepiaR = r * 0.393 + g * 0.769 + b * 0.189;
+                    const sepiaG = r * 0.349 + g * 0.686 + b * 0.168;
+                    const sepiaB = r * 0.272 + g * 0.534 + b * 0.131;
+                    return `rgb(${Math.floor(r + (sepiaR - r) * sepia)}, ${Math.floor(g + (sepiaG - g) * sepia)}, ${Math.floor(b + (sepiaB - b) * sepia)})`;
+                }
+
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+
+            getStemColor() {
+                const ageFactor = this.getAgeFactor();
+                if (ageFactor > 2) {
+                    return `rgb(${120 - ageFactor * 10}, ${100 - ageFactor * 8}, ${80 - ageFactor * 8})`;
+                }
+                return `rgb(${100 - ageFactor * 15}, ${130 - ageFactor * 20}, ${70 - ageFactor * 10})`;
+            }
+
+            draw(ctx, examining = false) {
+                const vw = window.innerWidth;
+                const vh = window.innerHeight;
+                const centerX = examining ? vw / 2 : this.x * vw;
+                const centerY = examining ? vh / 2 : this.y * vh;
+                const scale = examining ? this.scale * 3 : this.scale;
+
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(this.rotation * Math.PI / 180);
+                ctx.scale(scale, scale);
+
+                const ageFactor = this.getAgeFactor();
+                const curl = ageFactor > 1 ? Math.sin(this.seed * 10) * (ageFactor - 1) * 2 : 0;
+
+                // Shadow
+                if (!examining) {
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+                    ctx.shadowBlur = 5;
+                    ctx.shadowOffsetX = 2;
+                    ctx.shadowOffsetY = 2;
+                }
+
+                // Draw stem
+                ctx.strokeStyle = this.getStemColor();
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(0, 60);
+                // Curved stem
+                for (let i = 0; i <= 20; i++) {
+                    const t = i / 20;
+                    const y = 60 - t * 120;
+                    const curve = Math.sin(t * Math.PI + this.seed * 6.28) * 10;
+                    ctx.lineTo(curve, y);
+                }
+                ctx.stroke();
+
+                // Draw leaves
+                const leafColor = this.getStemColor();
+                for (let i = 0; i < this.leafCount; i++) {
+                    const t = (i + 1) / (this.leafCount + 1);
+                    const y = 60 - t * 100;
+                    const x = Math.sin(t * Math.PI + this.seed * 6.28) * 10;
+                    const side = (i % 2) * 2 - 1;
+                    const leafSize = 15 + Math.sin(this.seed * i) * 5;
+
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(side * 0.5 + curl * 0.1);
+
+                    ctx.fillStyle = leafColor;
+                    ctx.globalAlpha = 0.7 - ageFactor * 0.1;
+                    ctx.beginPath();
+                    ctx.ellipse(side * leafSize, 0, leafSize, leafSize / 2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.restore();
+                }
+
+                // Draw flower head
+                const flowerColor = this.getColor();
+                ctx.globalAlpha = 1 - ageFactor * 0.15;
+
+                for (let i = 0; i < this.petalCount; i++) {
+                    const angle = (i / this.petalCount) * Math.PI * 2;
+                    const petalCurl = curl * Math.cos(angle * 2);
+
+                    ctx.save();
+                    ctx.rotate(angle);
+                    ctx.translate(0, -30);
+
+                    // Petal
+                    ctx.fillStyle = flowerColor;
+                    ctx.beginPath();
+                    ctx.ellipse(0, -15, 8, 18, petalCurl * 0.1, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Petal edge highlight
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    ctx.restore();
+                }
+
+                // Flower center
+                ctx.fillStyle = ageFactor > 2 ? '#8b7355' : '#d4a574';
+                ctx.globalAlpha = 1;
+                ctx.beginPath();
+                ctx.arc(0, -30, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Center detail
+                ctx.fillStyle = 'rgba(100, 70, 40, 0.3)';
+                for (let i = 0; i < 8; i++) {
+                    const a = (i / 8) * Math.PI * 2;
+                    ctx.beginPath();
+                    ctx.arc(Math.cos(a) * 2, -30 + Math.sin(a) * 2, 1, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+
+                // Draw tape (sometimes)
+                if (this.seed > 0.6 && !examining) {
+                    const tapeY = centerY + Math.sin(this.rotation * Math.PI / 180) * 20 * scale;
+                    ctx.save();
+                    ctx.translate(centerX, tapeY);
+                    ctx.rotate((this.rotation + (this.seed > 0.8 ? 90 : 0)) * Math.PI / 180);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.strokeStyle = 'rgba(200, 200, 200, 0.4)';
+                    ctx.lineWidth = 1;
+                    ctx.fillRect(-30 * scale, -5 * scale, 60 * scale, 10 * scale);
+                    ctx.strokeRect(-30 * scale, -5 * scale, 60 * scale, 10 * scale);
+                    ctx.restore();
+                }
+
+                // Draw label
+                if (!examining) {
+                    ctx.save();
+                    ctx.translate(centerX, centerY + 80 * scale);
+                    ctx.rotate(this.rotation * Math.PI / 180 * 0.3);
+
+                    ctx.font = 'italic 11px "Courier New"';
+                    ctx.fillStyle = 'rgba(58, 58, 58, 0.8)';
+                    ctx.textAlign = 'center';
+
+                    // Add character variation for handwritten effect
+                    const chars = this.name.split('');
+                    let xOffset = -ctx.measureText(this.name).width / 2;
+                    chars.forEach((char, i) => {
+                        const yVar = Math.sin(this.seed * i) * 0.5;
+                        ctx.fillText(char, xOffset, yVar);
+                        xOffset += ctx.measureText(char).width;
+                    });
+
+                    const date = new Date(this.createdAt).toLocaleDateString('en-GB');
+                    ctx.font = '9px "Courier New"';
+                    ctx.fillText(date, 0, 15);
+
+                    ctx.restore();
+                }
+            }
+
+            getBounds() {
+                const vw = window.innerWidth;
+                const vh = window.innerHeight;
+                const size = 80 * this.scale;
+                return {
+                    x: this.x * vw - size,
+                    y: this.y * vh - size,
+                    width: size * 2,
+                    height: size * 2 + 40
+                };
+            }
+
+            contains(px, py) {
+                const bounds = this.getBounds();
+                return px >= bounds.x && px <= bounds.x + bounds.width &&
+                       py >= bounds.y && py <= bounds.y + bounds.height;
+            }
+        }
+
+        class Garden {
+            constructor() {
+                this.specimens = [];
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.examiningSpecimen = null;
+                this.hoveredSpecimen = null;
+                this.statsVisible = false;
+
+                this.resize();
+                this.load();
+                this.setupEvents();
+                this.animate();
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.draw();
+            }
+
+            load() {
+                try {
+                    const data = localStorage.getItem(STORAGE_KEY);
+                    if (data) {
+                        const parsed = JSON.parse(data);
+                        this.specimens = parsed.map(d => new Specimen(d));
+                    }
+                } catch (e) {
+                    console.error('Failed to load specimens:', e);
+                }
+            }
+
+            save() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.specimens));
+                } catch (e) {
+                    console.error('Failed to save specimens:', e);
+                }
+            }
+
+            addSpecimen() {
+                if (this.specimens.length >= MAX_SPECIMENS) {
+                    // Archive oldest
+                    this.specimens.shift();
+                }
+
+                const specimen = new Specimen();
+                this.specimens.push(specimen);
+                this.save();
+                playPageTurn();
+
+                // Animate in
+                setTimeout(() => this.draw(), 50);
+            }
+
+            removeSpecimen(specimen) {
+                const index = this.specimens.indexOf(specimen);
+                if (index > -1) {
+                    // Scatter animation would go here
+                    this.specimens.splice(index, 1);
+                    this.save();
+                    this.draw();
+                }
+            }
+
+            getSpecimenAt(x, y) {
+                // Check from top (most recent) to bottom
+                for (let i = this.specimens.length - 1; i >= 0; i--) {
+                    if (this.specimens[i].contains(x, y)) {
+                        return this.specimens[i];
+                    }
+                }
+                return null;
+            }
+
+            setupEvents() {
+                window.addEventListener('resize', () => this.resize());
+
+                this.canvas.addEventListener('click', (e) => {
+                    if (this.examiningSpecimen) {
+                        this.examiningSpecimen = null;
+                        document.getElementById('examineOverlay').classList.remove('visible');
+                        this.draw();
+                        return;
+                    }
+
+                    const specimen = this.getSpecimenAt(e.clientX, e.clientY);
+                    if (specimen) {
+                        this.examiningSpecimen = specimen;
+                        document.getElementById('examineOverlay').classList.add('visible');
+                        playCrinkle();
+                        this.draw();
+                    } else {
+                        this.addSpecimen();
+                    }
+                });
+
+                this.canvas.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    const specimen = this.getSpecimenAt(e.clientX, e.clientY);
+                    if (specimen) {
+                        this.removeSpecimen(specimen);
+                    }
+                });
+
+                this.canvas.addEventListener('mousemove', (e) => {
+                    if (this.examiningSpecimen) return;
+
+                    const specimen = this.getSpecimenAt(e.clientX, e.clientY);
+                    if (specimen !== this.hoveredSpecimen) {
+                        this.hoveredSpecimen = specimen;
+                        this.updateTooltip(e.clientX, e.clientY);
+                    }
+
+                    if (specimen) {
+                        this.canvas.style.cursor = 'pointer';
+                    } else {
+                        this.canvas.style.cursor = 'crosshair';
+                    }
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && this.examiningSpecimen) {
+                        this.examiningSpecimen = null;
+                        document.getElementById('examineOverlay').classList.remove('visible');
+                        this.draw();
+                    } else if (e.key === 'g' || e.key === 'G') {
+                        this.statsVisible = !this.statsVisible;
+                        this.updateStats();
+                    }
+                });
+
+                document.getElementById('examineOverlay').addEventListener('click', () => {
+                    this.examiningSpecimen = null;
+                    document.getElementById('examineOverlay').classList.remove('visible');
+                    this.draw();
+                });
+            }
+
+            updateTooltip(x, y) {
+                const tooltip = document.getElementById('tooltip');
+                if (this.hoveredSpecimen) {
+                    tooltip.querySelector('.name').textContent = this.hoveredSpecimen.name;
+                    tooltip.querySelector('.date').textContent = new Date(this.hoveredSpecimen.createdAt).toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                    tooltip.querySelector('.age').textContent = this.hoveredSpecimen.getAgeDescription();
+                    tooltip.querySelector('.location').textContent = this.hoveredSpecimen.location;
+                    tooltip.style.left = (x + 15) + 'px';
+                    tooltip.style.top = (y + 15) + 'px';
+                    tooltip.classList.add('visible');
+                } else {
+                    tooltip.classList.remove('visible');
+                }
+            }
+
+            updateStats() {
+                const overlay = document.getElementById('statsOverlay');
+                if (this.statsVisible) {
+                    const total = this.specimens.length;
+                    const fresh = this.specimens.filter(s => s.getAgeFactor() < 1).length;
+                    const aging = this.specimens.filter(s => s.getAgeFactor() >= 1 && s.getAgeFactor() < 2).length;
+                    const old = this.specimens.filter(s => s.getAgeFactor() >= 2 && s.getAgeFactor() < 3).length;
+                    const ancient = this.specimens.filter(s => s.getAgeFactor() >= 3).length;
+
+                    const oldest = this.specimens.reduce((acc, s) => s.getAge() > acc.getAge() ? s : acc, this.specimens[0]);
+                    const newest = this.specimens.reduce((acc, s) => s.getAge() < acc.getAge() ? s : acc, this.specimens[0]);
+
+                    const content = document.getElementById('statsContent');
+                    content.innerHTML = `
+                        Total specimens: ${total} / ${MAX_SPECIMENS}<br>
+                        <br>
+                        Fresh (< 1 day): ${fresh}<br>
+                        Aging (1-7 days): ${aging}<br>
+                        Old (1-4 weeks): ${old}<br>
+                        Ancient (1+ months): ${ancient}<br>
+                        <br>
+                        Oldest: ${oldest ? oldest.name : 'None'}<br>
+                        Age: ${oldest ? oldest.getAgeDescription() : 'N/A'}<br>
+                        <br>
+                        Newest: ${newest ? newest.name : 'None'}<br>
+                        Age: ${newest ? newest.getAgeDescription() : 'N/A'}
+                    `;
+                    overlay.classList.add('visible');
+                } else {
+                    overlay.classList.remove('visible');
+                }
+            }
+
+            draw() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                if (this.examiningSpecimen) {
+                    this.examiningSpecimen.draw(this.ctx, true);
+                } else {
+                    this.specimens.forEach(specimen => {
+                        specimen.draw(this.ctx, false);
+                    });
+                }
+            }
+
+            animate() {
+                // Subtle animation could update aging effects
+                // For now, just redraw periodically to update colors
+                setInterval(() => {
+                    if (!this.examiningSpecimen) {
+                        this.draw();
+                    }
+                }, 60000); // Update every minute
+
+                this.draw();
+            }
+        }
+
+        // Initialize garden
+        const garden = new Garden();
+
+        // Ambient sound loop
+        function ambientBirdsong() {
+            if (!audioEnabled) {
+                setTimeout(ambientBirdsong, 5000);
+                return;
+            }
+
+            if (Math.random() < 0.1) { // 10% chance every 5 seconds
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.frequency.value = 2000 + Math.random() * 1000;
+                gain.gain.value = 0.005;
+
+                osc.start();
+                osc.frequency.exponentialRampToValueAtTime(
+                    osc.frequency.value * 1.5,
+                    audioCtx.currentTime + 0.1
+                );
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                osc.stop(audioCtx.currentTime + 0.2);
+            }
+
+            setTimeout(ambientBirdsong, 5000);
+        }
+
+        ambientBirdsong();
+    </script>
+</body>
+</html>

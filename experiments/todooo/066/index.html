@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sundial - Todooo 066</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: 'Georgia', serif;
+            background: #1a1a1a;
+        }
+
+        canvas {
+            display: block;
+            cursor: pointer;
+        }
+
+        #time-overlay {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+
+        #motto {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(200, 190, 170, 0.8);
+            font-size: 16px;
+            font-style: italic;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+        }
+
+        #stats {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            color: rgba(200, 190, 170, 0.6);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        #instructions {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: rgba(200, 190, 170, 0.5);
+            font-size: 11px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="time-overlay"></div>
+    <div id="motto">TEMPUS FUGIT</div>
+    <div id="stats"></div>
+    <div id="instructions">
+        Click: Chime the hour<br>
+        M: Toggle motto<br>
+        N: Toggle time display<br>
+        Scroll: Zoom
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const timeOverlay = document.getElementById('time-overlay');
+        const mottoEl = document.getElementById('motto');
+        const statsEl = document.getElementById('stats');
+
+        let width, height;
+        let mouseX = 0, mouseY = 0;
+        let zoom = 1;
+        let showMotto = true;
+        let showTime = false;
+
+        // Audio context
+        let audioCtx;
+
+        // Persistence
+        const STORAGE_KEY = 'todooo-066';
+        let state = {
+            visitedHours: new Set(),
+            visitCount: 0,
+            totalTime: 0,
+            lastVisit: Date.now()
+        };
+
+        // Mottos with seed
+        const mottos = [
+            'TEMPUS FUGIT',
+            'HORAS NON NUMERO NISI SERENAS',
+            'UMBRA SUMUS'
+        ];
+        const seed = Math.floor(Date.now() / 86400000) % mottos.length;
+        const currentMotto = mottos[seed];
+        mottoEl.textContent = currentMotto;
+
+        // Load state
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    state.visitedHours = new Set(parsed.visitedHours || []);
+                    state.visitCount = parsed.visitCount || 0;
+                    state.totalTime = parsed.totalTime || 0;
+                }
+            } catch (e) {
+                console.error('Failed to load state:', e);
+            }
+            state.visitCount++;
+            state.lastVisit = Date.now();
+        }
+
+        function saveState() {
+            try {
+                const toSave = {
+                    visitedHours: Array.from(state.visitedHours),
+                    visitCount: state.visitCount,
+                    totalTime: state.totalTime
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+            } catch (e) {
+                console.error('Failed to save state:', e);
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        // Noise function for procedural generation
+        function noise(x, y, seed = 0) {
+            const n = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453;
+            return n - Math.floor(n);
+        }
+
+        function smoothNoise(x, y, scale = 1, seed = 0) {
+            x *= scale;
+            y *= scale;
+            const xi = Math.floor(x);
+            const yi = Math.floor(y);
+            const xf = x - xi;
+            const yf = y - yi;
+
+            const n00 = noise(xi, yi, seed);
+            const n10 = noise(xi + 1, yi, seed);
+            const n01 = noise(xi, yi + 1, seed);
+            const n11 = noise(xi + 1, yi + 1, seed);
+
+            const nx0 = n00 * (1 - xf) + n10 * xf;
+            const nx1 = n01 * (1 - xf) + n11 * xf;
+
+            return nx0 * (1 - yf) + nx1 * yf;
+        }
+
+        function getTimeInfo() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const milliseconds = now.getMilliseconds();
+
+            // Total time as decimal hours (0-24)
+            const decimalHour = hours + minutes / 60 + seconds / 3600 + milliseconds / 3600000;
+
+            // Sundial angle (12 o'clock = top = -90 degrees)
+            // Each hour is 15 degrees (360/24)
+            const angle = (decimalHour * 15 - 90) * Math.PI / 180;
+
+            // 12-hour format
+            const hour12 = hours % 12 || 12;
+
+            return { hours, minutes, seconds, decimalHour, angle, hour12 };
+        }
+
+        function getAmbientColor() {
+            const { hours, minutes } = getTimeInfo();
+            const decimal = hours + minutes / 60;
+
+            // Dawn: 5-7
+            if (decimal >= 5 && decimal < 7) {
+                const t = (decimal - 5) / 2;
+                return {
+                    sky: lerpColor('#1a1030', '#ffb380', t),
+                    ambient: lerpColor('#3a2050', '#ffd4a3', t),
+                    shadowAlpha: 0.3 + t * 0.3
+                };
+            }
+            // Morning: 7-11
+            else if (decimal >= 7 && decimal < 11) {
+                const t = (decimal - 7) / 4;
+                return {
+                    sky: lerpColor('#ffb380', '#87ceeb', t),
+                    ambient: lerpColor('#ffd4a3', '#f5f5dc', t),
+                    shadowAlpha: 0.6 + t * 0.2
+                };
+            }
+            // Noon: 11-13
+            else if (decimal >= 11 && decimal < 13) {
+                return {
+                    sky: '#87ceeb',
+                    ambient: '#ffffff',
+                    shadowAlpha: 0.9
+                };
+            }
+            // Afternoon: 13-17
+            else if (decimal >= 13 && decimal < 17) {
+                const t = (decimal - 13) / 4;
+                return {
+                    sky: lerpColor('#87ceeb', '#ffb366', t),
+                    ambient: lerpColor('#f5f5dc', '#ffcc99', t),
+                    shadowAlpha: 0.8 - t * 0.1
+                };
+            }
+            // Evening: 17-20
+            else if (decimal >= 17 && decimal < 20) {
+                const t = (decimal - 17) / 3;
+                return {
+                    sky: lerpColor('#ffb366', '#ff6b35', t),
+                    ambient: lerpColor('#ffcc99', '#ff9966', t),
+                    shadowAlpha: 0.7 - t * 0.4
+                };
+            }
+            // Night: 20-5
+            else {
+                return {
+                    sky: '#0a0a1a',
+                    ambient: '#4a5a7a',
+                    shadowAlpha: 0.2
+                };
+            }
+        }
+
+        function lerpColor(color1, color2, t) {
+            const r1 = parseInt(color1.substr(1, 2), 16);
+            const g1 = parseInt(color1.substr(3, 2), 16);
+            const b1 = parseInt(color1.substr(5, 2), 16);
+            const r2 = parseInt(color2.substr(1, 2), 16);
+            const g2 = parseInt(color2.substr(3, 2), 16);
+            const b2 = parseInt(color2.substr(5, 2), 16);
+
+            const r = Math.round(r1 + (r2 - r1) * t);
+            const g = Math.round(g1 + (g2 - g1) * t);
+            const b = Math.round(b1 + (b2 - b1) * t);
+
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
+
+        function isNightTime() {
+            const { hours } = getTimeInfo();
+            return hours >= 20 || hours < 5;
+        }
+
+        function drawBackground() {
+            const { sky } = getAmbientColor();
+
+            // Sky gradient
+            const gradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, Math.max(width, height));
+            gradient.addColorStop(0, sky);
+            gradient.addColorStop(1, lerpColor(sky, '#000000', 0.3));
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+
+            // Stars at night
+            if (isNightTime()) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                for (let i = 0; i < 100; i++) {
+                    const x = noise(i, 0, 123) * width;
+                    const y = noise(i, 1, 123) * height;
+                    const size = noise(i, 2, 123) * 2;
+                    const twinkle = Math.sin(Date.now() / 1000 + i) * 0.3 + 0.7;
+                    ctx.globalAlpha = twinkle;
+                    ctx.fillRect(x, y, size, size);
+                }
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function drawGround() {
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const parallaxX = (mouseX - width / 2) * 0.02;
+            const parallaxY = (mouseY - height / 2) * 0.02;
+
+            // Dark earth around the sundial
+            ctx.fillStyle = '#2a3a2a';
+            ctx.fillRect(0, 0, width, height);
+
+            // Add some texture
+            for (let i = 0; i < 200; i++) {
+                const angle = noise(i, 0, 456) * Math.PI * 2;
+                const dist = noise(i, 1, 456) * Math.max(width, height);
+                const x = centerX + Math.cos(angle) * dist + parallaxX;
+                const y = centerY + Math.sin(angle) * dist + parallaxY;
+                const size = noise(i, 2, 456) * 3 + 1;
+                const brightness = noise(i, 3, 456) * 30 + 20;
+                ctx.fillStyle = `rgba(${brightness}, ${brightness + 10}, ${brightness}, 0.3)`;
+                ctx.fillRect(x, y, size, size);
+            }
+        }
+
+        function drawSundial() {
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const parallaxX = (mouseX - width / 2) * 0.02;
+            const parallaxY = (mouseY - height / 2) * 0.02;
+            const radius = Math.min(width, height) * 0.35 * zoom;
+
+            ctx.save();
+            ctx.translate(centerX + parallaxX, centerY + parallaxY);
+
+            // Stone base shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.ellipse(radius * 0.05, radius * 0.05, radius * 1.02, radius * 0.98, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Stone disk
+            const stoneGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+            stoneGradient.addColorStop(0, '#b8b0a0');
+            stoneGradient.addColorStop(0.7, '#a09888');
+            stoneGradient.addColorStop(1, '#887860');
+            ctx.fillStyle = stoneGradient;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Weathering and texture
+            for (let i = 0; i < 500; i++) {
+                const angle = noise(i, 0, 789) * Math.PI * 2;
+                const dist = noise(i, 1, 789) * radius;
+                const x = Math.cos(angle) * dist;
+                const y = Math.sin(angle) * dist;
+                const size = noise(i, 2, 789) * 2;
+                const brightness = noise(i, 3, 789) * 40 - 20;
+                ctx.fillStyle = `rgba(${120 + brightness}, ${110 + brightness}, ${90 + brightness}, 0.2)`;
+                ctx.fillRect(x, y, size, size);
+            }
+
+            // Cracks
+            ctx.strokeStyle = 'rgba(60, 50, 40, 0.4)';
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 15; i++) {
+                const startAngle = noise(i, 0, 999) * Math.PI * 2;
+                const startDist = noise(i, 1, 999) * radius * 0.3 + radius * 0.1;
+                const length = noise(i, 2, 999) * radius * 0.4 + radius * 0.2;
+                const wiggle = noise(i, 3, 999) * 0.5 - 0.25;
+
+                ctx.beginPath();
+                const x1 = Math.cos(startAngle) * startDist;
+                const y1 = Math.sin(startAngle) * startDist;
+                ctx.moveTo(x1, y1);
+
+                for (let j = 0; j < 5; j++) {
+                    const t = j / 5;
+                    const angle = startAngle + wiggle * t;
+                    const dist = startDist + length * t;
+                    ctx.lineTo(Math.cos(angle) * dist, Math.sin(angle) * dist);
+                }
+                ctx.stroke();
+            }
+
+            // Lichen patches
+            for (let i = 0; i < 30; i++) {
+                const angle = noise(i, 0, 1111) * Math.PI * 2;
+                const dist = noise(i, 1, 1111) * radius * 0.8;
+                const x = Math.cos(angle) * dist;
+                const y = Math.sin(angle) * dist;
+                const size = noise(i, 2, 1111) * 15 + 5;
+
+                // More lichen on north side (top)
+                const northFactor = Math.max(0, -Math.sin(angle)) * 2;
+                const alpha = (noise(i, 3, 1111) * 0.3 + 0.2) * (1 + northFactor);
+
+                ctx.fillStyle = `rgba(140, 160, 80, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Hour lines and numerals
+            ctx.strokeStyle = 'rgba(60, 50, 40, 0.7)';
+            ctx.fillStyle = 'rgba(60, 50, 40, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.font = `${radius * 0.12}px Georgia, serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const romanNumerals = ['XII', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
+
+            for (let i = 0; i < 12; i++) {
+                const angle = (i * 30 - 90) * Math.PI / 180;
+                const x1 = Math.cos(angle) * radius * 0.7;
+                const y1 = Math.sin(angle) * radius * 0.7;
+                const x2 = Math.cos(angle) * radius * 0.9;
+                const y2 = Math.sin(angle) * radius * 0.9;
+
+                // Hour line
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                // Roman numeral
+                const textX = Math.cos(angle) * radius * 0.6;
+                const textY = Math.sin(angle) * radius * 0.6;
+                ctx.fillText(romanNumerals[i], textX, textY);
+            }
+
+            // Compass points (small)
+            ctx.font = `${radius * 0.06}px Georgia, serif`;
+            ctx.fillStyle = 'rgba(100, 90, 70, 0.6)';
+            const compass = ['N', 'E', 'S', 'W'];
+            for (let i = 0; i < 4; i++) {
+                const angle = (i * 90 - 90) * Math.PI / 180;
+                const x = Math.cos(angle) * radius * 0.92;
+                const y = Math.sin(angle) * radius * 0.92;
+                ctx.fillText(compass[i], x, y);
+            }
+
+            // Center marker
+            ctx.fillStyle = 'rgba(60, 50, 40, 0.5)';
+            ctx.beginPath();
+            ctx.arc(0, 0, radius * 0.03, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawShadow() {
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const parallaxX = (mouseX - width / 2) * 0.02;
+            const parallaxY = (mouseY - height / 2) * 0.02;
+            const radius = Math.min(width, height) * 0.35 * zoom;
+            const { angle } = getTimeInfo();
+            const { shadowAlpha } = getAmbientColor();
+
+            ctx.save();
+            ctx.translate(centerX + parallaxX, centerY + parallaxY);
+
+            // Shadow length varies by time of day
+            const { decimalHour } = getTimeInfo();
+            let shadowLength;
+            if (decimalHour >= 11 && decimalHour < 13) {
+                shadowLength = radius * 0.3; // Short at noon
+            } else if (decimalHour >= 5 && decimalHour < 7 || decimalHour >= 17 && decimalHour < 19) {
+                shadowLength = radius * 0.8; // Long at dawn/dusk
+            } else {
+                shadowLength = radius * 0.5; // Medium otherwise
+            }
+
+            // Draw shadow with gradient (penumbra)
+            const shadowGradient = ctx.createLinearGradient(
+                0, 0,
+                Math.cos(angle) * shadowLength,
+                Math.sin(angle) * shadowLength
+            );
+            shadowGradient.addColorStop(0, `rgba(40, 35, 30, ${shadowAlpha * 0.8})`);
+            shadowGradient.addColorStop(0.7, `rgba(40, 35, 30, ${shadowAlpha * 0.5})`);
+            shadowGradient.addColorStop(1, `rgba(40, 35, 30, 0)`);
+
+            ctx.fillStyle = shadowGradient;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+
+            // Shadow shape (triangular)
+            const width1 = radius * 0.02;
+            const perpAngle = angle + Math.PI / 2;
+            ctx.lineTo(
+                Math.cos(angle) * shadowLength + Math.cos(perpAngle) * width1,
+                Math.sin(angle) * shadowLength + Math.sin(perpAngle) * width1
+            );
+            ctx.lineTo(
+                Math.cos(angle) * shadowLength - Math.cos(perpAngle) * width1,
+                Math.sin(angle) * shadowLength - Math.sin(perpAngle) * width1
+            );
+            ctx.closePath();
+            ctx.fill();
+
+            // Soft outer shadow
+            ctx.fillStyle = `rgba(40, 35, 30, ${shadowAlpha * 0.2})`;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            const width2 = radius * 0.04;
+            ctx.lineTo(
+                Math.cos(angle) * shadowLength * 1.1 + Math.cos(perpAngle) * width2,
+                Math.sin(angle) * shadowLength * 1.1 + Math.sin(perpAngle) * width2
+            );
+            ctx.lineTo(
+                Math.cos(angle) * shadowLength * 1.1 - Math.cos(perpAngle) * width2,
+                Math.sin(angle) * shadowLength * 1.1 - Math.sin(perpAngle) * width2
+            );
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawGnomon() {
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const parallaxX = (mouseX - width / 2) * 0.02;
+            const parallaxY = (mouseY - height / 2) * 0.02;
+            const radius = Math.min(width, height) * 0.35 * zoom;
+
+            ctx.save();
+            ctx.translate(centerX + parallaxX, centerY + parallaxY);
+
+            // Gnomon base (small triangle pointing up in 3D perspective)
+            const height = radius * 0.15;
+            const baseWidth = radius * 0.08;
+
+            ctx.fillStyle = '#8a7860';
+            ctx.beginPath();
+            ctx.moveTo(-baseWidth / 2, 0);
+            ctx.lineTo(baseWidth / 2, 0);
+            ctx.lineTo(0, -height);
+            ctx.closePath();
+            ctx.fill();
+
+            // Gnomon edge highlight
+            ctx.strokeStyle = '#a09080';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, -height);
+            ctx.lineTo(baseWidth / 2, 0);
+            ctx.stroke();
+
+            // Gnomon shadow on itself
+            ctx.fillStyle = 'rgba(40, 35, 30, 0.3)';
+            ctx.beginPath();
+            ctx.moveTo(-baseWidth / 2, 0);
+            ctx.lineTo(0, -height);
+            ctx.lineTo(0, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawParticles() {
+            const time = Date.now() / 1000;
+            const isNight = isNightTime();
+
+            if (isNight) {
+                // Fireflies
+                ctx.fillStyle = 'rgba(255, 240, 150, 0.8)';
+                for (let i = 0; i < 15; i++) {
+                    const x = (noise(i, time * 0.1, 2000) * width * 0.8 + width * 0.1);
+                    const y = (noise(i, time * 0.1 + 100, 2000) * height * 0.6 + height * 0.2);
+                    const size = Math.sin(time * 3 + i) * 2 + 3;
+                    const alpha = Math.sin(time * 2 + i * 0.5) * 0.4 + 0.6;
+
+                    ctx.globalAlpha = alpha;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Glow
+                    const glow = ctx.createRadialGradient(x, y, 0, x, y, size * 3);
+                    glow.addColorStop(0, 'rgba(255, 240, 150, 0.3)');
+                    glow.addColorStop(1, 'rgba(255, 240, 150, 0)');
+                    ctx.fillStyle = glow;
+                    ctx.fillRect(x - size * 3, y - size * 3, size * 6, size * 6);
+                }
+                ctx.globalAlpha = 1;
+            } else {
+                // Dust motes in sunlight
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                for (let i = 0; i < 30; i++) {
+                    const x = (noise(i, time * 0.05, 3000) * width);
+                    const y = (noise(i, time * 0.05 + 100, 3000) * height);
+                    const size = noise(i, 2, 3000) * 2 + 0.5;
+
+                    ctx.globalAlpha = noise(i, time * 0.5, 3000) * 0.3 + 0.2;
+                    ctx.fillRect(x, y, size, size);
+                }
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function draw() {
+            drawBackground();
+            drawGround();
+            drawSundial();
+            drawShadow();
+            drawGnomon();
+            drawParticles();
+
+            // Update time overlay
+            if (showTime) {
+                const { hours, minutes, seconds } = getTimeInfo();
+                timeOverlay.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            // Update stats
+            const { hour12 } = getTimeInfo();
+            state.visitedHours.add(hour12);
+            statsEl.innerHTML = `
+                Hours witnessed: ${state.visitedHours.size}/12<br>
+                Visits: ${state.visitCount}<br>
+                Time watched: ${Math.floor(state.totalTime / 60)}m ${Math.floor(state.totalTime % 60)}s
+            `;
+
+            requestAnimationFrame(draw);
+        }
+
+        // Bell chime
+        function chimeHour() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            const { hour12 } = getTimeInfo();
+            const chimes = hour12;
+
+            for (let i = 0; i < chimes; i++) {
+                setTimeout(() => {
+                    playBell();
+                }, i * 800);
+            }
+        }
+
+        function playBell() {
+            const now = audioCtx.currentTime;
+            const duration = 2;
+
+            // Fundamental
+            const osc1 = audioCtx.createOscillator();
+            osc1.frequency.setValueAtTime(220, now);
+            osc1.frequency.exponentialRampToValueAtTime(218, now + duration);
+
+            // Harmonics
+            const osc2 = audioCtx.createOscillator();
+            osc2.frequency.setValueAtTime(330, now);
+
+            const osc3 = audioCtx.createOscillator();
+            osc3.frequency.setValueAtTime(440, now);
+
+            const osc4 = audioCtx.createOscillator();
+            osc4.frequency.setValueAtTime(660, now);
+
+            const gain1 = audioCtx.createGain();
+            gain1.gain.setValueAtTime(0.3, now);
+            gain1.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+            const gain2 = audioCtx.createGain();
+            gain2.gain.setValueAtTime(0.2, now);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+            const gain3 = audioCtx.createGain();
+            gain3.gain.setValueAtTime(0.15, now);
+            gain3.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+            const gain4 = audioCtx.createGain();
+            gain4.gain.setValueAtTime(0.1, now);
+            gain4.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+            osc1.connect(gain1);
+            osc2.connect(gain2);
+            osc3.connect(gain3);
+            osc4.connect(gain4);
+
+            gain1.connect(audioCtx.destination);
+            gain2.connect(audioCtx.destination);
+            gain3.connect(audioCtx.destination);
+            gain4.connect(audioCtx.destination);
+
+            osc1.start(now);
+            osc2.start(now);
+            osc3.start(now);
+            osc4.start(now);
+
+            osc1.stop(now + duration);
+            osc2.stop(now + duration);
+            osc3.stop(now + duration);
+            osc4.stop(now + duration);
+        }
+
+        // Event listeners
+        canvas.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        canvas.addEventListener('click', () => {
+            chimeHour();
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            zoom *= e.deltaY > 0 ? 0.95 : 1.05;
+            zoom = Math.max(0.5, Math.min(2, zoom));
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'm' || e.key === 'M') {
+                showMotto = !showMotto;
+                mottoEl.style.display = showMotto ? 'block' : 'none';
+            } else if (e.key === 'n' || e.key === 'N') {
+                showTime = !showTime;
+                timeOverlay.style.display = showTime ? 'block' : 'none';
+            }
+        });
+
+        window.addEventListener('resize', resize);
+
+        // Update total time
+        setInterval(() => {
+            state.totalTime++;
+            saveState();
+        }, 1000);
+
+        // Initialize
+        resize();
+        loadState();
+        draw();
+    </script>
+</body>
+</html>
