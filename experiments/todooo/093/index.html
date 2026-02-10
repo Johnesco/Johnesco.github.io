@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Island — 3D</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            background: #000;
+        }
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100vh;
+        }
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        #clickPrompt {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            text-align: center;
+            pointer-events: auto;
+            cursor: pointer;
+            background: rgba(0,0,0,0.7);
+            padding: 30px 50px;
+            border-radius: 10px;
+            transition: opacity 0.3s;
+        }
+        #clickPrompt.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255,255,255,0.7);
+            font-size: 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #crosshair.visible {
+            opacity: 1;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 14px;
+            background: rgba(0,0,0,0.6);
+            padding: 15px;
+            border-radius: 5px;
+            line-height: 1.6;
+            transition: opacity 0.5s;
+        }
+        #info.faded {
+            opacity: 0;
+        }
+        #controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 12px;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: opacity 0.5s;
+        }
+        #controls.faded {
+            opacity: 0;
+        }
+        #minimap {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 150px;
+            height: 150px;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 5px;
+            background: rgba(0,0,0,0.7);
+            display: none;
+        }
+        #minimap.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="overlay">
+        <div id="clickPrompt">Click to explore the island</div>
+        <div id="crosshair">+</div>
+        <div id="info">
+            <div id="timeDisplay">Time: 12:00 PM</div>
+            <div id="compass">Direction: N</div>
+            <div id="weather">Weather: Clear</div>
+            <div id="visits">Visit: 1</div>
+        </div>
+        <div id="controls">WASD to walk · Shift to run · M to mute · Mouse to look · TAB for map</div>
+        <canvas id="minimap"></canvas>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+
+        // ===== PERLIN NOISE =====
+        class PerlinNoise {
+            constructor(seed = Math.random()) {
+                this.seed = seed;
+                this.p = this.buildPermutationTable();
+            }
+
+            buildPermutationTable() {
+                const p = [];
+                for (let i = 0; i < 256; i++) p[i] = i;
+
+                let n, q;
+                for (let i = 255; i > 0; i--) {
+                    n = Math.floor((this.seed * 1000 + i) * 982451653) % (i + 1);
+                    if (n < 0) n += i + 1;
+                    q = p[i];
+                    p[i] = p[n];
+                    p[n] = q;
+                }
+
+                return p.concat(p);
+            }
+
+            fade(t) {
+                return t * t * t * (t * (t * 6 - 15) + 10);
+            }
+
+            lerp(t, a, b) {
+                return a + t * (b - a);
+            }
+
+            grad(hash, x, y) {
+                const h = hash & 3;
+                const u = h < 2 ? x : y;
+                const v = h < 2 ? y : x;
+                return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+            }
+
+            noise(x, y) {
+                const X = Math.floor(x) & 255;
+                const Y = Math.floor(y) & 255;
+
+                x -= Math.floor(x);
+                y -= Math.floor(y);
+
+                const u = this.fade(x);
+                const v = this.fade(y);
+
+                const a = this.p[X] + Y;
+                const b = this.p[X + 1] + Y;
+
+                return this.lerp(v,
+                    this.lerp(u, this.grad(this.p[a], x, y), this.grad(this.p[b], x - 1, y)),
+                    this.lerp(u, this.grad(this.p[a + 1], x, y - 1), this.grad(this.p[b + 1], x - 1, y - 1))
+                );
+            }
+
+            octaveNoise(x, y, octaves = 4, persistence = 0.5) {
+                let total = 0;
+                let frequency = 1;
+                let amplitude = 1;
+                let maxValue = 0;
+
+                for (let i = 0; i < octaves; i++) {
+                    total += this.noise(x * frequency, y * frequency) * amplitude;
+                    maxValue += amplitude;
+                    amplitude *= persistence;
+                    frequency *= 2;
+                }
+
+                return total / maxValue;
+            }
+        }
+
+        // ===== GAME STATE =====
+        const STORAGE_KEY = 'todooo-093';
+
+        let gameState = {
+            seed: Math.random(),
+            playerX: 0,
+            playerZ: 80,
+            cameraYaw: 0,
+            totalVisits: 1,
+            totalTime: 0,
+            muted: false
+        };
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    gameState = { ...gameState, ...parsed };
+                    gameState.totalVisits++;
+                }
+            } catch (e) {
+                console.warn('Could not load state:', e);
+            }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
+            } catch (e) {
+                console.warn('Could not save state:', e);
+            }
+        }
+
+        loadState();
+
+        // ===== SCENE SETUP =====
+        const canvas = document.getElementById('canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(gameState.playerX, 10, gameState.playerZ);
+
+        const perlin = new PerlinNoise(gameState.seed);
+
+        // ===== TERRAIN =====
+        const terrainSize = 400;
+        const terrainSegments = 200;
+        const maxHeight = 60;
+
+        const terrainGeometry = new THREE.PlaneGeometry(terrainSize, terrainSize, terrainSegments, terrainSegments);
+        terrainGeometry.rotateX(-Math.PI / 2);
+
+        const positions = terrainGeometry.attributes.position.array;
+        const colors = [];
+        const heightMap = [];
+
+        for (let i = 0; i < positions.length; i += 3) {
+            const x = positions[i];
+            const z = positions[i + 2];
+
+            const nx = x / terrainSize;
+            const nz = z / terrainSize;
+
+            const distFromCenter = Math.sqrt(nx * nx + nz * nz);
+            const radialFalloff = Math.max(0, 1 - distFromCenter * 1.4);
+
+            const noiseValue = (perlin.octaveNoise(x * 0.015, z * 0.015, 5, 0.55) + 1) / 2;
+            const height = noiseValue * radialFalloff * maxHeight - 5;
+
+            positions[i + 1] = height;
+            heightMap.push({ x, z, height });
+
+            let r, g, b;
+            if (height < 0) {
+                r = 0.196; g = 0.353; b = 0.478;
+            } else if (height < 2) {
+                const t = height / 2;
+                r = 0.196 + t * (0.769 - 0.196);
+                g = 0.353 + t * (0.659 - 0.353);
+                b = 0.478 + t * (0.408 - 0.478);
+            } else if (height < 8) {
+                const t = (height - 2) / 6;
+                r = 0.769 + t * (0.831 - 0.769);
+                g = 0.659 + t * (0.722 - 0.659);
+                b = 0.408 + t * (0.565 - 0.408);
+            } else if (height < 20) {
+                const t = (height - 8) / 12;
+                r = 0.831 - t * (0.831 - 0.353);
+                g = 0.722 - t * (0.722 - 0.541);
+                b = 0.565 - t * (0.565 - 0.227);
+            } else if (height < 35) {
+                const t = (height - 20) / 15;
+                r = 0.353 - t * (0.353 - 0.227);
+                g = 0.541 - t * (0.541 - 0.353);
+                b = 0.227 - t * (0.227 - 0.165);
+            } else if (height < 45) {
+                const t = (height - 35) / 10;
+                r = 0.227 + t * (0.416 - 0.227);
+                g = 0.353 + t * (0.416 - 0.353);
+                b = 0.165 + t * (0.408 - 0.165);
+            } else if (height < 55) {
+                const t = (height - 45) / 10;
+                r = 0.416 - t * (0.416 - 0.353);
+                g = 0.416 - t * (0.416 - 0.353);
+                b = 0.408 - t * (0.408 - 0.345);
+            } else {
+                const t = Math.min(1, (height - 55) / 10);
+                r = 0.353 + t * (0.847 - 0.353);
+                g = 0.353 + t * (0.847 - 0.353);
+                b = 0.345 + t * (0.847 - 0.345);
+            }
+
+            colors.push(r, g, b);
+        }
+
+        terrainGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        terrainGeometry.computeVertexNormals();
+
+        const terrainMaterial = new THREE.MeshLambertMaterial({ vertexColors: true });
+        const terrain = new THREE.Mesh(terrainGeometry, terrainMaterial);
+        terrain.receiveShadow = true;
+        scene.add(terrain);
+
+        function getTerrainHeight(x, z) {
+            const halfSize = terrainSize / 2;
+            if (Math.abs(x) > halfSize || Math.abs(z) > halfSize) return -10;
+
+            const gridX = ((x + halfSize) / terrainSize) * terrainSegments;
+            const gridZ = ((z + halfSize) / terrainSize) * terrainSegments;
+
+            const x0 = Math.floor(gridX);
+            const z0 = Math.floor(gridZ);
+            const x1 = Math.min(x0 + 1, terrainSegments);
+            const z1 = Math.min(z0 + 1, terrainSegments);
+
+            const tx = gridX - x0;
+            const tz = gridZ - z0;
+
+            const getHeight = (gx, gz) => {
+                const idx = (gz * (terrainSegments + 1) + gx) * 3 + 1;
+                return positions[idx] || 0;
+            };
+
+            const h00 = getHeight(x0, z0);
+            const h10 = getHeight(x1, z0);
+            const h01 = getHeight(x0, z1);
+            const h11 = getHeight(x1, z1);
+
+            const h0 = h00 * (1 - tx) + h10 * tx;
+            const h1 = h01 * (1 - tx) + h11 * tx;
+
+            return h0 * (1 - tz) + h1 * tz;
+        }
+
+        // ===== WATER =====
+        const waterGeometry = new THREE.PlaneGeometry(500, 500, 64, 64);
+        waterGeometry.rotateX(-Math.PI / 2);
+        const waterMaterial = new THREE.MeshPhongMaterial({
+            color: 0x1a5a7a,
+            transparent: true,
+            opacity: 0.7,
+            shininess: 100
+        });
+        const water = new THREE.Mesh(waterGeometry, waterMaterial);
+        water.position.y = 0;
+        scene.add(water);
+
+        const waterPositions = waterGeometry.attributes.position.array;
+        const waterOriginalY = [];
+        for (let i = 0; i < waterPositions.length; i += 3) {
+            waterOriginalY.push(waterPositions[i + 1]);
+        }
+
+        // ===== SKY =====
+        const skyGeometry = new THREE.SphereGeometry(450, 32, 32);
+        const skyMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                topColor: { value: new THREE.Color(0x87ceeb) },
+                bottomColor: { value: new THREE.Color(0xe6f2ff) }
+            },
+            vertexShader: `
+                varying vec3 vWorldPosition;
+                void main() {
+                    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                    vWorldPosition = worldPosition.xyz;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 topColor;
+                uniform vec3 bottomColor;
+                varying vec3 vWorldPosition;
+                void main() {
+                    float h = normalize(vWorldPosition).y;
+                    gl_FragColor = vec4(mix(bottomColor, topColor, max(h, 0.0)), 1.0);
+                }
+            `,
+            side: THREE.BackSide
+        });
+        const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+        scene.add(sky);
+
+        // ===== LIGHTING =====
+        const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.2);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.left = -200;
+        sunLight.shadow.camera.right = 200;
+        sunLight.shadow.camera.top = 200;
+        sunLight.shadow.camera.bottom = -200;
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 500;
+        scene.add(sunLight);
+
+        const ambientLight = new THREE.AmbientLight(0x606060, 0.5);
+        scene.add(ambientLight);
+
+        scene.fog = new THREE.FogExp2(0x87ceeb, 0.002);
+
+        // ===== TREES =====
+        const treeData = [];
+        const treeSeed = gameState.seed * 12345;
+
+        for (let i = 0; i < 120; i++) {
+            const angle = (treeSeed + i * 2.4) * Math.PI * 2;
+            const dist = 30 + (((treeSeed + i * 7.3) % 1000) / 1000) * 140;
+            const x = Math.cos(angle) * dist;
+            const z = Math.sin(angle) * dist;
+            const height = getTerrainHeight(x, z);
+
+            if (height > 2 && height < 50) {
+                let type = 'pine';
+                if (height < 10) type = 'palm';
+                else if (height < 30) type = 'deciduous';
+
+                treeData.push({ x, z, height, type, seed: i });
+            }
+        }
+
+        const palmTrees = treeData.filter(t => t.type === 'palm');
+        const deciduousTrees = treeData.filter(t => t.type === 'deciduous');
+        const pineTrees = treeData.filter(t => t.type === 'pine');
+
+        function createTreeInstances(trees, trunkGeom, canopyGeom, trunkMat, canopyMat) {
+            if (trees.length === 0) return;
+
+            const trunkMesh = new THREE.InstancedMesh(trunkGeom, trunkMat, trees.length);
+            trunkMesh.castShadow = true;
+            const canopyMesh = new THREE.InstancedMesh(canopyGeom, canopyMat, trees.length);
+            canopyMesh.castShadow = true;
+
+            const matrix = new THREE.Matrix4();
+
+            trees.forEach((tree, i) => {
+                const trunkHeight = tree.type === 'palm' ? 4 + (tree.seed % 100) / 50 :
+                                   tree.type === 'deciduous' ? 5 + (tree.seed % 100) / 33 :
+                                   6 + (tree.seed % 100) / 25;
+
+                matrix.makeTranslation(tree.x, tree.height + trunkHeight / 2, tree.z);
+                trunkMesh.setMatrixAt(i, matrix);
+
+                const canopyY = tree.height + trunkHeight;
+                matrix.makeTranslation(tree.x, canopyY, tree.z);
+                canopyMesh.setMatrixAt(i, matrix);
+            });
+
+            scene.add(trunkMesh);
+            scene.add(canopyMesh);
+
+            return { trunkMesh, canopyMesh };
+        }
+
+        const palmTrunkGeom = new THREE.CylinderGeometry(0.2, 0.25, 5, 6);
+        const palmCanopyGeom = new THREE.SphereGeometry(1.5, 8, 6);
+        const palmTrunkMat = new THREE.MeshLambertMaterial({ color: 0x8b6f47 });
+        const palmCanopyMat = new THREE.MeshLambertMaterial({ color: 0x3a7a2a });
+        createTreeInstances(palmTrees, palmTrunkGeom, palmCanopyGeom, palmTrunkMat, palmCanopyMat);
+
+        const deciduousTrunkGeom = new THREE.CylinderGeometry(0.3, 0.35, 6, 6);
+        const deciduousCanopyGeom = new THREE.SphereGeometry(2.5, 8, 6);
+        const deciduousTrunkMat = new THREE.MeshLambertMaterial({ color: 0x5a4a3a });
+        const deciduousCanopyMat = new THREE.MeshLambertMaterial({ color: 0x3a6a2a });
+        createTreeInstances(deciduousTrees, deciduousTrunkGeom, deciduousCanopyGeom, deciduousTrunkMat, deciduousCanopyMat);
+
+        const pineTrunkGeom = new THREE.CylinderGeometry(0.25, 0.3, 8, 6);
+        const pineCanopyGeom = new THREE.ConeGeometry(2, 6, 8);
+        const pineTrunkMat = new THREE.MeshLambertMaterial({ color: 0x4a3a2a });
+        const pineCanopyMat = new THREE.MeshLambertMaterial({ color: 0x2a4a2a });
+        createTreeInstances(pineTrees, pineTrunkGeom, pineCanopyGeom, pineTrunkMat, pineCanopyMat);
+
+        // ===== RAIN =====
+        const rainCount = 2000;
+        const rainGeometry = new THREE.BufferGeometry();
+        const rainPositions = new Float32Array(rainCount * 3);
+
+        for (let i = 0; i < rainCount * 3; i += 3) {
+            rainPositions[i] = (Math.random() - 0.5) * 200;
+            rainPositions[i + 1] = Math.random() * 150;
+            rainPositions[i + 2] = (Math.random() - 0.5) * 200;
+        }
+
+        rainGeometry.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+        const rainMaterial = new THREE.PointsMaterial({
+            color: 0xaaccff,
+            size: 0.1,
+            transparent: true,
+            opacity: 0.6
+        });
+        const rain = new THREE.Points(rainGeometry, rainMaterial);
+        rain.visible = false;
+        scene.add(rain);
+
+        // ===== CLOUDS =====
+        const clouds = [];
+        for (let i = 0; i < 7; i++) {
+            const cloudGeom = new THREE.PlaneGeometry(20 + Math.random() * 15, 10 + Math.random() * 8);
+            const cloudMat = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.5,
+                side: THREE.DoubleSide
+            });
+            const cloud = new THREE.Mesh(cloudGeom, cloudMat);
+            cloud.position.set(
+                (Math.random() - 0.5) * 300,
+                80 + Math.random() * 20,
+                (Math.random() - 0.5) * 300
+            );
+            cloud.rotation.x = Math.PI / 2;
+            cloud.userData.speed = 0.5 + Math.random() * 1;
+            clouds.push(cloud);
+            scene.add(cloud);
+        }
+
+        // ===== WEATHER STATE =====
+        const weatherStates = ['clear', 'cloudy', 'rain', 'storm', 'clearing'];
+        let currentWeatherIndex = 0;
+        let weatherTimer = 0;
+        let weatherDuration = 120 + Math.random() * 180;
+        let currentFogDensity = 0.002;
+        let targetFogDensity = 0.002;
+        let windSpeed = 0.2;
+
+        function updateWeather(delta) {
+            weatherTimer += delta;
+
+            if (weatherTimer > weatherDuration) {
+                weatherTimer = 0;
+                currentWeatherIndex = (currentWeatherIndex + 1) % weatherStates.length;
+                weatherDuration = 120 + Math.random() * 180;
+
+                const state = weatherStates[currentWeatherIndex];
+                if (state === 'clear' || state === 'clearing') {
+                    targetFogDensity = 0.002;
+                    windSpeed = 0.2;
+                    rain.visible = false;
+                } else if (state === 'cloudy') {
+                    targetFogDensity = 0.004;
+                    windSpeed = 0.5;
+                    rain.visible = false;
+                } else if (state === 'rain') {
+                    targetFogDensity = 0.006;
+                    windSpeed = 1.0;
+                    rain.visible = true;
+                } else if (state === 'storm') {
+                    targetFogDensity = 0.01;
+                    windSpeed = 2.0;
+                    rain.visible = true;
+                }
+            }
+
+            currentFogDensity += (targetFogDensity - currentFogDensity) * delta * 0.5;
+            scene.fog.density = currentFogDensity;
+
+            clouds.forEach(cloud => {
+                cloud.position.x += windSpeed * delta;
+                if (cloud.position.x > 200) cloud.position.x = -200;
+            });
+        }
+
+        // ===== AUDIO =====
+        let audioContext = null;
+        let audioInitialized = false;
+        let oceanNode, windNode, rainNode;
+        let oceanGain, windGain, rainGain;
+
+        function initAudio() {
+            if (audioInitialized) return;
+
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                const bufferSize = 4096;
+
+                const oceanBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                const oceanData = oceanBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    oceanData[i] = (Math.random() * 2 - 1) * 0.3;
+                }
+                oceanNode = audioContext.createBufferSource();
+                oceanNode.buffer = oceanBuffer;
+                oceanNode.loop = true;
+                const oceanFilter = audioContext.createBiquadFilter();
+                oceanFilter.type = 'lowpass';
+                oceanFilter.frequency.value = 800;
+                oceanGain = audioContext.createGain();
+                oceanGain.gain.value = 0.15;
+                oceanNode.connect(oceanFilter);
+                oceanFilter.connect(oceanGain);
+                oceanGain.connect(audioContext.destination);
+                oceanNode.start();
+
+                const windBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                const windData = windBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    windData[i] = (Math.random() * 2 - 1) * 0.2;
+                }
+                windNode = audioContext.createBufferSource();
+                windNode.buffer = windBuffer;
+                windNode.loop = true;
+                const windFilter = audioContext.createBiquadFilter();
+                windFilter.type = 'bandpass';
+                windFilter.frequency.value = 400;
+                windGain = audioContext.createGain();
+                windGain.gain.value = 0;
+                windNode.connect(windFilter);
+                windFilter.connect(windGain);
+                windGain.connect(audioContext.destination);
+                windNode.start();
+
+                const rainBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                const rainData = rainBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    rainData[i] = (Math.random() * 2 - 1) * 0.15;
+                }
+                rainNode = audioContext.createBufferSource();
+                rainNode.buffer = rainBuffer;
+                rainNode.loop = true;
+                const rainFilter = audioContext.createBiquadFilter();
+                rainFilter.type = 'highpass';
+                rainFilter.frequency.value = 1200;
+                rainGain = audioContext.createGain();
+                rainGain.gain.value = 0;
+                rainNode.connect(rainFilter);
+                rainFilter.connect(rainGain);
+                rainGain.connect(audioContext.destination);
+                rainNode.start();
+
+                audioInitialized = true;
+            } catch (e) {
+                console.warn('Audio initialization failed:', e);
+            }
+        }
+
+        function updateAudio() {
+            if (!audioInitialized || gameState.muted) return;
+
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            const distToWater = Math.max(0, camera.position.y - 2);
+            const oceanVolume = Math.max(0.05, 0.25 - distToWater * 0.03);
+            oceanGain.gain.linearRampToValueAtTime(oceanVolume, audioContext.currentTime + 0.1);
+
+            const windVolume = windSpeed * 0.08;
+            windGain.gain.linearRampToValueAtTime(windVolume, audioContext.currentTime + 0.1);
+
+            const rainVolume = rain.visible ? 0.15 : 0;
+            rainGain.gain.linearRampToValueAtTime(rainVolume, audioContext.currentTime + 0.1);
+        }
+
+        // ===== CONTROLS =====
+        let pointerLocked = false;
+        let yaw = gameState.cameraYaw;
+        let pitch = 0;
+        const keys = {};
+        const moveSpeed = 15;
+        const sprintMultiplier = 2;
+        const mouseSensitivity = 0.002;
+        let lastFootstepTime = 0;
+        let showMinimap = false;
+
+        canvas.addEventListener('click', () => {
+            canvas.requestPointerLock();
+            if (!audioInitialized) {
+                initAudio();
+            }
+        });
+
+        document.addEventListener('pointerlockchange', () => {
+            pointerLocked = document.pointerLockElement === canvas;
+            document.getElementById('clickPrompt').classList.toggle('hidden', pointerLocked);
+            document.getElementById('crosshair').classList.toggle('visible', pointerLocked);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!pointerLocked) return;
+
+            yaw -= e.movementX * mouseSensitivity;
+            pitch -= e.movementY * mouseSensitivity;
+            pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, pitch));
+        });
+
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+
+            if (e.key.toLowerCase() === 'm') {
+                gameState.muted = !gameState.muted;
+                if (audioInitialized) {
+                    if (gameState.muted) {
+                        oceanGain.gain.value = 0;
+                        windGain.gain.value = 0;
+                        rainGain.gain.value = 0;
+                    }
+                }
+            }
+
+            if (e.key.toLowerCase() === 'tab') {
+                e.preventDefault();
+                showMinimap = !showMinimap;
+                document.getElementById('minimap').classList.toggle('visible', showMinimap);
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // ===== TIME OF DAY =====
+        function updateDayNight() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const timeValue = hours + minutes / 60;
+
+            const sunAngle = (timeValue / 24) * Math.PI * 2 - Math.PI / 2;
+            sunLight.position.set(Math.cos(sunAngle) * 200, Math.sin(sunAngle) * 200, 50);
+
+            const sunHeight = Math.sin(sunAngle);
+
+            let lightColor, lightIntensity, ambientColor, skyTop, skyBottom, fogColor;
+
+            if (sunHeight > 0.3) {
+                lightColor = new THREE.Color(0xfff5e6);
+                lightIntensity = 1.2;
+                ambientColor = new THREE.Color(0x606060);
+                skyTop = new THREE.Color(0x87ceeb);
+                skyBottom = new THREE.Color(0xe6f2ff);
+                fogColor = new THREE.Color(0x87ceeb);
+            } else if (sunHeight > 0) {
+                const t = sunHeight / 0.3;
+                lightColor = new THREE.Color(0xffaa66);
+                lightIntensity = 0.6 + t * 0.6;
+                ambientColor = new THREE.Color().lerpColors(new THREE.Color(0x604030), new THREE.Color(0x606060), t);
+                skyTop = new THREE.Color().lerpColors(new THREE.Color(0xff8844), new THREE.Color(0x87ceeb), t);
+                skyBottom = new THREE.Color().lerpColors(new THREE.Color(0xffaa88), new THREE.Color(0xe6f2ff), t);
+                fogColor = new THREE.Color().lerpColors(new THREE.Color(0xff8844), new THREE.Color(0x87ceeb), t);
+            } else if (sunHeight > -0.2) {
+                const t = (sunHeight + 0.2) / 0.2;
+                lightColor = new THREE.Color().lerpColors(new THREE.Color(0x4466aa), new THREE.Color(0xffaa66), t);
+                lightIntensity = 0.2 + t * 0.4;
+                ambientColor = new THREE.Color().lerpColors(new THREE.Color(0x101830), new THREE.Color(0x604030), t);
+                skyTop = new THREE.Color().lerpColors(new THREE.Color(0x0a0a1a), new THREE.Color(0x2a1a3a), t);
+                skyBottom = new THREE.Color().lerpColors(new THREE.Color(0x1a1a2a), new THREE.Color(0x604030), t);
+                fogColor = new THREE.Color().lerpColors(new THREE.Color(0x0a0a1a), new THREE.Color(0x2a1a3a), t);
+            } else {
+                lightColor = new THREE.Color(0x4466aa);
+                lightIntensity = 0.2;
+                ambientColor = new THREE.Color(0x101830);
+                skyTop = new THREE.Color(0x0a0a1a);
+                skyBottom = new THREE.Color(0x1a1a2a);
+                fogColor = new THREE.Color(0x0a0a1a);
+            }
+
+            sunLight.color = lightColor;
+            sunLight.intensity = lightIntensity;
+            ambientLight.color = ambientColor;
+            skyMaterial.uniforms.topColor.value = skyTop;
+            skyMaterial.uniforms.bottomColor.value = skyBottom;
+            scene.fog.color = fogColor;
+
+            const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            document.getElementById('timeDisplay').textContent = `Time: ${timeString}`;
+        }
+
+        // ===== MINIMAP =====
+        const minimapCanvas = document.getElementById('minimap');
+        const minimapCtx = minimapCanvas.getContext('2d');
+        minimapCanvas.width = 150;
+        minimapCanvas.height = 150;
+
+        function drawMinimap() {
+            if (!showMinimap) return;
+
+            minimapCtx.fillStyle = '#1a3a4a';
+            minimapCtx.fillRect(0, 0, 150, 150);
+
+            minimapCtx.fillStyle = '#2a5a3a';
+            minimapCtx.beginPath();
+            minimapCtx.arc(75, 75, 60, 0, Math.PI * 2);
+            minimapCtx.fill();
+
+            const playerX = (camera.position.x / terrainSize) * 120 + 75;
+            const playerZ = (camera.position.z / terrainSize) * 120 + 75;
+
+            minimapCtx.fillStyle = '#ff3333';
+            minimapCtx.beginPath();
+            minimapCtx.arc(playerX, playerZ, 3, 0, Math.PI * 2);
+            minimapCtx.fill();
+
+            minimapCtx.strokeStyle = '#ffffff';
+            minimapCtx.lineWidth = 2;
+            minimapCtx.beginPath();
+            minimapCtx.moveTo(playerX, playerZ);
+            minimapCtx.lineTo(
+                playerX - Math.sin(yaw) * 10,
+                playerZ - Math.cos(yaw) * 10
+            );
+            minimapCtx.stroke();
+        }
+
+        // ===== MAIN LOOP =====
+        let lastTime = performance.now();
+        let infoFadeTimer = 0;
+        let controlsFadeTimer = 0;
+        let saveTimer = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const currentTime = performance.now();
+            const delta = Math.min((currentTime - lastTime) / 1000, 0.1);
+            lastTime = currentTime;
+
+            gameState.totalTime += delta;
+            saveTimer += delta;
+            if (saveTimer > 10) {
+                saveTimer = 0;
+                gameState.playerX = camera.position.x;
+                gameState.playerZ = camera.position.z;
+                gameState.cameraYaw = yaw;
+                saveState();
+            }
+
+            camera.rotation.order = 'YXZ';
+            camera.rotation.set(pitch, yaw, 0);
+
+            if (pointerLocked) {
+                const prevPos = camera.position.clone();
+                const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+                const right = new THREE.Vector3(forward.z, 0, -forward.x);
+
+                let speed = moveSpeed * delta;
+                if (keys['shift']) speed *= sprintMultiplier;
+
+                const isMoving = keys['w'] || keys['s'] || keys['a'] || keys['d'] ||
+                               keys['arrowup'] || keys['arrowdown'] || keys['arrowleft'] || keys['arrowright'];
+
+                if (keys['w'] || keys['arrowup']) {
+                    camera.position.addScaledVector(forward, speed);
+                }
+                if (keys['s'] || keys['arrowdown']) {
+                    camera.position.addScaledVector(forward, -speed);
+                }
+                if (keys['a'] || keys['arrowleft']) {
+                    camera.position.addScaledVector(right, -speed);
+                }
+                if (keys['d'] || keys['arrowright']) {
+                    camera.position.addScaledVector(right, speed);
+                }
+
+                // Clamp to map bounds
+                camera.position.x = Math.max(-190, Math.min(190, camera.position.x));
+                camera.position.z = Math.max(-190, Math.min(190, camera.position.z));
+
+                // Terrain collision: check new position, revert if in water
+                const terrainHeight = getTerrainHeight(camera.position.x, camera.position.z);
+
+                if (terrainHeight < 0.5) {
+                    // Revert to previous position
+                    camera.position.copy(prevPos);
+                } else {
+                    camera.position.y = terrainHeight + 1.7;
+                }
+
+                if (isMoving && audioInitialized && !gameState.muted) {
+                    if (currentTime - lastFootstepTime > 400) {
+                        lastFootstepTime = currentTime;
+                        const osc = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+                        osc.frequency.value = 80 + Math.random() * 20;
+                        osc.type = 'sine';
+                        gain.gain.value = 0.03;
+                        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+                        osc.connect(gain);
+                        gain.connect(audioContext.destination);
+                        osc.start();
+                        osc.stop(audioContext.currentTime + 0.1);
+                    }
+                }
+            }
+
+            const time = currentTime / 1000;
+            for (let i = 0; i < waterPositions.length; i += 3) {
+                const x = waterPositions[i];
+                const z = waterPositions[i + 2];
+                waterPositions[i + 1] = Math.sin(time * 0.5 + x * 0.05) * 0.3 +
+                                       Math.sin(time * 0.3 + z * 0.08) * 0.2;
+            }
+            water.geometry.attributes.position.needsUpdate = true;
+
+            updateWeather(delta);
+
+            if (rain.visible) {
+                const rainPos = rain.geometry.attributes.position.array;
+                for (let i = 0; i < rainPos.length; i += 3) {
+                    rainPos[i] += windSpeed * delta * 2;
+                    rainPos[i + 1] -= 50 * delta;
+                    rainPos[i + 2] += windSpeed * delta * 0.5;
+
+                    // Re-center rain around player when particles drift too far
+                    if (Math.abs(rainPos[i] - camera.position.x) > 100) {
+                        rainPos[i] = camera.position.x + (Math.random() - 0.5) * 200;
+                    }
+                    if (Math.abs(rainPos[i + 2] - camera.position.z) > 100) {
+                        rainPos[i + 2] = camera.position.z + (Math.random() - 0.5) * 200;
+                    }
+
+                    if (rainPos[i + 1] < 0) {
+                        rainPos[i + 1] = 100 + Math.random() * 50;
+                    }
+                }
+                rain.geometry.attributes.position.needsUpdate = true;
+            }
+
+            updateDayNight();
+            updateAudio();
+
+            const compassDir = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const dirIndex = Math.round(((yaw + Math.PI) / (Math.PI * 2)) * 8) % 8;
+            document.getElementById('compass').textContent = `Direction: ${compassDir[dirIndex]}`;
+
+            const weatherState = weatherStates[currentWeatherIndex];
+            document.getElementById('weather').textContent = `Weather: ${weatherState.charAt(0).toUpperCase() + weatherState.slice(1)}`;
+            document.getElementById('visits').textContent = `Visit: ${gameState.totalVisits}`;
+
+            infoFadeTimer += delta;
+            if (infoFadeTimer > 8) {
+                document.getElementById('info').classList.add('faded');
+            }
+
+            controlsFadeTimer += delta;
+            if (controlsFadeTimer > 10) {
+                document.getElementById('controls').classList.add('faded');
+            }
+
+            drawMinimap();
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.addEventListener('beforeunload', () => {
+            gameState.playerX = camera.position.x;
+            gameState.playerZ = camera.position.z;
+            gameState.cameraYaw = yaw;
+            saveState();
+        });
+
+        animate();
+    </script>
+</body>
+</html>

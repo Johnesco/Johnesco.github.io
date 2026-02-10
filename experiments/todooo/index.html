@@ -1043,6 +1043,21 @@
             </div>
         </details></div>
 
+        <div class="era">Into the World &mdash; 093+</div>
+        <div class="version" style="margin-bottom: 1.5rem; padding: 0.8rem 1rem; background: rgba(124, 131, 255, 0.06); border-radius: 6px; border-left: 2px solid rgba(124, 131, 255, 0.3); color: #999; font-size: 0.9rem; line-height: 1.6;">
+            Another shift. The 2D island proved something could grow through iteration. Now the same island steps into three dimensions. First-person, WebGL, real terrain under your feet. Three.js via CDN &mdash; the first time external code enters the project. The constraint changes from &ldquo;everything from scratch&rdquo; to &ldquo;whatever it takes to make it real.&rdquo;
+        </div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="093/">093</a></span>
+                <span class="version-desc">The Island, 3D &mdash; first-person WebGL; walk through the terrain, feel the weather, hear the ocean</span>
+            </summary>
+            <div class="version-detail">
+                <p>The island steps off the page and into three dimensions. Three.js renders a 200&times;200 vertex heightmap from the same Perlin noise, but now you stand on it &mdash; eye-level, first-person, 70&deg; FOV. Nine biomes in vertex color: deep water through snow. An animated water plane with dual sine-wave displacement stretches to the horizon. A gradient sky sphere shifts from deep navy at night through orange at dawn to cerulean at midday, driven by the real clock. The sun orbits as a directional light with 2048px shadow maps. 120 trees as InstancedMesh: palms on the beach, deciduous in the grasslands, pines on the ridges. Weather cycles through clear, cloudy, rain, storm, and clearing &mdash; fog density adjusts, 2000 rain particles streak with wind, clouds drift overhead. Web Audio provides ocean surf with LFO-modulated lowpass, bandpass wind that swells with weather, highpass rain, footstep crunches, and bird chirps. WASD to walk, Shift to sprint, mouse to look, M to mute, Tab for minimap. Click to enter. The island is the same island. You're just inside it now.<br><em>The jump to 3D. 92 versions of canvas 2D, then suddenly you're standing in the grass looking up at the trees. The first time I walked to the water's edge and heard the surf get louder, I knew this was the right move. Same island. Different everything.</em></p>
+            </div>
+        </details></div>
+
     </div>
 </body>
 </html>
