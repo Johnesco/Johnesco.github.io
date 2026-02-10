@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Island - Part 1</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: #0a1a2a;
+            font-family: 'Georgia', serif;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100vh;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        #ui {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        #welcome {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            text-align: center;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+            pointer-events: none;
+            transition: opacity 1s;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="ui"></div>
+    <div id="welcome"></div>
+
+    <script>
+        'use strict';
+
+        // ============================================================
+        // CONFIG
+        // ============================================================
+
+        const CONFIG = {
+            STORAGE_KEY: 'todooo-087',
+            ISLAND_SIZE: 200,
+            TILE_SIZE: 4,
+            PLAYER_SPEED: 0.8,
+            CAMERA_LERP: 0.08,
+            ZOOM_MIN: 0.5,
+            ZOOM_MAX: 3.0,
+            ZOOM_DEFAULT: 1.0,
+            ZOOM_STEP: 0.1,
+            TIDE_CYCLE_MS: 6 * 60 * 1000, // 6 minutes
+            TIDE_MIN: 0.35,
+            TIDE_MAX: 0.40,
+            WATER_THRESHOLD: 0.35,
+            LAND_THRESHOLD: 0.40,
+            STAR_COUNT: 120,
+            NOISE_OCTAVES: 4,
+            ISLAND_RADIUS: 0.42,
+        };
+
+        // ============================================================
+        // UTILITY FUNCTIONS (noise, hash, lerp, color)
+        // ============================================================
+
+        // Simple hash function for seeded random
+        function hashSeed(seed) {
+            let h = seed;
+            h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+            h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+            return (h ^ (h >>> 16)) >>> 0;
+        }
+
+        class SeededRandom {
+            constructor(seed) {
+                this.seed = hashSeed(seed);
+            }
+
+            next() {
+                this.seed = Math.imul(this.seed ^ (this.seed >>> 7), 0x85ebca6b);
+                this.seed = Math.imul(this.seed ^ (this.seed >>> 9), 0xc2b2ae35);
+                return ((this.seed ^ (this.seed >>> 16)) >>> 0) / 4294967296;
+            }
+        }
+
+        // Simple 2D noise using permutation table
+        class NoiseGenerator {
+            constructor(seed) {
+                this.perm = new Array(512);
+                const rng = new SeededRandom(seed);
+                const p = Array.from({length: 256}, (_, i) => i);
+
+                // Fisher-Yates shuffle with seeded random
+                for (let i = 255; i > 0; i--) {
+                    const j = Math.floor(rng.next() * (i + 1));
+                    [p[i], p[j]] = [p[j], p[i]];
+                }
+
+                for (let i = 0; i < 512; i++) {
+                    this.perm[i] = p[i & 255];
+                }
+            }
+
+            fade(t) {
+                return t * t * t * (t * (t * 6 - 15) + 10);
+            }
+
+            lerp(t, a, b) {
+                return a + t * (b - a);
+            }
+
+            grad(hash, x, y) {
+                const h = hash & 15;
+                const u = h < 8 ? x : y;
+                const v = h < 4 ? y : h === 12 || h === 14 ? x : 0;
+                return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+            }
+
+            noise(x, y) {
+                const X = Math.floor(x) & 255;
+                const Y = Math.floor(y) & 255;
+
+                x -= Math.floor(x);
+                y -= Math.floor(y);
+
+                const u = this.fade(x);
+                const v = this.fade(y);
+
+                const a = this.perm[X] + Y;
+                const aa = this.perm[a];
+                const ab = this.perm[a + 1];
+                const b = this.perm[X + 1] + Y;
+                const ba = this.perm[b];
+                const bb = this.perm[b + 1];
+
+                return this.lerp(v,
+                    this.lerp(u, this.grad(this.perm[aa], x, y), this.grad(this.perm[ba], x - 1, y)),
+                    this.lerp(u, this.grad(this.perm[ab], x, y - 1), this.grad(this.perm[bb], x - 1, y - 1))
+                );
+            }
+
+            octaveNoise(x, y, octaves) {
+                let total = 0;
+                let frequency = 1;
+                let amplitude = 1;
+                let maxValue = 0;
+
+                for (let i = 0; i < octaves; i++) {
+                    total += this.noise(x * frequency, y * frequency) * amplitude;
+                    maxValue += amplitude;
+                    amplitude *= 0.5;
+                    frequency *= 2;
+                }
+
+                return total / maxValue;
+            }
+        }
+
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        function clamp(val, min, max) {
+            return Math.min(Math.max(val, min), max);
+        }
+
+        function colorLerp(c1, c2, t) {
+            return {
+                r: Math.floor(lerp(c1.r, c2.r, t)),
+                g: Math.floor(lerp(c1.g, c2.g, t)),
+                b: Math.floor(lerp(c1.b, c2.b, t))
+            };
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : {r: 0, g: 0, b: 0};
+        }
+
+        function rgbToString(rgb) {
+            return `rgb(${rgb.r},${rgb.g},${rgb.b})`;
+        }
+
+        // ============================================================
+        // STATE (single state object that later versions extend)
+        // ============================================================
+
+        const state = {
+            player: {
+                x: 100,
+                y: 100,
+                speed: CONFIG.PLAYER_SPEED,
+                dir: 0,
+                dustTimer: 0
+            },
+            camera: {
+                x: 100,
+                y: 100,
+                zoom: CONFIG.ZOOM_DEFAULT
+            },
+            time: {
+                current: Date.now(),
+                hour: 0,
+                minute: 0,
+                period: 'day'
+            },
+            tide: 0.375,
+            terrain: null,
+            terrainColors: null,
+            islandSeed: 0,
+            visited: false,
+            totalVisits: 0,
+            totalTime: 0,
+            sessionStart: Date.now(),
+            stars: [],
+            input: {
+                up: false,
+                down: false,
+                left: false,
+                right: false
+            },
+            ui: {
+                showInfo: true,
+                welcomeFade: 3000,
+                infoFade: 5000
+            }
+        };
+
+        // ============================================================
+        // TERRAIN GENERATION
+        // ============================================================
+
+        function generateTerrain(seed) {
+            const size = CONFIG.ISLAND_SIZE;
+            const terrain = Array(size).fill(null).map(() => Array(size).fill(0));
+            const noise = new NoiseGenerator(seed);
+            const rng = new SeededRandom(seed + 1000);
+
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const maxDist = size * CONFIG.ISLAND_RADIUS;
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    // Distance from center
+                    const dx = x - centerX;
+                    const dy = y - centerY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    // Radial falloff with some noise for irregular shape
+                    const radialNoise = noise.octaveNoise(x * 0.02, y * 0.02, 2) * 0.2;
+                    const falloff = 1 - clamp((dist - radialNoise * 20) / maxDist, 0, 1);
+
+                    // Layered noise for terrain height
+                    let height = noise.octaveNoise(x * 0.03, y * 0.03, CONFIG.NOISE_OCTAVES);
+                    height = (height + 1) * 0.5; // Normalize to 0-1
+
+                    // Apply falloff to create island shape
+                    height *= Math.pow(falloff, 1.5);
+
+                    terrain[y][x] = height;
+                }
+            }
+
+            return terrain;
+        }
+
+        function computeTerrainColors(terrain, seed) {
+            const size = CONFIG.ISLAND_SIZE;
+            const colors = Array(size).fill(null).map(() => Array(size).fill(null));
+            const rng = new SeededRandom(seed + 2000);
+
+            // Color palettes for each terrain type
+            const palettes = {
+                deepWater: hexToRgb('#1a3a5a'),
+                shallowWater: hexToRgb('#2a5a7a'),
+                wetSand: hexToRgb('#c4a868'),
+                sand: hexToRgb('#d4b890'),
+                grass1: hexToRgb('#4a7a3a'),
+                grass2: hexToRgb('#3a6a2a'),
+                denseGrass: hexToRgb('#3a5a2a'),
+                rock: hexToRgb('#6a6a68'),
+                highRock: hexToRgb('#5a5a58'),
+                snow: hexToRgb('#d8d8d8')
+            };
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const height = terrain[y][x];
+                    let baseColor;
+
+                    if (height < 0.25) {
+                        baseColor = palettes.deepWater;
+                    } else if (height < 0.35) {
+                        const t = (height - 0.25) / 0.10;
+                        baseColor = colorLerp(palettes.deepWater, palettes.shallowWater, t);
+                    } else if (height < 0.40) {
+                        baseColor = palettes.wetSand;
+                    } else if (height < 0.45) {
+                        const t = (height - 0.40) / 0.05;
+                        baseColor = colorLerp(palettes.sand, palettes.grass1, t);
+                    } else if (height < 0.65) {
+                        const t = (height - 0.45) / 0.20;
+                        baseColor = colorLerp(palettes.grass1, palettes.grass2, t);
+                    } else if (height < 0.75) {
+                        const t = (height - 0.65) / 0.10;
+                        baseColor = colorLerp(palettes.grass2, palettes.denseGrass, t);
+                    } else if (height < 0.85) {
+                        const t = (height - 0.75) / 0.10;
+                        baseColor = colorLerp(palettes.denseGrass, palettes.rock, t);
+                    } else if (height < 0.92) {
+                        const t = (height - 0.85) / 0.07;
+                        baseColor = colorLerp(palettes.rock, palettes.highRock, t);
+                    } else {
+                        const t = (height - 0.92) / 0.08;
+                        baseColor = colorLerp(palettes.highRock, palettes.snow, t);
+                    }
+
+                    // Add color variation
+                    const variation = 5;
+                    const color = {
+                        r: clamp(baseColor.r + (rng.next() - 0.5) * variation * 2, 0, 255),
+                        g: clamp(baseColor.g + (rng.next() - 0.5) * variation * 2, 0, 255),
+                        b: clamp(baseColor.b + (rng.next() - 0.5) * variation * 2, 0, 255)
+                    };
+
+                    colors[y][x] = color;
+                }
+            }
+
+            return colors;
+        }
+
+        function findStartPosition(terrain) {
+            const size = CONFIG.ISLAND_SIZE;
+            const centerX = size / 2;
+            const centerY = size / 2;
+
+            // Find nearest beach to center
+            let bestDist = Infinity;
+            let bestX = centerX;
+            let bestY = centerY;
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const height = terrain[y][x];
+                    // Look for sand/beach areas
+                    if (height >= 0.40 && height <= 0.50) {
+                        const dx = x - centerX;
+                        const dy = y - centerY;
+                        const dist = dx * dx + dy * dy;
+                        if (dist < bestDist) {
+                            bestDist = dist;
+                            bestX = x;
+                            bestY = y;
+                        }
+                    }
+                }
+            }
+
+            return {x: bestX, y: bestY};
+        }
+
+        // ============================================================
+        // TIME SYSTEM (day/night, tides)
+        // ============================================================
+
+        function updateTime() {
+            const now = new Date();
+            state.time.current = now.getTime();
+            state.time.hour = now.getHours();
+            state.time.minute = now.getMinutes();
+
+            // Determine time period
+            const hour = state.time.hour;
+            if (hour >= 22 || hour < 5) {
+                state.time.period = 'night';
+            } else if (hour >= 5 && hour < 7) {
+                state.time.period = 'dawn';
+            } else if (hour >= 7 && hour < 11) {
+                state.time.period = 'morning';
+            } else if (hour >= 11 && hour < 14) {
+                state.time.period = 'midday';
+            } else if (hour >= 14 && hour < 17) {
+                state.time.period = 'afternoon';
+            } else if (hour >= 17 && hour < 19) {
+                state.time.period = 'sunset';
+            } else {
+                state.time.period = 'dusk';
+            }
+        }
+
+        function updateTide() {
+            const cyclePosition = (Date.now() % CONFIG.TIDE_CYCLE_MS) / CONFIG.TIDE_CYCLE_MS;
+            const tideWave = Math.sin(cyclePosition * Math.PI * 2);
+            state.tide = lerp(CONFIG.TIDE_MIN, CONFIG.TIDE_MAX, (tideWave + 1) * 0.5);
+        }
+
+        function getLightingMultiplier() {
+            const hour = state.time.hour;
+            const minute = state.time.minute;
+            const timeValue = hour + minute / 60;
+
+            // Return RGB multipliers based on time of day
+            switch (state.time.period) {
+                case 'night':
+                    return {r: 0.3, g: 0.35, b: 0.5, ambient: 0.25};
+                case 'dawn':
+                    const dawnT = (timeValue - 5) / 2;
+                    return {
+                        r: lerp(0.3, 1.0, dawnT),
+                        g: lerp(0.35, 0.85, dawnT),
+                        b: lerp(0.5, 0.75, dawnT),
+                        ambient: lerp(0.25, 0.9, dawnT)
+                    };
+                case 'morning':
+                    return {r: 1.0, g: 0.95, b: 0.85, ambient: 1.0};
+                case 'midday':
+                    return {r: 1.05, g: 1.05, b: 1.0, ambient: 1.0};
+                case 'afternoon':
+                    return {r: 1.1, g: 0.95, b: 0.75, ambient: 0.95};
+                case 'sunset':
+                    const sunsetT = (timeValue - 17) / 2;
+                    return {
+                        r: lerp(1.1, 0.8, sunsetT),
+                        g: lerp(0.95, 0.5, sunsetT),
+                        b: lerp(0.75, 0.45, sunsetT),
+                        ambient: lerp(0.95, 0.4, sunsetT)
+                    };
+                case 'dusk':
+                    const duskT = (timeValue - 19) / 3;
+                    return {
+                        r: lerp(0.8, 0.3, duskT),
+                        g: lerp(0.5, 0.35, duskT),
+                        b: lerp(0.45, 0.5, duskT),
+                        ambient: lerp(0.4, 0.25, duskT)
+                    };
+                default:
+                    return {r: 1.0, g: 1.0, b: 1.0, ambient: 1.0};
+            }
+        }
+
+        function generateStars(seed) {
+            const rng = new SeededRandom(seed + 3000);
+            const stars = [];
+
+            for (let i = 0; i < CONFIG.STAR_COUNT; i++) {
+                stars.push({
+                    x: rng.next(),
+                    y: rng.next(),
+                    brightness: 0.3 + rng.next() * 0.7,
+                    size: 1 + Math.floor(rng.next() * 2)
+                });
+            }
+
+            return stars;
+        }
+
+        // ============================================================
+        // CAMERA
+        // ============================================================
+
+        function updateCamera() {
+            // Smooth follow player
+            state.camera.x += (state.player.x - state.camera.x) * CONFIG.CAMERA_LERP;
+            state.camera.y += (state.player.y - state.camera.y) * CONFIG.CAMERA_LERP;
+        }
+
+        function screenToWorld(screenX, screenY, canvas) {
+            const worldX = (screenX - canvas.width / 2) / (CONFIG.TILE_SIZE * state.camera.zoom) + state.camera.x;
+            const worldY = (screenY - canvas.height / 2) / (CONFIG.TILE_SIZE * state.camera.zoom) + state.camera.y;
+            return {x: worldX, y: worldY};
+        }
+
+        function worldToScreen(worldX, worldY, canvas) {
+            const screenX = (worldX - state.camera.x) * CONFIG.TILE_SIZE * state.camera.zoom + canvas.width / 2;
+            const screenY = (worldY - state.camera.y) * CONFIG.TILE_SIZE * state.camera.zoom + canvas.height / 2;
+            return {x: screenX, y: screenY};
+        }
+
+        // ============================================================
+        // PLAYER
+        // ============================================================
+
+        function updatePlayer() {
+            let dx = 0;
+            let dy = 0;
+
+            if (state.input.up) dy -= 1;
+            if (state.input.down) dy += 1;
+            if (state.input.left) dx -= 1;
+            if (state.input.right) dx += 1;
+
+            // Normalize diagonal movement
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.707;
+                dy *= 0.707;
+            }
+
+            const isMoving = dx !== 0 || dy !== 0;
+
+            if (isMoving) {
+                const newX = state.player.x + dx * state.player.speed;
+                const newY = state.player.y + dy * state.player.speed;
+
+                // Check collision
+                if (canWalkOn(newX, newY)) {
+                    state.player.x = newX;
+                    state.player.y = newY;
+
+                    // Update direction
+                    state.player.dir = Math.atan2(dy, dx);
+
+                    // Dust particles
+                    state.player.dustTimer++;
+                }
+            }
+        }
+
+        function canWalkOn(x, y) {
+            const tileX = Math.floor(x);
+            const tileY = Math.floor(y);
+
+            if (tileX < 0 || tileX >= CONFIG.ISLAND_SIZE || tileY < 0 || tileY >= CONFIG.ISLAND_SIZE) {
+                return false;
+            }
+
+            const height = state.terrain[tileY][tileX];
+            const waterLevel = state.tide;
+
+            // Cannot walk on water
+            return height >= waterLevel;
+        }
+
+        function getCompassDirection() {
+            const centerX = CONFIG.ISLAND_SIZE / 2;
+            const centerY = CONFIG.ISLAND_SIZE / 2;
+            const dx = state.player.x - centerX;
+            const dy = state.player.y - centerY;
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+            if (angle >= -45 && angle < 45) return 'East';
+            if (angle >= 45 && angle < 135) return 'South';
+            if (angle >= -135 && angle < -45) return 'North';
+            return 'West';
+        }
+
+        // ============================================================
+        // RENDERER
+        // ============================================================
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', {alpha: false});
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function render() {
+            const lighting = getLightingMultiplier();
+
+            // Calculate visible bounds
+            const halfWidth = canvas.width / (2 * CONFIG.TILE_SIZE * state.camera.zoom);
+            const halfHeight = canvas.height / (2 * CONFIG.TILE_SIZE * state.camera.zoom);
+
+            const startX = Math.max(0, Math.floor(state.camera.x - halfWidth - 1));
+            const endX = Math.min(CONFIG.ISLAND_SIZE, Math.ceil(state.camera.x + halfWidth + 1));
+            const startY = Math.max(0, Math.floor(state.camera.y - halfHeight - 1));
+            const endY = Math.min(CONFIG.ISLAND_SIZE, Math.ceil(state.camera.y + halfHeight + 1));
+
+            // Clear with ocean color
+            const deepWater = hexToRgb('#0a1a2a');
+            ctx.fillStyle = rgbToString({
+                r: Math.floor(deepWater.r * lighting.r * lighting.ambient),
+                g: Math.floor(deepWater.g * lighting.g * lighting.ambient),
+                b: Math.floor(deepWater.b * lighting.b * lighting.ambient)
+            });
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Render stars if night
+            if (state.time.period === 'night' || state.time.period === 'dusk') {
+                const starAlpha = state.time.period === 'night' ? 1.0 :
+                    1.0 - ((state.time.hour - 19) / 3);
+                renderStars(starAlpha);
+            }
+
+            // Render terrain
+            renderTerrain(startX, endX, startY, endY, lighting);
+
+            // Render foam at waterline
+            renderFoam(startX, endX, startY, endY);
+
+            // Render player
+            renderPlayer();
+        }
+
+        function renderTerrain(startX, endX, startY, endY, lighting) {
+            const shimmer = Math.sin(Date.now() * 0.001) * 0.05 + 1.0;
+            const waterLevel = state.tide;
+
+            for (let y = startY; y < endY; y++) {
+                for (let x = startX; x < endX; x++) {
+                    const height = state.terrain[y][x];
+                    let color = {...state.terrainColors[y][x]};
+
+                    // Handle tidal zone
+                    if (height >= CONFIG.TIDE_MIN && height <= CONFIG.TIDE_MAX) {
+                        if (height < waterLevel) {
+                            // Currently underwater
+                            const shallowWater = hexToRgb('#2a5a7a');
+                            const t = (waterLevel - height) / (CONFIG.TIDE_MAX - CONFIG.TIDE_MIN);
+                            color = colorLerp(state.terrainColors[y][x], shallowWater, t * 0.7);
+                        }
+                    }
+
+                    // Apply shimmer to water
+                    if (height < waterLevel) {
+                        color.r = Math.floor(color.r * shimmer);
+                        color.g = Math.floor(color.g * shimmer);
+                        color.b = Math.floor(color.b * shimmer);
+                    }
+
+                    // Apply lighting
+                    color.r = clamp(Math.floor(color.r * lighting.r * lighting.ambient), 0, 255);
+                    color.g = clamp(Math.floor(color.g * lighting.g * lighting.ambient), 0, 255);
+                    color.b = clamp(Math.floor(color.b * lighting.b * lighting.ambient), 0, 255);
+
+                    const screenPos = worldToScreen(x, y, canvas);
+                    const size = CONFIG.TILE_SIZE * state.camera.zoom;
+
+                    ctx.fillStyle = rgbToString(color);
+                    ctx.fillRect(
+                        Math.floor(screenPos.x),
+                        Math.floor(screenPos.y),
+                        Math.ceil(size),
+                        Math.ceil(size)
+                    );
+                }
+            }
+        }
+
+        function renderFoam(startX, endX, startY, endY) {
+            const waterLevel = state.tide;
+            const foamPhase = (Date.now() * 0.003) % 1;
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+
+            for (let y = startY; y < endY; y++) {
+                for (let x = startX; x < endX; x++) {
+                    const height = state.terrain[y][x];
+
+                    // Check if this is at the water edge
+                    if (Math.abs(height - waterLevel) < 0.02) {
+                        // Check neighbors to see if we're at land-water boundary
+                        let isEdge = false;
+                        const neighbors = [
+                            [x-1, y], [x+1, y], [x, y-1], [x, y+1]
+                        ];
+
+                        for (const [nx, ny] of neighbors) {
+                            if (nx >= 0 && nx < CONFIG.ISLAND_SIZE && ny >= 0 && ny < CONFIG.ISLAND_SIZE) {
+                                const nh = state.terrain[ny][nx];
+                                if ((height < waterLevel && nh >= waterLevel) ||
+                                    (height >= waterLevel && nh < waterLevel)) {
+                                    isEdge = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (isEdge && Math.random() < 0.15) {
+                            const screenPos = worldToScreen(x + Math.random(), y + Math.random(), canvas);
+                            const size = (1 + Math.sin(foamPhase * Math.PI * 2 + x + y) * 0.5) * state.camera.zoom;
+                            ctx.fillRect(screenPos.x, screenPos.y, size, size);
+                        }
+                    }
+                }
+            }
+        }
+
+        function renderPlayer() {
+            const screenPos = worldToScreen(state.player.x, state.player.y, canvas);
+            const size = 6 * state.camera.zoom;
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.arc(screenPos.x + 2 * state.camera.zoom, screenPos.y + 2 * state.camera.zoom, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Player body
+            ctx.fillStyle = '#e8c888';
+            ctx.beginPath();
+            ctx.arc(screenPos.x, screenPos.y, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Outline
+            ctx.strokeStyle = '#c8a868';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Dust particles
+            if (state.input.up || state.input.down || state.input.left || state.input.right) {
+                if (state.player.dustTimer % 10 === 0) {
+                    renderDustPuff(screenPos.x, screenPos.y);
+                }
+            }
+        }
+
+        function renderDustPuff(x, y) {
+            const alpha = 0.3;
+            ctx.fillStyle = `rgba(200, 180, 150, ${alpha})`;
+
+            for (let i = 0; i < 3; i++) {
+                const offsetX = (Math.random() - 0.5) * 4 * state.camera.zoom;
+                const offsetY = (Math.random() - 0.5) * 4 * state.camera.zoom;
+                const size = (1 + Math.random() * 2) * state.camera.zoom;
+
+                ctx.beginPath();
+                ctx.arc(x + offsetX, y + offsetY, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function renderStars(alpha) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+
+            for (const star of state.stars) {
+                const x = star.x * canvas.width;
+                const y = star.y * canvas.height;
+                const brightness = star.brightness * alpha;
+                const twinkle = Math.sin(Date.now() * 0.001 + star.x * 100) * 0.2 + 0.8;
+
+                ctx.globalAlpha = brightness * twinkle;
+                ctx.fillRect(x, y, star.size, star.size);
+            }
+
+            ctx.globalAlpha = 1.0;
+        }
+
+        // ============================================================
+        // INPUT
+        // ============================================================
+
+        function setupInput() {
+            window.addEventListener('keydown', (e) => {
+                switch(e.key.toLowerCase()) {
+                    case 'w':
+                    case 'arrowup':
+                        state.input.up = true;
+                        e.preventDefault();
+                        break;
+                    case 's':
+                    case 'arrowdown':
+                        state.input.down = true;
+                        e.preventDefault();
+                        break;
+                    case 'a':
+                    case 'arrowleft':
+                        state.input.left = true;
+                        e.preventDefault();
+                        break;
+                    case 'd':
+                    case 'arrowright':
+                        state.input.right = true;
+                        e.preventDefault();
+                        break;
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                switch(e.key.toLowerCase()) {
+                    case 'w':
+                    case 'arrowup':
+                        state.input.up = false;
+                        break;
+                    case 's':
+                    case 'arrowdown':
+                        state.input.down = false;
+                        break;
+                    case 'a':
+                    case 'arrowleft':
+                        state.input.left = false;
+                        break;
+                    case 'd':
+                    case 'arrowright':
+                        state.input.right = false;
+                        break;
+                }
+            });
+
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -CONFIG.ZOOM_STEP : CONFIG.ZOOM_STEP;
+                state.camera.zoom = clamp(
+                    state.camera.zoom + delta,
+                    CONFIG.ZOOM_MIN,
+                    CONFIG.ZOOM_MAX
+                );
+            }, {passive: false});
+        }
+
+        // ============================================================
+        // SAVE / LOAD
+        // ============================================================
+
+        function saveState() {
+            const saveData = {
+                player: {
+                    x: state.player.x,
+                    y: state.player.y
+                },
+                islandSeed: state.islandSeed,
+                totalVisits: state.totalVisits,
+                totalTime: state.totalTime + (Date.now() - state.sessionStart),
+                lastVisit: Date.now()
+            };
+
+            try {
+                localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(saveData));
+            } catch (e) {
+                console.warn('Failed to save state:', e);
+            }
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    state.islandSeed = data.islandSeed;
+                    state.totalVisits = data.totalVisits + 1;
+                    state.totalTime = data.totalTime || 0;
+                    state.visited = true;
+                    return data;
+                }
+            } catch (e) {
+                console.warn('Failed to load state:', e);
+            }
+            return null;
+        }
+
+        // ============================================================
+        // UI
+        // ============================================================
+
+        function updateUI() {
+            const uiEl = document.getElementById('ui');
+            const welcomeEl = document.getElementById('welcome');
+
+            // Welcome message
+            const elapsed = Date.now() - state.sessionStart;
+            if (elapsed < state.ui.welcomeFade) {
+                const visitText = state.totalVisits === 1 ? 'First visit' : `Visit #${state.totalVisits}`;
+                welcomeEl.textContent = visitText;
+                welcomeEl.style.opacity = 1 - (elapsed / state.ui.welcomeFade);
+            } else {
+                welcomeEl.style.opacity = 0;
+            }
+
+            // Info display
+            if (elapsed < state.ui.infoFade) {
+                const hour12 = state.time.hour % 12 || 12;
+                const ampm = state.time.hour >= 12 ? 'PM' : 'AM';
+                const timeStr = `${hour12}:${String(state.time.minute).padStart(2, '0')} ${ampm}`;
+                const compass = getCompassDirection();
+
+                uiEl.innerHTML = `${timeStr}<br>${compass}`;
+                uiEl.style.opacity = 1;
+            } else {
+                uiEl.style.opacity = Math.max(0, 1 - (elapsed - state.ui.infoFade) / 500);
+            }
+        }
+
+        // ============================================================
+        // AUDIO SYSTEM
+        // ============================================================
+
+        // [Audio system will be added in version 088]
+
+        // ============================================================
+        // MAIN LOOP
+        // ============================================================
+
+        function initialize() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Load or create new save
+            const savedData = loadState();
+
+            if (!state.visited) {
+                // First time - generate new island
+                state.islandSeed = Math.floor(Math.random() * 1000000);
+                state.totalVisits = 1;
+            }
+
+            // Generate terrain
+            state.terrain = generateTerrain(state.islandSeed);
+            state.terrainColors = computeTerrainColors(state.terrain, state.islandSeed);
+            state.stars = generateStars(state.islandSeed);
+
+            // Set player position
+            if (savedData && savedData.player) {
+                state.player.x = savedData.player.x;
+                state.player.y = savedData.player.y;
+            } else {
+                const startPos = findStartPosition(state.terrain);
+                state.player.x = startPos.x;
+                state.player.y = startPos.y;
+            }
+
+            // Initialize camera
+            state.camera.x = state.player.x;
+            state.camera.y = state.player.y;
+
+            setupInput();
+
+            // Auto-save every 10 seconds
+            setInterval(saveState, 10000);
+
+            // Save on page unload
+            window.addEventListener('beforeunload', saveState);
+
+            // Start game loop
+            gameLoop();
+        }
+
+        function gameLoop() {
+            updateTime();
+            updateTide();
+            updatePlayer();
+            updateCamera();
+            render();
+            updateUI();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the experience
+        initialize();
+    </script>
+</body>
+</html>

@@ -1,0 +1,3133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Island - Part 5</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: #0a1a2a;
+            font-family: 'Georgia', serif;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100vh;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        #ui {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        #welcome {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            text-align: center;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+            pointer-events: none;
+            transition: opacity 1s;
+        }
+
+        #hints {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            text-align: center;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+            transition: opacity 1s;
+        }
+
+        #journal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 30, 0.95);
+            color: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 8px;
+            font-size: 13px;
+            max-width: 500px;
+            max-height: 600px;
+            overflow-y: auto;
+            display: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+        }
+
+        #journal h2 {
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+
+        #journal .entry {
+            margin-bottom: 12px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="ui"></div>
+    <div id="welcome"></div>
+    <div id="hints"></div>
+    <div id="journal"></div>
+
+    <script>
+        'use strict';
+
+        // ============================================================
+        // CONFIG
+        // ============================================================
+
+        const CONFIG = {
+            STORAGE_KEY: 'todooo-091',
+            ISLAND_SIZE: 200,
+            TILE_SIZE: 4,
+            PLAYER_SPEED: 0.8,
+            CAMERA_LERP: 0.08,
+            ZOOM_MIN: 0.5,
+            ZOOM_MAX: 3.0,
+            ZOOM_DEFAULT: 1.0,
+            ZOOM_STEP: 0.1,
+            TIDE_CYCLE_MS: 6 * 60 * 1000,
+            TIDE_MIN: 0.35,
+            TIDE_MAX: 0.40,
+            WATER_THRESHOLD: 0.35,
+            LAND_THRESHOLD: 0.40,
+            STAR_COUNT: 120,
+            NOISE_OCTAVES: 4,
+            ISLAND_RADIUS: 0.42,
+            MAX_RAINDROPS: 200,
+            MAX_CLOUDS: 8
+        };
+
+        // ============================================================
+        // UTILITY FUNCTIONS (noise, hash, lerp, color)
+        // ============================================================
+
+        function hashSeed(seed) {
+            let h = seed;
+            h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+            h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+            return (h ^ (h >>> 16)) >>> 0;
+        }
+
+        class SeededRandom {
+            constructor(seed) {
+                this.seed = hashSeed(seed);
+            }
+
+            next() {
+                this.seed = Math.imul(this.seed ^ (this.seed >>> 7), 0x85ebca6b);
+                this.seed = Math.imul(this.seed ^ (this.seed >>> 9), 0xc2b2ae35);
+                return ((this.seed ^ (this.seed >>> 16)) >>> 0) / 4294967296;
+            }
+        }
+
+        class NoiseGenerator {
+            constructor(seed) {
+                this.perm = new Array(512);
+                const rng = new SeededRandom(seed);
+                const p = Array.from({length: 256}, (_, i) => i);
+
+                for (let i = 255; i > 0; i--) {
+                    const j = Math.floor(rng.next() * (i + 1));
+                    [p[i], p[j]] = [p[j], p[i]];
+                }
+
+                for (let i = 0; i < 512; i++) {
+                    this.perm[i] = p[i & 255];
+                }
+            }
+
+            fade(t) {
+                return t * t * t * (t * (t * 6 - 15) + 10);
+            }
+
+            lerp(t, a, b) {
+                return a + t * (b - a);
+            }
+
+            grad(hash, x, y) {
+                const h = hash & 15;
+                const u = h < 8 ? x : y;
+                const v = h < 4 ? y : h === 12 || h === 14 ? x : 0;
+                return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+            }
+
+            noise(x, y) {
+                const X = Math.floor(x) & 255;
+                const Y = Math.floor(y) & 255;
+
+                x -= Math.floor(x);
+                y -= Math.floor(y);
+
+                const u = this.fade(x);
+                const v = this.fade(y);
+
+                const a = this.perm[X] + Y;
+                const aa = this.perm[a];
+                const ab = this.perm[a + 1];
+                const b = this.perm[X + 1] + Y;
+                const ba = this.perm[b];
+                const bb = this.perm[b + 1];
+
+                return this.lerp(v,
+                    this.lerp(u, this.grad(this.perm[aa], x, y), this.grad(this.perm[ba], x - 1, y)),
+                    this.lerp(u, this.grad(this.perm[ab], x, y - 1), this.grad(this.perm[bb], x - 1, y - 1))
+                );
+            }
+
+            octaveNoise(x, y, octaves) {
+                let total = 0;
+                let frequency = 1;
+                let amplitude = 1;
+                let maxValue = 0;
+
+                for (let i = 0; i < octaves; i++) {
+                    total += this.noise(x * frequency, y * frequency) * amplitude;
+                    maxValue += amplitude;
+                    amplitude *= 0.5;
+                    frequency *= 2;
+                }
+
+                return total / maxValue;
+            }
+        }
+
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        function clamp(val, min, max) {
+            return Math.min(Math.max(val, min), max);
+        }
+
+        function colorLerp(c1, c2, t) {
+            return {
+                r: Math.floor(lerp(c1.r, c2.r, t)),
+                g: Math.floor(lerp(c1.g, c2.g, t)),
+                b: Math.floor(lerp(c1.b, c2.b, t))
+            };
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : {r: 0, g: 0, b: 0};
+        }
+
+        function rgbToString(rgb) {
+            return `rgb(${rgb.r},${rgb.g},${rgb.b})`;
+        }
+
+        function getCurrentSeason() {
+            const month = new Date().getMonth();
+            if (month >= 2 && month <= 4) return 'spring';
+            if (month >= 5 && month <= 7) return 'summer';
+            if (month >= 8 && month <= 10) return 'autumn';
+            return 'winter';
+        }
+
+        // ============================================================
+        // STATE
+        // ============================================================
+
+        const state = {
+            player: {
+                x: 100,
+                y: 100,
+                speed: CONFIG.PLAYER_SPEED,
+                dir: 0,
+                dustTimer: 0
+            },
+            camera: {
+                x: 100,
+                y: 100,
+                zoom: CONFIG.ZOOM_DEFAULT
+            },
+            time: {
+                current: Date.now(),
+                hour: 0,
+                minute: 0,
+                period: 'day'
+            },
+            tide: 0.375,
+            weather: {
+                current: 'clear',
+                nextTransition: 0,
+                intensity: 0,
+                windDir: 0,
+                windSpeed: 0,
+                cloudCover: 0,
+                raindrops: [],
+                clouds: [],
+                lightning: { active: false, timer: 0, alpha: 0 },
+                fog: 0,
+                recentRainTime: 0
+            },
+            flora: {
+                trees: [],
+                grass: [],
+                flowers: [],
+                mushrooms: [],
+                season: 'spring'
+            },
+            fauna: {
+                butterflies: [],
+                seabirds: [],
+                rabbits: [],
+                fish: [],
+                fireflies: [],
+                crabs: []
+            },
+            audio: {
+                ctx: null,
+                enabled: true,
+                nodes: {},
+                muted: false,
+                lastCricket: 0,
+                lastFrog: 0,
+                lastSeagull: 0
+            },
+            terrain: null,
+            terrainColors: null,
+            islandSeed: 0,
+            visited: false,
+            totalVisits: 0,
+            totalTime: 0,
+            sessionStart: Date.now(),
+            stars: [],
+            input: {
+                up: false,
+                down: false,
+                left: false,
+                right: false
+            },
+            ui: {
+                showInfo: true,
+                welcomeFade: 3000,
+                infoFade: 5000,
+                soundNotification: 0,
+                showMinimap: false,
+                showJournal: false
+            },
+            memory: {
+                footprints: [],
+                visitedTiles: new Set(),
+                cairns: [],
+                ghostPath: [],
+                currentPath: [],
+                pathSampleCounter: 0,
+                journal: [],
+                tileVisitCounts: {},
+                sessionDistance: 0,
+                weathersSeen: new Set(),
+                lastFootprintPos: {x: 0, y: 0}
+            }
+        };
+
+        // ============================================================
+        // TERRAIN GENERATION
+        // ============================================================
+
+        function generateTerrain(seed) {
+            const size = CONFIG.ISLAND_SIZE;
+            const terrain = Array(size).fill(null).map(() => Array(size).fill(0));
+            const noise = new NoiseGenerator(seed);
+
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const maxDist = size * CONFIG.ISLAND_RADIUS;
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const dx = x - centerX;
+                    const dy = y - centerY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    const radialNoise = noise.octaveNoise(x * 0.02, y * 0.02, 2) * 0.2;
+                    const falloff = 1 - clamp((dist - radialNoise * 20) / maxDist, 0, 1);
+
+                    let height = noise.octaveNoise(x * 0.03, y * 0.03, CONFIG.NOISE_OCTAVES);
+                    height = (height + 1) * 0.5;
+
+                    height *= Math.pow(falloff, 1.5);
+
+                    terrain[y][x] = height;
+                }
+            }
+
+            return terrain;
+        }
+
+        function computeTerrainColors(terrain, seed) {
+            const size = CONFIG.ISLAND_SIZE;
+            const colors = Array(size).fill(null).map(() => Array(size).fill(null));
+            const rng = new SeededRandom(seed + 2000);
+
+            const palettes = {
+                deepWater: hexToRgb('#1a3a5a'),
+                shallowWater: hexToRgb('#2a5a7a'),
+                wetSand: hexToRgb('#c4a868'),
+                sand: hexToRgb('#d4b890'),
+                grass1: hexToRgb('#4a7a3a'),
+                grass2: hexToRgb('#3a6a2a'),
+                denseGrass: hexToRgb('#3a5a2a'),
+                rock: hexToRgb('#6a6a68'),
+                highRock: hexToRgb('#5a5a58'),
+                snow: hexToRgb('#d8d8d8')
+            };
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const height = terrain[y][x];
+                    let baseColor;
+
+                    if (height < 0.25) {
+                        baseColor = palettes.deepWater;
+                    } else if (height < 0.35) {
+                        const t = (height - 0.25) / 0.10;
+                        baseColor = colorLerp(palettes.deepWater, palettes.shallowWater, t);
+                    } else if (height < 0.40) {
+                        baseColor = palettes.wetSand;
+                    } else if (height < 0.45) {
+                        const t = (height - 0.40) / 0.05;
+                        baseColor = colorLerp(palettes.sand, palettes.grass1, t);
+                    } else if (height < 0.65) {
+                        const t = (height - 0.45) / 0.20;
+                        baseColor = colorLerp(palettes.grass1, palettes.grass2, t);
+                    } else if (height < 0.75) {
+                        const t = (height - 0.65) / 0.10;
+                        baseColor = colorLerp(palettes.grass2, palettes.denseGrass, t);
+                    } else if (height < 0.85) {
+                        const t = (height - 0.75) / 0.10;
+                        baseColor = colorLerp(palettes.denseGrass, palettes.rock, t);
+                    } else if (height < 0.92) {
+                        const t = (height - 0.85) / 0.07;
+                        baseColor = colorLerp(palettes.rock, palettes.highRock, t);
+                    } else {
+                        const t = (height - 0.92) / 0.08;
+                        baseColor = colorLerp(palettes.highRock, palettes.snow, t);
+                    }
+
+                    const variation = 5;
+                    const color = {
+                        r: clamp(baseColor.r + (rng.next() - 0.5) * variation * 2, 0, 255),
+                        g: clamp(baseColor.g + (rng.next() - 0.5) * variation * 2, 0, 255),
+                        b: clamp(baseColor.b + (rng.next() - 0.5) * variation * 2, 0, 255)
+                    };
+
+                    colors[y][x] = color;
+                }
+            }
+
+            return colors;
+        }
+
+        function findStartPosition(terrain) {
+            const size = CONFIG.ISLAND_SIZE;
+            const centerX = size / 2;
+            const centerY = size / 2;
+
+            let bestDist = Infinity;
+            let bestX = centerX;
+            let bestY = centerY;
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const height = terrain[y][x];
+                    if (height >= 0.40 && height <= 0.50) {
+                        const dx = x - centerX;
+                        const dy = y - centerY;
+                        const dist = dx * dx + dy * dy;
+                        if (dist < bestDist) {
+                            bestDist = dist;
+                            bestX = x;
+                            bestY = y;
+                        }
+                    }
+                }
+            }
+
+            return {x: bestX, y: bestY};
+        }
+
+        // ============================================================
+        // FLORA SYSTEM
+        // ============================================================
+
+        function generateFlora(seed) {
+            const rng = new SeededRandom(seed + 7000);
+            const noise = new NoiseGenerator(seed + 7500);
+
+            state.flora.season = getCurrentSeason();
+            state.flora.trees = [];
+            state.flora.grass = [];
+            state.flora.flowers = [];
+            state.flora.mushrooms = [];
+
+            let treeCount = 0;
+            const maxTrees = 180;
+
+            for (let attempt = 0; attempt < maxTrees * 3 && treeCount < maxTrees; attempt++) {
+                const x = rng.next() * CONFIG.ISLAND_SIZE;
+                const y = rng.next() * CONFIG.ISLAND_SIZE;
+                const tileX = Math.floor(x);
+                const tileY = Math.floor(y);
+
+                if (tileX < 0 || tileX >= CONFIG.ISLAND_SIZE || tileY < 0 || tileY >= CONFIG.ISLAND_SIZE) continue;
+
+                const height = state.terrain[tileY][tileX];
+
+                if (height >= 0.40 && height <= 0.85) {
+                    const densityNoise = noise.octaveNoise(x * 0.1, y * 0.1, 2);
+                    if (densityNoise > -0.2) {
+                        let type = 'palm';
+                        let treeHeight = 8 + rng.next() * 4;
+
+                        if (height >= 0.50 && height < 0.70) {
+                            type = 'deciduous';
+                            treeHeight = 10 + rng.next() * 6;
+                        } else if (height >= 0.70) {
+                            type = 'pine';
+                            treeHeight = 12 + rng.next() * 6;
+                        }
+
+                        state.flora.trees.push({
+                            x, y, type,
+                            height: treeHeight,
+                            swayOffset: rng.next() * Math.PI * 2,
+                            trunkThickness: 1 + rng.next()
+                        });
+                        treeCount++;
+                    }
+                }
+            }
+
+            let grassCount = 0;
+            const maxGrass = 350;
+
+            for (let attempt = 0; attempt < maxGrass * 2 && grassCount < maxGrass; attempt++) {
+                const x = rng.next() * CONFIG.ISLAND_SIZE;
+                const y = rng.next() * CONFIG.ISLAND_SIZE;
+                const tileX = Math.floor(x);
+                const tileY = Math.floor(y);
+
+                if (tileX < 0 || tileX >= CONFIG.ISLAND_SIZE || tileY < 0 || tileY >= CONFIG.ISLAND_SIZE) continue;
+
+                const height = state.terrain[tileY][tileX];
+
+                if (height >= 0.45 && height <= 0.70) {
+                    state.flora.grass.push({
+                        x, y,
+                        swayOffset: rng.next() * Math.PI * 2,
+                        size: 1 + rng.next() * 1.5
+                    });
+                    grassCount++;
+                }
+            }
+
+            let flowerCount = 0;
+            const maxFlowers = 70;
+
+            for (let attempt = 0; attempt < maxFlowers * 2 && flowerCount < maxFlowers; attempt++) {
+                const x = rng.next() * CONFIG.ISLAND_SIZE;
+                const y = rng.next() * CONFIG.ISLAND_SIZE;
+                const tileX = Math.floor(x);
+                const tileY = Math.floor(y);
+
+                if (tileX < 0 || tileX >= CONFIG.ISLAND_SIZE || tileY < 0 || tileY >= CONFIG.ISLAND_SIZE) continue;
+
+                const height = state.terrain[tileY][tileX];
+
+                if (height >= 0.50 && height <= 0.65) {
+                    const colors = ['#ffffff', '#ffeb3b', '#ff69b4', '#9c27b0', '#2196f3'];
+                    const color = colors[Math.floor(rng.next() * colors.length)];
+
+                    state.flora.flowers.push({
+                        x, y,
+                        color: hexToRgb(color),
+                        petalCount: 4 + Math.floor(rng.next() * 2),
+                        size: 1.5 + rng.next() * 0.5,
+                        openness: 1
+                    });
+                    flowerCount++;
+                }
+            }
+        }
+
+        function updateFlora() {
+            const timeValue = state.time.hour + state.time.minute / 60;
+            const isDay = timeValue >= 6 && timeValue < 20;
+
+            for (const flower of state.flora.flowers) {
+                const targetOpen = isDay ? 1 : 0.2;
+                flower.openness += (targetOpen - flower.openness) * 0.02;
+            }
+
+            if ((state.weather.current === 'rain' || state.weather.current === 'storm') &&
+                state.flora.mushrooms.length < 30) {
+                state.weather.recentRainTime = Date.now();
+
+                if (Math.random() < 0.05) {
+                    if (state.flora.trees.length > 0) {
+                        const tree = state.flora.trees[Math.floor(Math.random() * state.flora.trees.length)];
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = 2 + Math.random() * 3;
+
+                        const types = ['brown', 'red', 'white'];
+                        state.flora.mushrooms.push({
+                            x: tree.x + Math.cos(angle) * dist,
+                            y: tree.y + Math.sin(angle) * dist,
+                            type: types[Math.floor(Math.random() * types.length)],
+                            opacity: 0,
+                            spawnTime: Date.now(),
+                            size: 0.8 + Math.random() * 0.4
+                        });
+                    }
+                }
+            }
+
+            for (let i = state.flora.mushrooms.length - 1; i >= 0; i--) {
+                const mushroom = state.flora.mushrooms[i];
+                const age = Date.now() - mushroom.spawnTime;
+
+                if (age < 5000) {
+                    mushroom.opacity = age / 5000;
+                } else {
+                    const timeSinceRain = Date.now() - state.weather.recentRainTime;
+                    if (timeSinceRain > 240000) {
+                        mushroom.opacity -= 0.005;
+                        if (mushroom.opacity <= 0) {
+                            state.flora.mushrooms.splice(i, 1);
+                        }
+                    } else {
+                        mushroom.opacity = Math.min(1, mushroom.opacity);
+                    }
+                }
+            }
+        }
+
+        function getSeasonalTreeColor(type) {
+            const season = state.flora.season;
+
+            if (type === 'palm') {
+                return hexToRgb('#2a5a2a');
+            }
+
+            if (type === 'deciduous') {
+                switch (season) {
+                    case 'spring': return hexToRgb('#5a9a4a');
+                    case 'summer': return hexToRgb('#3a7a3a');
+                    case 'autumn': return hexToRgb('#d4a459');
+                    case 'winter': return null;
+                }
+            }
+
+            if (type === 'pine') {
+                return hexToRgb('#2a4a2a');
+            }
+
+            return hexToRgb('#3a6a3a');
+        }
+
+        function isFlowerVisible() {
+            const season = state.flora.season;
+            return season === 'spring' || season === 'summer' || season === 'autumn';
+        }
+
+        // ============================================================
+        // FAUNA SYSTEM
+        // ============================================================
+
+        function generateFauna(seed) {
+            const rng = new SeededRandom(seed + 9000);
+
+            // Butterflies (8-12)
+            const butterflyCount = 8 + Math.floor(rng.next() * 5);
+            for (let i = 0; i < butterflyCount; i++) {
+                let x, y;
+                for (let attempt = 0; attempt < 50; attempt++) {
+                    x = rng.next() * CONFIG.ISLAND_SIZE;
+                    y = rng.next() * CONFIG.ISLAND_SIZE;
+                    const tileX = Math.floor(x);
+                    const tileY = Math.floor(y);
+                    const height = state.terrain[tileY][tileX];
+                    if (height >= 0.50 && height <= 0.70) break;
+                }
+
+                const colors = ['orange', 'yellow', 'white', 'blue'];
+                state.fauna.butterflies.push({
+                    x, y,
+                    vx: 0,
+                    vy: 0,
+                    color: colors[Math.floor(rng.next() * colors.length)],
+                    phase: rng.next() * Math.PI * 2,
+                    targetFlower: null,
+                    wanderTimer: 0,
+                    state: 'idle'
+                });
+            }
+
+            // Seabirds (5-8)
+            const seabirdCount = 5 + Math.floor(rng.next() * 4);
+            for (let i = 0; i < seabirdCount; i++) {
+                const angle = rng.next() * Math.PI * 2;
+                const radius = CONFIG.ISLAND_SIZE * 0.35;
+                const x = CONFIG.ISLAND_SIZE / 2 + Math.cos(angle) * radius;
+                const y = CONFIG.ISLAND_SIZE / 2 + Math.sin(angle) * radius;
+
+                state.fauna.seabirds.push({
+                    x, y,
+                    angle: angle,
+                    radius: radius + rng.next() * 10,
+                    speed: 0.01 + rng.next() * 0.005,
+                    heightPhase: rng.next() * Math.PI * 2,
+                    swoopTimer: 0
+                });
+            }
+
+            // Rabbits (4-6)
+            const rabbitCount = 4 + Math.floor(rng.next() * 3);
+            for (let i = 0; i < rabbitCount; i++) {
+                let x, y;
+                for (let attempt = 0; attempt < 50; attempt++) {
+                    x = rng.next() * CONFIG.ISLAND_SIZE;
+                    y = rng.next() * CONFIG.ISLAND_SIZE;
+                    const tileX = Math.floor(x);
+                    const tileY = Math.floor(y);
+                    const height = state.terrain[tileY][tileX];
+                    if (height >= 0.50 && height <= 0.70) break;
+                }
+
+                state.fauna.rabbits.push({
+                    x, y,
+                    vx: 0,
+                    vy: 0,
+                    state: 'idle',
+                    stateTimer: 0,
+                    hopTimer: 0,
+                    color: rng.next() > 0.5 ? 'brown' : 'gray'
+                });
+            }
+
+            // Fish (6-10)
+            const fishCount = 6 + Math.floor(rng.next() * 5);
+            const schoolCenterX = rng.next() * CONFIG.ISLAND_SIZE;
+            const schoolCenterY = rng.next() * CONFIG.ISLAND_SIZE;
+
+            for (let i = 0; i < fishCount; i++) {
+                const offsetX = (rng.next() - 0.5) * 10;
+                const offsetY = (rng.next() - 0.5) * 10;
+
+                state.fauna.fish.push({
+                    x: schoolCenterX + offsetX,
+                    y: schoolCenterY + offsetY,
+                    vx: 0,
+                    vy: 0,
+                    schoolCenterX: schoolCenterX,
+                    schoolCenterY: schoolCenterY,
+                    offset: rng.next() * Math.PI * 2,
+                    breakTimer: 0
+                });
+            }
+
+            // Fireflies (15-25)
+            const fireflyCount = 15 + Math.floor(rng.next() * 11);
+            for (let i = 0; i < fireflyCount; i++) {
+                let x, y;
+                for (let attempt = 0; attempt < 50; attempt++) {
+                    x = rng.next() * CONFIG.ISLAND_SIZE;
+                    y = rng.next() * CONFIG.ISLAND_SIZE;
+                    const tileX = Math.floor(x);
+                    const tileY = Math.floor(y);
+                    const height = state.terrain[tileY][tileX];
+                    if (height >= 0.45 && height <= 0.70) break;
+                }
+
+                state.fauna.fireflies.push({
+                    x, y,
+                    vx: 0,
+                    vy: 0,
+                    blinkPhase: rng.next() * Math.PI * 2,
+                    blinkPeriod: 2 + rng.next() * 2,
+                    brightness: 0
+                });
+            }
+
+            // Crabs (3-5)
+            const crabCount = 3 + Math.floor(rng.next() * 3);
+            for (let i = 0; i < crabCount; i++) {
+                let x, y;
+                for (let attempt = 0; attempt < 50; attempt++) {
+                    x = rng.next() * CONFIG.ISLAND_SIZE;
+                    y = rng.next() * CONFIG.ISLAND_SIZE;
+                    const tileX = Math.floor(x);
+                    const tileY = Math.floor(y);
+                    const height = state.terrain[tileY][tileX];
+                    if (height >= 0.40 && height <= 0.48) break;
+                }
+
+                state.fauna.crabs.push({
+                    x, y,
+                    vx: 0,
+                    vy: 0,
+                    state: 'idle',
+                    patrolTimer: 0,
+                    digTimer: 0,
+                    homeX: x,
+                    homeY: y
+                });
+            }
+        }
+
+        function updateFauna() {
+            const timeValue = state.time.hour + state.time.minute / 60;
+            const isDay = timeValue >= 6 && timeValue < 20;
+            const isNight = !isDay;
+
+            // Update butterflies (only during day, not winter)
+            if (isDay && state.flora.season !== 'winter') {
+                for (const butterfly of state.fauna.butterflies) {
+                    const dx = butterfly.x - state.player.x;
+                    const dy = butterfly.y - state.player.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 5) {
+                        // Scatter
+                        butterfly.state = 'fleeing';
+                        butterfly.vx = (dx / dist) * 0.3;
+                        butterfly.vy = (dy / dist) * 0.3;
+                    } else {
+                        // Flutter toward flowers
+                        if (!butterfly.targetFlower || Math.random() < 0.01) {
+                            if (state.flora.flowers.length > 0) {
+                                butterfly.targetFlower = state.flora.flowers[Math.floor(Math.random() * state.flora.flowers.length)];
+                            }
+                        }
+
+                        if (butterfly.targetFlower) {
+                            const fdx = butterfly.targetFlower.x - butterfly.x;
+                            const fdy = butterfly.targetFlower.y - butterfly.y;
+                            const fdist = Math.sqrt(fdx * fdx + fdy * fdy);
+
+                            if (fdist < 1) {
+                                butterfly.targetFlower = null;
+                            } else {
+                                butterfly.vx += (fdx / fdist) * 0.02;
+                                butterfly.vy += (fdy / fdist) * 0.02;
+                            }
+                        }
+
+                        // Add erratic movement
+                        butterfly.vx += (Math.random() - 0.5) * 0.1;
+                        butterfly.vy += (Math.random() - 0.5) * 0.1;
+                    }
+
+                    // Apply velocity with damping
+                    butterfly.vx *= 0.9;
+                    butterfly.vy *= 0.9;
+                    butterfly.x += butterfly.vx;
+                    butterfly.y += butterfly.vy;
+                    butterfly.phase += 0.3;
+
+                    // Keep in bounds
+                    butterfly.x = clamp(butterfly.x, 0, CONFIG.ISLAND_SIZE - 1);
+                    butterfly.y = clamp(butterfly.y, 0, CONFIG.ISLAND_SIZE - 1);
+                }
+            }
+
+            // Update seabirds
+            for (const bird of state.fauna.seabirds) {
+                bird.angle += bird.speed;
+                bird.x = CONFIG.ISLAND_SIZE / 2 + Math.cos(bird.angle) * bird.radius;
+                bird.y = CONFIG.ISLAND_SIZE / 2 + Math.sin(bird.angle) * bird.radius;
+                bird.heightPhase += 0.01;
+
+                // Occasional swoop
+                if (bird.swoopTimer > 0) {
+                    bird.swoopTimer--;
+                } else if (Math.random() < 0.001) {
+                    bird.swoopTimer = 120;
+                }
+            }
+
+            // Update rabbits
+            for (const rabbit of state.fauna.rabbits) {
+                const dx = rabbit.x - state.player.x;
+                const dy = rabbit.y - state.player.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 8) {
+                    // Flee
+                    rabbit.state = 'fleeing';
+                    rabbit.vx = (dx / dist) * 0.5;
+                    rabbit.vy = (dy / dist) * 0.5;
+                    rabbit.stateTimer = 60;
+                } else {
+                    rabbit.stateTimer--;
+                    if (rabbit.stateTimer <= 0) {
+                        if (rabbit.state === 'idle' || rabbit.state === 'eating') {
+                            if (Math.random() < 0.3) {
+                                rabbit.state = 'hopping';
+                                const angle = Math.random() * Math.PI * 2;
+                                rabbit.vx = Math.cos(angle) * 0.2;
+                                rabbit.vy = Math.sin(angle) * 0.2;
+                                rabbit.stateTimer = 30;
+                            } else {
+                                rabbit.state = rabbit.state === 'idle' ? 'eating' : 'idle';
+                                rabbit.stateTimer = 60 + Math.random() * 60;
+                            }
+                        } else {
+                            rabbit.state = 'idle';
+                            rabbit.vx = 0;
+                            rabbit.vy = 0;
+                            rabbit.stateTimer = 60 + Math.random() * 120;
+                        }
+                    }
+                }
+
+                rabbit.x += rabbit.vx;
+                rabbit.y += rabbit.vy;
+                rabbit.vx *= 0.95;
+                rabbit.vy *= 0.95;
+
+                // Keep on grass
+                const tileX = Math.floor(rabbit.x);
+                const tileY = Math.floor(rabbit.y);
+                if (tileX >= 0 && tileX < CONFIG.ISLAND_SIZE && tileY >= 0 && tileY < CONFIG.ISLAND_SIZE) {
+                    const height = state.terrain[tileY][tileX];
+                    if (height < 0.50 || height > 0.70) {
+                        rabbit.vx *= -1;
+                        rabbit.vy *= -1;
+                    }
+                }
+
+                rabbit.x = clamp(rabbit.x, 0, CONFIG.ISLAND_SIZE - 1);
+                rabbit.y = clamp(rabbit.y, 0, CONFIG.ISLAND_SIZE - 1);
+            }
+
+            // Update fish
+            for (const fish of state.fauna.fish) {
+                // Move school center occasionally
+                if (Math.random() < 0.001) {
+                    const angle = Math.random() * Math.PI * 2;
+                    fish.schoolCenterX += Math.cos(angle) * 5;
+                    fish.schoolCenterY += Math.sin(angle) * 5;
+                }
+
+                // Follow school
+                const dx = fish.schoolCenterX - fish.x;
+                const dy = fish.schoolCenterY - fish.y;
+                fish.vx += dx * 0.01;
+                fish.vy += dy * 0.01;
+
+                // Add offset
+                fish.offset += 0.05;
+                fish.vx += Math.cos(fish.offset) * 0.02;
+                fish.vy += Math.sin(fish.offset) * 0.02;
+
+                fish.vx *= 0.95;
+                fish.vy *= 0.95;
+                fish.x += fish.vx;
+                fish.y += fish.vy;
+
+                // Keep in shallow water
+                const tileX = Math.floor(fish.x);
+                const tileY = Math.floor(fish.y);
+                if (tileX >= 0 && tileX < CONFIG.ISLAND_SIZE && tileY >= 0 && tileY < CONFIG.ISLAND_SIZE) {
+                    const height = state.terrain[tileY][tileX];
+                    if (height < 0.25 || height > 0.40) {
+                        fish.vx *= -1;
+                        fish.vy *= -1;
+                    }
+                }
+
+                fish.x = clamp(fish.x, 0, CONFIG.ISLAND_SIZE - 1);
+                fish.y = clamp(fish.y, 0, CONFIG.ISLAND_SIZE - 1);
+            }
+
+            // Update fireflies (only at night)
+            if (isNight) {
+                for (const firefly of state.fauna.fireflies) {
+                    // Drift toward player if still
+                    const isPlayerMoving = state.input.up || state.input.down || state.input.left || state.input.right;
+
+                    if (isPlayerMoving) {
+                        // Scatter
+                        const dx = firefly.x - state.player.x;
+                        const dy = firefly.y - state.player.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 10) {
+                            firefly.vx += (dx / dist) * 0.05;
+                            firefly.vy += (dy / dist) * 0.05;
+                        }
+                    } else {
+                        // Drift toward player
+                        const dx = state.player.x - firefly.x;
+                        const dy = state.player.y - firefly.y;
+                        firefly.vx += dx * 0.001;
+                        firefly.vy += dy * 0.001;
+                    }
+
+                    // Random float
+                    firefly.vx += (Math.random() - 0.5) * 0.05;
+                    firefly.vy += (Math.random() - 0.5) * 0.05;
+
+                    firefly.vx *= 0.95;
+                    firefly.vy *= 0.95;
+                    firefly.x += firefly.vx;
+                    firefly.y += firefly.vy;
+
+                    // Blink cycle
+                    firefly.blinkPhase += (Math.PI * 2) / (firefly.blinkPeriod * 60);
+                    const blinkValue = (Math.sin(firefly.blinkPhase) + 1) / 2;
+                    firefly.brightness = blinkValue > 0.7 ? blinkValue : 0;
+
+                    firefly.x = clamp(firefly.x, 0, CONFIG.ISLAND_SIZE - 1);
+                    firefly.y = clamp(firefly.y, 0, CONFIG.ISLAND_SIZE - 1);
+                }
+            }
+
+            // Update crabs
+            for (const crab of state.fauna.crabs) {
+                const dx = crab.x - state.player.x;
+                const dy = crab.y - state.player.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 6) {
+                    // Scuttle away
+                    crab.state = 'fleeing';
+                    crab.vx = (dx / dist) * 0.4;
+                    crab.vy = (dy / dist) * 0.1;
+                    crab.patrolTimer = 60;
+                } else {
+                    crab.patrolTimer--;
+                    if (crab.patrolTimer <= 0) {
+                        if (crab.state === 'idle') {
+                            // Patrol near home
+                            const angle = Math.random() * Math.PI * 2;
+                            crab.vx = Math.cos(angle) * 0.2;
+                            crab.vy = Math.sin(angle) * 0.05;
+                            crab.state = 'moving';
+                            crab.patrolTimer = 40;
+                        } else {
+                            crab.state = 'idle';
+                            crab.vx = 0;
+                            crab.vy = 0;
+                            crab.patrolTimer = 80;
+
+                            // Occasionally dig
+                            if (Math.random() < 0.2) {
+                                crab.digTimer = 30;
+                            }
+                        }
+                    }
+                }
+
+                if (crab.digTimer > 0) {
+                    crab.digTimer--;
+                }
+
+                crab.x += crab.vx;
+                crab.y += crab.vy;
+                crab.vx *= 0.9;
+                crab.vy *= 0.9;
+
+                // Keep on beach
+                const tileX = Math.floor(crab.x);
+                const tileY = Math.floor(crab.y);
+                if (tileX >= 0 && tileX < CONFIG.ISLAND_SIZE && tileY >= 0 && tileY < CONFIG.ISLAND_SIZE) {
+                    const height = state.terrain[tileY][tileX];
+                    if (height < 0.40 || height > 0.48) {
+                        crab.vx *= -1;
+                        crab.vy *= -1;
+                    }
+                }
+
+                crab.x = clamp(crab.x, 0, CONFIG.ISLAND_SIZE - 1);
+                crab.y = clamp(crab.y, 0, CONFIG.ISLAND_SIZE - 1);
+            }
+        }
+
+        // ============================================================
+        // MEMORY SYSTEM
+        // ============================================================
+
+        function updateMemory() {
+            // Track visited tiles
+            const tileX = Math.floor(state.player.x);
+            const tileY = Math.floor(state.player.y);
+            const tileKey = `${tileX},${tileY}`;
+
+            if (!state.memory.visitedTiles.has(tileKey)) {
+                state.memory.visitedTiles.add(tileKey);
+            }
+
+            // Track visit counts for nature's memory
+            if (!state.memory.tileVisitCounts[tileKey]) {
+                state.memory.tileVisitCounts[tileKey] = 0;
+            }
+            state.memory.tileVisitCounts[tileKey]++;
+
+            // Track distance
+            if (state.input.up || state.input.down || state.input.left || state.input.right) {
+                state.memory.sessionDistance += state.player.speed;
+            }
+
+            // Track weather
+            state.memory.weathersSeen.add(state.weather.current);
+
+            // Add footprints (every 8-10 steps on walkable terrain)
+            const isMoving = state.input.up || state.input.down || state.input.left || state.input.right;
+            if (isMoving) {
+                const dx = state.player.x - state.memory.lastFootprintPos.x;
+                const dy = state.player.y - state.memory.lastFootprintPos.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist >= 9) {
+                    const height = state.terrain[tileY][tileX];
+                    // Only on sand/grass, not rock or water
+                    if (height >= 0.40 && height < 0.75) {
+                        state.memory.footprints.push({
+                            x: state.player.x,
+                            y: state.player.y,
+                            age: 0,
+                            opacity: 1.0,
+                            createdAt: Date.now()
+                        });
+
+                        state.memory.lastFootprintPos.x = state.player.x;
+                        state.memory.lastFootprintPos.y = state.player.y;
+
+                        // Limit footprints
+                        if (state.memory.footprints.length > 200) {
+                            state.memory.footprints.shift();
+                        }
+                    }
+                }
+            }
+
+            // Age footprints
+            for (let i = state.memory.footprints.length - 1; i >= 0; i--) {
+                const print = state.memory.footprints[i];
+                print.age++;
+
+                // Fade over time
+                print.opacity = Math.max(0, 1.0 - (print.age / 3000));
+
+                // Check if washed away by tide
+                const fx = Math.floor(print.x);
+                const fy = Math.floor(print.y);
+                if (fx >= 0 && fx < CONFIG.ISLAND_SIZE && fy >= 0 && fy < CONFIG.ISLAND_SIZE) {
+                    const height = state.terrain[fy][fx];
+                    if (height < state.tide) {
+                        state.memory.footprints.splice(i, 1);
+                    }
+                } else if (print.opacity <= 0) {
+                    state.memory.footprints.splice(i, 1);
+                }
+            }
+
+            // Record ghost path (sample every 30 frames)
+            state.memory.pathSampleCounter++;
+            if (state.memory.pathSampleCounter >= 30) {
+                state.memory.currentPath.push({
+                    x: state.player.x,
+                    y: state.player.y
+                });
+                state.memory.pathSampleCounter = 0;
+
+                // Limit ghost path
+                if (state.memory.currentPath.length > 200) {
+                    state.memory.currentPath.shift();
+                }
+            }
+        }
+
+        function placeCairn() {
+            if (state.memory.cairns.length >= 10) {
+                state.memory.cairns.shift();
+            }
+
+            const now = new Date();
+            state.memory.cairns.push({
+                x: state.player.x,
+                y: state.player.y,
+                placedDate: now.toLocaleDateString(),
+                timePeriod: state.time.period
+            });
+        }
+
+        function renderMemory(startX, endX, startY, endY, lighting) {
+            // Render footprints
+            for (const print of state.memory.footprints) {
+                if (print.x >= startX && print.x <= endX && print.y >= startY && print.y <= endY) {
+                    const screenPos = worldToScreen(print.x, print.y, canvas);
+                    ctx.fillStyle = `rgba(60, 50, 40, ${print.opacity * 0.4})`;
+                    ctx.beginPath();
+                    ctx.arc(screenPos.x, screenPos.y, 2 * state.camera.zoom, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Render cairns
+            for (const cairn of state.memory.cairns) {
+                if (cairn.x >= startX && cairn.x <= endX && cairn.y >= startY && cairn.y <= endY) {
+                    const screenPos = worldToScreen(cairn.x, cairn.y, canvas);
+                    const baseSize = 4 * state.camera.zoom;
+
+                    // Stacked stones
+                    for (let i = 0; i < 4; i++) {
+                        const size = (baseSize * (1 - i * 0.2));
+                        const yOffset = -i * size * 0.8;
+                        ctx.fillStyle = `rgba(${Math.floor(106 * lighting.r * lighting.ambient)},${Math.floor(106 * lighting.g * lighting.ambient)},${Math.floor(104 * lighting.b * lighting.ambient)},0.9)`;
+                        ctx.beginPath();
+                        ctx.arc(screenPos.x, screenPos.y + yOffset, size / 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // Show info if player is near
+                    const dx = cairn.x - state.player.x;
+                    const dy = cairn.y - state.player.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 2) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                        ctx.font = '11px Georgia';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(`Placed ${cairn.placedDate}`, screenPos.x, screenPos.y - 20);
+                        ctx.fillText(cairn.timePeriod, screenPos.x, screenPos.y - 10);
+                        ctx.textAlign = 'left';
+                    }
+                }
+            }
+
+            // Render ghost
+            if (state.memory.ghostPath && state.memory.ghostPath.length > 1) {
+                ctx.strokeStyle = 'rgba(100, 150, 200, 0.2)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+
+                for (let i = 0; i < state.memory.ghostPath.length; i++) {
+                    const point = state.memory.ghostPath[i];
+                    const screenPos = worldToScreen(point.x, point.y, canvas);
+
+                    if (i === 0) {
+                        ctx.moveTo(screenPos.x, screenPos.y);
+                    } else {
+                        ctx.lineTo(screenPos.x, screenPos.y);
+                    }
+                }
+                ctx.stroke();
+
+                // Ghost player position (moves along path)
+                const ghostProgress = (Date.now() % 60000) / 60000;
+                const ghostIndex = Math.floor(ghostProgress * state.memory.ghostPath.length);
+                if (ghostIndex < state.memory.ghostPath.length) {
+                    const ghostPos = state.memory.ghostPath[ghostIndex];
+                    const screenPos = worldToScreen(ghostPos.x, ghostPos.y, canvas);
+                    const size = 6 * state.camera.zoom;
+
+                    ctx.fillStyle = 'rgba(100, 150, 200, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(screenPos.x, screenPos.y, size / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function renderMinimap() {
+            if (!state.ui.showMinimap) return;
+
+            const mapSize = 120;
+            const mapX = canvas.width - mapSize - 20;
+            const mapY = canvas.height - mapSize - 20;
+
+            // Background
+            ctx.fillStyle = 'rgba(20, 30, 40, 0.8)';
+            ctx.fillRect(mapX, mapY, mapSize, mapSize);
+
+            // Draw terrain
+            const tileScale = mapSize / CONFIG.ISLAND_SIZE;
+            for (let y = 0; y < CONFIG.ISLAND_SIZE; y += 2) {
+                for (let x = 0; x < CONFIG.ISLAND_SIZE; x += 2) {
+                    const height = state.terrain[y][x];
+                    let color;
+                    if (height < 0.35) {
+                        color = '#1a3a5a';
+                    } else if (height < 0.75) {
+                        color = '#4a7a3a';
+                    } else {
+                        color = '#6a6a68';
+                    }
+
+                    // Apply visited tint
+                    const tileKey = `${x},${y}`;
+                    if (state.memory.visitedTiles.has(tileKey)) {
+                        ctx.fillStyle = 'rgba(255, 150, 100, 0.3)';
+                    } else {
+                        ctx.fillStyle = color;
+                    }
+
+                    ctx.fillRect(
+                        mapX + x * tileScale,
+                        mapY + y * tileScale,
+                        Math.ceil(tileScale * 2),
+                        Math.ceil(tileScale * 2)
+                    );
+                }
+            }
+
+            // Draw cairns
+            for (const cairn of state.memory.cairns) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.fillRect(
+                    mapX + cairn.x * tileScale - 1,
+                    mapY + cairn.y * tileScale - 1,
+                    2, 2
+                );
+            }
+
+            // Draw player
+            ctx.fillStyle = 'rgba(255, 255, 100, 1)';
+            ctx.beginPath();
+            ctx.arc(
+                mapX + state.player.x * tileScale,
+                mapY + state.player.y * tileScale,
+                2, 0, Math.PI * 2
+            );
+            ctx.fill();
+        }
+
+        function renderJournal() {
+            const journalEl = document.getElementById('journal');
+            if (!state.ui.showJournal) {
+                journalEl.style.display = 'none';
+                return;
+            }
+
+            journalEl.style.display = 'block';
+
+            let html = '<h2>Visit Journal</h2>';
+
+            if (state.memory.journal.length === 0) {
+                html += '<p>No visits recorded yet.</p>';
+            } else {
+                for (let i = state.memory.journal.length - 1; i >= Math.max(0, state.memory.journal.length - 10); i--) {
+                    const entry = state.memory.journal[i];
+                    html += `<div class="entry">`;
+                    html += `<strong>${entry.date}</strong><br>`;
+                    html += `Duration: ${Math.floor(entry.duration / 60000)}m ${Math.floor((entry.duration % 60000) / 1000)}s<br>`;
+                    html += `Distance: ${Math.floor(entry.distance)} tiles<br>`;
+                    html += `Weather: ${entry.weather.join(', ')}`;
+                    html += `</div>`;
+                }
+            }
+
+            journalEl.innerHTML = html;
+        }
+
+        // ============================================================
+        // TIME SYSTEM
+        // ============================================================
+
+        function updateTime() {
+            const now = new Date();
+            state.time.current = now.getTime();
+            state.time.hour = now.getHours();
+            state.time.minute = now.getMinutes();
+
+            const hour = state.time.hour;
+            if (hour >= 22 || hour < 5) {
+                state.time.period = 'night';
+            } else if (hour >= 5 && hour < 7) {
+                state.time.period = 'dawn';
+            } else if (hour >= 7 && hour < 11) {
+                state.time.period = 'morning';
+            } else if (hour >= 11 && hour < 14) {
+                state.time.period = 'midday';
+            } else if (hour >= 14 && hour < 17) {
+                state.time.period = 'afternoon';
+            } else if (hour >= 17 && hour < 19) {
+                state.time.period = 'sunset';
+            } else {
+                state.time.period = 'dusk';
+            }
+        }
+
+        function updateTide() {
+            const cyclePosition = (Date.now() % CONFIG.TIDE_CYCLE_MS) / CONFIG.TIDE_CYCLE_MS;
+            const tideWave = Math.sin(cyclePosition * Math.PI * 2);
+            state.tide = lerp(CONFIG.TIDE_MIN, CONFIG.TIDE_MAX, (tideWave + 1) * 0.5);
+        }
+
+        function getLightingMultiplier() {
+            const hour = state.time.hour;
+            const minute = state.time.minute;
+            const timeValue = hour + minute / 60;
+
+            switch (state.time.period) {
+                case 'night':
+                    return {r: 0.3, g: 0.35, b: 0.5, ambient: 0.25};
+                case 'dawn':
+                    const dawnT = (timeValue - 5) / 2;
+                    return {
+                        r: lerp(0.3, 1.0, dawnT),
+                        g: lerp(0.35, 0.85, dawnT),
+                        b: lerp(0.5, 0.75, dawnT),
+                        ambient: lerp(0.25, 0.9, dawnT)
+                    };
+                case 'morning':
+                    return {r: 1.0, g: 0.95, b: 0.85, ambient: 1.0};
+                case 'midday':
+                    return {r: 1.05, g: 1.05, b: 1.0, ambient: 1.0};
+                case 'afternoon':
+                    return {r: 1.1, g: 0.95, b: 0.75, ambient: 0.95};
+                case 'sunset':
+                    const sunsetT = (timeValue - 17) / 2;
+                    return {
+                        r: lerp(1.1, 0.8, sunsetT),
+                        g: lerp(0.95, 0.5, sunsetT),
+                        b: lerp(0.75, 0.45, sunsetT),
+                        ambient: lerp(0.95, 0.4, sunsetT)
+                    };
+                case 'dusk':
+                    const duskT = (timeValue - 19) / 3;
+                    return {
+                        r: lerp(0.8, 0.3, duskT),
+                        g: lerp(0.5, 0.35, duskT),
+                        b: lerp(0.45, 0.5, duskT),
+                        ambient: lerp(0.4, 0.25, duskT)
+                    };
+                default:
+                    return {r: 1.0, g: 1.0, b: 1.0, ambient: 1.0};
+            }
+        }
+
+        function generateStars(seed) {
+            const rng = new SeededRandom(seed + 3000);
+            const stars = [];
+
+            for (let i = 0; i < CONFIG.STAR_COUNT; i++) {
+                stars.push({
+                    x: rng.next(),
+                    y: rng.next(),
+                    brightness: 0.3 + rng.next() * 0.7,
+                    size: 1 + Math.floor(rng.next() * 2)
+                });
+            }
+
+            return stars;
+        }
+
+        // ============================================================
+        // WEATHER SYSTEM
+        // ============================================================
+
+        const WEATHER_STATES = ['clear', 'cloudy', 'rain', 'storm', 'clearing'];
+
+        const WEATHER_CONFIG = {
+            clear: {
+                cloudCover: [0, 0.1],
+                fog: [0, 0],
+                windSpeed: [0.1, 0.3],
+                rainRate: 0,
+                duration: [120000, 180000]
+            },
+            cloudy: {
+                cloudCover: [0.3, 0.6],
+                fog: [0.05, 0.15],
+                windSpeed: [0.3, 0.5],
+                rainRate: 0,
+                duration: [120000, 240000]
+            },
+            rain: {
+                cloudCover: [0.5, 0.8],
+                fog: [0.2, 0.4],
+                windSpeed: [0.4, 0.6],
+                rainRate: 3,
+                duration: [120000, 180000]
+            },
+            storm: {
+                cloudCover: [0.8, 1.0],
+                fog: [0.3, 0.5],
+                windSpeed: [0.6, 0.9],
+                rainRate: 8,
+                duration: [90000, 150000]
+            },
+            clearing: {
+                cloudCover: [0.4, 0.2],
+                fog: [0.2, 0.05],
+                windSpeed: [0.4, 0.2],
+                rainRate: 1,
+                duration: [60000, 90000]
+            }
+        };
+
+        function initWeather() {
+            const rng = new SeededRandom(state.islandSeed + 5000);
+            const stateIndex = Math.floor(rng.next() * WEATHER_STATES.length);
+            state.weather.current = WEATHER_STATES[stateIndex];
+            state.weather.nextTransition = Date.now() + 120000;
+            state.weather.windDir = rng.next() * Math.PI * 2;
+
+            for (let i = 0; i < CONFIG.MAX_CLOUDS; i++) {
+                state.weather.clouds.push({
+                    x: Math.random() * CONFIG.ISLAND_SIZE,
+                    y: Math.random() * CONFIG.ISLAND_SIZE,
+                    width: 15 + Math.random() * 25,
+                    height: 10 + Math.random() * 15,
+                    opacity: 0.3 + Math.random() * 0.3,
+                    speed: 0.02 + Math.random() * 0.03
+                });
+            }
+        }
+
+        function updateWeather() {
+            const now = Date.now();
+
+            if (now >= state.weather.nextTransition) {
+                transitionWeather();
+            }
+
+            const config = WEATHER_CONFIG[state.weather.current];
+
+            const targetCloudCover = state.weather.current === 'clearing' ?
+                config.cloudCover[1] : lerp(config.cloudCover[0], config.cloudCover[1], state.weather.intensity);
+            const targetFog = state.weather.current === 'clearing' ?
+                config.fog[1] : lerp(config.fog[0], config.fog[1], state.weather.intensity);
+            const targetWindSpeed = state.weather.current === 'clearing' ?
+                config.windSpeed[1] : lerp(config.windSpeed[0], config.windSpeed[1], state.weather.intensity);
+
+            state.weather.cloudCover += (targetCloudCover - state.weather.cloudCover) * 0.02;
+            state.weather.fog += (targetFog - state.weather.fog) * 0.02;
+            state.weather.windSpeed += (targetWindSpeed - state.weather.windSpeed) * 0.02;
+
+            state.weather.intensity = Math.min(1, state.weather.intensity + 0.005);
+
+            state.weather.windDir += 0.0001;
+
+            for (const cloud of state.weather.clouds) {
+                cloud.x += Math.cos(state.weather.windDir) * cloud.speed * state.weather.windSpeed;
+                cloud.y += Math.sin(state.weather.windDir) * cloud.speed * state.weather.windSpeed;
+
+                if (cloud.x < -cloud.width) cloud.x = CONFIG.ISLAND_SIZE + cloud.width;
+                if (cloud.x > CONFIG.ISLAND_SIZE + cloud.width) cloud.x = -cloud.width;
+                if (cloud.y < -cloud.height) cloud.y = CONFIG.ISLAND_SIZE + cloud.height;
+                if (cloud.y > CONFIG.ISLAND_SIZE + cloud.height) cloud.y = -cloud.height;
+
+                cloud.opacity = 0.2 + state.weather.cloudCover * 0.4;
+            }
+
+            if (config.rainRate > 0) {
+                const spawnCount = config.rainRate * state.weather.intensity;
+                for (let i = 0; i < spawnCount && state.weather.raindrops.length < CONFIG.MAX_RAINDROPS; i++) {
+                    const offsetX = (Math.random() - 0.5) * 150;
+                    const offsetY = (Math.random() - 0.5) * 100;
+                    state.weather.raindrops.push({
+                        x: state.camera.x + offsetX,
+                        y: state.camera.y + offsetY - 80,
+                        speed: 2 + Math.random() * 1,
+                        opacity: 0.3 + Math.random() * 0.3
+                    });
+                }
+            }
+
+            for (let i = state.weather.raindrops.length - 1; i >= 0; i--) {
+                const drop = state.weather.raindrops[i];
+                drop.x += Math.cos(state.weather.windDir) * state.weather.windSpeed * 0.5;
+                drop.y += drop.speed;
+
+                const tileX = Math.floor(drop.x);
+                const tileY = Math.floor(drop.y);
+                if (tileX >= 0 && tileX < CONFIG.ISLAND_SIZE && tileY >= 0 && tileY < CONFIG.ISLAND_SIZE) {
+                    if (state.terrain[tileY][tileX] >= state.tide) {
+                        state.weather.raindrops.splice(i, 1);
+                        continue;
+                    }
+                }
+
+                if (drop.y > state.camera.y + 100) {
+                    state.weather.raindrops.splice(i, 1);
+                }
+            }
+
+            if (state.weather.current === 'storm' && state.weather.intensity > 0.5) {
+                if (!state.weather.lightning.active && Math.random() < 0.001) {
+                    triggerLightning();
+                }
+            }
+
+            if (state.weather.lightning.active) {
+                state.weather.lightning.alpha -= 0.03;
+                if (state.weather.lightning.alpha <= 0) {
+                    state.weather.lightning.active = false;
+                }
+            }
+        }
+
+        function transitionWeather() {
+            const currentIndex = WEATHER_STATES.indexOf(state.weather.current);
+            const nextIndex = (currentIndex + 1) % WEATHER_STATES.length;
+            state.weather.current = WEATHER_STATES[nextIndex];
+            state.weather.intensity = 0;
+
+            const config = WEATHER_CONFIG[state.weather.current];
+            const duration = lerp(config.duration[0], config.duration[1], Math.random());
+            state.weather.nextTransition = Date.now() + duration;
+        }
+
+        function triggerLightning() {
+            state.weather.lightning.active = true;
+            state.weather.lightning.alpha = 0.8;
+
+            const delay = 1000 + Math.random() * 2000;
+            setTimeout(() => {
+                playThunder();
+            }, delay);
+        }
+
+        // ============================================================
+        // CAMERA
+        // ============================================================
+
+        function updateCamera() {
+            state.camera.x += (state.player.x - state.camera.x) * CONFIG.CAMERA_LERP;
+            state.camera.y += (state.player.y - state.camera.y) * CONFIG.CAMERA_LERP;
+        }
+
+        function screenToWorld(screenX, screenY, canvas) {
+            const worldX = (screenX - canvas.width / 2) / (CONFIG.TILE_SIZE * state.camera.zoom) + state.camera.x;
+            const worldY = (screenY - canvas.height / 2) / (CONFIG.TILE_SIZE * state.camera.zoom) + state.camera.y;
+            return {x: worldX, y: worldY};
+        }
+
+        function worldToScreen(worldX, worldY, canvas) {
+            const screenX = (worldX - state.camera.x) * CONFIG.TILE_SIZE * state.camera.zoom + canvas.width / 2;
+            const screenY = (worldY - state.camera.y) * CONFIG.TILE_SIZE * state.camera.zoom + canvas.height / 2;
+            return {x: screenX, y: screenY};
+        }
+
+        // ============================================================
+        // PLAYER
+        // ============================================================
+
+        function updatePlayer() {
+            let dx = 0;
+            let dy = 0;
+
+            if (state.input.up) dy -= 1;
+            if (state.input.down) dy += 1;
+            if (state.input.left) dx -= 1;
+            if (state.input.right) dx += 1;
+
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.707;
+                dy *= 0.707;
+            }
+
+            const isMoving = dx !== 0 || dy !== 0;
+
+            if (isMoving) {
+                const newX = state.player.x + dx * state.player.speed;
+                const newY = state.player.y + dy * state.player.speed;
+
+                if (canWalkOn(newX, newY)) {
+                    state.player.x = newX;
+                    state.player.y = newY;
+
+                    state.player.dir = Math.atan2(dy, dx);
+
+                    state.player.dustTimer++;
+
+                    if (state.player.dustTimer % 15 === 0) {
+                        playFootstep();
+                    }
+                }
+            }
+        }
+
+        function canWalkOn(x, y) {
+            const tileX = Math.floor(x);
+            const tileY = Math.floor(y);
+
+            if (tileX < 0 || tileX >= CONFIG.ISLAND_SIZE || tileY < 0 || tileY >= CONFIG.ISLAND_SIZE) {
+                return false;
+            }
+
+            const height = state.terrain[tileY][tileX];
+            const waterLevel = state.tide;
+
+            return height >= waterLevel;
+        }
+
+        function getCompassDirection() {
+            const centerX = CONFIG.ISLAND_SIZE / 2;
+            const centerY = CONFIG.ISLAND_SIZE / 2;
+            const dx = state.player.x - centerX;
+            const dy = state.player.y - centerY;
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+            if (angle >= -45 && angle < 45) return 'East';
+            if (angle >= 45 && angle < 135) return 'South';
+            if (angle >= -135 && angle < -45) return 'North';
+            return 'West';
+        }
+
+        // ============================================================
+        // AUDIO SYSTEM
+        // ============================================================
+
+        function initAudioContext() {
+            if (!state.audio.ctx) {
+                try {
+                    state.audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+                    if (!state.audio.muted) {
+                        startAmbientSounds();
+                    }
+                } catch (e) {
+                    console.warn('Web Audio API not supported', e);
+                }
+            } else if (state.audio.ctx.state === 'suspended') {
+                state.audio.ctx.resume();
+            }
+        }
+
+        function startAmbientSounds() {
+            if (!state.audio.ctx || state.audio.muted) return;
+
+            // Ocean ambient
+            if (!state.audio.nodes.ocean) {
+                const bufferSize = state.audio.ctx.sampleRate * 2;
+                const buffer = state.audio.ctx.createBuffer(1, bufferSize, state.audio.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = state.audio.ctx.createBufferSource();
+                noise.buffer = buffer;
+                noise.loop = true;
+
+                const filter = state.audio.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 400;
+
+                const lfo = state.audio.ctx.createOscillator();
+                lfo.frequency.value = 0.3;
+                const lfoGain = state.audio.ctx.createGain();
+                lfoGain.gain.value = 100;
+                lfo.connect(lfoGain);
+                lfoGain.connect(filter.frequency);
+                lfo.start();
+
+                const gain = state.audio.ctx.createGain();
+                gain.gain.value = 0.02;
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(state.audio.ctx.destination);
+                noise.start();
+
+                state.audio.nodes.ocean = { noise, filter, gain, lfo };
+            }
+
+            // Wind ambient
+            if (!state.audio.nodes.wind) {
+                const bufferSize = state.audio.ctx.sampleRate * 2;
+                const buffer = state.audio.ctx.createBuffer(1, bufferSize, state.audio.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = state.audio.ctx.createBufferSource();
+                noise.buffer = buffer;
+                noise.loop = true;
+
+                const filter = state.audio.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 800;
+                filter.Q.value = 0.5;
+
+                const gain = state.audio.ctx.createGain();
+                gain.gain.value = 0;
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(state.audio.ctx.destination);
+                noise.start();
+
+                state.audio.nodes.wind = { noise, filter, gain };
+            }
+
+            // Rain ambient
+            if (!state.audio.nodes.rain) {
+                const bufferSize = state.audio.ctx.sampleRate * 2;
+                const buffer = state.audio.ctx.createBuffer(1, bufferSize, state.audio.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = state.audio.ctx.createBufferSource();
+                noise.buffer = buffer;
+                noise.loop = true;
+
+                const filter = state.audio.ctx.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.value = 2000;
+
+                const gain = state.audio.ctx.createGain();
+                gain.gain.value = 0;
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(state.audio.ctx.destination);
+                noise.start();
+
+                state.audio.nodes.rain = { noise, filter, gain };
+            }
+
+            // Rustling leaves ambient
+            if (!state.audio.nodes.rustling) {
+                const bufferSize = state.audio.ctx.sampleRate * 2;
+                const buffer = state.audio.ctx.createBuffer(1, bufferSize, state.audio.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = state.audio.ctx.createBufferSource();
+                noise.buffer = buffer;
+                noise.loop = true;
+
+                const filter = state.audio.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 1200;
+                filter.Q.value = 1.5;
+
+                const gain = state.audio.ctx.createGain();
+                gain.gain.value = 0;
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(state.audio.ctx.destination);
+                noise.start();
+
+                state.audio.nodes.rustling = { noise, filter, gain };
+            }
+        }
+
+        function updateAmbientSounds() {
+            if (!state.audio.ctx || state.audio.muted) return;
+
+            if (state.audio.nodes.wind) {
+                const targetWindVolume = state.weather.windSpeed * 0.08;
+                const currentWindVolume = state.audio.nodes.wind.gain.gain.value;
+                state.audio.nodes.wind.gain.gain.value = lerp(currentWindVolume, targetWindVolume, 0.05);
+            }
+
+            if (state.audio.nodes.rain) {
+                const targetRainVolume = (state.weather.current === 'rain' || state.weather.current === 'storm') ?
+                    state.weather.intensity * 0.05 : 0;
+                const currentRainVolume = state.audio.nodes.rain.gain.gain.value;
+                state.audio.nodes.rain.gain.gain.value = lerp(currentRainVolume, targetRainVolume, 0.05);
+            }
+
+            if (state.audio.nodes.rustling) {
+                let nearbyTrees = 0;
+                for (const tree of state.flora.trees) {
+                    const dx = tree.x - state.player.x;
+                    const dy = tree.y - state.player.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 15) nearbyTrees++;
+                }
+                const treeDensity = Math.min(1, nearbyTrees / 10);
+                const targetRustlingVolume = treeDensity * state.weather.windSpeed * 0.03;
+                const currentRustlingVolume = state.audio.nodes.rustling.gain.gain.value;
+                state.audio.nodes.rustling.gain.gain.value = lerp(currentRustlingVolume, targetRustlingVolume, 0.05);
+            }
+
+            // Bird chirps
+            const timeValue = state.time.hour + state.time.minute / 60;
+            const isMorningAfternoon = timeValue >= 7 && timeValue < 17;
+            const isSpringOrSummer = state.flora.season === 'spring' || state.flora.season === 'summer';
+
+            if (isMorningAfternoon && isSpringOrSummer && Math.random() < 0.002) {
+                playBirdChirp();
+            }
+
+            // Crickets at night (summer/spring)
+            const isNight = state.time.period === 'night' || state.time.period === 'dusk';
+            if (isNight && isSpringOrSummer) {
+                const now = Date.now();
+                if (now - state.audio.lastCricket > 3000 && Math.random() < 0.01) {
+                    playCricket();
+                    state.audio.lastCricket = now;
+                }
+            }
+
+            // Frog croaks near water at dusk/night
+            if (isNight && isSpringOrSummer) {
+                const now = Date.now();
+                if (now - state.audio.lastFrog > 5000 && Math.random() < 0.005) {
+                    // Check if near water
+                    const tileX = Math.floor(state.player.x);
+                    const tileY = Math.floor(state.player.y);
+                    let nearWater = false;
+                    for (let dy = -5; dy <= 5; dy++) {
+                        for (let dx = -5; dx <= 5; dx++) {
+                            const nx = tileX + dx;
+                            const ny = tileY + dy;
+                            if (nx >= 0 && nx < CONFIG.ISLAND_SIZE && ny >= 0 && ny < CONFIG.ISLAND_SIZE) {
+                                if (state.terrain[ny][nx] < 0.40) {
+                                    nearWater = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (nearWater) break;
+                    }
+                    if (nearWater) {
+                        playFrog();
+                        state.audio.lastFrog = now;
+                    }
+                }
+            }
+
+            // Seagull calls
+            const now = Date.now();
+            if (timeValue >= 6 && timeValue < 20 && now - state.audio.lastSeagull > 30000) {
+                if (Math.random() < 0.001) {
+                    playSeagull();
+                    state.audio.lastSeagull = now;
+                }
+            }
+        }
+
+        function playCricket() {
+            if (!state.audio.ctx || state.audio.muted) return;
+
+            const osc = state.audio.ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = 3000 + Math.random() * 500;
+
+            const gain = state.audio.ctx.createGain();
+            gain.gain.value = 0.005;
+            gain.gain.exponentialRampToValueAtTime(0.001, state.audio.ctx.currentTime + 0.1);
+
+            osc.connect(gain);
+            gain.connect(state.audio.ctx.destination);
+
+            osc.start();
+            osc.stop(state.audio.ctx.currentTime + 0.1);
+        }
+
+        function playFrog() {
+            if (!state.audio.ctx || state.audio.muted) return;
+
+            const osc = state.audio.ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = 200 + Math.random() * 100;
+
+            const gain = state.audio.ctx.createGain();
+            gain.gain.value = 0.02;
+            gain.gain.exponentialRampToValueAtTime(0.001, state.audio.ctx.currentTime + 0.3);
+
+            osc.connect(gain);
+            gain.connect(state.audio.ctx.destination);
+
+            osc.start();
+            osc.stop(state.audio.ctx.currentTime + 0.3);
+        }
+
+        function playSeagull() {
+            if (!state.audio.ctx || state.audio.muted) return;
+
+            const bufferSize = state.audio.ctx.sampleRate * 0.3;
+            const buffer = state.audio.ctx.createBuffer(1, bufferSize, state.audio.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.exp(-i / bufferSize * 3);
+            }
+
+            const noise = state.audio.ctx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = state.audio.ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 1500 + Math.random() * 500;
+            filter.Q.value = 2;
+
+            const gain = state.audio.ctx.createGain();
+            gain.gain.value = 0.03;
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(state.audio.ctx.destination);
+            noise.start();
+        }
+
+        function playBirdChirp() {
+            if (!state.audio.ctx || state.audio.muted) return;
+
+            const osc = state.audio.ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = 1000 + Math.random() * 1500;
+
+            const osc2 = state.audio.ctx.createOscillator();
+            osc2.type = 'sine';
+            osc2.frequency.value = osc.frequency.value * 1.5;
+
+            const noise = state.audio.ctx.createBufferSource();
+            const bufferSize = state.audio.ctx.sampleRate * 0.1;
+            const buffer = state.audio.ctx.createBuffer(1, bufferSize, state.audio.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * 0.1;
+            }
+            noise.buffer = buffer;
+
+            const gain = state.audio.ctx.createGain();
+            gain.gain.value = 0.01;
+            gain.gain.exponentialRampToValueAtTime(0.001, state.audio.ctx.currentTime + 0.2);
+
+            osc.connect(gain);
+            osc2.connect(gain);
+            noise.connect(gain);
+            gain.connect(state.audio.ctx.destination);
+
+            osc.start();
+            osc2.start();
+            noise.start();
+            osc.stop(state.audio.ctx.currentTime + 0.2);
+            osc2.stop(state.audio.ctx.currentTime + 0.2);
+            noise.stop(state.audio.ctx.currentTime + 0.2);
+        }
+
+        function playThunder() {
+            if (!state.audio.ctx || state.audio.muted) return;
+
+            const osc = state.audio.ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = 60;
+
+            const gain = state.audio.ctx.createGain();
+            gain.gain.value = 0.3;
+            gain.gain.exponentialRampToValueAtTime(0.01, state.audio.ctx.currentTime + 3);
+
+            osc.connect(gain);
+            gain.connect(state.audio.ctx.destination);
+
+            osc.start();
+            osc.stop(state.audio.ctx.currentTime + 3);
+        }
+
+        function playFootstep() {
+            if (!state.audio.ctx || state.audio.muted) return;
+
+            const bufferSize = state.audio.ctx.sampleRate * 0.05;
+            const buffer = state.audio.ctx.createBuffer(1, bufferSize, state.audio.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.exp(-i / bufferSize * 10);
+            }
+
+            const noise = state.audio.ctx.createBufferSource();
+            noise.buffer = buffer;
+
+            const gain = state.audio.ctx.createGain();
+            gain.gain.value = 0.02;
+
+            noise.connect(gain);
+            gain.connect(state.audio.ctx.destination);
+            noise.start();
+        }
+
+        function toggleSound() {
+            state.audio.muted = !state.audio.muted;
+            state.ui.soundNotification = Date.now();
+
+            if (state.audio.muted) {
+                if (state.audio.nodes.ocean) state.audio.nodes.ocean.gain.gain.value = 0;
+                if (state.audio.nodes.wind) state.audio.nodes.wind.gain.gain.value = 0;
+                if (state.audio.nodes.rain) state.audio.nodes.rain.gain.gain.value = 0;
+                if (state.audio.nodes.rustling) state.audio.nodes.rustling.gain.gain.value = 0;
+            } else {
+                initAudioContext();
+            }
+        }
+
+        // ============================================================
+        // RENDERER
+        // ============================================================
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', {alpha: false});
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function render() {
+            const lighting = getLightingMultiplier();
+
+            const halfWidth = canvas.width / (2 * CONFIG.TILE_SIZE * state.camera.zoom);
+            const halfHeight = canvas.height / (2 * CONFIG.TILE_SIZE * state.camera.zoom);
+
+            const startX = Math.max(0, Math.floor(state.camera.x - halfWidth - 1));
+            const endX = Math.min(CONFIG.ISLAND_SIZE, Math.ceil(state.camera.x + halfWidth + 1));
+            const startY = Math.max(0, Math.floor(state.camera.y - halfHeight - 1));
+            const endY = Math.min(CONFIG.ISLAND_SIZE, Math.ceil(state.camera.y + halfHeight + 1));
+
+            const deepWater = hexToRgb('#0a1a2a');
+            ctx.fillStyle = rgbToString({
+                r: Math.floor(deepWater.r * lighting.r * lighting.ambient),
+                g: Math.floor(deepWater.g * lighting.g * lighting.ambient),
+                b: Math.floor(deepWater.b * lighting.b * lighting.ambient)
+            });
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (state.time.period === 'night' || state.time.period === 'dusk') {
+                const starAlpha = state.time.period === 'night' ? 1.0 :
+                    1.0 - ((state.time.hour - 19) / 3);
+                renderStars(starAlpha);
+            }
+
+            renderTerrain(startX, endX, startY, endY, lighting);
+
+            if (state.time.period !== 'night') {
+                renderClouds(startX, endX, startY, endY);
+            }
+
+            renderFoam(startX, endX, startY, endY);
+
+            renderFlora(startX, endX, startY, endY, lighting);
+
+            renderMemory(startX, endX, startY, endY, lighting);
+
+            renderFauna(startX, endX, startY, endY, lighting);
+
+            renderRain();
+
+            renderFog(startX, endX, startY, endY);
+
+            renderPlayer();
+
+            renderLightning();
+
+            renderMinimap();
+
+            renderJournal();
+        }
+
+        function renderTerrain(startX, endX, startY, endY, lighting) {
+            const shimmer = Math.sin(Date.now() * 0.001) * 0.05 + 1.0;
+            const waterLevel = state.tide;
+
+            for (let y = startY; y < endY; y++) {
+                for (let x = startX; x < endX; x++) {
+                    const height = state.terrain[y][x];
+                    let color = {...state.terrainColors[y][x]};
+
+                    if (height >= CONFIG.TIDE_MIN && height <= CONFIG.TIDE_MAX) {
+                        if (height < waterLevel) {
+                            const shallowWater = hexToRgb('#2a5a7a');
+                            const t = (waterLevel - height) / (CONFIG.TIDE_MAX - CONFIG.TIDE_MIN);
+                            color = colorLerp(state.terrainColors[y][x], shallowWater, t * 0.7);
+                        }
+                    }
+
+                    if (height < waterLevel) {
+                        color.r = Math.floor(color.r * shimmer);
+                        color.g = Math.floor(color.g * shimmer);
+                        color.b = Math.floor(color.b * shimmer);
+                    }
+
+                    color.r = clamp(Math.floor(color.r * lighting.r * lighting.ambient), 0, 255);
+                    color.g = clamp(Math.floor(color.g * lighting.g * lighting.ambient), 0, 255);
+                    color.b = clamp(Math.floor(color.b * lighting.b * lighting.ambient), 0, 255);
+
+                    // Apply visited tile warm tint
+                    const tileKey = `${x},${y}`;
+                    if (state.memory.visitedTiles.has(tileKey)) {
+                        color.r = Math.min(255, color.r + 3);
+                    }
+
+                    // Apply nature's memory effects
+                    const visitCount = state.memory.tileVisitCounts[tileKey] || 0;
+                    if (visitCount > 20 && height >= 0.45 && height < 0.70) {
+                        // Frequently visited = more lush
+                        color.g = Math.min(255, color.g + 5);
+                    } else if (visitCount === 0 && state.totalVisits >= 5 && height >= 0.45 && height < 0.70) {
+                        // Never visited after many sessions = wilder
+                        color.r = Math.max(0, color.r - 5);
+                        color.g = Math.max(0, color.g - 3);
+                    }
+
+                    const screenPos = worldToScreen(x, y, canvas);
+                    const size = CONFIG.TILE_SIZE * state.camera.zoom;
+
+                    ctx.fillStyle = rgbToString(color);
+                    ctx.fillRect(
+                        Math.floor(screenPos.x),
+                        Math.floor(screenPos.y),
+                        Math.ceil(size),
+                        Math.ceil(size)
+                    );
+                }
+            }
+        }
+
+        function renderFlora(startX, endX, startY, endY, lighting) {
+            const windSway = Math.sin(Date.now() * 0.002) * state.weather.windSpeed * 0.5;
+
+            const floraItems = [];
+
+            for (const grass of state.flora.grass) {
+                if (grass.x >= startX && grass.x <= endX && grass.y >= startY && grass.y <= endY) {
+                    floraItems.push({type: 'grass', item: grass, y: grass.y});
+                }
+            }
+
+            if (isFlowerVisible()) {
+                for (const flower of state.flora.flowers) {
+                    if (flower.x >= startX && flower.x <= endX && flower.y >= startY && flower.y <= endY) {
+                        floraItems.push({type: 'flower', item: flower, y: flower.y});
+                    }
+                }
+            }
+
+            for (const mushroom of state.flora.mushrooms) {
+                if (mushroom.x >= startX && mushroom.x <= endX && mushroom.y >= startY && mushroom.y <= endY) {
+                    floraItems.push({type: 'mushroom', item: mushroom, y: mushroom.y});
+                }
+            }
+
+            for (const tree of state.flora.trees) {
+                if (tree.x >= startX && tree.x <= endX && tree.y >= startY && tree.y <= endY) {
+                    floraItems.push({type: 'tree', item: tree, y: tree.y});
+                }
+            }
+
+            floraItems.sort((a, b) => {
+                if (a.y === b.y) return 0;
+                return a.y < b.y ? -1 : 1;
+            });
+
+            for (const floraItem of floraItems) {
+                if (floraItem.type === 'grass') {
+                    renderGrass(floraItem.item, windSway, lighting);
+                } else if (floraItem.type === 'flower') {
+                    renderFlower(floraItem.item, lighting);
+                } else if (floraItem.type === 'mushroom') {
+                    renderMushroom(floraItem.item, lighting);
+                } else if (floraItem.type === 'tree') {
+                    renderTree(floraItem.item, windSway, lighting);
+                }
+            }
+        }
+
+        function renderGrass(grass, windSway, lighting) {
+            const screenPos = worldToScreen(grass.x, grass.y, canvas);
+            const swayAmount = Math.sin(Date.now() * 0.003 + grass.swayOffset) * windSway * 2;
+
+            ctx.strokeStyle = `rgba(${Math.floor(80 * lighting.r * lighting.ambient)},${Math.floor(120 * lighting.g * lighting.ambient)},${Math.floor(60 * lighting.b * lighting.ambient)},0.6)`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(screenPos.x, screenPos.y);
+            ctx.lineTo(screenPos.x + swayAmount * state.camera.zoom, screenPos.y - grass.size * state.camera.zoom);
+            ctx.stroke();
+        }
+
+        function renderFlower(flower, lighting) {
+            const screenPos = worldToScreen(flower.x, flower.y, canvas);
+            const size = flower.size * state.camera.zoom;
+            const openness = flower.openness;
+
+            const timeSinceRain = Date.now() - state.weather.recentRainTime;
+            const rainBoost = timeSinceRain < 120000 ? 1.3 : 1.0;
+
+            ctx.strokeStyle = `rgba(${Math.floor(60 * lighting.r * lighting.ambient)},${Math.floor(100 * lighting.g * lighting.ambient)},${Math.floor(50 * lighting.b * lighting.ambient)},0.8)`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(screenPos.x, screenPos.y);
+            ctx.lineTo(screenPos.x, screenPos.y - size * 2);
+            ctx.stroke();
+
+            const petalColor = {
+                r: clamp(Math.floor(flower.color.r * rainBoost * lighting.r * lighting.ambient), 0, 255),
+                g: clamp(Math.floor(flower.color.g * rainBoost * lighting.g * lighting.ambient), 0, 255),
+                b: clamp(Math.floor(flower.color.b * rainBoost * lighting.b * lighting.ambient), 0, 255)
+            };
+            ctx.fillStyle = rgbToString(petalColor);
+
+            for (let i = 0; i < flower.petalCount; i++) {
+                const angle = (Math.PI * 2 / flower.petalCount) * i;
+                const px = screenPos.x + Math.cos(angle) * size * openness;
+                const py = screenPos.y - size * 2 + Math.sin(angle) * size * openness;
+
+                ctx.beginPath();
+                ctx.arc(px, py, size * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.fillStyle = `rgba(${Math.floor(200 * lighting.r * lighting.ambient)},${Math.floor(180 * lighting.g * lighting.ambient)},${Math.floor(50 * lighting.b * lighting.ambient)},0.9)`;
+            ctx.beginPath();
+            ctx.arc(screenPos.x, screenPos.y - size * 2, size * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function renderMushroom(mushroom, lighting) {
+            if (mushroom.opacity <= 0) return;
+
+            const screenPos = worldToScreen(mushroom.x, mushroom.y, canvas);
+            const size = mushroom.size * state.camera.zoom;
+
+            ctx.fillStyle = `rgba(${Math.floor(200 * lighting.r * lighting.ambient)},${Math.floor(190 * lighting.g * lighting.ambient)},${Math.floor(180 * lighting.b * lighting.ambient)},${mushroom.opacity})`;
+            ctx.fillRect(screenPos.x - size * 0.3, screenPos.y - size * 1.5, size * 0.6, size * 1.5);
+
+            let capColor;
+            if (mushroom.type === 'brown') {
+                capColor = {r: 139, g: 90, b: 43};
+            } else if (mushroom.type === 'red') {
+                capColor = {r: 200, g: 50, b: 50};
+            } else {
+                capColor = {r: 240, g: 240, b: 240};
+            }
+
+            const isNight = state.time.period === 'night';
+            const glow = isNight ? 0.3 : 0;
+
+            ctx.fillStyle = `rgba(${Math.floor(capColor.r * lighting.r * lighting.ambient + glow * 100)},${Math.floor(capColor.g * lighting.g * lighting.ambient + glow * 150)},${Math.floor(capColor.b * lighting.b * lighting.ambient + glow * 100)},${mushroom.opacity})`;
+            ctx.beginPath();
+            ctx.arc(screenPos.x, screenPos.y - size * 1.5, size, 0, Math.PI, true);
+            ctx.fill();
+        }
+
+        function renderTree(tree, windSway, lighting) {
+            const screenPos = worldToScreen(tree.x, tree.y, canvas);
+            const treeHeight = tree.height * state.camera.zoom;
+            const swayAmount = Math.sin(Date.now() * 0.001 + tree.swayOffset) * windSway * 3;
+
+            const shadowOffset = 3 * state.camera.zoom;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.beginPath();
+            ctx.arc(screenPos.x + shadowOffset, screenPos.y + shadowOffset, tree.trunkThickness * state.camera.zoom, 0, Math.PI * 2);
+            ctx.fill();
+
+            const trunkColor = tree.type === 'palm' ? {r: 139, g: 115, b: 85} : {r: 101, g: 67, b: 33};
+            ctx.strokeStyle = rgbToString({
+                r: Math.floor(trunkColor.r * lighting.r * lighting.ambient),
+                g: Math.floor(trunkColor.g * lighting.g * lighting.ambient),
+                b: Math.floor(trunkColor.b * lighting.b * lighting.ambient)
+            });
+            ctx.lineWidth = tree.trunkThickness * state.camera.zoom;
+            ctx.beginPath();
+
+            if (tree.type === 'palm') {
+                ctx.moveTo(screenPos.x, screenPos.y);
+                ctx.quadraticCurveTo(
+                    screenPos.x + swayAmount * 2,
+                    screenPos.y - treeHeight / 2,
+                    screenPos.x + swayAmount,
+                    screenPos.y - treeHeight
+                );
+            } else {
+                ctx.moveTo(screenPos.x, screenPos.y);
+                ctx.lineTo(screenPos.x + swayAmount, screenPos.y - treeHeight);
+            }
+            ctx.stroke();
+
+            const foliageColor = getSeasonalTreeColor(tree.type);
+
+            if (foliageColor) {
+                const litColor = {
+                    r: clamp(Math.floor(foliageColor.r * lighting.r * lighting.ambient), 0, 255),
+                    g: clamp(Math.floor(foliageColor.g * lighting.g * lighting.ambient), 0, 255),
+                    b: clamp(Math.floor(foliageColor.b * lighting.b * lighting.ambient), 0, 255)
+                };
+
+                if (tree.type === 'palm') {
+                    ctx.strokeStyle = rgbToString(litColor);
+                    ctx.lineWidth = 2;
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (Math.PI * 2 / 6) * i;
+                        const frondSway = swayAmount + Math.sin(Date.now() * 0.002 + i) * 2;
+                        ctx.beginPath();
+                        ctx.moveTo(screenPos.x + swayAmount, screenPos.y - treeHeight);
+                        ctx.lineTo(
+                            screenPos.x + swayAmount + Math.cos(angle) * treeHeight * 0.4 + frondSway,
+                            screenPos.y - treeHeight - Math.sin(angle) * treeHeight * 0.2
+                        );
+                        ctx.stroke();
+                    }
+                } else if (tree.type === 'deciduous') {
+                    ctx.fillStyle = rgbToString(litColor);
+                    ctx.beginPath();
+                    ctx.arc(screenPos.x + swayAmount, screenPos.y - treeHeight, treeHeight * 0.4, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (tree.type === 'pine') {
+                    ctx.fillStyle = rgbToString(litColor);
+                    ctx.beginPath();
+                    ctx.moveTo(screenPos.x + swayAmount, screenPos.y - treeHeight - treeHeight * 0.3);
+                    ctx.lineTo(screenPos.x + swayAmount - treeHeight * 0.3, screenPos.y - treeHeight * 0.3);
+                    ctx.lineTo(screenPos.x + swayAmount + treeHeight * 0.3, screenPos.y - treeHeight * 0.3);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    if (state.flora.season === 'winter') {
+                        ctx.fillStyle = `rgba(${Math.floor(220 * lighting.ambient)},${Math.floor(220 * lighting.ambient)},${Math.floor(220 * lighting.ambient)},0.8)`;
+                        ctx.beginPath();
+                        ctx.moveTo(screenPos.x + swayAmount, screenPos.y - treeHeight - treeHeight * 0.3);
+                        ctx.lineTo(screenPos.x + swayAmount - treeHeight * 0.15, screenPos.y - treeHeight - treeHeight * 0.1);
+                        ctx.lineTo(screenPos.x + swayAmount + treeHeight * 0.15, screenPos.y - treeHeight - treeHeight * 0.1);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                }
+            }
+        }
+
+        function renderFauna(startX, endX, startY, endY, lighting) {
+            const timeValue = state.time.hour + state.time.minute / 60;
+            const isDay = timeValue >= 6 && timeValue < 20;
+            const isNight = !isDay;
+
+            // Render fish (in water, below player)
+            for (const fish of state.fauna.fish) {
+                if (fish.x >= startX && fish.x <= endX && fish.y >= startY && fish.y <= endY) {
+                    const dx = fish.x - state.player.x;
+                    const dy = fish.y - state.player.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 15) {
+                        renderFish(fish, lighting);
+                    }
+                }
+            }
+
+            // Render crabs
+            for (const crab of state.fauna.crabs) {
+                if (crab.x >= startX && crab.x <= endX && crab.y >= startY && crab.y <= endY) {
+                    renderCrab(crab, lighting);
+                }
+            }
+
+            // Render rabbits
+            for (const rabbit of state.fauna.rabbits) {
+                if (rabbit.x >= startX && rabbit.x <= endX && rabbit.y >= startY && rabbit.y <= endY) {
+                    renderRabbit(rabbit, lighting);
+                }
+            }
+
+            // Render butterflies (day only, not winter)
+            if (isDay && state.flora.season !== 'winter') {
+                for (const butterfly of state.fauna.butterflies) {
+                    if (butterfly.x >= startX && butterfly.x <= endX && butterfly.y >= startY && butterfly.y <= endY) {
+                        renderButterfly(butterfly, lighting);
+                    }
+                }
+            }
+
+            // Render seabirds
+            for (const bird of state.fauna.seabirds) {
+                if (bird.x >= startX && bird.x <= endX && bird.y >= startY && bird.y <= endY) {
+                    renderSeabird(bird, lighting);
+                }
+            }
+
+            // Render fireflies (night only)
+            if (isNight) {
+                for (const firefly of state.fauna.fireflies) {
+                    if (firefly.x >= startX && firefly.x <= endX && firefly.y >= startY && firefly.y <= endY) {
+                        renderFirefly(firefly, lighting);
+                    }
+                }
+            }
+        }
+
+        function renderButterfly(butterfly, lighting) {
+            const screenPos = worldToScreen(butterfly.x, butterfly.y, canvas);
+            const wingFlap = Math.sin(butterfly.phase) * 0.5 + 0.5;
+
+            let color;
+            switch (butterfly.color) {
+                case 'orange': color = {r: 255, g: 140, b: 0}; break;
+                case 'yellow': color = {r: 255, g: 230, b: 0}; break;
+                case 'white': color = {r: 255, g: 255, b: 255}; break;
+                case 'blue': color = {r: 100, g: 150, b: 255}; break;
+            }
+
+            const litColor = {
+                r: Math.floor(color.r * lighting.r * lighting.ambient),
+                g: Math.floor(color.g * lighting.g * lighting.ambient),
+                b: Math.floor(color.b * lighting.b * lighting.ambient)
+            };
+
+            ctx.fillStyle = rgbToString(litColor);
+            const wingSpread = 2 * wingFlap * state.camera.zoom;
+            ctx.fillRect(screenPos.x - wingSpread, screenPos.y - 1, wingSpread, 2);
+            ctx.fillRect(screenPos.x, screenPos.y - 1, wingSpread, 2);
+        }
+
+        function renderSeabird(bird, lighting) {
+            const screenPos = worldToScreen(bird.x, bird.y, canvas);
+            const heightOscillation = Math.sin(bird.heightPhase);
+            const sizeScale = 1 + heightOscillation * 0.3;
+
+            if (bird.swoopTimer > 0) {
+                const swoopProgress = bird.swoopTimer / 120;
+                const swoopScale = 1 + Math.sin(swoopProgress * Math.PI) * 0.5;
+                const wingspan = 6 * state.camera.zoom * swoopScale;
+
+                ctx.fillStyle = `rgba(${Math.floor(240 * lighting.r * lighting.ambient)},${Math.floor(240 * lighting.g * lighting.ambient)},${Math.floor(240 * lighting.b * lighting.ambient)},1)`;
+                ctx.fillRect(screenPos.x - wingspan / 2, screenPos.y, wingspan, 2);
+
+                ctx.fillStyle = `rgba(${Math.floor(60 * lighting.r * lighting.ambient)},${Math.floor(60 * lighting.g * lighting.ambient)},${Math.floor(60 * lighting.b * lighting.ambient)},1)`;
+                ctx.fillRect(screenPos.x - wingspan / 2, screenPos.y, 2, 2);
+                ctx.fillRect(screenPos.x + wingspan / 2 - 2, screenPos.y, 2, 2);
+            } else {
+                const wingspan = 5 * state.camera.zoom * sizeScale;
+
+                ctx.fillStyle = `rgba(${Math.floor(240 * lighting.r * lighting.ambient)},${Math.floor(240 * lighting.g * lighting.ambient)},${Math.floor(240 * lighting.b * lighting.ambient)},1)`;
+                ctx.fillRect(screenPos.x - wingspan / 2, screenPos.y, wingspan, 2);
+
+                ctx.fillStyle = `rgba(${Math.floor(60 * lighting.r * lighting.ambient)},${Math.floor(60 * lighting.g * lighting.ambient)},${Math.floor(60 * lighting.b * lighting.ambient)},1)`;
+                ctx.fillRect(screenPos.x - wingspan / 2, screenPos.y, 1, 2);
+                ctx.fillRect(screenPos.x + wingspan / 2 - 1, screenPos.y, 1, 2);
+            }
+        }
+
+        function renderRabbit(rabbit, lighting) {
+            const screenPos = worldToScreen(rabbit.x, rabbit.y, canvas);
+            const size = 3 * state.camera.zoom;
+
+            let color = rabbit.color === 'brown' ? {r: 139, g: 90, b: 60} : {r: 150, g: 150, b: 140};
+
+            const timeValue = state.time.hour + state.time.minute / 60;
+            const isNight = timeValue < 6 || timeValue >= 20;
+            const alpha = isNight ? 0.5 : 1.0;
+
+            ctx.fillStyle = `rgba(${Math.floor(color.r * lighting.r * lighting.ambient)},${Math.floor(color.g * lighting.g * lighting.ambient)},${Math.floor(color.b * lighting.b * lighting.ambient)},${alpha})`;
+            ctx.beginPath();
+            ctx.arc(screenPos.x, screenPos.y, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (rabbit.state === 'eating') {
+                const bobAmount = Math.sin(Date.now() * 0.1) * size * 0.3;
+                ctx.fillRect(screenPos.x - size * 0.2, screenPos.y + bobAmount, size * 0.4, size * 0.2);
+            }
+        }
+
+        function renderFish(fish, lighting) {
+            const screenPos = worldToScreen(fish.x, fish.y, canvas);
+            const size = 2 * state.camera.zoom;
+
+            ctx.fillStyle = `rgba(${Math.floor(180 * lighting.r * lighting.ambient)},${Math.floor(200 * lighting.g * lighting.ambient)},${Math.floor(220 * lighting.b * lighting.ambient)},0.6)`;
+            ctx.beginPath();
+            ctx.arc(screenPos.x, screenPos.y, size, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ripple
+            if (Math.random() < 0.1) {
+                ctx.strokeStyle = `rgba(${Math.floor(200 * lighting.r * lighting.ambient)},${Math.floor(220 * lighting.g * lighting.ambient)},${Math.floor(240 * lighting.b * lighting.ambient)},0.3)`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(screenPos.x, screenPos.y, size * 2, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+
+        function renderFirefly(firefly, lighting) {
+            if (firefly.brightness <= 0) return;
+
+            const screenPos = worldToScreen(firefly.x, firefly.y, canvas);
+            const size = 2 * state.camera.zoom;
+
+            const glowSize = size * 3 * firefly.brightness;
+            const gradient = ctx.createRadialGradient(screenPos.x, screenPos.y, 0, screenPos.x, screenPos.y, glowSize);
+            gradient.addColorStop(0, `rgba(200, 255, 100, ${firefly.brightness * 0.8})`);
+            gradient.addColorStop(1, 'rgba(200, 255, 100, 0)');
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(screenPos.x, screenPos.y, glowSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = `rgba(200, 255, 100, ${firefly.brightness})`;
+            ctx.fillRect(screenPos.x - size / 2, screenPos.y - size / 2, size, size);
+        }
+
+        function renderCrab(crab, lighting) {
+            const screenPos = worldToScreen(crab.x, crab.y, canvas);
+            const size = 3 * state.camera.zoom;
+
+            ctx.fillStyle = `rgba(${Math.floor(200 * lighting.r * lighting.ambient)},${Math.floor(80 * lighting.g * lighting.ambient)},${Math.floor(50 * lighting.b * lighting.ambient)},1)`;
+            ctx.fillRect(screenPos.x - size / 2, screenPos.y - size / 2, size, size);
+
+            // Claws
+            ctx.fillRect(screenPos.x - size, screenPos.y - size * 0.3, size * 0.4, size * 0.3);
+            ctx.fillRect(screenPos.x + size * 0.6, screenPos.y - size * 0.3, size * 0.4, size * 0.3);
+
+            // Dig particles
+            if (crab.digTimer > 0 && crab.digTimer % 5 === 0) {
+                for (let i = 0; i < 3; i++) {
+                    const px = screenPos.x + (Math.random() - 0.5) * size * 2;
+                    const py = screenPos.y + size;
+                    ctx.fillStyle = `rgba(${Math.floor(200 * lighting.r * lighting.ambient)},${Math.floor(180 * lighting.g * lighting.ambient)},${Math.floor(150 * lighting.b * lighting.ambient)},0.5)`;
+                    ctx.fillRect(px, py, size * 0.3, size * 0.3);
+                }
+            }
+        }
+
+        function renderClouds(startX, endX, startY, endY) {
+            if (state.weather.cloudCover < 0.1) return;
+
+            ctx.fillStyle = `rgba(30, 30, 40, ${state.weather.cloudCover * 0.3})`;
+
+            for (const cloud of state.weather.clouds) {
+                if (cloud.x + cloud.width < startX || cloud.x > endX ||
+                    cloud.y + cloud.height < startY || cloud.y > endY) {
+                    continue;
+                }
+
+                for (let y = Math.floor(cloud.y); y < Math.ceil(cloud.y + cloud.height); y++) {
+                    for (let x = Math.floor(cloud.x); x < Math.ceil(cloud.x + cloud.width); x++) {
+                        if (x >= startX && x < endX && y >= startY && y < endY) {
+                            if (x >= 0 && x < CONFIG.ISLAND_SIZE && y >= 0 && y < CONFIG.ISLAND_SIZE) {
+                                if (state.terrain[y][x] >= state.tide) {
+                                    const screenPos = worldToScreen(x, y, canvas);
+                                    const size = CONFIG.TILE_SIZE * state.camera.zoom;
+
+                                    const cx = cloud.x + cloud.width / 2;
+                                    const cy = cloud.y + cloud.height / 2;
+                                    const dx = (x - cx) / (cloud.width / 2);
+                                    const dy = (y - cy) / (cloud.height / 2);
+                                    const dist = dx * dx + dy * dy;
+
+                                    if (dist < 1) {
+                                        const alpha = (1 - dist) * cloud.opacity;
+                                        ctx.fillStyle = `rgba(30, 30, 40, ${alpha * state.weather.cloudCover})`;
+                                        ctx.fillRect(
+                                            Math.floor(screenPos.x),
+                                            Math.floor(screenPos.y),
+                                            Math.ceil(size),
+                                            Math.ceil(size)
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function renderFoam(startX, endX, startY, endY) {
+            const waterLevel = state.tide;
+            const foamPhase = (Date.now() * 0.003) % 1;
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+
+            for (let y = startY; y < endY; y++) {
+                for (let x = startX; x < endX; x++) {
+                    const height = state.terrain[y][x];
+
+                    if (Math.abs(height - waterLevel) < 0.02) {
+                        let isEdge = false;
+                        const neighbors = [
+                            [x-1, y], [x+1, y], [x, y-1], [x, y+1]
+                        ];
+
+                        for (const [nx, ny] of neighbors) {
+                            if (nx >= 0 && nx < CONFIG.ISLAND_SIZE && ny >= 0 && ny < CONFIG.ISLAND_SIZE) {
+                                const nh = state.terrain[ny][nx];
+                                if ((height < waterLevel && nh >= waterLevel) ||
+                                    (height >= waterLevel && nh < waterLevel)) {
+                                    isEdge = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (isEdge && Math.random() < 0.15) {
+                            const screenPos = worldToScreen(x + Math.random(), y + Math.random(), canvas);
+                            const size = (1 + Math.sin(foamPhase * Math.PI * 2 + x + y) * 0.5) * state.camera.zoom;
+                            ctx.fillRect(screenPos.x, screenPos.y, size, size);
+                        }
+                    }
+                }
+            }
+        }
+
+        function renderRain() {
+            if (state.weather.raindrops.length === 0) return;
+
+            for (const drop of state.weather.raindrops) {
+                const screenPos = worldToScreen(drop.x, drop.y, canvas);
+
+                if (screenPos.x < -10 || screenPos.x > canvas.width + 10 ||
+                    screenPos.y < -10 || screenPos.y > canvas.height + 10) {
+                    continue;
+                }
+
+                const angle = state.weather.windDir + Math.PI / 2;
+                const length = 3 * state.camera.zoom;
+                const endX = screenPos.x + Math.cos(angle) * length;
+                const endY = screenPos.y + Math.sin(angle) * length;
+
+                ctx.strokeStyle = `rgba(200, 220, 255, ${drop.opacity})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(screenPos.x, screenPos.y);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+            }
+        }
+
+        function renderFog(startX, endX, startY, endY) {
+            if (state.weather.fog < 0.05) return;
+
+            const fogColor = state.time.period === 'night' ?
+                'rgba(40, 50, 70, ' : 'rgba(180, 190, 200, ';
+
+            for (let y = startY; y < endY; y++) {
+                for (let x = startX; x < endX; x++) {
+                    const dx = x - state.player.x;
+                    const dy = y - state.player.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist > 5) {
+                        const fogAmount = Math.min(1, (dist - 5) / 30) * state.weather.fog;
+
+                        if (fogAmount > 0.05) {
+                            const screenPos = worldToScreen(x, y, canvas);
+                            const size = CONFIG.TILE_SIZE * state.camera.zoom;
+
+                            ctx.fillStyle = fogColor + fogAmount + ')';
+                            ctx.fillRect(
+                                Math.floor(screenPos.x),
+                                Math.floor(screenPos.y),
+                                Math.ceil(size),
+                                Math.ceil(size)
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        function renderPlayer() {
+            const screenPos = worldToScreen(state.player.x, state.player.y, canvas);
+            const size = 6 * state.camera.zoom;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.arc(screenPos.x + 2 * state.camera.zoom, screenPos.y + 2 * state.camera.zoom, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#e8c888';
+            ctx.beginPath();
+            ctx.arc(screenPos.x, screenPos.y, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#c8a868';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            if (state.input.up || state.input.down || state.input.left || state.input.right) {
+                if (state.player.dustTimer % 10 === 0) {
+                    renderDustPuff(screenPos.x, screenPos.y);
+                }
+            }
+        }
+
+        function renderDustPuff(x, y) {
+            const alpha = 0.3;
+            ctx.fillStyle = `rgba(200, 180, 150, ${alpha})`;
+
+            for (let i = 0; i < 3; i++) {
+                const offsetX = (Math.random() - 0.5) * 4 * state.camera.zoom;
+                const offsetY = (Math.random() - 0.5) * 4 * state.camera.zoom;
+                const size = (1 + Math.random() * 2) * state.camera.zoom;
+
+                ctx.beginPath();
+                ctx.arc(x + offsetX, y + offsetY, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function renderStars(alpha) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+
+            for (const star of state.stars) {
+                const x = star.x * canvas.width;
+                const y = star.y * canvas.height;
+                const brightness = star.brightness * alpha;
+                const twinkle = Math.sin(Date.now() * 0.001 + star.x * 100) * 0.2 + 0.8;
+
+                ctx.globalAlpha = brightness * twinkle;
+                ctx.fillRect(x, y, star.size, star.size);
+            }
+
+            ctx.globalAlpha = 1.0;
+        }
+
+        function renderLightning() {
+            if (state.weather.lightning.active) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${state.weather.lightning.alpha})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        // ============================================================
+        // INPUT
+        // ============================================================
+
+        function setupInput() {
+            window.addEventListener('keydown', (e) => {
+                if (!state.audio.ctx) {
+                    initAudioContext();
+                }
+
+                switch(e.key.toLowerCase()) {
+                    case 'w':
+                    case 'arrowup':
+                        state.input.up = true;
+                        e.preventDefault();
+                        break;
+                    case 's':
+                    case 'arrowdown':
+                        state.input.down = true;
+                        e.preventDefault();
+                        break;
+                    case 'a':
+                    case 'arrowleft':
+                        state.input.left = true;
+                        e.preventDefault();
+                        break;
+                    case 'd':
+                    case 'arrowright':
+                        state.input.right = true;
+                        e.preventDefault();
+                        break;
+                    case 'm':
+                        toggleSound();
+                        e.preventDefault();
+                        break;
+                    case ' ':
+                        placeCairn();
+                        e.preventDefault();
+                        break;
+                    case 'tab':
+                        state.ui.showMinimap = !state.ui.showMinimap;
+                        e.preventDefault();
+                        break;
+                    case 'j':
+                        state.ui.showJournal = !state.ui.showJournal;
+                        e.preventDefault();
+                        break;
+                    case 'escape':
+                        state.ui.showJournal = false;
+                        e.preventDefault();
+                        break;
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                switch(e.key.toLowerCase()) {
+                    case 'w':
+                    case 'arrowup':
+                        state.input.up = false;
+                        break;
+                    case 's':
+                    case 'arrowdown':
+                        state.input.down = false;
+                        break;
+                    case 'a':
+                    case 'arrowleft':
+                        state.input.left = false;
+                        break;
+                    case 'd':
+                    case 'arrowright':
+                        state.input.right = false;
+                        break;
+                }
+            });
+
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -CONFIG.ZOOM_STEP : CONFIG.ZOOM_STEP;
+                state.camera.zoom = clamp(
+                    state.camera.zoom + delta,
+                    CONFIG.ZOOM_MIN,
+                    CONFIG.ZOOM_MAX
+                );
+            }, {passive: false});
+
+            canvas.addEventListener('click', () => {
+                if (!state.audio.ctx) {
+                    initAudioContext();
+                }
+            });
+        }
+
+        // ============================================================
+        // SAVE / LOAD
+        // ============================================================
+
+        function saveState() {
+            const sessionDuration = Date.now() - state.sessionStart;
+
+            // Add journal entry for this session
+            const journalEntry = {
+                date: new Date().toLocaleString(),
+                duration: sessionDuration,
+                distance: Math.floor(state.memory.sessionDistance),
+                weather: Array.from(state.memory.weathersSeen)
+            };
+
+            // Only add if session was meaningful (> 30 seconds)
+            if (sessionDuration > 30000 && !state.memory.journal.some(e => e.date === journalEntry.date)) {
+                state.memory.journal.push(journalEntry);
+            }
+
+            const saveData = {
+                player: {
+                    x: state.player.x,
+                    y: state.player.y
+                },
+                islandSeed: state.islandSeed,
+                totalVisits: state.totalVisits,
+                totalTime: state.totalTime + sessionDuration,
+                lastVisit: Date.now(),
+                memory: {
+                    footprints: state.memory.footprints.slice(-100),  // Keep last 100
+                    visitedTiles: Array.from(state.memory.visitedTiles).slice(-2000),  // Limit to 2000 tiles
+                    cairns: state.memory.cairns,
+                    ghostPath: state.memory.currentPath.slice(-200),  // Keep last 200 points
+                    journal: state.memory.journal.slice(-10),  // Keep last 10 visits
+                    tileVisitCounts: Object.fromEntries(
+                        Object.entries(state.memory.tileVisitCounts)
+                            .filter(([_, count]) => count > 1)
+                            .slice(-500)  // Keep top 500
+                    )
+                }
+            };
+
+            try {
+                localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(saveData));
+            } catch (e) {
+                console.warn('Failed to save state:', e);
+            }
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    state.islandSeed = data.islandSeed;
+                    state.totalVisits = data.totalVisits + 1;
+                    state.totalTime = data.totalTime || 0;
+                    state.visited = true;
+
+                    // Restore memory data
+                    if (data.memory) {
+                        if (data.memory.footprints) {
+                            state.memory.footprints = data.memory.footprints.map(fp => ({
+                                ...fp,
+                                age: fp.age || 0,
+                                opacity: fp.opacity || 1.0
+                            }));
+                        }
+                        if (data.memory.visitedTiles) {
+                            state.memory.visitedTiles = new Set(data.memory.visitedTiles);
+                        }
+                        if (data.memory.cairns) {
+                            state.memory.cairns = data.memory.cairns;
+                        }
+                        if (data.memory.ghostPath && state.totalVisits >= 3) {
+                            state.memory.ghostPath = data.memory.ghostPath;
+                        }
+                        if (data.memory.journal) {
+                            state.memory.journal = data.memory.journal;
+                        }
+                        if (data.memory.tileVisitCounts) {
+                            state.memory.tileVisitCounts = data.memory.tileVisitCounts;
+                        }
+                    }
+
+                    return data;
+                }
+            } catch (e) {
+                console.warn('Failed to load state:', e);
+            }
+            return null;
+        }
+
+        // ============================================================
+        // UI
+        // ============================================================
+
+        function updateUI() {
+            const uiEl = document.getElementById('ui');
+            const welcomeEl = document.getElementById('welcome');
+            const hintsEl = document.getElementById('hints');
+
+            const elapsed = Date.now() - state.sessionStart;
+            if (elapsed < state.ui.welcomeFade) {
+                const visitText = state.totalVisits === 1 ? 'First visit' : `Visit #${state.totalVisits}`;
+                welcomeEl.textContent = visitText;
+                welcomeEl.style.opacity = 1 - (elapsed / state.ui.welcomeFade);
+            } else {
+                welcomeEl.style.opacity = 0;
+            }
+
+            // Show hints for first 8 seconds
+            if (elapsed < 8000) {
+                hintsEl.textContent = 'WASD to walk • Space to mark • Tab for map • J for journal • M for sound';
+                hintsEl.style.opacity = 1 - (elapsed / 8000);
+            } else {
+                hintsEl.style.opacity = 0;
+            }
+
+            let infoText = '';
+            if (elapsed < state.ui.infoFade) {
+                const hour12 = state.time.hour % 12 || 12;
+                const ampm = state.time.hour >= 12 ? 'PM' : 'AM';
+                const timeStr = `${hour12}:${String(state.time.minute).padStart(2, '0')} ${ampm}`;
+                const compass = getCompassDirection();
+                infoText = `${timeStr}<br>${compass}`;
+
+                const weatherNames = {
+                    clear: 'Clear',
+                    cloudy: 'Cloudy',
+                    rain: 'Rain',
+                    storm: 'Storm',
+                    clearing: 'Clearing'
+                };
+                infoText += `<br>${weatherNames[state.weather.current]}`;
+
+                uiEl.innerHTML = infoText;
+                uiEl.style.opacity = 1;
+            } else {
+                uiEl.style.opacity = Math.max(0, 1 - (elapsed - state.ui.infoFade) / 500);
+            }
+
+            if (state.ui.soundNotification > 0) {
+                const notifElapsed = Date.now() - state.ui.soundNotification;
+                if (notifElapsed < 2000) {
+                    const notifText = state.audio.muted ? 'Sound Off' : 'Sound On';
+                    ctx.fillStyle = `rgba(255, 255, 255, ${1 - notifElapsed / 2000})`;
+                    ctx.font = '14px Georgia';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(notifText, canvas.width / 2, 50);
+                    ctx.textAlign = 'left';
+                } else {
+                    state.ui.soundNotification = 0;
+                }
+            }
+        }
+
+        // ============================================================
+        // MAIN LOOP
+        // ============================================================
+
+        function initialize() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            const savedData = loadState();
+
+            if (!state.visited) {
+                state.islandSeed = Math.floor(Math.random() * 1000000);
+                state.totalVisits = 1;
+            }
+
+            state.terrain = generateTerrain(state.islandSeed);
+            state.terrainColors = computeTerrainColors(state.terrain, state.islandSeed);
+            state.stars = generateStars(state.islandSeed);
+
+            generateFlora(state.islandSeed);
+            generateFauna(state.islandSeed);
+
+            initWeather();
+
+            if (savedData && savedData.player) {
+                state.player.x = savedData.player.x;
+                state.player.y = savedData.player.y;
+            } else {
+                const startPos = findStartPosition(state.terrain);
+                state.player.x = startPos.x;
+                state.player.y = startPos.y;
+            }
+
+            state.camera.x = state.player.x;
+            state.camera.y = state.player.y;
+
+            setupInput();
+
+            setInterval(saveState, 10000);
+
+            window.addEventListener('beforeunload', saveState);
+
+            gameLoop();
+        }
+
+        function gameLoop() {
+            updateTime();
+            updateTide();
+            updateWeather();
+            updateFlora();
+            updateFauna();
+            updatePlayer();
+            updateCamera();
+            updateMemory();
+            updateAmbientSounds();
+            render();
+            updateUI();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        initialize();
+    </script>
+</body>
+</html>
