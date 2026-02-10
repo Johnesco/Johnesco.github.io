@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>084: Lighthouse</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  overflow: hidden;
+  font-family: 'Courier New', monospace;
+  background: #000;
+  cursor: crosshair;
+}
+
+#canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#log {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  pointer-events: none;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+  line-height: 1.6;
+}
+
+#taskPanel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(10, 20, 30, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 20px;
+  color: #fff;
+  min-width: 300px;
+  max-width: 500px;
+  display: none;
+  z-index: 100;
+}
+
+#taskPanel input {
+  width: 100%;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+#taskPanel button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  margin-right: 8px;
+}
+
+#taskPanel button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.hint {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 11px;
+  pointer-events: none;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="log"></div>
+<div id="taskPanel">
+  <div id="panelTitle">Ship at Sea</div>
+  <input type="text" id="taskInput" placeholder="Task description...">
+  <div>
+    <button id="saveBtn">Save</button>
+    <button id="completeBtn">Dock Ship</button>
+    <button id="deleteBtn">Extinguish</button>
+    <button id="cancelBtn">Cancel</button>
+  </div>
+</div>
+<div class="hint">Click the sea to launch a ship · Click a ship to select · Double-click to dock · Right-click to extinguish</div>
+
+<script>
+'use strict';
+
+// ========== STATE ==========
+const STORAGE_KEY = 'todooo-084';
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+let tasks = [];
+let selectedTask = null;
+let time = 0;
+let beamAngle = 0;
+const BEAM_SPEED = (Math.PI * 2) / 8; // 8 seconds per rotation
+const BEAM_WIDTH = Math.PI / 3; // 60 degrees
+
+let stars = [];
+let clouds = [];
+let fogLayers = [];
+let fogCycle = 0;
+let rainActive = false;
+let rainTimer = 0;
+let rainDrops = [];
+let nextRainCheck = Math.random() * 120 + 60;
+
+let audioCtx = null;
+let soundEnabled = false;
+
+// Flare animation
+let flares = [];
+
+// Time of day (0-24 hours)
+let timeOfDay = new Date().getHours() + new Date().getMinutes() / 60;
+
+// ========== TASK STRUCTURE ==========
+class Task {
+  constructor(text, x, y) {
+    this.id = Date.now() + Math.random();
+    this.text = text;
+    this.x = x; // normalized 0-1
+    this.y = y; // normalized 0-1
+    this.completed = false;
+    this.docking = false;
+    this.dockProgress = 0;
+    this.lightColor = this.hashColor(text);
+    this.bobOffset = Math.random() * Math.PI * 2;
+    this.drift = 0;
+  }
+
+  hashColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = 35 + (Math.abs(hash) % 30); // 35-65 (yellow-amber range)
+    const sat = 70 + (Math.abs(hash >> 8) % 30);
+    const light = 70 + (Math.abs(hash >> 16) % 20);
+    return `hsl(${hue}, ${sat}%, ${light}%)`;
+  }
+
+  update(dt) {
+    if (this.docking) {
+      this.dockProgress += dt / 5; // 5 seconds to dock
+      if (this.dockProgress >= 1) {
+        this.completed = true;
+        this.docking = false;
+        playHarborBell();
+      }
+    } else if (!this.completed) {
+      // Drift slowly toward lighthouse
+      this.drift += dt * 0.002;
+    }
+  }
+
+  getScreenPos() {
+    const seaTop = H * 0.3;
+    const seaBottom = H * 0.9;
+    const seaLeft = 0;
+    const seaRight = W * 0.75; // Leave room for cliff
+
+    let x, y;
+    if (this.docking) {
+      // Interpolate to harbor
+      const harborX = W * 0.7;
+      const harborY = H * 0.85;
+      const startX = seaLeft + this.x * (seaRight - seaLeft);
+      const startY = seaTop + this.y * (seaBottom - seaTop);
+      x = startX + (harborX - startX) * easeInOut(this.dockProgress);
+      y = startY + (harborY - startY) * easeInOut(this.dockProgress);
+    } else if (this.completed) {
+      // In harbor
+      const harborX = W * 0.7;
+      const harborY = H * 0.85;
+      const index = tasks.filter(t => t.completed).indexOf(this);
+      x = harborX + (index * 15) - (tasks.filter(t => t.completed).length * 7.5);
+      y = harborY + Math.sin(time * 0.5 + index) * 2;
+    } else {
+      // At sea, drifting
+      const driftedX = this.x - this.drift;
+      x = seaLeft + driftedX * (seaRight - seaLeft);
+      y = seaTop + this.y * (seaBottom - seaTop);
+      y += Math.sin(time * 0.8 + this.bobOffset) * 3;
+    }
+    return { x, y };
+  }
+
+  getDistance() {
+    // Distance from lighthouse (for sizing)
+    const lighthouseX = W * 0.85;
+    const lighthouseY = H * 0.6;
+    const pos = this.getScreenPos();
+    const dx = pos.x - lighthouseX;
+    const dy = pos.y - lighthouseY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  isIlluminated() {
+    const pos = this.getScreenPos();
+    const lighthouseX = W * 0.85;
+    const lighthouseY = H * 0.6;
+    const angle = Math.atan2(pos.y - lighthouseY, pos.x - lighthouseX);
+    let diff = Math.abs(angleDiff(angle, beamAngle));
+    return diff < BEAM_WIDTH / 2;
+  }
+
+  isClicked(mx, my) {
+    const pos = this.getScreenPos();
+    const dist = this.getDistance();
+    const size = Math.max(3, 20 - dist * 0.02);
+    const dx = mx - pos.x;
+    const dy = my - pos.y;
+    return Math.sqrt(dx * dx + dy * dy) < size + 10;
+  }
+}
+
+function easeInOut(t) {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+}
+
+function angleDiff(a, b) {
+  let diff = a - b;
+  while (diff > Math.PI) diff -= Math.PI * 2;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+  return diff;
+}
+
+// ========== STORAGE ==========
+function saveTasks() {
+  const data = tasks.map(t => ({
+    text: t.text,
+    x: t.x,
+    y: t.y,
+    completed: t.completed,
+  }));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function loadTasks() {
+  const data = localStorage.getItem(STORAGE_KEY);
+  if (data) {
+    const parsed = JSON.parse(data);
+    tasks = parsed.map(d => {
+      const t = new Task(d.text, d.x, d.y);
+      t.completed = d.completed;
+      return t;
+    });
+  }
+}
+
+// ========== INIT ==========
+function init() {
+  resize();
+  window.addEventListener('resize', resize);
+  canvas.addEventListener('click', handleClick);
+  canvas.addEventListener('dblclick', handleDoubleClick);
+  canvas.addEventListener('contextmenu', handleRightClick);
+
+  document.getElementById('saveBtn').addEventListener('click', saveTaskEdit);
+  document.getElementById('completeBtn').addEventListener('click', completeTask);
+  document.getElementById('deleteBtn').addEventListener('click', deleteTask);
+  document.getElementById('cancelBtn').addEventListener('click', closePanel);
+
+  loadTasks();
+  initStars();
+  initClouds();
+  initFog();
+  initAudio();
+
+  requestAnimationFrame(loop);
+}
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+
+function initStars() {
+  stars = [];
+  for (let i = 0; i < 200; i++) {
+    stars.push({
+      x: Math.random() * W,
+      y: Math.random() * H * 0.5,
+      r: Math.random() * 1.5,
+      twinkle: Math.random() * Math.PI * 2,
+    });
+  }
+}
+
+function initClouds() {
+  clouds = [];
+  for (let i = 0; i < 5; i++) {
+    clouds.push({
+      x: Math.random() * W,
+      y: Math.random() * H * 0.3,
+      w: 100 + Math.random() * 200,
+      h: 40 + Math.random() * 60,
+      speed: 0.1 + Math.random() * 0.3,
+    });
+  }
+}
+
+function initFog() {
+  fogLayers = [];
+  for (let i = 0; i < 3; i++) {
+    fogLayers.push({
+      x: Math.random() * W,
+      y: H * 0.3 + Math.random() * H * 0.4,
+      w: 300 + Math.random() * 400,
+      h: 100 + Math.random() * 150,
+      speed: 0.2 + Math.random() * 0.4,
+      alpha: 0.05 + Math.random() * 0.1,
+    });
+  }
+}
+
+// ========== AUDIO ==========
+function initAudio() {
+  document.addEventListener('click', enableAudio, { once: true });
+}
+
+function enableAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    soundEnabled = true;
+    startAmbience();
+    startFoghorn();
+  }
+}
+
+let ambienceGain = null;
+let foghornInterval = null;
+
+function startAmbience() {
+  if (!audioCtx) return;
+
+  // Waves (filtered noise)
+  const waveNoise = audioCtx.createBufferSource();
+  const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  waveNoise.buffer = buffer;
+  waveNoise.loop = true;
+
+  const waveFilter = audioCtx.createBiquadFilter();
+  waveFilter.type = 'bandpass';
+  waveFilter.frequency.value = 200;
+  waveFilter.Q.value = 1;
+
+  const waveLFO = audioCtx.createOscillator();
+  waveLFO.frequency.value = 0.3;
+  const waveLFOGain = audioCtx.createGain();
+  waveLFOGain.gain.value = 0.3;
+  waveLFO.connect(waveLFOGain);
+  waveLFOGain.connect(waveFilter.frequency);
+
+  const waveGain = audioCtx.createGain();
+  waveGain.gain.value = 0.1;
+
+  waveNoise.connect(waveFilter);
+  waveFilter.connect(waveGain);
+  waveGain.connect(audioCtx.destination);
+
+  waveNoise.start();
+  waveLFO.start();
+
+  // Wind (high-pass noise)
+  const windNoise = audioCtx.createBufferSource();
+  windNoise.buffer = buffer;
+  windNoise.loop = true;
+
+  const windFilter = audioCtx.createBiquadFilter();
+  windFilter.type = 'highpass';
+  windFilter.frequency.value = 800;
+
+  const windGain = audioCtx.createGain();
+  windGain.gain.value = 0.05;
+
+  windNoise.connect(windFilter);
+  windFilter.connect(windGain);
+  windGain.connect(audioCtx.destination);
+
+  windNoise.start();
+
+  ambienceGain = audioCtx.createGain();
+  ambienceGain.gain.value = 1;
+  waveGain.connect(ambienceGain);
+  windGain.connect(ambienceGain);
+  ambienceGain.connect(audioCtx.destination);
+}
+
+function startFoghorn() {
+  if (!audioCtx) return;
+  foghornInterval = setInterval(() => {
+    playFoghorn();
+  }, 30000);
+}
+
+function playFoghorn() {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  osc.frequency.value = 80;
+  osc.type = 'sine';
+
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0;
+  gain.gain.setTargetAtTime(0.15, audioCtx.currentTime, 0.3);
+  gain.gain.setTargetAtTime(0, audioCtx.currentTime + 1.5, 0.5);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 2);
+}
+
+function playHarborBell() {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  osc.frequency.value = 800;
+  osc.type = 'sine';
+
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0.2;
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.8);
+}
+
+function playFlareSound() {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  osc.frequency.value = 400;
+  osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.5);
+  osc.type = 'triangle';
+
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0.1;
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.5);
+}
+
+// ========== INTERACTION ==========
+let clickTimer = null;
+let clickedTask = null;
+
+function handleClick(e) {
+  if (audioCtx) audioCtx.resume();
+
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  // Check if clicked on a ship
+  let clicked = null;
+  for (let t of tasks) {
+    if (!t.completed && t.isClicked(mx, my)) {
+      clicked = t;
+      break;
+    }
+  }
+
+  if (clicked) {
+    clickedTask = clicked;
+    clickTimer = setTimeout(() => {
+      selectTask(clicked);
+      clickTimer = null;
+    }, 250);
+  } else {
+    // Click on water to add task
+    if (my > H * 0.3 && mx < W * 0.75) {
+      launchFlare(mx, my);
+      setTimeout(() => {
+        addTaskAtPosition(mx, my);
+      }, 1000);
+    }
+  }
+}
+
+function handleDoubleClick(e) {
+  if (clickTimer) {
+    clearTimeout(clickTimer);
+    clickTimer = null;
+  }
+
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  for (let t of tasks) {
+    if (!t.completed && !t.docking && t.isClicked(mx, my)) {
+      t.docking = true;
+      t.dockProgress = 0;
+      saveTasks();
+      return;
+    }
+  }
+}
+
+function handleRightClick(e) {
+  e.preventDefault();
+
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  for (let i = tasks.length - 1; i >= 0; i--) {
+    const t = tasks[i];
+    if (!t.completed && t.isClicked(mx, my)) {
+      tasks.splice(i, 1);
+      saveTasks();
+      return;
+    }
+  }
+}
+
+function launchFlare(x, y) {
+  flares.push({ x, y, life: 1, vy: -5 });
+  playFlareSound();
+}
+
+function addTaskAtPosition(x, y) {
+  const seaTop = H * 0.3;
+  const seaBottom = H * 0.9;
+  const seaLeft = 0;
+  const seaRight = W * 0.75;
+
+  const nx = (x - seaLeft) / (seaRight - seaLeft);
+  const ny = (y - seaTop) / (seaBottom - seaTop);
+
+  const task = new Task('New ship', nx, ny);
+  tasks.push(task);
+  saveTasks();
+  selectTask(task);
+}
+
+function selectTask(task) {
+  selectedTask = task;
+  document.getElementById('taskInput').value = task.text;
+  document.getElementById('panelTitle').textContent = task.completed ? 'Ship in Harbor' : 'Ship at Sea';
+  document.getElementById('completeBtn').style.display = task.completed ? 'none' : 'inline-block';
+  document.getElementById('taskPanel').style.display = 'block';
+  document.getElementById('taskInput').focus();
+}
+
+function closePanel() {
+  document.getElementById('taskPanel').style.display = 'none';
+  selectedTask = null;
+}
+
+function saveTaskEdit() {
+  if (selectedTask) {
+    selectedTask.text = document.getElementById('taskInput').value;
+    selectedTask.lightColor = selectedTask.hashColor(selectedTask.text);
+    saveTasks();
+  }
+  closePanel();
+}
+
+function completeTask() {
+  if (selectedTask && !selectedTask.completed) {
+    selectedTask.docking = true;
+    selectedTask.dockProgress = 0;
+    saveTasks();
+  }
+  closePanel();
+}
+
+function deleteTask() {
+  if (selectedTask) {
+    const idx = tasks.indexOf(selectedTask);
+    if (idx >= 0) {
+      tasks.splice(idx, 1);
+      saveTasks();
+    }
+  }
+  closePanel();
+}
+
+// ========== UPDATE ==========
+let lastTime = performance.now();
+
+function loop(now) {
+  const dt = Math.min((now - lastTime) / 1000, 0.1);
+  lastTime = now;
+
+  time += dt;
+  beamAngle += BEAM_SPEED * dt;
+  if (beamAngle > Math.PI * 2) beamAngle -= Math.PI * 2;
+
+  // Fog cycle
+  fogCycle += dt / 180; // 3 minute cycle
+  const fogDensity = 0.5 + 0.5 * Math.sin(fogCycle * Math.PI * 2);
+
+  // Rain check
+  rainTimer += dt;
+  if (!rainActive && rainTimer > nextRainCheck) {
+    rainActive = true;
+    rainTimer = 0;
+    nextRainCheck = 30 + Math.random() * 30; // 30-60s of rain
+    initRain();
+  }
+  if (rainActive && rainTimer > nextRainCheck) {
+    rainActive = false;
+    rainTimer = 0;
+    nextRainCheck = Math.random() * 120 + 60; // wait 60-180s
+    rainDrops = [];
+  }
+
+  // Update tasks
+  for (let t of tasks) {
+    t.update(dt);
+  }
+
+  // Update flares
+  for (let i = flares.length - 1; i >= 0; i--) {
+    flares[i].vy += 9.8 * dt;
+    flares[i].y += flares[i].vy;
+    flares[i].life -= dt;
+    if (flares[i].life <= 0) flares.splice(i, 1);
+  }
+
+  // Update clouds
+  for (let c of clouds) {
+    c.x += c.speed * dt * 10;
+    if (c.x > W + c.w) c.x = -c.w;
+  }
+
+  // Update fog
+  for (let f of fogLayers) {
+    f.x += f.speed * dt * 10;
+    if (f.x > W + f.w) f.x = -f.w;
+  }
+
+  // Update rain
+  if (rainActive) {
+    updateRain(dt);
+  }
+
+  draw(fogDensity);
+  updateLog();
+
+  requestAnimationFrame(loop);
+}
+
+function initRain() {
+  rainDrops = [];
+  for (let i = 0; i < 200; i++) {
+    rainDrops.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      len: 10 + Math.random() * 20,
+      speed: 300 + Math.random() * 200,
+    });
+  }
+}
+
+function updateRain(dt) {
+  for (let drop of rainDrops) {
+    drop.y += drop.speed * dt;
+    drop.x += drop.speed * dt * 0.3; // diagonal
+    if (drop.y > H) {
+      drop.y = -drop.len;
+      drop.x = Math.random() * W;
+    }
+  }
+}
+
+// ========== DRAW ==========
+function draw(fogDensity) {
+  // Time of day gradient
+  const isDawn = timeOfDay >= 5 && timeOfDay < 7;
+  const isDay = timeOfDay >= 7 && timeOfDay < 19;
+  const isDusk = timeOfDay >= 19 && timeOfDay < 21;
+
+  let skyColor = '#080818';
+  let horizonColor = '#080818';
+
+  if (isDawn) {
+    const dawnProgress = (timeOfDay - 5) / 2;
+    skyColor = `rgb(${8 + dawnProgress * 40}, ${8 + dawnProgress * 30}, ${24 + dawnProgress * 40})`;
+    horizonColor = `rgb(${60 + dawnProgress * 80}, ${30 + dawnProgress * 50}, ${40 + dawnProgress * 60})`;
+  } else if (isDay) {
+    skyColor = '#4a6a8a';
+    horizonColor = '#7a9aba';
+  } else if (isDusk) {
+    const duskProgress = (timeOfDay - 19) / 2;
+    skyColor = `rgb(${80 - duskProgress * 72}, ${60 - duskProgress * 52}, ${100 - duskProgress * 76})`;
+    horizonColor = `rgb(${140 - duskProgress * 80}, ${80 - duskProgress * 50}, ${100 - duskProgress * 60})`;
+  }
+
+  // Sky
+  const gradient = ctx.createLinearGradient(0, 0, 0, H * 0.5);
+  gradient.addColorStop(0, skyColor);
+  gradient.addColorStop(1, horizonColor);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, H * 0.5);
+
+  // Stars (only at night)
+  if (!isDay) {
+    const starAlpha = isDay ? 0 : isDawn || isDusk ? 0.3 : 1;
+    for (let s of stars) {
+      const twinkle = 0.5 + 0.5 * Math.sin(time * 2 + s.twinkle);
+      ctx.fillStyle = `rgba(255, 255, 255, ${twinkle * starAlpha * 0.8})`;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Clouds
+  for (let c of clouds) {
+    ctx.fillStyle = 'rgba(20, 30, 40, 0.3)';
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y, c.w / 2, c.h / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Sea
+  const seaGradient = ctx.createLinearGradient(0, H * 0.3, 0, H);
+  seaGradient.addColorStop(0, '#0a1a2a');
+  seaGradient.addColorStop(1, '#050f15');
+  ctx.fillStyle = seaGradient;
+  ctx.fillRect(0, H * 0.3, W, H * 0.7);
+
+  // Waves (displacement effect - simplified as horizontal lines with offset)
+  drawWaves();
+
+  // Lighthouse beam (behind ships)
+  drawBeam();
+
+  // Fog layers
+  for (let f of fogLayers) {
+    const alpha = f.alpha * fogDensity;
+    ctx.fillStyle = `rgba(80, 90, 100, ${alpha})`;
+    ctx.beginPath();
+    ctx.ellipse(f.x, f.y, f.w / 2, f.h / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Ships
+  for (let t of tasks) {
+    if (!t.completed || t.docking) {
+      drawShip(t);
+    }
+  }
+
+  // Cliff and lighthouse
+  drawCliff();
+  drawLighthouse();
+
+  // Harbor
+  drawHarbor();
+
+  // Flares
+  for (let f of flares) {
+    ctx.fillStyle = `rgba(255, 200, 100, ${f.life})`;
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Rain
+  if (rainActive) {
+    ctx.strokeStyle = 'rgba(150, 170, 200, 0.3)';
+    ctx.lineWidth = 1;
+    for (let drop of rainDrops) {
+      ctx.beginPath();
+      ctx.moveTo(drop.x, drop.y);
+      ctx.lineTo(drop.x + drop.len * 0.3, drop.y + drop.len);
+      ctx.stroke();
+    }
+  }
+}
+
+function drawWaves() {
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.lineWidth = 1;
+  const waveSpeed = rainActive ? 2 : 1;
+  for (let y = H * 0.3; y < H; y += 20) {
+    ctx.beginPath();
+    for (let x = 0; x < W; x += 5) {
+      const offset = Math.sin(x * 0.01 + time * waveSpeed + y * 0.05) * 3;
+      if (x === 0) {
+        ctx.moveTo(x + offset, y);
+      } else {
+        ctx.lineTo(x + offset, y);
+      }
+    }
+    ctx.stroke();
+  }
+}
+
+function drawBeam() {
+  const lighthouseX = W * 0.85;
+  const lighthouseY = H * 0.6;
+  const beamLength = Math.max(W, H) * 1.5;
+
+  const gradient = ctx.createRadialGradient(lighthouseX, lighthouseY, 0, lighthouseX, lighthouseY, beamLength);
+  gradient.addColorStop(0, 'rgba(255, 255, 200, 0.3)');
+  gradient.addColorStop(0.3, 'rgba(255, 255, 200, 0.1)');
+  gradient.addColorStop(1, 'rgba(255, 255, 200, 0)');
+
+  ctx.save();
+  ctx.translate(lighthouseX, lighthouseY);
+  ctx.rotate(beamAngle);
+
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.arc(0, 0, beamLength, -BEAM_WIDTH / 2, BEAM_WIDTH / 2);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawShip(task) {
+  const pos = task.getScreenPos();
+  const dist = task.getDistance();
+  const size = Math.max(3, 20 - dist * 0.02);
+  const illuminated = task.isIlluminated();
+  const brightness = task.docking ? 1 + task.dockProgress * 0.5 : illuminated ? 1.5 : 1;
+
+  // Light
+  ctx.fillStyle = task.lightColor;
+  ctx.shadowBlur = size * brightness * 2;
+  ctx.shadowColor = task.lightColor;
+  ctx.globalAlpha = 0.8 * brightness;
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
+
+  // Hull (faint)
+  if (illuminated || task.docking) {
+    ctx.fillStyle = 'rgba(40, 30, 20, 0.6)';
+    ctx.beginPath();
+    ctx.ellipse(pos.x, pos.y + size * 1.5, size * 2, size * 0.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawCliff() {
+  const cliffX = W * 0.75;
+  ctx.fillStyle = '#0a0a10';
+  ctx.beginPath();
+  ctx.moveTo(cliffX, H);
+  ctx.lineTo(cliffX, H * 0.7);
+  ctx.lineTo(cliffX + 20, H * 0.65);
+  ctx.lineTo(cliffX + 40, H * 0.62);
+  ctx.lineTo(cliffX + 60, H * 0.60);
+  ctx.lineTo(cliffX + 80, H * 0.58);
+  ctx.lineTo(cliffX + 100, H * 0.56);
+  ctx.lineTo(cliffX + 120, H * 0.55);
+  ctx.lineTo(cliffX + 150, H * 0.54);
+  ctx.lineTo(W, H * 0.54);
+  ctx.lineTo(W, H);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawLighthouse() {
+  const baseX = W * 0.85;
+  const baseY = H * 0.7;
+  const topY = H * 0.6;
+
+  // Tower
+  ctx.fillStyle = '#e8e8e8';
+  ctx.fillRect(baseX - 8, topY, 16, baseY - topY);
+
+  // Red band
+  ctx.fillStyle = '#c83232';
+  ctx.fillRect(baseX - 8, topY + 20, 16, 10);
+
+  // Lantern room
+  ctx.fillStyle = '#f0f0f0';
+  ctx.fillRect(baseX - 12, topY - 5, 24, 10);
+  ctx.fillStyle = '#ffffe0';
+  ctx.fillRect(baseX - 10, topY - 3, 20, 6);
+
+  // Light glow
+  ctx.fillStyle = 'rgba(255, 255, 200, 0.8)';
+  ctx.shadowBlur = 30;
+  ctx.shadowColor = '#ffffaa';
+  ctx.beginPath();
+  ctx.arc(baseX, topY, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+function drawHarbor() {
+  const harborX = W * 0.7;
+  const harborY = H * 0.85;
+
+  // Dock
+  ctx.fillStyle = '#1a1a20';
+  ctx.fillRect(harborX - 50, harborY, 100, 5);
+
+  // Completed ships
+  const completedTasks = tasks.filter(t => t.completed);
+  for (let i = 0; i < completedTasks.length; i++) {
+    const t = completedTasks[i];
+    const pos = t.getScreenPos();
+
+    ctx.fillStyle = t.lightColor;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = t.lightColor;
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+}
+
+function updateLog() {
+  const atSea = tasks.filter(t => !t.completed && !t.docking).length;
+  const inHarbor = tasks.filter(t => t.completed).length;
+  const docking = tasks.filter(t => t.docking).length;
+
+  let status = `${atSea} ship${atSea !== 1 ? 's' : ''} at sea`;
+  if (docking > 0) status += ` · ${docking} docking`;
+  status += ` · ${inHarbor} in harbor`;
+  status += `\nBeam: rotating`;
+  if (rainActive) status += ` · Rain`;
+
+  document.getElementById('log').textContent = status;
+}
+
+// ========== START ==========
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>086: Hourglass — Time Made Physical</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: #18140e;
+            color: #c4a868;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.6) 100%);
+            pointer-events: none;
+        }
+
+        #candle-glow {
+            position: absolute;
+            left: 15%;
+            top: 40%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255, 180, 100, 0.15) 0%, transparent 70%);
+            filter: blur(40px);
+            pointer-events: none;
+            animation: flicker 3s ease-in-out infinite;
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        .dust-particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(196, 168, 104, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float-dust linear infinite;
+        }
+
+        @keyframes float-dust {
+            0% {
+                transform: translate(0, 0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.3;
+            }
+            90% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translate(var(--dx), var(--dy));
+                opacity: 0;
+            }
+        }
+
+        #container {
+            display: flex;
+            gap: 60px;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        #task-panel {
+            width: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        #add-task-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #task-input {
+            background: rgba(196, 168, 104, 0.1);
+            border: 1px solid rgba(196, 168, 104, 0.3);
+            color: #c4a868;
+            padding: 12px;
+            font-size: 14px;
+            font-family: 'Georgia', serif;
+            border-radius: 4px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        #task-input::placeholder {
+            color: rgba(196, 168, 104, 0.4);
+            font-style: italic;
+        }
+
+        #task-input:focus {
+            border-color: #c4a868;
+            background: rgba(196, 168, 104, 0.15);
+        }
+
+        #task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        #task-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #task-list::-webkit-scrollbar-track {
+            background: rgba(196, 168, 104, 0.1);
+            border-radius: 3px;
+        }
+
+        #task-list::-webkit-scrollbar-thumb {
+            background: rgba(196, 168, 104, 0.3);
+            border-radius: 3px;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: rgba(196, 168, 104, 0.05);
+            border: 1px solid rgba(196, 168, 104, 0.2);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .task-item:hover {
+            background: rgba(196, 168, 104, 0.1);
+            border-color: rgba(196, 168, 104, 0.4);
+        }
+
+        .task-item.selected {
+            border-color: #c4a868;
+            background: rgba(196, 168, 104, 0.15);
+        }
+
+        .task-item.completed {
+            opacity: 0.5;
+        }
+
+        .task-grain-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 13px;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+        }
+
+        .task-delete {
+            width: 20px;
+            height: 20px;
+            border: none;
+            background: rgba(196, 168, 104, 0.2);
+            color: #c4a868;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.2s;
+        }
+
+        .task-item:hover .task-delete {
+            opacity: 1;
+        }
+
+        .task-delete:hover {
+            background: rgba(196, 168, 104, 0.4);
+        }
+
+        #hourglass-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #hourglass-container.flipping {
+            transform: rotate(180deg);
+        }
+
+        #hourglass-canvas {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.5));
+        }
+
+        #stats {
+            position: absolute;
+            bottom: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 13px;
+            color: rgba(196, 168, 104, 0.6);
+            text-align: center;
+            font-style: italic;
+            white-space: nowrap;
+        }
+
+        #flip-prompt {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(196, 168, 104, 0.95);
+            color: #18140e;
+            padding: 20px 40px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+
+        #flip-prompt.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        #flip-prompt:hover {
+            background: #c4a868;
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+
+        #time-display {
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: rgba(196, 168, 104, 0.5);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div id="candle-glow"></div>
+
+    <div id="container">
+        <div id="task-panel">
+            <form id="add-task-form">
+                <input
+                    type="text"
+                    id="task-input"
+                    placeholder="Add a grain of time..."
+                    autocomplete="off"
+                />
+            </form>
+            <div id="task-list"></div>
+        </div>
+
+        <div id="hourglass-container">
+            <div id="time-display"></div>
+            <canvas id="hourglass-canvas" width="400" height="600"></canvas>
+            <div id="stats"></div>
+            <div id="flip-prompt">Click to Flip</div>
+        </div>
+    </div>
+
+    <script>
+        // ===== STATE =====
+        const STORAGE_KEY = 'todooo-086';
+        let tasks = [];
+        let selectedTaskId = null;
+        let cycleStartTime = Date.now();
+        let isFlipping = false;
+        let hoveredTaskId = null;
+
+        // ===== AUDIO =====
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playGrainFall() {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.02);
+
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.02);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.02);
+        }
+
+        function playFlip() {
+            initAudio();
+            const bufferSize = audioCtx.sampleRate * 0.8;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                const t = i / audioCtx.sampleRate;
+                const envelope = Math.exp(-t * 2);
+                const freq = 200 + Math.sin(t * 10) * 100;
+                data[i] = (Math.random() * 2 - 1) * envelope * 0.2;
+            }
+
+            const source = audioCtx.createBufferSource();
+            const filter = audioCtx.createBiquadFilter();
+            const gain = audioCtx.createGain();
+
+            source.buffer = buffer;
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(800, audioCtx.currentTime);
+            filter.frequency.linearRampToValueAtTime(200, audioCtx.currentTime + 0.4);
+            filter.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.8);
+
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+
+            source.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            source.start();
+        }
+
+        function playGlassSettle() {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.2);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 1.2);
+        }
+
+        function playPlink() {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.05);
+
+            gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        // ===== SAND PHYSICS =====
+        class Grain {
+            constructor(taskId, color) {
+                this.taskId = taskId;
+                this.color = color;
+                this.x = 0;
+                this.y = 0;
+                this.vx = 0;
+                this.vy = 0;
+                this.radius = 2.5;
+                this.settled = false;
+                this.falling = false;
+                this.glowing = false;
+                this.glowTime = 0;
+            }
+
+            update(dt, grains, bulbShape) {
+                if (this.settled && !this.falling) {
+                    // Slight jitter for upper bulb grains
+                    if (Math.random() < 0.01) {
+                        this.x += (Math.random() - 0.5) * 0.2;
+                        this.y += (Math.random() - 0.5) * 0.2;
+                    }
+                    return;
+                }
+
+                // Apply gravity
+                this.vy += 400 * dt;
+
+                // Apply velocity
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+
+                // Check collision with bulb walls
+                const inBulb = bulbShape(this.y);
+                if (inBulb) {
+                    const distFromCenter = Math.abs(this.x);
+                    if (distFromCenter > inBulb.radius - this.radius) {
+                        this.x = Math.sign(this.x) * (inBulb.radius - this.radius);
+                        this.vx *= -0.3;
+                    }
+                }
+
+                // Check collision with other grains
+                for (let other of grains) {
+                    if (other === this || !other.settled) continue;
+                    const dx = this.x - other.x;
+                    const dy = this.y - other.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const minDist = this.radius + other.radius;
+
+                    if (dist < minDist) {
+                        const angle = Math.atan2(dy, dx);
+                        const overlap = minDist - dist;
+                        this.x += Math.cos(angle) * overlap;
+                        this.y += Math.sin(angle) * overlap;
+                        this.vy *= 0.3;
+                        this.vx *= 0.3;
+
+                        if (Math.abs(this.vy) < 10) {
+                            this.settled = true;
+                            this.falling = false;
+                        }
+                    }
+                }
+
+                // Settle if at bottom
+                if (Math.abs(this.vy) < 5 && Math.abs(this.vx) < 5) {
+                    this.settled = true;
+                    this.falling = false;
+                    this.vx = 0;
+                    this.vy = 0;
+                }
+
+                if (this.glowing) {
+                    this.glowTime += dt;
+                    if (this.glowTime > 0.5) {
+                        this.glowing = false;
+                        this.glowTime = 0;
+                    }
+                }
+            }
+
+            draw(ctx, offsetX, offsetY) {
+                ctx.save();
+                ctx.translate(offsetX + this.x, offsetY + this.y);
+
+                if (this.glowing) {
+                    const glowAlpha = 0.6 * (1 - this.glowTime * 2);
+                    ctx.shadowColor = this.color;
+                    ctx.shadowBlur = 10;
+                    ctx.fillStyle = this.color;
+                    ctx.globalAlpha = 1;
+                } else {
+                    ctx.fillStyle = this.color;
+                    ctx.globalAlpha = 0.9;
+                }
+
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        // Hourglass geometry
+        const HOURGLASS = {
+            centerX: 200,
+            centerY: 300,
+            neckY: 300,
+            neckRadius: 8,
+            bulbHeight: 240,
+            bulbMaxRadius: 80,
+            frameColor: '#8b7355',
+            frameAccent: '#d4af37',
+            glassColor: 'rgba(200, 220, 240, 0.1)',
+            glassHighlight: 'rgba(255, 255, 255, 0.3)',
+        };
+
+        function getBulbRadius(y, isUpper) {
+            const center = HOURGLASS.neckY;
+            const height = HOURGLASS.bulbHeight;
+            const maxR = HOURGLASS.bulbMaxRadius;
+            const neckR = HOURGLASS.neckRadius;
+
+            if (isUpper) {
+                if (y > center) return null; // Outside upper bulb
+                if (y < center - height) return null;
+                const t = (center - y) / height;
+                // Parabolic bulb shape
+                const r = neckR + (maxR - neckR) * Math.pow(t, 0.6);
+                return { radius: r, centerX: HOURGLASS.centerX };
+            } else {
+                if (y < center) return null;
+                if (y > center + height) return null;
+                const t = (y - center) / height;
+                const r = neckR + (maxR - neckR) * Math.pow(t, 0.6);
+                return { radius: r, centerX: HOURGLASS.centerX };
+            }
+        }
+
+        // Sand management
+        let upperGrains = [];
+        let lowerGrains = [];
+        let fallingGrain = null;
+        let fallingGrainProgress = 0;
+
+        function initGrains() {
+            upperGrains = [];
+            lowerGrains = [];
+            fallingGrain = null;
+
+            const incompleteTasks = tasks.filter(t => !t.completed);
+            const completedTasks = tasks.filter(t => t.completed);
+
+            // Create upper grains
+            for (let task of incompleteTasks) {
+                const grain = new Grain(task.id, task.color);
+                // Random position in upper bulb
+                const startY = HOURGLASS.neckY - 200;
+                const bulb = getBulbRadius(startY, true);
+                grain.x = (Math.random() - 0.5) * (bulb.radius - 10);
+                grain.y = startY;
+                grain.settled = false;
+                upperGrains.push(grain);
+            }
+
+            // Create lower grains
+            for (let task of completedTasks) {
+                const grain = new Grain(task.id, task.color);
+                const startY = HOURGLASS.neckY + 200;
+                const bulb = getBulbRadius(startY, false);
+                grain.x = (Math.random() - 0.5) * (bulb.radius - 10);
+                grain.y = startY;
+                grain.settled = false;
+                lowerGrains.push(grain);
+            }
+
+            // Let grains settle
+            for (let i = 0; i < 100; i++) {
+                for (let grain of upperGrains) {
+                    grain.update(0.016, upperGrains, (y) => getBulbRadius(y, true));
+                }
+                for (let grain of lowerGrains) {
+                    grain.update(0.016, lowerGrains, (y) => getBulbRadius(y, false));
+                }
+            }
+
+            for (let grain of upperGrains) grain.settled = true;
+            for (let grain of lowerGrains) grain.settled = true;
+        }
+
+        // ===== RENDERING =====
+        const canvas = document.getElementById('hourglass-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawHourglass() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const cx = HOURGLASS.centerX;
+            const cy = HOURGLASS.centerY;
+            const neckY = HOURGLASS.neckY;
+            const h = HOURGLASS.bulbHeight;
+            const maxR = HOURGLASS.bulbMaxRadius;
+            const neckR = HOURGLASS.neckRadius;
+
+            // Draw glass bulbs
+            ctx.save();
+
+            // Upper bulb
+            ctx.beginPath();
+            ctx.moveTo(cx, neckY);
+            for (let y = neckY; y >= neckY - h; y -= 2) {
+                const bulb = getBulbRadius(y, true);
+                if (bulb) {
+                    ctx.lineTo(cx - bulb.radius, y);
+                }
+            }
+            for (let y = neckY - h; y <= neckY; y += 2) {
+                const bulb = getBulbRadius(y, true);
+                if (bulb) {
+                    ctx.lineTo(cx + bulb.radius, y);
+                }
+            }
+            ctx.closePath();
+            ctx.fillStyle = HOURGLASS.glassColor;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(200, 220, 240, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Glass highlight upper
+            const gradUpper = ctx.createLinearGradient(cx - maxR * 0.6, cy - h/2, cx - maxR * 0.3, cy - h/2);
+            gradUpper.addColorStop(0, 'transparent');
+            gradUpper.addColorStop(0.5, HOURGLASS.glassHighlight);
+            gradUpper.addColorStop(1, 'transparent');
+            ctx.fillStyle = gradUpper;
+            ctx.fillRect(cx - maxR * 0.6, neckY - h, maxR * 0.3, h * 0.6);
+
+            // Lower bulb
+            ctx.beginPath();
+            ctx.moveTo(cx, neckY);
+            for (let y = neckY; y <= neckY + h; y += 2) {
+                const bulb = getBulbRadius(y, false);
+                if (bulb) {
+                    ctx.lineTo(cx - bulb.radius, y);
+                }
+            }
+            for (let y = neckY + h; y >= neckY; y -= 2) {
+                const bulb = getBulbRadius(y, false);
+                if (bulb) {
+                    ctx.lineTo(cx + bulb.radius, y);
+                }
+            }
+            ctx.closePath();
+            ctx.fillStyle = HOURGLASS.glassColor;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(200, 220, 240, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Glass highlight lower
+            const gradLower = ctx.createLinearGradient(cx - maxR * 0.6, cy + h/2, cx - maxR * 0.3, cy + h/2);
+            gradLower.addColorStop(0, 'transparent');
+            gradLower.addColorStop(0.5, HOURGLASS.glassHighlight);
+            gradLower.addColorStop(1, 'transparent');
+            ctx.fillStyle = gradLower;
+            ctx.fillRect(cx - maxR * 0.6, neckY, maxR * 0.3, h * 0.6);
+
+            ctx.restore();
+
+            // Draw frame
+            ctx.save();
+
+            // Top cap
+            ctx.fillStyle = HOURGLASS.frameColor;
+            ctx.fillRect(cx - maxR - 15, neckY - h - 25, maxR * 2 + 30, 20);
+            ctx.fillStyle = HOURGLASS.frameAccent;
+            ctx.fillRect(cx - maxR - 15, neckY - h - 25, maxR * 2 + 30, 3);
+
+            // Decorative pattern on top cap
+            for (let i = 0; i < 8; i++) {
+                const x = cx - maxR + i * (maxR * 2 / 7);
+                ctx.fillStyle = HOURGLASS.frameAccent;
+                ctx.fillRect(x, neckY - h - 20, 2, 10);
+            }
+
+            // Bottom cap
+            ctx.fillStyle = HOURGLASS.frameColor;
+            ctx.fillRect(cx - maxR - 15, neckY + h + 5, maxR * 2 + 30, 20);
+            ctx.fillStyle = HOURGLASS.frameAccent;
+            ctx.fillRect(cx - maxR - 15, neckY + h + 22, maxR * 2 + 30, 3);
+
+            // Decorative pattern on bottom cap
+            for (let i = 0; i < 8; i++) {
+                const x = cx - maxR + i * (maxR * 2 / 7);
+                ctx.fillStyle = HOURGLASS.frameAccent;
+                ctx.fillRect(x, neckY + h + 10, 2, 10);
+            }
+
+            // Vertical posts
+            const postPositions = [-maxR - 8, -maxR/2, maxR/2, maxR + 8];
+            for (let px of postPositions) {
+                const grad = ctx.createLinearGradient(cx + px - 3, 0, cx + px + 3, 0);
+                grad.addColorStop(0, '#6b5a47');
+                grad.addColorStop(0.5, HOURGLASS.frameAccent);
+                grad.addColorStop(1, '#6b5a47');
+                ctx.fillStyle = grad;
+                ctx.fillRect(cx + px - 2, neckY - h - 5, 4, h * 2 + 10);
+            }
+
+            ctx.restore();
+
+            // Draw sand grains
+            ctx.save();
+
+            // Lower grains first (behind falling grain)
+            for (let grain of lowerGrains) {
+                grain.draw(ctx, 0, 0);
+            }
+
+            // Falling grain
+            if (fallingGrain) {
+                // Highlight if hovered
+                if (hoveredTaskId === fallingGrain.taskId) {
+                    fallingGrain.glowing = true;
+                }
+                fallingGrain.draw(ctx, 0, 0);
+            }
+
+            // Upper grains
+            for (let grain of upperGrains) {
+                // Highlight if hovered
+                if (hoveredTaskId === grain.taskId) {
+                    ctx.save();
+                    ctx.shadowColor = grain.color;
+                    ctx.shadowBlur = 15;
+                    ctx.fillStyle = grain.color;
+                    ctx.beginPath();
+                    ctx.arc(grain.x, grain.y, grain.radius + 1, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                } else {
+                    grain.draw(ctx, 0, 0);
+                }
+            }
+
+            ctx.restore();
+        }
+
+        // ===== TASK LOGIC =====
+        function generateId() {
+            return Date.now() + Math.random();
+        }
+
+        function generateSandColor() {
+            const hue = 35 + Math.random() * 15; // Sandy hues
+            const sat = 40 + Math.random() * 20;
+            const light = 50 + Math.random() * 15;
+            return `hsl(${hue}, ${sat}%, ${light}%)`;
+        }
+
+        function addTask(text) {
+            const task = {
+                id: generateId(),
+                text: text.trim(),
+                completed: false,
+                color: generateSandColor(),
+                createdAt: Date.now()
+            };
+            tasks.push(task);
+
+            // Add grain to upper bulb
+            const grain = new Grain(task.id, task.color);
+            const startY = HOURGLASS.neckY - 220;
+            grain.x = 0;
+            grain.y = startY - 50; // Drop from above
+            grain.vy = 50;
+            grain.settled = false;
+            grain.falling = true;
+            upperGrains.push(grain);
+
+            playPlink();
+            save();
+            render();
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            upperGrains = upperGrains.filter(g => g.taskId !== id);
+            lowerGrains = lowerGrains.filter(g => g.taskId !== id);
+            if (selectedTaskId === id) selectedTaskId = null;
+            save();
+            render();
+        }
+
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (!task || task.completed) return;
+
+            // Start falling animation
+            const grainIndex = upperGrains.findIndex(g => g.taskId === id);
+            if (grainIndex >= 0) {
+                fallingGrain = upperGrains[grainIndex];
+                fallingGrain.glowing = true;
+                fallingGrain.settled = false;
+                fallingGrain.falling = true;
+                fallingGrainProgress = 0;
+                upperGrains.splice(grainIndex, 1);
+
+                setTimeout(() => {
+                    task.completed = true;
+                    save();
+                    render();
+                }, 2000);
+            }
+        }
+
+        function flipHourglass() {
+            if (isFlipping) return;
+            isFlipping = true;
+
+            playFlip();
+
+            // Animate container flip
+            const container = document.getElementById('hourglass-container');
+            container.classList.add('flipping');
+
+            setTimeout(() => {
+                // Reset all tasks
+                for (let task of tasks) {
+                    task.completed = false;
+                }
+
+                // Swap grain arrays
+                const temp = upperGrains;
+                upperGrains = lowerGrains;
+                lowerGrains = temp;
+
+                // Invert all grain positions and make them fall
+                for (let grain of upperGrains) {
+                    grain.y = HOURGLASS.neckY - (grain.y - HOURGLASS.neckY);
+                    grain.settled = false;
+                    grain.falling = true;
+                    grain.vy = 0;
+                }
+
+                for (let grain of lowerGrains) {
+                    grain.y = HOURGLASS.neckY - (grain.y - HOURGLASS.neckY);
+                    grain.settled = false;
+                    grain.falling = true;
+                    grain.vy = 0;
+                }
+
+                cycleStartTime = Date.now();
+
+                container.classList.remove('flipping');
+                isFlipping = false;
+
+                playGlassSettle();
+                save();
+                render();
+            }, 1500);
+        }
+
+        // ===== PERSISTENCE =====
+        function save() {
+            const data = {
+                tasks,
+                cycleStartTime
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function load() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                const data = JSON.parse(stored);
+                tasks = data.tasks || [];
+                cycleStartTime = data.cycleStartTime || Date.now();
+            }
+        }
+
+        // ===== UI RENDERING =====
+        function renderTaskList() {
+            const listEl = document.getElementById('task-list');
+            listEl.innerHTML = '';
+
+            for (let task of tasks) {
+                const item = document.createElement('div');
+                item.className = 'task-item';
+                if (task.completed) item.classList.add('completed');
+                if (task.id === selectedTaskId) item.classList.add('selected');
+
+                const indicator = document.createElement('div');
+                indicator.className = 'task-grain-indicator';
+                indicator.style.background = task.color;
+
+                const text = document.createElement('div');
+                text.className = 'task-text';
+                text.textContent = task.text;
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'task-delete';
+                deleteBtn.textContent = '×';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteTask(task.id);
+                };
+
+                item.appendChild(indicator);
+                item.appendChild(text);
+                item.appendChild(deleteBtn);
+
+                item.onclick = () => {
+                    selectedTaskId = task.id;
+                    render();
+                };
+
+                item.ondblclick = () => {
+                    toggleTask(task.id);
+                };
+
+                item.onmouseenter = () => {
+                    hoveredTaskId = task.id;
+                };
+
+                item.onmouseleave = () => {
+                    hoveredTaskId = null;
+                };
+
+                listEl.appendChild(item);
+            }
+        }
+
+        function updateStats() {
+            const upper = tasks.filter(t => !t.completed).length;
+            const lower = tasks.filter(t => t.completed).length;
+            document.getElementById('stats').textContent = `${upper} grains above · ${lower} grains below`;
+        }
+
+        function updateTimeDisplay() {
+            const elapsed = Date.now() - cycleStartTime;
+            const seconds = Math.floor(elapsed / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+
+            let timeStr = '';
+            if (hours > 0) {
+                timeStr = `${hours}h ${minutes % 60}m`;
+            } else if (minutes > 0) {
+                timeStr = `${minutes}m ${seconds % 60}s`;
+            } else {
+                timeStr = `${seconds}s`;
+            }
+
+            document.getElementById('time-display').textContent = `Cycle: ${timeStr}`;
+        }
+
+        function updateFlipPrompt() {
+            const allComplete = tasks.length > 0 && tasks.every(t => t.completed);
+            const prompt = document.getElementById('flip-prompt');
+            if (allComplete && !isFlipping && !fallingGrain) {
+                prompt.classList.add('visible');
+            } else {
+                prompt.classList.remove('visible');
+            }
+        }
+
+        function render() {
+            renderTaskList();
+            updateStats();
+            updateTimeDisplay();
+            updateFlipPrompt();
+        }
+
+        // ===== ANIMATION LOOP =====
+        let lastTime = Date.now();
+
+        function animate() {
+            const now = Date.now();
+            const dt = Math.min((now - lastTime) / 1000, 0.033);
+            lastTime = now;
+
+            // Update falling grain
+            if (fallingGrain) {
+                fallingGrainProgress += dt;
+
+                if (fallingGrainProgress < 0.5) {
+                    // Glow phase
+                    fallingGrain.glowTime = fallingGrainProgress;
+                } else if (fallingGrainProgress < 1.5) {
+                    // Fall through upper bulb to neck
+                    fallingGrain.vy += 300 * dt;
+                    fallingGrain.y += fallingGrain.vy * dt;
+
+                    // Slow at neck
+                    if (Math.abs(fallingGrain.y - HOURGLASS.neckY) < 20) {
+                        fallingGrain.vy *= 0.95;
+                    }
+                } else if (fallingGrainProgress < 2.0) {
+                    // Pass through neck
+                    fallingGrain.y = HOURGLASS.neckY + (fallingGrainProgress - 1.5) * 40;
+                    playGrainFall();
+                } else {
+                    // Fall into lower bulb
+                    fallingGrain.falling = true;
+                    fallingGrain.settled = false;
+                    lowerGrains.push(fallingGrain);
+                    fallingGrain = null;
+                }
+            }
+
+            // Update all grains
+            if (!isFlipping) {
+                for (let grain of upperGrains) {
+                    grain.update(dt, upperGrains, (y) => getBulbRadius(y, true));
+                }
+                for (let grain of lowerGrains) {
+                    grain.update(dt, lowerGrains, (y) => getBulbRadius(y, false));
+                }
+            }
+
+            drawHourglass();
+            updateTimeDisplay();
+            updateFlipPrompt();
+
+            requestAnimationFrame(animate);
+        }
+
+        // ===== EVENT LISTENERS =====
+        document.getElementById('add-task-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const input = document.getElementById('task-input');
+            const text = input.value.trim();
+            if (text) {
+                addTask(text);
+                input.value = '';
+            }
+        });
+
+        document.getElementById('flip-prompt').addEventListener('click', () => {
+            flipHourglass();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                const allComplete = tasks.length > 0 && tasks.every(t => t.completed);
+                if (allComplete && !isFlipping && !fallingGrain) {
+                    e.preventDefault();
+                    flipHourglass();
+                }
+            }
+        });
+
+        // ===== DUST PARTICLES =====
+        function createDustParticles() {
+            for (let i = 0; i < 20; i++) {
+                const dust = document.createElement('div');
+                dust.className = 'dust-particle';
+
+                const startX = 30 + Math.random() * 40;
+                const startY = 20 + Math.random() * 60;
+                const dx = (Math.random() - 0.5) * 100;
+                const dy = (Math.random() - 0.5) * 100;
+                const duration = 8 + Math.random() * 6;
+                const delay = Math.random() * 5;
+
+                dust.style.left = startX + '%';
+                dust.style.top = startY + '%';
+                dust.style.setProperty('--dx', dx + 'px');
+                dust.style.setProperty('--dy', dy + 'px');
+                dust.style.animationDuration = duration + 's';
+                dust.style.animationDelay = delay + 's';
+
+                document.body.appendChild(dust);
+            }
+        }
+
+        // ===== INIT =====
+        load();
+        initGrains();
+        render();
+        createDustParticles();
+        animate();
+    </script>
+</body>
+</html>

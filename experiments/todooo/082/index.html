@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>082: Origami</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Courier New', monospace;
+  background: #f5f0e8;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.01) 0px, transparent 1px, transparent 2px, rgba(0,0,0,0.01) 3px),
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.01) 0px, transparent 1px, transparent 2px, rgba(0,0,0,0.01) 3px);
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+#input-area {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  z-index: 100;
+}
+
+#task-input {
+  padding: 12px 16px;
+  border: 2px solid #c9a84c;
+  background: white;
+  font-family: inherit;
+  font-size: 14px;
+  width: 400px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#task-input:focus {
+  outline: none;
+  border-color: #8a5a7a;
+}
+
+#add-btn {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #7a9a6a;
+  background: white;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+
+#add-btn:hover {
+  transform: scale(1.1);
+}
+
+#workspace {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.paper-square {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  transform-origin: center center;
+}
+
+.paper-square:hover {
+  transform: rotate(0deg) scale(1.05) !important;
+  z-index: 50;
+}
+
+.paper-content {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transition: box-shadow 0.3s;
+}
+
+.paper-square:hover .paper-content {
+  box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+}
+
+.paper-content::before,
+.paper-content::after {
+  content: '';
+  position: absolute;
+  background: rgba(0,0,0,0.08);
+}
+
+.paper-content::before {
+  width: 1px;
+  height: 100%;
+  left: 50%;
+  top: 0;
+}
+
+.paper-content::after {
+  height: 1px;
+  width: 100%;
+  top: 50%;
+  left: 0;
+}
+
+.paper-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  word-wrap: break-word;
+  pointer-events: none;
+}
+
+.origami-figure {
+  position: absolute;
+  cursor: move;
+  transition: transform 0.2s;
+}
+
+.origami-figure:hover {
+  transform: scale(1.1);
+  z-index: 50;
+}
+
+.origami-figure.dragging {
+  transition: none;
+  z-index: 100;
+}
+
+.figure-svg {
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.2));
+}
+
+.origami-figure.crane .figure-svg {
+  animation: wing-breathe 4s ease-in-out infinite;
+}
+
+@keyframes wing-breathe {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-2px); }
+}
+
+#folding-area {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 200;
+}
+
+.folding-paper {
+  position: absolute;
+  transform-origin: center center;
+}
+
+.tooltip {
+  position: absolute;
+  background: white;
+  border: 2px solid #333;
+  padding: 12px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 300;
+  max-width: 250px;
+  font-size: 13px;
+  line-height: 1.5;
+  pointer-events: none;
+}
+
+#counter {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: #666;
+  z-index: 100;
+  background: rgba(255,255,255,0.8);
+  padding: 8px 16px;
+  border-radius: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="input-area">
+    <input type="text" id="task-input" placeholder="Write a task on paper...">
+    <button id="add-btn">+</button>
+  </div>
+  <div id="workspace"></div>
+  <div id="folding-area"></div>
+  <div id="counter">0 paper squares · 0 figures folded</div>
+</div>
+
+<script>
+// State
+let tasks = [];
+let completedTasks = [];
+let audioContext = null;
+
+// Constants
+const COLORS = [
+  '#c44444', '#6a8faf', '#7a9a6a', '#8a5a7a',
+  '#c9a84c', '#d48a76', '#4a5a8a', '#daa88a'
+];
+
+const FIGURES = ['crane', 'boat', 'flower', 'butterfly', 'frog', 'star', 'fish', 'heart'];
+
+// Audio
+function initAudio() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
+}
+
+function playFoldSound() {
+  initAudio();
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  const filter = audioContext.createBiquadFilter();
+
+  filter.type = 'highpass';
+  filter.frequency.value = 2000;
+
+  osc.type = 'square';
+  osc.frequency.value = 100;
+
+  gain.gain.setValueAtTime(0.05, audioContext.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.05);
+
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioContext.destination);
+
+  osc.start();
+  osc.stop(audioContext.currentTime + 0.05);
+}
+
+function playCrumpleSound() {
+  initAudio();
+  const bufferSize = audioContext.sampleRate * 0.3;
+  const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+  const data = buffer.getChannelData(0);
+
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / bufferSize * 5);
+  }
+
+  const source = audioContext.createBufferSource();
+  const gain = audioContext.createGain();
+  const filter = audioContext.createBiquadFilter();
+
+  filter.type = 'bandpass';
+  filter.frequency.value = 800;
+
+  source.buffer = buffer;
+  gain.gain.value = 0.1;
+
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioContext.destination);
+
+  source.start();
+}
+
+function playLandSound() {
+  initAudio();
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(200, audioContext.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.1);
+
+  gain.gain.setValueAtTime(0.08, audioContext.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
+
+  osc.start();
+  osc.stop(audioContext.currentTime + 0.1);
+}
+
+// Utilities
+function hashString(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function getColor(text) {
+  return COLORS[hashString(text) % COLORS.length];
+}
+
+function getFigureType(text) {
+  return FIGURES[hashString(text) % FIGURES.length];
+}
+
+function darkenColor(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgb(${Math.floor(r * 0.7)}, ${Math.floor(g * 0.7)}, ${Math.floor(b * 0.7)})`;
+}
+
+// Save/Load
+function saveData() {
+  localStorage.setItem('todooo-082', JSON.stringify({ tasks, completedTasks }));
+}
+
+function loadData() {
+  const data = localStorage.getItem('todooo-082');
+  if (data) {
+    const parsed = JSON.parse(data);
+    tasks = parsed.tasks || [];
+    completedTasks = parsed.completedTasks || [];
+  }
+}
+
+// Task management
+function addTask(text) {
+  if (!text.trim()) return;
+
+  const task = {
+    id: Date.now(),
+    text: text.trim(),
+    color: getColor(text),
+    rotation: (Math.random() - 0.5) * 8,
+    x: null,
+    y: null
+  };
+
+  tasks.push(task);
+  saveData();
+  render();
+}
+
+function completeTask(taskId) {
+  const taskIndex = tasks.findIndex(t => t.id === taskId);
+  if (taskIndex === -1) return;
+
+  const task = tasks[taskIndex];
+  const paperEl = document.querySelector(`[data-id="${taskId}"]`);
+
+  if (!paperEl) return;
+
+  tasks.splice(taskIndex, 1);
+
+  animateFolding(paperEl, task, () => {
+    const figureType = getFigureType(task.text);
+    const completed = {
+      id: task.id,
+      text: task.text,
+      color: task.color,
+      type: figureType,
+      x: window.innerWidth * 0.7 + Math.random() * 200,
+      y: window.innerHeight * 0.3 + Math.random() * 300
+    };
+
+    completedTasks.push(completed);
+    saveData();
+    render();
+  });
+}
+
+function deleteTask(taskId) {
+  const taskIndex = tasks.findIndex(t => t.id === taskId);
+  if (taskIndex === -1) return;
+
+  const paperEl = document.querySelector(`[data-id="${taskId}"]`);
+  if (paperEl) {
+    animateCrumple(paperEl);
+    playCrumpleSound();
+  }
+
+  tasks.splice(taskIndex, 1);
+  saveData();
+
+  setTimeout(() => render(), 500);
+}
+
+function deleteCompletedTask(taskId) {
+  const taskIndex = completedTasks.findIndex(t => t.id === taskId);
+  if (taskIndex === -1) return;
+
+  completedTasks.splice(taskIndex, 1);
+  saveData();
+  render();
+}
+
+// Animations
+function animateCrumple(element) {
+  element.style.transition = 'all 0.5s ease-out';
+  element.style.transform = 'scale(0.2) rotate(720deg)';
+  element.style.opacity = '0';
+}
+
+function animateFolding(paperEl, task, onComplete) {
+  const rect = paperEl.getBoundingClientRect();
+  const foldingArea = document.getElementById('folding-area');
+
+  // Create folding element
+  const foldingEl = document.createElement('div');
+  foldingEl.className = 'folding-paper';
+  foldingEl.style.width = '110px';
+  foldingEl.style.height = '110px';
+  foldingEl.style.left = (rect.left + rect.width / 2 - window.innerWidth / 2) + 'px';
+  foldingEl.style.top = (rect.top + rect.height / 2 - window.innerHeight / 2) + 'px';
+
+  const content = document.createElement('div');
+  content.className = 'paper-content';
+  content.style.background = task.color;
+  content.style.width = '100%';
+  content.style.height = '100%';
+
+  foldingEl.appendChild(content);
+  foldingArea.appendChild(foldingEl);
+
+  // Hide original
+  paperEl.style.opacity = '0';
+
+  // Fold sequence
+  const foldSteps = [
+    { delay: 0, transform: 'translateY(-20px) scale(1)', shadow: '0 8px 16px rgba(0,0,0,0.3)' },
+    { delay: 400, transform: 'scale(0.9, 1) rotateY(15deg)', shadow: '0 6px 12px rgba(0,0,0,0.25)' },
+    { delay: 800, transform: 'scale(1, 0.8) rotateX(20deg)', shadow: '0 4px 10px rgba(0,0,0,0.2)' },
+    { delay: 1200, transform: 'scale(0.7) rotate(45deg)', shadow: '0 4px 8px rgba(0,0,0,0.2)' },
+    { delay: 1600, transform: 'scale(0.6) rotate(90deg) rotateY(30deg)', shadow: '0 3px 6px rgba(0,0,0,0.15)' },
+    { delay: 2000, transform: 'scale(0.5) rotate(180deg)', shadow: '0 2px 4px rgba(0,0,0,0.1)' }
+  ];
+
+  foldSteps.forEach((step, i) => {
+    setTimeout(() => {
+      foldingEl.style.transition = 'all 0.4s ease-out';
+      foldingEl.style.transform = step.transform;
+      content.style.boxShadow = step.shadow;
+
+      if (i < foldSteps.length - 1) {
+        playFoldSound();
+      }
+    }, step.delay);
+  });
+
+  // Final move to completed area
+  setTimeout(() => {
+    foldingEl.style.transition = 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    foldingEl.style.transform = 'scale(0) rotate(360deg)';
+    foldingEl.style.opacity = '0';
+
+    playLandSound();
+
+    setTimeout(() => {
+      foldingArea.removeChild(foldingEl);
+      onComplete();
+    }, 600);
+  }, 2400);
+}
+
+// SVG Figures
+function createCraneSVG(color) {
+  return `
+    <svg width="100" height="100" viewBox="0 0 100 100" class="figure-svg">
+      <g>
+        <!-- Body -->
+        <path d="M 50 40 L 35 60 L 50 55 L 65 60 Z" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+        <!-- Left wing -->
+        <path d="M 35 60 L 15 50 L 25 65 Z" fill="${color}" opacity="0.9" stroke="rgba(0,0,0,0.15)" stroke-width="0.5"/>
+        <!-- Right wing -->
+        <path d="M 65 60 L 85 50 L 75 65 Z" fill="${color}" opacity="0.9" stroke="rgba(0,0,0,0.15)" stroke-width="0.5"/>
+        <!-- Neck -->
+        <path d="M 50 40 L 45 25" stroke="${color}" stroke-width="3" fill="none"/>
+        <!-- Head -->
+        <circle cx="45" cy="22" r="4" fill="${color}"/>
+        <!-- Beak -->
+        <path d="M 43 22 L 38 20" stroke="${darkenColor(color)}" stroke-width="2"/>
+        <!-- Tail -->
+        <path d="M 50 55 L 50 75" stroke="${color}" stroke-width="2"/>
+        <!-- Fold lines -->
+        <line x1="35" y1="60" x2="65" y2="60" stroke="rgba(0,0,0,0.15)" stroke-width="0.5"/>
+        <line x1="50" y1="40" x2="50" y2="60" stroke="rgba(0,0,0,0.15)" stroke-width="0.5"/>
+      </g>
+    </svg>
+  `;
+}
+
+function createBoatSVG(color) {
+  return `
+    <svg width="100" height="100" viewBox="0 0 100 100" class="figure-svg">
+      <g>
+        <!-- Hull -->
+        <path d="M 25 60 L 75 60 L 70 75 L 30 75 Z" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+        <!-- Sail -->
+        <path d="M 50 30 L 50 60 L 70 60 Z" fill="${color}" opacity="0.85" stroke="rgba(0,0,0,0.15)" stroke-width="0.5"/>
+        <!-- Mast -->
+        <line x1="50" y1="25" x2="50" y2="60" stroke="${darkenColor(color)}" stroke-width="2"/>
+        <!-- Fold lines -->
+        <line x1="30" y1="75" x2="50" y2="30" stroke="rgba(0,0,0,0.1)" stroke-width="0.5" stroke-dasharray="2,2"/>
+      </g>
+    </svg>
+  `;
+}
+
+function createFlowerSVG(color) {
+  return `
+    <svg width="100" height="100" viewBox="0 0 100 100" class="figure-svg">
+      <g>
+        <!-- Petals -->
+        <ellipse cx="50" cy="35" rx="12" ry="18" fill="${color}" opacity="0.7"/>
+        <ellipse cx="50" cy="65" rx="12" ry="18" fill="${color}" opacity="0.7"/>
+        <ellipse cx="35" cy="50" rx="18" ry="12" fill="${color}" opacity="0.7"/>
+        <ellipse cx="65" cy="50" rx="18" ry="12" fill="${color}" opacity="0.7"/>
+        <ellipse cx="38" cy="38" rx="14" ry="14" fill="${color}" opacity="0.7"/>
+        <ellipse cx="62" cy="38" rx="14" ry="14" fill="${color}" opacity="0.7"/>
+        <ellipse cx="38" cy="62" rx="14" ry="14" fill="${color}" opacity="0.7"/>
+        <ellipse cx="62" cy="62" rx="14" ry="14" fill="${color}" opacity="0.7"/>
+        <!-- Center -->
+        <circle cx="50" cy="50" r="15" fill="${color}"/>
+        <circle cx="50" cy="50" r="8" fill="${darkenColor(color)}"/>
+        <!-- Fold lines -->
+        <line x1="50" y1="30" x2="50" y2="70" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>
+        <line x1="30" y1="50" x2="70" y2="50" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>
+      </g>
+    </svg>
+  `;
+}
+
+function createButterflySVG(color) {
+  return `
+    <svg width="100" height="100" viewBox="0 0 100 100" class="figure-svg">
+      <g>
+        <!-- Left wings -->
+        <ellipse cx="35" cy="45" rx="18" ry="22" fill="${color}" opacity="0.85"/>
+        <ellipse cx="30" cy="60" rx="12" ry="15" fill="${color}" opacity="0.85"/>
+        <!-- Right wings -->
+        <ellipse cx="65" cy="45" rx="18" ry="22" fill="${color}" opacity="0.85"/>
+        <ellipse cx="70" cy="60" rx="12" ry="15" fill="${color}" opacity="0.85"/>
+        <!-- Body -->
+        <ellipse cx="50" cy="50" rx="4" ry="20" fill="${darkenColor(color)}"/>
+        <!-- Antennae -->
+        <path d="M 50 35 Q 45 25 42 22" stroke="${darkenColor(color)}" stroke-width="1.5" fill="none"/>
+        <path d="M 50 35 Q 55 25 58 22" stroke="${darkenColor(color)}" stroke-width="1.5" fill="none"/>
+        <circle cx="42" cy="22" r="2" fill="${darkenColor(color)}"/>
+        <circle cx="58" cy="22" r="2" fill="${darkenColor(color)}"/>
+        <!-- Wing patterns -->
+        <circle cx="35" cy="45" r="5" fill="rgba(0,0,0,0.15)"/>
+        <circle cx="65" cy="45" r="5" fill="rgba(0,0,0,0.15)"/>
+      </g>
+    </svg>
+  `;
+}
+
+function createFrogSVG(color) {
+  return `
+    <svg width="100" height="100" viewBox="0 0 100 100" class="figure-svg">
+      <g>
+        <!-- Body -->
+        <ellipse cx="50" cy="55" rx="22" ry="18" fill="${color}"/>
+        <!-- Head -->
+        <ellipse cx="50" cy="40" rx="18" ry="15" fill="${color}"/>
+        <!-- Eyes -->
+        <circle cx="43" cy="35" r="5" fill="white"/>
+        <circle cx="57" cy="35" r="5" fill="white"/>
+        <circle cx="43" cy="35" r="3" fill="black"/>
+        <circle cx="57" cy="35" r="3" fill="black"/>
+        <!-- Left legs -->
+        <ellipse cx="32" cy="60" rx="8" ry="12" fill="${color}" opacity="0.9"/>
+        <ellipse cx="28" cy="72" rx="10" ry="6" fill="${color}" opacity="0.9"/>
+        <!-- Right legs -->
+        <ellipse cx="68" cy="60" rx="8" ry="12" fill="${color}" opacity="0.9"/>
+        <ellipse cx="72" cy="72" rx="10" ry="6" fill="${color}" opacity="0.9"/>
+        <!-- Fold lines -->
+        <line x1="30" y1="50" x2="70" y2="50" stroke="rgba(0,0,0,0.15)" stroke-width="0.5"/>
+      </g>
+    </svg>
+  `;
+}
+
+function createStarSVG(color) {
+  return `
+    <svg width="100" height="100" viewBox="0 0 100 100" class="figure-svg">
+      <g>
+        <path d="M 50 20 L 58 45 L 85 45 L 63 60 L 72 85 L 50 68 L 28 85 L 37 60 L 15 45 L 42 45 Z"
+              fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+        <!-- Fold lines -->
+        <line x1="50" y1="20" x2="50" y2="85" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>
+        <line x1="15" y1="45" x2="85" y2="45" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>
+        <line x1="28" y1="85" x2="72" y2="20" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>
+        <line x1="72" y1="85" x2="28" y2="20" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>
+      </g>
+    </svg>
+  `;
+}
+
+function createFishSVG(color) {
+  return `
+    <svg width="100" height="100" viewBox="0 0 100 100" class="figure-svg">
+      <g>
+        <!-- Body -->
+        <ellipse cx="55" cy="50" rx="28" ry="18" fill="${color}"/>
+        <!-- Tail -->
+        <path d="M 28 50 L 15 40 L 20 50 L 15 60 Z" fill="${color}" opacity="0.85"/>
+        <!-- Fins -->
+        <path d="M 55 38 L 50 25 L 60 35 Z" fill="${color}" opacity="0.75"/>
+        <path d="M 55 62 L 50 75 L 60 65 Z" fill="${color}" opacity="0.75"/>
+        <!-- Eye -->
+        <circle cx="70" cy="47" r="4" fill="white"/>
+        <circle cx="70" cy="47" r="2" fill="black"/>
+        <!-- Scales (fold lines) -->
+        <path d="M 45 45 Q 50 50 45 55" stroke="rgba(0,0,0,0.1)" stroke-width="0.5" fill="none"/>
+        <path d="M 55 45 Q 60 50 55 55" stroke="rgba(0,0,0,0.1)" stroke-width="0.5" fill="none"/>
+        <path d="M 65 45 Q 70 50 65 55" stroke="rgba(0,0,0,0.1)" stroke-width="0.5" fill="none"/>
+      </g>
+    </svg>
+  `;
+}
+
+function createHeartSVG(color) {
+  return `
+    <svg width="100" height="100" viewBox="0 0 100 100" class="figure-svg">
+      <g>
+        <path d="M 50 75 C 50 75 25 55 25 40 C 25 30 30 25 37.5 25 C 43 25 48 28 50 33 C 52 28 57 25 62.5 25 C 70 25 75 30 75 40 C 75 55 50 75 50 75 Z"
+              fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+        <!-- Fold line -->
+        <line x1="50" y1="30" x2="50" y2="75" stroke="rgba(0,0,0,0.15)" stroke-width="0.5"/>
+        <path d="M 35 35 Q 50 45 65 35" stroke="rgba(0,0,0,0.1)" stroke-width="0.5" fill="none"/>
+      </g>
+    </svg>
+  `;
+}
+
+function getFigureSVG(type, color) {
+  switch(type) {
+    case 'crane': return createCraneSVG(color);
+    case 'boat': return createBoatSVG(color);
+    case 'flower': return createFlowerSVG(color);
+    case 'butterfly': return createButterflySVG(color);
+    case 'frog': return createFrogSVG(color);
+    case 'star': return createStarSVG(color);
+    case 'fish': return createFishSVG(color);
+    case 'heart': return createHeartSVG(color);
+    default: return createCraneSVG(color);
+  }
+}
+
+// Rendering
+function render() {
+  const workspace = document.getElementById('workspace');
+
+  // Clear existing papers only
+  const existingPapers = workspace.querySelectorAll('.paper-square');
+  existingPapers.forEach(el => el.remove());
+
+  // Clear existing figures
+  const existingFigures = workspace.querySelectorAll('.origami-figure');
+  existingFigures.forEach(el => el.remove());
+
+  // Render incomplete tasks
+  const leftAreaX = 50;
+  const leftAreaY = 120;
+  const gridSpacing = 130;
+  const columns = Math.floor((window.innerWidth * 0.5) / gridSpacing);
+
+  tasks.forEach((task, i) => {
+    const col = i % columns;
+    const row = Math.floor(i / columns);
+
+    if (!task.x || !task.y) {
+      task.x = leftAreaX + col * gridSpacing;
+      task.y = leftAreaY + row * gridSpacing;
+    }
+
+    const paper = document.createElement('div');
+    paper.className = 'paper-square';
+    paper.dataset.id = task.id;
+    paper.style.left = task.x + 'px';
+    paper.style.top = task.y + 'px';
+    paper.style.transform = `rotate(${task.rotation}deg)`;
+
+    const content = document.createElement('div');
+    content.className = 'paper-content';
+    content.style.background = task.color;
+
+    const text = document.createElement('div');
+    text.className = 'paper-text';
+    text.style.color = darkenColor(task.color);
+    text.textContent = task.text;
+
+    content.appendChild(text);
+    paper.appendChild(content);
+
+    // Single click to show tooltip
+    paper.addEventListener('click', (e) => {
+      if (e.detail === 1) {
+        showTooltip(task.text, e.pageX, e.pageY);
+      }
+    });
+
+    // Double click to complete
+    paper.addEventListener('dblclick', () => {
+      completeTask(task.id);
+    });
+
+    // Right click to delete
+    paper.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      deleteTask(task.id);
+    });
+
+    workspace.appendChild(paper);
+  });
+
+  // Render completed figures
+  completedTasks.forEach((task) => {
+    const figure = document.createElement('div');
+    figure.className = `origami-figure ${task.type}`;
+    figure.dataset.id = task.id;
+    figure.style.left = task.x + 'px';
+    figure.style.top = task.y + 'px';
+
+    figure.innerHTML = getFigureSVG(task.type, task.color);
+
+    // Click to show what task it was
+    figure.addEventListener('click', (e) => {
+      if (!figure.classList.contains('dragging')) {
+        showTooltip(task.text, e.pageX, e.pageY);
+      }
+    });
+
+    // Right click to delete
+    figure.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      deleteCompletedTask(task.id);
+    });
+
+    // Drag to reposition
+    let isDragging = false;
+    let startX, startY, offsetX, offsetY;
+
+    figure.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      isDragging = true;
+      figure.classList.add('dragging');
+
+      startX = e.clientX;
+      startY = e.clientY;
+      offsetX = task.x;
+      offsetY = task.y;
+
+      e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
+      task.x = offsetX + dx;
+      task.y = offsetY + dy;
+
+      figure.style.left = task.x + 'px';
+      figure.style.top = task.y + 'px';
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        figure.classList.remove('dragging');
+        saveData();
+      }
+    });
+
+    workspace.appendChild(figure);
+  });
+
+  updateCounter();
+}
+
+function showTooltip(text, x, y) {
+  // Remove existing tooltip
+  const existing = document.querySelector('.tooltip');
+  if (existing) existing.remove();
+
+  const tooltip = document.createElement('div');
+  tooltip.className = 'tooltip';
+  tooltip.textContent = text;
+  tooltip.style.left = (x + 10) + 'px';
+  tooltip.style.top = (y + 10) + 'px';
+
+  document.body.appendChild(tooltip);
+
+  setTimeout(() => {
+    if (tooltip.parentNode) {
+      tooltip.remove();
+    }
+  }, 2000);
+}
+
+function updateCounter() {
+  const counter = document.getElementById('counter');
+  counter.textContent = `${tasks.length} paper square${tasks.length !== 1 ? 's' : ''} · ${completedTasks.length} figure${completedTasks.length !== 1 ? 's' : ''} folded`;
+}
+
+// Event listeners
+document.getElementById('add-btn').addEventListener('click', () => {
+  const input = document.getElementById('task-input');
+  addTask(input.value);
+  input.value = '';
+  input.focus();
+});
+
+document.getElementById('task-input').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    const input = e.target;
+    addTask(input.value);
+    input.value = '';
+  }
+});
+
+// Hide tooltip on click anywhere
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.paper-square') && !e.target.closest('.origami-figure')) {
+    const tooltip = document.querySelector('.tooltip');
+    if (tooltip) tooltip.remove();
+  }
+});
+
+// Initialize
+loadData();
+render();
+</script>
+</body>
+</html>

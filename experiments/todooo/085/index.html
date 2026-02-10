@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>085 — Bonsai</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+      background: #e8e0d4;
+      color: #3a2a1a;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #canvas {
+      display: block;
+      cursor: pointer;
+    }
+
+    #stats {
+      position: absolute;
+      bottom: 40px;
+      font-size: 13px;
+      color: #5a4a3a;
+      opacity: 0.7;
+      letter-spacing: 0.5px;
+    }
+
+    #haiku {
+      position: absolute;
+      top: 60px;
+      right: 80px;
+      width: 200px;
+      padding: 20px;
+      background: rgba(250, 245, 235, 0.8);
+      border: 1px solid rgba(100, 80, 60, 0.2);
+      font-size: 14px;
+      line-height: 1.8;
+      text-align: center;
+      font-style: italic;
+      color: #4a3a2a;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+    }
+
+    #input-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    #input-overlay.active {
+      display: flex;
+    }
+
+    #task-input {
+      width: 400px;
+      padding: 15px 20px;
+      font-size: 16px;
+      font-family: inherit;
+      border: 2px solid #3a2a1a;
+      border-radius: 4px;
+      background: #faf5eb;
+      color: #3a2a1a;
+      outline: none;
+    }
+
+    #task-detail {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(250, 245, 235, 0.95);
+      border: 2px solid #3a2a1a;
+      border-radius: 8px;
+      padding: 20px 30px;
+      min-width: 300px;
+      max-width: 500px;
+      display: none;
+      flex-direction: column;
+      gap: 15px;
+      z-index: 101;
+      box-shadow: 4px 4px 20px rgba(0,0,0,0.3);
+    }
+
+    #task-detail.active {
+      display: flex;
+    }
+
+    #task-detail .task-text {
+      font-size: 18px;
+      line-height: 1.5;
+      color: #3a2a1a;
+      word-wrap: break-word;
+    }
+
+    #task-detail .task-meta {
+      font-size: 13px;
+      color: #6a5a4a;
+      opacity: 0.8;
+    }
+
+    #task-detail .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    #task-detail button {
+      flex: 1;
+      padding: 10px;
+      font-family: inherit;
+      font-size: 14px;
+      border: 1px solid #3a2a1a;
+      border-radius: 4px;
+      background: #faf5eb;
+      color: #3a2a1a;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #task-detail button:hover {
+      background: #3a2a1a;
+      color: #faf5eb;
+    }
+
+    #task-detail button.complete {
+      border-color: #2a6a3a;
+      color: #2a6a3a;
+    }
+
+    #task-detail button.complete:hover {
+      background: #2a6a3a;
+      color: #faf5eb;
+    }
+
+    #task-detail button.delete {
+      border-color: #8a3a2a;
+      color: #8a3a2a;
+    }
+
+    #task-detail button.delete:hover {
+      background: #8a3a2a;
+      color: #faf5eb;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div id="stats">0 branches · 0 in bloom</div>
+  <div id="haiku"></div>
+
+  <div id="input-overlay">
+    <input type="text" id="task-input" placeholder="Plant a new branch..." maxlength="100">
+  </div>
+
+  <div id="task-detail">
+    <div class="task-text"></div>
+    <div class="task-meta"></div>
+    <div class="actions">
+      <button class="complete">Bloom</button>
+      <button class="delete">Prune</button>
+      <button class="close">Close</button>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'todooo-085';
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const statsEl = document.getElementById('stats');
+    const haikuEl = document.getElementById('haiku');
+    const inputOverlay = document.getElementById('input-overlay');
+    const taskInput = document.getElementById('task-input');
+    const taskDetail = document.getElementById('task-detail');
+
+    let width, height;
+    let tasks = [];
+    let branches = [];
+    let particles = [];
+    let selectedBranch = null;
+    let audioContext = null;
+
+    // Resize canvas
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Audio setup
+    function initAudio() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+    }
+
+    function playSound(type) {
+      initAudio();
+      const now = audioContext.currentTime;
+
+      if (type === 'bloom') {
+        // Soft chime (pentatonic)
+        const frequencies = [523.25, 587.33, 659.25, 783.99, 880.00]; // C5, D5, E5, G5, A5
+        const freq = frequencies[Math.floor(Math.random() * frequencies.length)];
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+        osc.start(now);
+        osc.stop(now + 1.5);
+      } else if (type === 'snap') {
+        // Dry snap
+        const bufferSize = audioContext.sampleRate * 0.1;
+        const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioContext.sampleRate * 0.02));
+        }
+        const source = audioContext.createBufferSource();
+        const gain = audioContext.createGain();
+        source.buffer = buffer;
+        source.connect(gain);
+        gain.connect(audioContext.destination);
+        gain.gain.value = 0.2;
+        source.start(now);
+      } else if (type === 'wind') {
+        // Subtle wind (filtered noise)
+        const bufferSize = audioContext.sampleRate * 2;
+        const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const source = audioContext.createBufferSource();
+        const filter = audioContext.createBiquadFilter();
+        const gain = audioContext.createGain();
+        source.buffer = buffer;
+        source.loop = true;
+        filter.type = 'lowpass';
+        filter.frequency.value = 400;
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioContext.destination);
+        gain.gain.value = 0.02;
+        source.start(now);
+
+        // Store for cleanup
+        setTimeout(() => {
+          source.stop();
+        }, 2000);
+      }
+    }
+
+    // Hash function for deterministic randomness from task text
+    function hashCode(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash);
+    }
+
+    function seededRandom(seed) {
+      const x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
+    }
+
+    // Get season
+    function getSeason() {
+      const month = new Date().getMonth();
+      if (month >= 2 && month <= 4) return 'spring';
+      if (month >= 5 && month <= 7) return 'summer';
+      if (month >= 8 && month <= 10) return 'autumn';
+      return 'winter';
+    }
+
+    // Haiku by season
+    function getHaiku() {
+      const season = getSeason();
+      const haikus = {
+        spring: 'Cherry blossoms fall\nEach petal a task complete\nNew growth waits in buds',
+        summer: 'Green leaves dance above\nPatient care in heat of day\nThe tree remembers',
+        autumn: 'Leaves turn gold and red\nWhat you tend will show its age\nLet some branches rest',
+        winter: 'Bare wood stands in cold\nEvery branch a choice you made\nSpring will come again'
+      };
+      return haikus[season];
+    }
+
+    // Load tasks
+    function loadTasks() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        tasks = JSON.parse(saved);
+      }
+      updateStats();
+      haikuEl.textContent = getHaiku();
+    }
+
+    function saveTasks() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+      updateStats();
+    }
+
+    function updateStats() {
+      const total = tasks.length;
+      const bloomed = tasks.filter(t => t.completed).length;
+      statsEl.textContent = `${total} branches · ${bloomed} in bloom`;
+    }
+
+    // Branch class
+    class Branch {
+      constructor(task, startX, startY, angle, length, thickness, generation, parent) {
+        this.task = task;
+        this.startX = startX;
+        this.startY = startY;
+        this.angle = angle;
+        this.length = length;
+        this.thickness = thickness;
+        this.generation = generation;
+        this.parent = parent;
+        this.children = [];
+
+        // Calculate end position
+        this.endX = startX + Math.cos(angle) * length;
+        this.endY = startY + Math.sin(angle) * length;
+
+        // Animation state
+        this.growthProgress = 0;
+        this.bloomProgress = 0;
+        this.witherProgress = 0;
+        this.sway = 0;
+
+        // Leaf type (from task hash)
+        if (task) {
+          const hash = hashCode(task.text);
+          this.leafType = ['round', 'maple', 'cherry', 'pine', 'wisteria'][hash % 5];
+          this.leafColor = this.getLeafColor();
+        }
+      }
+
+      getLeafColor() {
+        const season = getSeason();
+        const base = {
+          round: { spring: '#8fbc8f', summer: '#2d5016', autumn: '#d4a373', winter: '#6a7a5a' },
+          maple: { spring: '#9fb89c', summer: '#2d5016', autumn: '#d2691e', winter: '#7a6a5a' },
+          cherry: { spring: '#ffb7c5', summer: '#8fbc8f', autumn: '#daa373', winter: '#8a7a6a' },
+          pine: { spring: '#3a5a3a', summer: '#2d4016', autumn: '#3a5a3a', winter: '#3a4a3a' },
+          wisteria: { spring: '#9370db', summer: '#7a5fb3', autumn: '#8a7a9a', winter: '#6a6a7a' }
+        };
+        return base[this.leafType][season];
+      }
+
+      isNear(x, y, radius = 20) {
+        // Check if point is near the end of this branch
+        const dx = x - this.endX;
+        const dy = y - this.endY;
+        return Math.sqrt(dx * dx + dy * dy) < radius;
+      }
+
+      shouldDroop() {
+        if (!this.task || this.task.completed) return false;
+        const age = Date.now() - this.task.createdAt;
+        return age > 48 * 60 * 60 * 1000; // 48 hours
+      }
+
+      shouldGray() {
+        if (!this.task || this.task.completed) return false;
+        const age = Date.now() - this.task.createdAt;
+        return age > 7 * 24 * 60 * 60 * 1000; // 7 days
+      }
+
+      update(dt) {
+        // Growth animation
+        if (this.growthProgress < 1) {
+          this.growthProgress = Math.min(1, this.growthProgress + dt * 2);
+        }
+
+        // Bloom animation
+        if (this.task && this.task.completed && this.bloomProgress < 1) {
+          this.bloomProgress = Math.min(1, this.bloomProgress + dt * 0.5);
+        }
+
+        // Wither animation
+        if (this.witherProgress > 0) {
+          this.witherProgress = Math.min(1, this.witherProgress + dt * 0.33);
+        }
+
+        // Sway animation (gentle breeze)
+        if (this.task && this.task.completed) {
+          this.sway = Math.sin(Date.now() * 0.001 + this.startX * 0.01) * 2;
+        }
+      }
+
+      draw(ctx) {
+        const progress = this.growthProgress;
+        if (progress <= 0) return;
+
+        ctx.save();
+
+        // Calculate current end position based on growth
+        const currentEndX = this.startX + Math.cos(this.angle) * this.length * progress;
+        const currentEndY = this.startY + Math.sin(this.angle) * this.length * progress;
+
+        // Branch color (droop/gray effect)
+        let branchColor = '#3a2a1a';
+        if (this.witherProgress > 0) {
+          const gray = Math.floor(138 + (200 - 138) * this.witherProgress);
+          branchColor = `rgb(${gray}, ${gray - 10}, ${gray - 20})`;
+          ctx.globalAlpha = 1 - this.witherProgress * 0.7;
+        } else if (this.shouldGray()) {
+          branchColor = '#5a4a3a';
+        }
+
+        // Draw branch with slight curve
+        ctx.strokeStyle = branchColor;
+        ctx.lineWidth = this.thickness;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        ctx.beginPath();
+        ctx.moveTo(this.startX, this.startY);
+
+        // Add slight curve using quadratic curve
+        const hash = this.task ? hashCode(this.task.text) : 0;
+        const curvature = seededRandom(hash + this.generation) * 10 - 5;
+        const midX = (this.startX + currentEndX) / 2 + curvature;
+        const midY = (this.startY + currentEndY) / 2;
+
+        ctx.quadraticCurveTo(midX, midY, currentEndX, currentEndY);
+        ctx.stroke();
+
+        // Add bark texture
+        if (this.thickness > 3) {
+          ctx.strokeStyle = 'rgba(58, 42, 26, 0.3)';
+          ctx.lineWidth = 0.5;
+          for (let i = 0; i < 3; i++) {
+            const t = (i + 1) / 4;
+            const x = this.startX + (currentEndX - this.startX) * t;
+            const y = this.startY + (currentEndY - this.startY) * t;
+            const offset = seededRandom(hash + i) * 4 - 2;
+            ctx.beginPath();
+            ctx.moveTo(x + offset, y);
+            ctx.lineTo(x + offset + 2, y + 2);
+            ctx.stroke();
+          }
+        }
+
+        // Draw leaves/flowers if completed
+        if (this.task && this.task.completed && this.bloomProgress > 0 && progress >= 1) {
+          this.drawBloom(ctx, currentEndX, currentEndY);
+        }
+
+        ctx.restore();
+      }
+
+      drawBloom(ctx, x, y) {
+        const swayOffset = this.sway;
+        const bloomScale = this.bloomProgress;
+
+        ctx.save();
+        ctx.translate(x + swayOffset, y);
+        ctx.scale(bloomScale, bloomScale);
+        ctx.globalAlpha = 1 - this.witherProgress;
+
+        const color = this.leafColor;
+
+        switch (this.leafType) {
+          case 'round':
+            // Cluster of round leaves
+            for (let i = 0; i < 5; i++) {
+              const angle = (i / 5) * Math.PI * 2;
+              const radius = 8;
+              const lx = Math.cos(angle) * radius;
+              const ly = Math.sin(angle) * radius;
+              ctx.fillStyle = color;
+              ctx.beginPath();
+              ctx.arc(lx, ly, 4, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+              ctx.lineWidth = 0.5;
+              ctx.stroke();
+            }
+            break;
+
+          case 'maple':
+            // Maple leaf shape
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(0, -8);
+            ctx.lineTo(-6, -2);
+            ctx.lineTo(-10, 0);
+            ctx.lineTo(-6, 2);
+            ctx.lineTo(-4, 8);
+            ctx.lineTo(0, 4);
+            ctx.lineTo(4, 8);
+            ctx.lineTo(6, 2);
+            ctx.lineTo(10, 0);
+            ctx.lineTo(6, -2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+            break;
+
+          case 'cherry':
+            // Cherry blossom (5 petals)
+            for (let i = 0; i < 5; i++) {
+              const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+              ctx.fillStyle = color;
+              ctx.beginPath();
+              ctx.arc(Math.cos(angle) * 5, Math.sin(angle) * 5, 4, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            // Center
+            ctx.fillStyle = '#ffd700';
+            ctx.beginPath();
+            ctx.arc(0, 0, 2, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+
+          case 'pine':
+            // Pine needles
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 8; i++) {
+              const angle = (i / 8) * Math.PI * 2;
+              ctx.beginPath();
+              ctx.moveTo(0, 0);
+              ctx.lineTo(Math.cos(angle) * 10, Math.sin(angle) * 10);
+              ctx.stroke();
+            }
+            break;
+
+          case 'wisteria':
+            // Hanging wisteria cluster
+            for (let i = 0; i < 7; i++) {
+              const yOffset = i * 3;
+              const size = 3 - i * 0.3;
+              ctx.fillStyle = color;
+              ctx.globalAlpha = (1 - i / 10) * (1 - this.witherProgress);
+              ctx.beginPath();
+              ctx.arc(0, yOffset, size, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            break;
+        }
+
+        ctx.restore();
+      }
+    }
+
+    // Particle class for falling leaves
+    class Particle {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = Math.random() * 2 + 1;
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.1;
+        this.color = color;
+        this.life = 1;
+        this.size = Math.random() * 4 + 3;
+      }
+
+      update(dt) {
+        this.x += this.vx * dt * 60;
+        this.y += this.vy * dt * 60;
+        this.rotation += this.rotationSpeed;
+        this.life -= dt * 0.5;
+        this.vy += dt * 2; // Gravity
+      }
+
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        ctx.globalAlpha = this.life;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, this.size, this.size * 0.6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      isDead() {
+        return this.life <= 0 || this.y > height;
+      }
+    }
+
+    // Generate tree structure
+    function generateTree() {
+      branches = [];
+
+      // Pot and stand dimensions
+      const potWidth = 120;
+      const potHeight = 40;
+      const standHeight = 15;
+      const potX = width / 2;
+      const potY = height * 0.68;
+
+      // Trunk start position (from soil)
+      const trunkX = potX;
+      const trunkY = potY - potHeight / 2;
+
+      // Create trunk
+      const trunk = new Branch(null, trunkX, trunkY, -Math.PI / 2, 60, 8, 0, null);
+      trunk.growthProgress = 1; // Trunk is always grown
+      branches.push(trunk);
+
+      // Build branches from tasks
+      let availablePoints = [{ branch: trunk, x: trunk.endX, y: trunk.endY, angle: trunk.angle, thickness: 5, gen: 1 }];
+
+      for (let i = 0; i < tasks.length; i++) {
+        const task = tasks[i];
+        if (availablePoints.length === 0) {
+          // Extend trunk if no points available
+          const lastTrunk = branches[branches.length - 1];
+          availablePoints.push({
+            branch: lastTrunk,
+            x: lastTrunk.endX,
+            y: lastTrunk.endY,
+            angle: lastTrunk.angle,
+            thickness: Math.max(1.5, lastTrunk.thickness * 0.7),
+            gen: lastTrunk.generation + 1
+          });
+        }
+
+        // Pick a random available point (seeded by task)
+        const hash = hashCode(task.text);
+        const pointIndex = Math.floor(seededRandom(hash) * availablePoints.length);
+        const point = availablePoints[pointIndex];
+
+        // Create branch with angle variation
+        const angleVariation = seededRandom(hash + 1) * Math.PI / 3 - Math.PI / 6;
+        let branchAngle = point.angle + angleVariation;
+
+        // Apply droop if neglected
+        const age = Date.now() - task.createdAt;
+        if (!task.completed && age > 48 * 60 * 60 * 1000) {
+          branchAngle += Math.PI / 12; // Droop downward
+        }
+
+        const branchLength = 30 + seededRandom(hash + 2) * 20;
+        const branchThickness = Math.max(1.5, point.thickness * 0.65);
+
+        const branch = new Branch(task, point.x, point.y, branchAngle, branchLength, branchThickness, point.gen, point.branch);
+        branches.push(branch);
+        point.branch.children.push(branch);
+
+        // Sometimes add this branch as a new branching point
+        if (seededRandom(hash + 3) > 0.5 && point.gen < 4) {
+          availablePoints.push({
+            branch: branch,
+            x: branch.endX,
+            y: branch.endY,
+            angle: branch.angle,
+            thickness: branchThickness * 0.7,
+            gen: point.gen + 1
+          });
+        }
+
+        // Limit available points
+        if (availablePoints.length > 8) {
+          availablePoints.splice(pointIndex, 1);
+        }
+      }
+    }
+
+    // Draw scene
+    function drawScene() {
+      // Clear
+      ctx.fillStyle = '#e8e0d4';
+      ctx.fillRect(0, 0, width, height);
+
+      // Stand
+      const potX = width / 2;
+      const potY = height * 0.68;
+      const standWidth = 140;
+      const standHeight = 15;
+
+      ctx.fillStyle = '#2a1a0a';
+      ctx.fillRect(potX - standWidth / 2, potY + 20, standWidth, standHeight);
+
+      // Stand shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.fillRect(potX - standWidth / 2 + 5, potY + 20 + standHeight, standWidth - 10, 3);
+
+      // Pot
+      const potWidth = 120;
+      const potHeight = 40;
+
+      // Pot body (rounded rectangle)
+      ctx.fillStyle = '#2a4a4a';
+      ctx.beginPath();
+      ctx.roundRect(potX - potWidth / 2, potY - potHeight / 2, potWidth, potHeight, 5);
+      ctx.fill();
+
+      // Pot sheen
+      const gradient = ctx.createLinearGradient(potX - potWidth / 2, potY, potX + potWidth / 2, potY);
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+      gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.2)');
+      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.roundRect(potX - potWidth / 2, potY - potHeight / 2, potWidth, potHeight / 2, 5);
+      ctx.fill();
+
+      // Pot feet
+      ctx.fillStyle = '#1a3a3a';
+      const footWidth = 8;
+      const footHeight = 5;
+      [-40, -15, 15, 40].forEach(offset => {
+        ctx.fillRect(potX + offset - footWidth / 2, potY + potHeight / 2, footWidth, footHeight);
+      });
+
+      // Soil
+      ctx.fillStyle = '#3a2a1a';
+      ctx.beginPath();
+      ctx.ellipse(potX, potY - potHeight / 2 + 5, potWidth / 2 - 5, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Tree shadow on stand
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+      ctx.beginPath();
+      ctx.ellipse(potX, potY + 20 - 2, 50, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw branches
+      branches.forEach(branch => branch.draw(ctx));
+
+      // Draw particles
+      particles.forEach(particle => particle.draw(ctx));
+
+      // Accent object (small stone)
+      ctx.fillStyle = '#6a6a6a';
+      ctx.beginPath();
+      ctx.ellipse(potX + 70, potY + 15, 12, 8, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.beginPath();
+      ctx.ellipse(potX + 68, potY + 13, 4, 3, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Animation loop
+    let lastTime = Date.now();
+    function animate() {
+      const now = Date.now();
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+
+      // Update branches
+      branches.forEach(branch => branch.update(dt));
+
+      // Update particles
+      particles = particles.filter(p => {
+        p.update(dt);
+        return !p.isDead();
+      });
+
+      // Spawn autumn leaves
+      const season = getSeason();
+      if (season === 'autumn' && Math.random() < 0.02) {
+        const completedBranches = branches.filter(b => b.task && b.task.completed);
+        if (completedBranches.length > 0) {
+          const branch = completedBranches[Math.floor(Math.random() * completedBranches.length)];
+          particles.push(new Particle(branch.endX, branch.endY, branch.leafColor));
+        }
+      }
+
+      drawScene();
+      requestAnimationFrame(animate);
+    }
+
+    // Find branch at position
+    function findBranchAt(x, y) {
+      // Check from leaf branches first (most specific)
+      for (let i = branches.length - 1; i >= 0; i--) {
+        const branch = branches[i];
+        if (branch.task && branch.isNear(x, y, 25)) {
+          return branch;
+        }
+      }
+      return null;
+    }
+
+    // Input handlers
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const branch = findBranchAt(x, y);
+
+      if (branch) {
+        // Show task detail
+        selectedBranch = branch;
+        showTaskDetail(branch.task);
+      } else {
+        // Check if clicking trunk area to add task
+        const potX = width / 2;
+        const potY = height * 0.68;
+        const trunkY = potY - 20;
+
+        if (Math.abs(x - potX) < 60 && y > trunkY - 100 && y < trunkY + 20) {
+          showInput();
+        }
+      }
+    });
+
+    canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const branch = findBranchAt(x, y);
+      if (branch && branch.task) {
+        deleteTask(branch.task.id);
+      }
+    });
+
+    function showInput() {
+      inputOverlay.classList.add('active');
+      taskInput.value = '';
+      taskInput.focus();
+    }
+
+    function hideInput() {
+      inputOverlay.classList.remove('active');
+    }
+
+    taskInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && taskInput.value.trim()) {
+        addTask(taskInput.value.trim());
+        hideInput();
+      } else if (e.key === 'Escape') {
+        hideInput();
+      }
+    });
+
+    inputOverlay.addEventListener('click', (e) => {
+      if (e.target === inputOverlay) {
+        hideInput();
+      }
+    });
+
+    function showTaskDetail(task) {
+      taskDetail.querySelector('.task-text').textContent = task.text;
+
+      const age = Date.now() - task.createdAt;
+      const days = Math.floor(age / (24 * 60 * 60 * 1000));
+      const hours = Math.floor(age / (60 * 60 * 1000)) % 24;
+      let ageText = '';
+      if (days > 0) ageText = `${days}d ${hours}h ago`;
+      else if (hours > 0) ageText = `${hours}h ago`;
+      else ageText = 'Just planted';
+
+      taskDetail.querySelector('.task-meta').textContent = task.completed ? 'In bloom' : ageText;
+
+      const completeBtn = taskDetail.querySelector('.complete');
+      if (task.completed) {
+        completeBtn.textContent = 'Already bloomed';
+        completeBtn.disabled = true;
+        completeBtn.style.opacity = '0.5';
+      } else {
+        completeBtn.textContent = 'Bloom';
+        completeBtn.disabled = false;
+        completeBtn.style.opacity = '1';
+      }
+
+      taskDetail.classList.add('active');
+    }
+
+    function hideTaskDetail() {
+      taskDetail.classList.remove('active');
+      selectedBranch = null;
+    }
+
+    taskDetail.querySelector('.complete').addEventListener('click', () => {
+      if (selectedBranch && selectedBranch.task && !selectedBranch.task.completed) {
+        completeTask(selectedBranch.task.id);
+        hideTaskDetail();
+      }
+    });
+
+    taskDetail.querySelector('.delete').addEventListener('click', () => {
+      if (selectedBranch && selectedBranch.task) {
+        deleteTask(selectedBranch.task.id);
+        hideTaskDetail();
+      }
+    });
+
+    taskDetail.querySelector('.close').addEventListener('click', () => {
+      hideTaskDetail();
+    });
+
+    // Task operations
+    function addTask(text) {
+      const task = {
+        id: Date.now() + Math.random(),
+        text: text,
+        completed: false,
+        createdAt: Date.now()
+      };
+      tasks.push(task);
+      saveTasks();
+      generateTree();
+    }
+
+    function completeTask(id) {
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        task.completed = true;
+        task.completedAt = Date.now();
+        saveTasks();
+
+        // Find branch and trigger bloom animation
+        const branch = branches.find(b => b.task && b.task.id === id);
+        if (branch) {
+          branch.bloomProgress = 0;
+
+          // Spawn sparkle particles
+          for (let i = 0; i < 12; i++) {
+            const angle = (i / 12) * Math.PI * 2;
+            const speed = Math.random() * 2 + 1;
+            const p = new Particle(branch.endX, branch.endY, '#ffd700');
+            p.vx = Math.cos(angle) * speed;
+            p.vy = Math.sin(angle) * speed - 2;
+            p.size = 2;
+            particles.push(p);
+          }
+
+          playSound('bloom');
+        }
+      }
+    }
+
+    function deleteTask(id) {
+      const taskIndex = tasks.findIndex(t => t.id === id);
+      if (taskIndex !== -1) {
+        const task = tasks[taskIndex];
+
+        // Find branch and trigger wither animation
+        const branch = branches.find(b => b.task && b.task.id === id);
+        if (branch) {
+          branch.witherProgress = 0.01;
+
+          // Spawn falling leaves if completed
+          if (task.completed) {
+            for (let i = 0; i < 8; i++) {
+              particles.push(new Particle(branch.endX, branch.endY, branch.leafColor));
+            }
+          }
+
+          playSound('snap');
+
+          // Remove after animation
+          setTimeout(() => {
+            tasks.splice(taskIndex, 1);
+            saveTasks();
+            generateTree();
+          }, 3000);
+        } else {
+          tasks.splice(taskIndex, 1);
+          saveTasks();
+          generateTree();
+        }
+      }
+    }
+
+    // Initialize
+    loadTasks();
+    generateTree();
+    animate();
+
+    // Initial wind sound
+    setTimeout(() => {
+      if (tasks.filter(t => t.completed).length > 0) {
+        playSound('wind');
+      }
+    }, 500);
+  </script>
+</body>
+</html>

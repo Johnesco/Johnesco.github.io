@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>083 Cave</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #0a0805;
+  font-family: 'Courier New', monospace;
+  cursor: none;
+}
+
+canvas {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#counter {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.4;
+}
+
+.input-field {
+  position: absolute;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #b89040;
+  font-size: 18px;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 3px rgba(184, 144, 64, 0.5);
+  pointer-events: none;
+  white-space: nowrap;
+  letter-spacing: 1px;
+}
+</style>
+</head>
+<body>
+<canvas id="cave"></canvas>
+<canvas id="torch"></canvas>
+<div id="counter"></div>
+
+<script>
+// State
+const STORAGE_KEY = 'todooo-083';
+const canvas = document.getElementById('cave');
+const torchCanvas = document.getElementById('torch');
+const ctx = canvas.getContext('2d');
+const torchCtx = torchCanvas.getContext('2d');
+const counterEl = document.getElementById('counter');
+
+const CAVE_WIDTH_MULT = 3;
+const CAVE_HEIGHT_MULT = 2;
+
+let caveWidth, caveHeight;
+let offsetX = 0, offsetY = 0;
+let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2, down: false };
+let dragStart = null;
+let tasks = [];
+let inputField = null;
+let inputPos = null;
+let torchFlicker = 0;
+let embers = [];
+
+// Audio
+let audioCtx = null;
+let masterGain = null;
+let droneOsc = null, droneGain = null;
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.3;
+  masterGain.connect(audioCtx.destination);
+
+  // Cave drone
+  droneOsc = audioCtx.createOscillator();
+  droneOsc.type = 'sine';
+  droneOsc.frequency.value = 55;
+  droneGain = audioCtx.createGain();
+  droneGain.gain.value = 0.1;
+
+  const droneFilter = audioCtx.createBiquadFilter();
+  droneFilter.type = 'lowpass';
+  droneFilter.frequency.value = 200;
+
+  droneOsc.connect(droneGain);
+  droneGain.connect(droneFilter);
+  droneFilter.connect(masterGain);
+  droneOsc.start();
+
+  // Occasional drip
+  setInterval(() => {
+    if (Math.random() < 0.1) playDrip();
+  }, 3000);
+}
+
+function playDrip() {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.frequency.value = 800 + Math.random() * 400;
+  gain.gain.value = 0.05;
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+  osc.connect(gain);
+  gain.connect(masterGain);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.3);
+}
+
+function playScrape() {
+  if (!audioCtx) return;
+  const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.2, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / data.length * 5);
+  }
+  const source = audioCtx.createBufferSource();
+  source.buffer = buffer;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 1500;
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0.15;
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(masterGain);
+  source.start();
+}
+
+function playStamp() {
+  if (!audioCtx) return;
+  const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.15, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    data[i] = (Math.random() * 2 - 1) * 0.5 * Math.exp(-i / data.length * 8);
+  }
+  const source = audioCtx.createBufferSource();
+  source.buffer = buffer;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 200;
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0.2;
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(masterGain);
+  source.start();
+}
+
+function playCrackle() {
+  if (!audioCtx) return;
+  const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    data[i] = (Math.random() * 2 - 1) * 0.1;
+  }
+  const source = audioCtx.createBufferSource();
+  source.buffer = buffer;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.value = 3000;
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0.03;
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(masterGain);
+  source.start();
+}
+
+// Noise function
+function noise(x, y) {
+  const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+function smoothNoise(x, y) {
+  const corners = (noise(x-1, y-1) + noise(x+1, y-1) + noise(x-1, y+1) + noise(x+1, y+1)) / 16;
+  const sides = (noise(x-1, y) + noise(x+1, y) + noise(x, y-1) + noise(x, y+1)) / 8;
+  const center = noise(x, y) / 4;
+  return corners + sides + center;
+}
+
+// Hash text to number
+function hashText(text) {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash) + text.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+// Pigment colors
+const pigments = [
+  '#8a3020', // red ochre
+  '#b89040', // yellow ochre
+  '#333333', // charcoal
+  '#c8c0b0', // white chalk
+  '#6a4a30'  // brown earth
+];
+
+// Cave painting types
+function getPaintingType(hash) {
+  const types = [
+    'bison', 'horse', 'deer', 'mammoth', 'aurochs',
+    'hand', 'handNegative',
+    'hunter', 'hunterBow',
+    'stars', 'moon', 'sun',
+    'zigzag', 'spiral', 'grid'
+  ];
+  return types[hash % types.length];
+}
+
+function getPigments(hash) {
+  const primary = pigments[hash % pigments.length];
+  const secondary = Math.random() > 0.5 ? pigments[(hash + 1) % pigments.length] : null;
+  return { primary, secondary };
+}
+
+// Draw cave painting
+function drawPainting(ctx, type, x, y, colors, progress = 1, glow = false) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  const scale = 0.6 + (hashText(type + x + y) % 40) / 100;
+  ctx.scale(scale, scale);
+
+  // Glow if completed
+  if (glow) {
+    ctx.shadowColor = colors.primary;
+    ctx.shadowBlur = 15;
+  }
+
+  ctx.globalAlpha = progress;
+  ctx.strokeStyle = colors.primary;
+  ctx.fillStyle = colors.primary;
+  ctx.lineWidth = 2 + Math.random() * 1;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  switch(type) {
+    case 'bison':
+      drawBison(ctx);
+      break;
+    case 'horse':
+      drawHorse(ctx);
+      break;
+    case 'deer':
+      drawDeer(ctx);
+      break;
+    case 'mammoth':
+      drawMammoth(ctx);
+      break;
+    case 'aurochs':
+      drawAurochs(ctx);
+      break;
+    case 'hand':
+      drawHand(ctx, false);
+      break;
+    case 'handNegative':
+      drawHand(ctx, true);
+      break;
+    case 'hunter':
+      drawHunter(ctx, false);
+      break;
+    case 'hunterBow':
+      drawHunter(ctx, true);
+      break;
+    case 'stars':
+      drawStars(ctx);
+      break;
+    case 'moon':
+      drawMoon(ctx);
+      break;
+    case 'sun':
+      drawSun(ctx);
+      break;
+    case 'zigzag':
+      drawZigzag(ctx);
+      break;
+    case 'spiral':
+      drawSpiral(ctx);
+      break;
+    case 'grid':
+      drawGrid(ctx);
+      break;
+  }
+
+  ctx.restore();
+}
+
+function wobble(points) {
+  return points.map(p => [
+    p[0] + (Math.random() - 0.5) * 2,
+    p[1] + (Math.random() - 0.5) * 2
+  ]);
+}
+
+function drawBison(ctx) {
+  const body = wobble([
+    [-40, 0], [-30, -20], [0, -25], [30, -20], [40, 0],
+    [30, 20], [0, 25], [-30, 20], [-40, 0]
+  ]);
+  ctx.beginPath();
+  ctx.moveTo(body[0][0], body[0][1]);
+  for (let i = 1; i < body.length; i++) {
+    ctx.lineTo(body[i][0], body[i][1]);
+  }
+  ctx.fill();
+
+  // Head
+  ctx.beginPath();
+  ctx.arc(-45, -10, 12, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Horns
+  ctx.beginPath();
+  ctx.moveTo(-45, -20);
+  ctx.lineTo(-50, -30);
+  ctx.moveTo(-45, -20);
+  ctx.lineTo(-40, -30);
+  ctx.stroke();
+
+  // Legs
+  ctx.beginPath();
+  ctx.moveTo(-20, 20);
+  ctx.lineTo(-20, 40);
+  ctx.moveTo(20, 20);
+  ctx.lineTo(20, 40);
+  ctx.stroke();
+}
+
+function drawHorse(ctx) {
+  const body = wobble([
+    [-50, 0], [-30, -15], [10, -15], [40, -10], [50, 5],
+    [40, 20], [10, 20], [-30, 15], [-50, 0]
+  ]);
+  ctx.beginPath();
+  ctx.moveTo(body[0][0], body[0][1]);
+  for (let i = 1; i < body.length; i++) {
+    ctx.lineTo(body[i][0], body[i][1]);
+  }
+  ctx.fill();
+
+  // Head and neck
+  ctx.beginPath();
+  ctx.moveTo(-50, 0);
+  ctx.lineTo(-60, -20);
+  ctx.lineTo(-65, -10);
+  ctx.stroke();
+
+  // Legs
+  for (let x of [-30, -10, 20, 40]) {
+    ctx.beginPath();
+    ctx.moveTo(x, 20);
+    ctx.lineTo(x + (Math.random() - 0.5) * 4, 45);
+    ctx.stroke();
+  }
+
+  // Tail
+  ctx.beginPath();
+  ctx.moveTo(50, 5);
+  ctx.quadraticCurveTo(60, 10, 55, 25);
+  ctx.stroke();
+}
+
+function drawDeer(ctx) {
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 35, 20, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Head/neck
+  ctx.beginPath();
+  ctx.moveTo(-35, -5);
+  ctx.lineTo(-50, -25);
+  ctx.lineTo(-55, -20);
+  ctx.stroke();
+
+  // Antlers
+  ctx.beginPath();
+  ctx.moveTo(-50, -25);
+  ctx.lineTo(-55, -40);
+  ctx.moveTo(-50, -25);
+  ctx.lineTo(-60, -35);
+  ctx.moveTo(-55, -40);
+  ctx.lineTo(-52, -45);
+  ctx.moveTo(-55, -40);
+  ctx.lineTo(-58, -45);
+  ctx.stroke();
+
+  // Legs
+  for (let x of [-20, -5, 10, 25]) {
+    ctx.beginPath();
+    ctx.moveTo(x, 20);
+    ctx.lineTo(x, 40);
+    ctx.stroke();
+  }
+}
+
+function drawMammoth(ctx) {
+  // Body
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 50, 30, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Head
+  ctx.beginPath();
+  ctx.arc(-55, -10, 20, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Tusks
+  ctx.strokeStyle = '#c8c0b0';
+  ctx.beginPath();
+  ctx.moveTo(-65, 5);
+  ctx.quadraticCurveTo(-75, 20, -70, 35);
+  ctx.moveTo(-45, 5);
+  ctx.quadraticCurveTo(-35, 20, -40, 35);
+  ctx.stroke();
+  ctx.strokeStyle = ctx.fillStyle;
+
+  // Trunk
+  ctx.beginPath();
+  ctx.moveTo(-55, 10);
+  ctx.quadraticCurveTo(-60, 30, -50, 40);
+  ctx.stroke();
+
+  // Legs
+  for (let x of [-30, -10, 15, 35]) {
+    ctx.beginPath();
+    ctx.moveTo(x, 30);
+    ctx.lineTo(x, 55);
+    ctx.lineWidth = 6;
+    ctx.stroke();
+    ctx.lineWidth = 2;
+  }
+}
+
+function drawAurochs(ctx) {
+  // Similar to bison but larger horns
+  const body = wobble([
+    [-45, 0], [-35, -25], [0, -30], [35, -25], [45, 0],
+    [35, 25], [0, 30], [-35, 25], [-45, 0]
+  ]);
+  ctx.beginPath();
+  ctx.moveTo(body[0][0], body[0][1]);
+  for (let i = 1; i < body.length; i++) {
+    ctx.lineTo(body[i][0], body[i][1]);
+  }
+  ctx.fill();
+
+  // Head
+  ctx.beginPath();
+  ctx.arc(-50, -15, 15, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Large horns
+  ctx.beginPath();
+  ctx.moveTo(-50, -28);
+  ctx.quadraticCurveTo(-65, -40, -60, -50);
+  ctx.moveTo(-50, -28);
+  ctx.quadraticCurveTo(-35, -40, -40, -50);
+  ctx.stroke();
+
+  // Legs
+  for (let x of [-25, 25]) {
+    ctx.beginPath();
+    ctx.moveTo(x, 25);
+    ctx.lineTo(x, 50);
+    ctx.stroke();
+  }
+}
+
+function drawHand(ctx, negative) {
+  const fingers = [
+    [[-8, 20], [-10, -30], [-8, -35], [-6, -30], [-4, 20]], // thumb
+    [[0, 20], [0, -40], [2, -42], [4, -40], [4, 20]], // index
+    [[8, 20], [10, -42], [12, -44], [14, -42], [14, 20]], // middle
+    [[16, 20], [18, -38], [20, -40], [22, -38], [22, 20]], // ring
+    [[24, 20], [26, -30], [28, -32], [30, -30], [30, 20]]  // pinky
+  ];
+
+  if (negative) {
+    // Draw negative hand (outline)
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = ctx.fillStyle;
+    ctx.globalAlpha = 0.4;
+
+    for (let finger of fingers) {
+      ctx.beginPath();
+      ctx.moveTo(finger[0][0], finger[0][1]);
+      for (let i = 1; i < finger.length; i++) {
+        ctx.lineTo(finger[i][0], finger[i][1]);
+      }
+      ctx.stroke();
+    }
+
+    // Palm outline
+    ctx.beginPath();
+    ctx.moveTo(-10, 20);
+    ctx.lineTo(-10, 30);
+    ctx.lineTo(30, 30);
+    ctx.lineTo(30, 20);
+    ctx.stroke();
+  } else {
+    // Draw positive hand (filled)
+    ctx.beginPath();
+    ctx.moveTo(-10, 30);
+    ctx.lineTo(-10, 20);
+
+    for (let finger of fingers) {
+      for (let point of finger) {
+        ctx.lineTo(point[0], point[1]);
+      }
+    }
+
+    ctx.lineTo(30, 30);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawHunter(ctx, withBow) {
+  // Stick figure
+  ctx.beginPath();
+  ctx.arc(0, -40, 8, 0, Math.PI * 2); // head
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(0, -32);
+  ctx.lineTo(0, 0); // body
+
+  // Arms
+  if (withBow) {
+    ctx.moveTo(0, -20);
+    ctx.lineTo(-25, -25); // bow arm
+    ctx.moveTo(0, -20);
+    ctx.lineTo(20, -15); // draw arm
+
+    // Bow
+    ctx.moveTo(-30, -30);
+    ctx.quadraticCurveTo(-35, -25, -30, -20);
+
+    // Arrow
+    ctx.moveTo(20, -15);
+    ctx.lineTo(-25, -25);
+  } else {
+    ctx.moveTo(0, -20);
+    ctx.lineTo(25, -30); // spear arm
+    ctx.moveTo(0, -20);
+    ctx.lineTo(-15, -10);
+
+    // Spear
+    ctx.moveTo(25, -30);
+    ctx.lineTo(45, -40);
+  }
+
+  // Legs
+  ctx.moveTo(0, 0);
+  ctx.lineTo(-15, 25);
+  ctx.moveTo(0, 0);
+  ctx.lineTo(15, 25);
+
+  ctx.stroke();
+}
+
+function drawStars(ctx) {
+  for (let i = 0; i < 12; i++) {
+    const x = (Math.random() - 0.5) * 80;
+    const y = (Math.random() - 0.5) * 80;
+    const size = 2 + Math.random() * 3;
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawMoon(ctx) {
+  ctx.beginPath();
+  ctx.arc(0, 0, 30, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  ctx.arc(10, -5, 25, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function drawSun(ctx) {
+  ctx.beginPath();
+  ctx.arc(0, 0, 20, 0, Math.PI * 2);
+  ctx.fill();
+
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2;
+    const x1 = Math.cos(angle) * 25;
+    const y1 = Math.sin(angle) * 25;
+    const x2 = Math.cos(angle) * 40;
+    const y2 = Math.sin(angle) * 40;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+}
+
+function drawZigzag(ctx) {
+  ctx.beginPath();
+  ctx.moveTo(-40, 0);
+  for (let i = 0; i < 8; i++) {
+    const x = -40 + i * 10;
+    const y = (i % 2) * 30 - 15;
+    ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+function drawSpiral(ctx) {
+  ctx.beginPath();
+  let angle = 0;
+  let radius = 0;
+  ctx.moveTo(0, 0);
+  while (radius < 40) {
+    angle += 0.3;
+    radius += 0.5;
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+    ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+function drawGrid(ctx) {
+  const spacing = 15;
+  for (let x = -30; x <= 30; x += spacing) {
+    ctx.beginPath();
+    ctx.moveTo(x, -30);
+    ctx.lineTo(x, 30);
+    ctx.stroke();
+  }
+  for (let y = -30; y <= 30; y += spacing) {
+    ctx.beginPath();
+    ctx.moveTo(-30, y);
+    ctx.lineTo(30, y);
+    ctx.stroke();
+  }
+}
+
+function drawHandPrint(ctx, x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(0.4, 0.4);
+  ctx.rotate((Math.random() - 0.5) * 0.3);
+
+  ctx.fillStyle = '#8a3020';
+  ctx.globalAlpha = 0.7;
+  drawHand(ctx, false);
+
+  ctx.restore();
+}
+
+// Initialize
+function init() {
+  resize();
+  window.addEventListener('resize', resize);
+
+  loadTasks();
+
+  // Mouse events
+  torchCanvas.addEventListener('mousemove', (e) => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
+
+  torchCanvas.addEventListener('mousedown', (e) => {
+    if (audioCtx) audioCtx.resume();
+    else initAudio();
+
+    mouse.down = true;
+
+    if (e.button === 0) { // Left click
+      dragStart = { x: e.clientX, y: e.clientY, offsetX, offsetY };
+    }
+  });
+
+  torchCanvas.addEventListener('mouseup', (e) => {
+    mouse.down = false;
+
+    if (e.button === 0 && dragStart) {
+      const dist = Math.hypot(e.clientX - dragStart.x, e.clientY - dragStart.y);
+
+      if (dist < 5) { // Click, not drag
+        const worldX = e.clientX + offsetX;
+        const worldY = e.clientY + offsetY;
+
+        // Check if clicking on existing task
+        let clicked = null;
+        for (let task of tasks) {
+          const dx = worldX - task.x;
+          const dy = worldY - task.y;
+          if (Math.hypot(dx, dy) < 60) {
+            clicked = task;
+            break;
+          }
+        }
+
+        if (!clicked) {
+          startInput(worldX, worldY);
+        }
+      }
+
+      dragStart = null;
+    }
+  });
+
+  torchCanvas.addEventListener('mousemove', (e) => {
+    if (mouse.down && dragStart) {
+      const dx = e.clientX - dragStart.x;
+      const dy = e.clientY - dragStart.y;
+
+      offsetX = Math.max(0, Math.min(caveWidth - window.innerWidth, dragStart.offsetX - dx));
+      offsetY = Math.max(0, Math.min(caveHeight - window.innerHeight, dragStart.offsetY - dy));
+    }
+  });
+
+  torchCanvas.addEventListener('dblclick', (e) => {
+    const worldX = e.clientX + offsetX;
+    const worldY = e.clientY + offsetY;
+
+    for (let task of tasks) {
+      const dx = worldX - task.x;
+      const dy = worldY - task.y;
+      if (Math.hypot(dx, dy) < 60) {
+        task.done = !task.done;
+        task.doneTime = task.done ? Date.now() : null;
+        saveTasks();
+        playStamp();
+        break;
+      }
+    }
+  });
+
+  torchCanvas.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    const worldX = e.clientX + offsetX;
+    const worldY = e.clientY + offsetY;
+
+    for (let i = tasks.length - 1; i >= 0; i--) {
+      const task = tasks[i];
+      const dx = worldX - task.x;
+      const dy = worldY - task.y;
+      if (Math.hypot(dx, dy) < 60) {
+        tasks.splice(i, 1);
+        saveTasks();
+        break;
+      }
+    }
+  });
+
+  // Torch crackle
+  setInterval(() => {
+    if (Math.random() < 0.3) playCrackle();
+  }, 500);
+
+  // Add decorative handprints
+  addDecorativeHands();
+
+  animate();
+}
+
+function resize() {
+  canvas.width = torchCanvas.width = window.innerWidth;
+  canvas.height = torchCanvas.height = window.innerHeight;
+
+  caveWidth = window.innerWidth * CAVE_WIDTH_MULT;
+  caveHeight = window.innerHeight * CAVE_HEIGHT_MULT;
+
+  drawCave();
+}
+
+function drawCave() {
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = caveWidth;
+  offCanvas.height = caveHeight;
+  const offCtx = offCanvas.getContext('2d');
+
+  // Base stone color
+  offCtx.fillStyle = '#2a2420';
+  offCtx.fillRect(0, 0, caveWidth, caveHeight);
+
+  // Noise texture
+  const imageData = offCtx.getImageData(0, 0, caveWidth, caveHeight);
+  const data = imageData.data;
+
+  for (let y = 0; y < caveHeight; y += 2) {
+    for (let x = 0; x < caveWidth; x += 2) {
+      const n = smoothNoise(x * 0.02, y * 0.02);
+      const variation = (n - 0.5) * 40;
+
+      for (let dy = 0; dy < 2; dy++) {
+        for (let dx = 0; dx < 2; dx++) {
+          const px = x + dx;
+          const py = y + dy;
+          if (px >= caveWidth || py >= caveHeight) continue;
+
+          const i = (py * caveWidth + px) * 4;
+          data[i] = Math.max(0, Math.min(255, data[i] + variation));
+          data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + variation));
+          data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + variation));
+        }
+      }
+    }
+  }
+
+  offCtx.putImageData(imageData, 0, 0);
+
+  // Darker edges (vignette)
+  const grad = offCtx.createRadialGradient(
+    caveWidth / 2, caveHeight / 2, 0,
+    caveWidth / 2, caveHeight / 2, Math.max(caveWidth, caveHeight) * 0.7
+  );
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.5)');
+  offCtx.fillStyle = grad;
+  offCtx.fillRect(0, 0, caveWidth, caveHeight);
+
+  // Cracks
+  offCtx.strokeStyle = 'rgba(0,0,0,0.3)';
+  offCtx.lineWidth = 1;
+  for (let i = 0; i < 30; i++) {
+    offCtx.beginPath();
+    let x = Math.random() * caveWidth;
+    let y = Math.random() * caveHeight;
+    offCtx.moveTo(x, y);
+    for (let j = 0; j < 5; j++) {
+      x += (Math.random() - 0.5) * 100;
+      y += (Math.random() - 0.5) * 100;
+      offCtx.lineTo(x, y);
+    }
+    offCtx.stroke();
+  }
+
+  // Drip marks
+  offCtx.strokeStyle = 'rgba(80,60,40,0.2)';
+  offCtx.lineWidth = 2;
+  for (let i = 0; i < 20; i++) {
+    const x = Math.random() * caveWidth;
+    const y = Math.random() * caveHeight * 0.3;
+    const length = 100 + Math.random() * 300;
+
+    offCtx.beginPath();
+    offCtx.moveTo(x, y);
+    offCtx.lineTo(x + (Math.random() - 0.5) * 20, y + length);
+    offCtx.stroke();
+  }
+
+  // Store cave canvas
+  canvas.caveTexture = offCanvas;
+}
+
+function addDecorativeHands() {
+  for (let i = 0; i < 8; i++) {
+    const x = Math.random() * caveWidth;
+    const y = Math.random() * caveHeight;
+    tasks.push({
+      id: `deco-${i}`,
+      text: '',
+      x, y,
+      type: 'hand',
+      colors: { primary: '#6a4a30', secondary: null },
+      done: false,
+      createdAt: Date.now() - 1000000,
+      decorative: true
+    });
+  }
+}
+
+function startInput(x, y) {
+  if (inputField) return;
+
+  inputPos = { x, y };
+  inputField = document.createElement('input');
+  inputField.className = 'input-field';
+  inputField.style.left = (x - offsetX) + 'px';
+  inputField.style.top = (y - offsetY) + 'px';
+  inputField.style.pointerEvents = 'auto';
+
+  document.body.appendChild(inputField);
+  inputField.focus();
+
+  inputField.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && inputField.value.trim()) {
+      createTask(inputField.value.trim(), inputPos.x, inputPos.y);
+      document.body.removeChild(inputField);
+      inputField = null;
+      inputPos = null;
+    } else if (e.key === 'Escape') {
+      document.body.removeChild(inputField);
+      inputField = null;
+      inputPos = null;
+    }
+  });
+
+  inputField.addEventListener('blur', () => {
+    if (inputField) {
+      document.body.removeChild(inputField);
+      inputField = null;
+      inputPos = null;
+    }
+  });
+}
+
+function createTask(text, x, y) {
+  const hash = hashText(text);
+  const type = getPaintingType(hash);
+  const colors = getPigments(hash);
+
+  const task = {
+    id: Date.now() + Math.random(),
+    text,
+    x, y,
+    type,
+    colors,
+    done: false,
+    createdAt: Date.now(),
+    decorative: false
+  };
+
+  tasks.push(task);
+  saveTasks();
+  playScrape();
+}
+
+function loadTasks() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      tasks = JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Failed to load tasks', e);
+  }
+}
+
+function saveTasks() {
+  try {
+    const toSave = tasks.filter(t => !t.decorative);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    updateCounter();
+  } catch (e) {
+    console.error('Failed to save tasks', e);
+  }
+}
+
+function updateCounter() {
+  const count = tasks.filter(t => !t.decorative).length;
+  counterEl.innerHTML = '';
+
+  const groups = Math.floor(count / 5);
+  const remainder = count % 5;
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', (groups * 30 + remainder * 5 + 10));
+  svg.setAttribute('height', 60);
+
+  let x = 5;
+
+  // Full groups of 5
+  for (let i = 0; i < groups; i++) {
+    for (let j = 0; j < 4; j++) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', x + j * 5);
+      line.setAttribute('y1', 10);
+      line.setAttribute('x2', x + j * 5);
+      line.setAttribute('y2', 50);
+      line.setAttribute('stroke', '#6a4a30');
+      line.setAttribute('stroke-width', 2);
+      svg.appendChild(line);
+    }
+
+    // Diagonal
+    const diag = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    diag.setAttribute('x1', x);
+    diag.setAttribute('y1', 50);
+    diag.setAttribute('x2', x + 15);
+    diag.setAttribute('y2', 10);
+    diag.setAttribute('stroke', '#6a4a30');
+    diag.setAttribute('stroke-width', 2);
+    svg.appendChild(diag);
+
+    x += 30;
+  }
+
+  // Remainder
+  for (let i = 0; i < remainder; i++) {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x + i * 5);
+    line.setAttribute('y1', 10);
+    line.setAttribute('x2', x + i * 5);
+    line.setAttribute('y2', 50);
+    line.setAttribute('stroke', '#6a4a30');
+    line.setAttribute('stroke-width', 2);
+    svg.appendChild(line);
+  }
+
+  counterEl.appendChild(svg);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  torchFlicker += 0.05;
+
+  // Update embers
+  if (Math.random() < 0.3) {
+    embers.push({
+      x: mouse.x,
+      y: mouse.y,
+      vx: (Math.random() - 0.5) * 2,
+      vy: -1 - Math.random() * 2,
+      life: 1,
+      size: 1 + Math.random() * 2
+    });
+  }
+
+  for (let ember of embers) {
+    ember.x += ember.vx;
+    ember.y += ember.vy;
+    ember.life -= 0.02;
+  }
+
+  embers = embers.filter(e => e.life > 0);
+
+  // Draw to cave canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw cave texture (visible portion)
+  if (canvas.caveTexture) {
+    ctx.drawImage(
+      canvas.caveTexture,
+      offsetX, offsetY, canvas.width, canvas.height,
+      0, 0, canvas.width, canvas.height
+    );
+  }
+
+  // Draw paintings
+  for (let task of tasks) {
+    const screenX = task.x - offsetX;
+    const screenY = task.y - offsetY;
+
+    // Only draw if near torch
+    const dist = Math.hypot(screenX - mouse.x, screenY - mouse.y);
+    const torchRadius = 200 + Math.sin(torchFlicker) * 20;
+
+    if (dist < torchRadius + 100) {
+      const age = Date.now() - task.createdAt;
+      const progress = Math.min(1, age / 2000);
+
+      drawPainting(ctx, task.type, screenX, screenY, task.colors, progress, task.done);
+
+      // Hand stamp if done
+      if (task.done && task.doneTime) {
+        const stampAge = Date.now() - task.doneTime;
+        if (stampAge < 500) {
+          ctx.globalAlpha = stampAge / 500;
+        }
+        drawHandPrint(ctx, screenX + 40, screenY - 20);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  // Draw torch light
+  torchCtx.clearRect(0, 0, torchCanvas.width, torchCanvas.height);
+
+  const torchRadius = 200 + Math.sin(torchFlicker) * 20;
+  const torchGrad = torchCtx.createRadialGradient(
+    mouse.x, mouse.y, 0,
+    mouse.x, mouse.y, torchRadius
+  );
+  torchGrad.addColorStop(0, 'rgba(255, 160, 64, 0.4)');
+  torchGrad.addColorStop(0.3, 'rgba(255, 140, 40, 0.25)');
+  torchGrad.addColorStop(0.6, 'rgba(200, 100, 20, 0.1)');
+  torchGrad.addColorStop(1, 'rgba(0, 0, 0, 0.95)');
+
+  torchCtx.fillStyle = torchGrad;
+  torchCtx.fillRect(0, 0, torchCanvas.width, torchCanvas.height);
+
+  // Draw embers
+  for (let ember of embers) {
+    torchCtx.fillStyle = `rgba(255, ${100 + ember.life * 100}, 40, ${ember.life})`;
+    torchCtx.beginPath();
+    torchCtx.arc(ember.x, ember.y, ember.size, 0, Math.PI * 2);
+    torchCtx.fill();
+  }
+
+  // Darken outside torch
+  torchCtx.globalCompositeOperation = 'source-over';
+  const darkGrad = torchCtx.createRadialGradient(
+    mouse.x, mouse.y, torchRadius,
+    mouse.x, mouse.y, torchRadius * 1.5
+  );
+  darkGrad.addColorStop(0, 'rgba(10, 8, 5, 0)');
+  darkGrad.addColorStop(1, 'rgba(10, 8, 5, 0.95)');
+
+  torchCtx.fillStyle = darkGrad;
+  torchCtx.fillRect(0, 0, torchCanvas.width, torchCanvas.height);
+}
+
+init();
+</script>
+</body>
+</html>
