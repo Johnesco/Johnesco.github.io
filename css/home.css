@@ -148,6 +148,22 @@ body {
     color: var(--accent-red);
 }
 
+.nav-card.games:hover {
+    border-color: #c44900;
+}
+
+.nav-card.games:hover .card-title {
+    color: #c44900;
+}
+
+.nav-card.tools:hover {
+    border-color: #2a7f62;
+}
+
+.nav-card.tools:hover .card-title {
+    color: #2a7f62;
+}
+
 /* Footer */
 .footer {
     text-align: center;
