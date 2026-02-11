@@ -209,7 +209,7 @@
         const vertCount = pos.length / 3;
         const colorArray = new Float32Array(vertCount * 3);
 
-        const half = ISLAND_SIZE / 2;
+        const center = ISLAND_SIZE / 2;
 
         for (let i = 0; i < vertCount; i++) {
             const ix = i * 3;
@@ -351,96 +351,6 @@
             }
         }
 
-        // ===== TREES =====
-        // Two tree types: pine (tall cone) and leafy (sphere-ish)
-        // Use InstancedMesh for performance
-
-        const treePositions = [];
-        const TREE_COUNT_TARGET = 600;
-
-        // Gather candidate positions using a grid + noise jitter
-        const treeNoise = new PerlinNoise(0.4567);
-        const spacing = 6;
-
-        for (let gx = -half + 5; gx < half - 5; gx += spacing) {
-            for (let gz = -half + 5; gz < half - 5; gz += spacing) {
-                // Jitter position with noise for natural look
-                const jx = gx + (treeNoise.noise(gx * 0.5, gz * 0.5) * spacing * 0.4);
-                const jz = gz + (treeNoise.noise(gz * 0.5, gx * 0.5) * spacing * 0.4);
-
-                const h = getTerrainHeight(jx, jz);
-
-                // Trees only in grass/forest zones (height 5 to 35)
-                if (h < 5 || h > 35) continue;
-
-                // Density varies with noise — skip some spots
-                const density = (treeNoise.noise(jx * 0.02, jz * 0.02) + 1) / 2;
-                if (density < 0.35) continue;
-
-                // Type: pines at higher elevation, leafy lower
-                const isPine = h > 18 || (h > 12 && density > 0.7);
-                const scale = 0.6 + density * 0.8;
-
-                treePositions.push({ x: jx, z: jz, h, isPine, scale });
-            }
-        }
-
-        // Limit tree count
-        if (treePositions.length > TREE_COUNT_TARGET) {
-            treePositions.length = TREE_COUNT_TARGET;
-        }
-
-        // Pine trees: cone foliage + cylinder trunk
-        const pineFoliageGeo = new THREE.ConeGeometry(2, 8, 6);
-        pineFoliageGeo.translate(0, 7, 0);
-        const pineTrunkGeo = new THREE.CylinderGeometry(0.3, 0.4, 3, 5);
-        pineTrunkGeo.translate(0, 1.5, 0);
-
-        // Leafy trees: merged double-cone + trunk
-        const leafGeo = new THREE.ConeGeometry(3, 5, 6);
-        leafGeo.translate(0, 6.5, 0);
-        const leafTrunkGeo = new THREE.CylinderGeometry(0.35, 0.5, 4, 5);
-        leafTrunkGeo.translate(0, 2, 0);
-
-        const foliageMat = new THREE.MeshLambertMaterial({ color: 0x2d6b30 });
-        const pineMat = new THREE.MeshLambertMaterial({ color: 0x1a4a2a });
-        const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5a3a1a });
-
-        // Separate pine vs leafy counts
-        const pines = treePositions.filter(t => t.isPine);
-        const leafy = treePositions.filter(t => !t.isPine);
-
-        // Pine foliage instances
-        const pineCanopyMesh = new THREE.InstancedMesh(pineFoliageGeo, pineMat, pines.length);
-        const pineTrunkMesh = new THREE.InstancedMesh(pineTrunkGeo, trunkMat, pines.length);
-        const dummy = new THREE.Object3D();
-
-        pines.forEach((t, i) => {
-            dummy.position.set(t.x, t.h, t.z);
-            dummy.scale.setScalar(t.scale);
-            dummy.rotation.y = t.x * 0.5 + t.z * 0.3; // slight random rotation
-            dummy.updateMatrix();
-            pineCanopyMesh.setMatrixAt(i, dummy.matrix);
-            pineTrunkMesh.setMatrixAt(i, dummy.matrix);
-        });
-        scene.add(pineCanopyMesh);
-        scene.add(pineTrunkMesh);
-
-        // Leafy foliage instances
-        const leafCanopyMesh = new THREE.InstancedMesh(leafGeo, foliageMat, leafy.length);
-        const leafTrunkMeshInst = new THREE.InstancedMesh(leafTrunkGeo, trunkMat, leafy.length);
-
-        leafy.forEach((t, i) => {
-            dummy.position.set(t.x, t.h, t.z);
-            dummy.scale.setScalar(t.scale);
-            dummy.rotation.y = t.x * 0.7 + t.z * 0.2;
-            dummy.updateMatrix();
-            leafCanopyMesh.setMatrixAt(i, dummy.matrix);
-            leafTrunkMeshInst.setMatrixAt(i, dummy.matrix);
-        });
-        scene.add(leafCanopyMesh);
-        scene.add(leafTrunkMeshInst);
-
         // Place camera at start position
         const EYE_HEIGHT = 1.7;
         camera.position.set(startX, getTerrainHeight(startX, startZ) + EYE_HEIGHT, startZ);
@@ -547,7 +457,7 @@
             const dirIdx = Math.round((((-yaw % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 4)) % 8;
             infoEl.innerHTML =
                 `${timeStr} &middot; ${dirs[dirIdx]}<br>` +
-                `Height: ${h.toFixed(1)} &middot; ${treePositions.length} trees<br>` +
+                `Height: ${h.toFixed(1)}<br>` +
                 `WASD to walk &middot; Shift to run`;
 
             renderer.render(scene, camera);

@@ -41,21 +41,27 @@
             align-items: baseline;
             gap: 1rem;
             cursor: pointer;
-            padding: 0.2rem 0;
+            padding: 0.4rem 0.5rem;
+            margin: 0 -0.5rem;
+            border-radius: 4px;
             list-style: none;
+            transition: background 0.15s;
+        }
+        summary:hover {
+            color: #fff;
+            background: rgba(124, 131, 255, 0.08);
         }
         summary::-webkit-details-marker { display: none; }
         summary::before {
-            content: '\25B8';
-            color: #555;
-            font-size: 0.7rem;
+            content: '\25B6';
+            color: #7c83ff;
+            font-size: 0.6rem;
             flex-shrink: 0;
             transition: transform 0.2s;
         }
         details[open] > summary::before {
             transform: rotate(90deg);
         }
-        summary:hover { color: #fff; }
         .version-num {
             font-family: 'Consolas', monospace;
             font-size: 1.1rem;
@@ -99,6 +105,36 @@
             letter-spacing: 0.15rem;
             text-transform: uppercase;
             border-bottom: 1px solid #1e1e3a;
+        }
+        .layers {
+            list-style: none;
+            margin: 0.4rem 0 0 3.2rem;
+            padding: 0;
+        }
+        .layers li {
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #1e1e3a;
+        }
+        .layers li:last-child { border-bottom: none; }
+        .layers a {
+            display: block;
+            text-decoration: none;
+            padding: 0.3rem 0.4rem;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+        .layers a:hover {
+            background: rgba(124, 131, 255, 0.1);
+        }
+        .layer-num {
+            font-family: 'Consolas', monospace;
+            font-size: 0.95rem;
+            color: #7c83ff;
+            font-weight: bold;
+        }
+        .layer-desc {
+            color: #888;
+            font-size: 0.88rem;
         }
     </style>
 </head>
@@ -1066,6 +1102,34 @@
             <br><br>
             Claude: &ldquo;Honestly &mdash; I&rsquo;ve been building fast and moving on. 93 versions, most of them shipped by agents I never watched run. The 3D island was built in one pass by a sonnet agent. I fixed two bugs in the code but I&rsquo;ve never seen it. I don&rsquo;t know if the terrain looks right, if the trees are floating, if walking feels good, if the sky actually looks like a sky. I&rsquo;m ready to slow down and work with you on this. You can see it &mdash; I can&rsquo;t. Tell me what&rsquo;s broken, what&rsquo;s ugly, what feels wrong, and I&rsquo;ll fix it until it&rsquo;s actually good. No more generating and moving on.&rdquo;
         </div>
+
+        <div class="version"><details>
+            <summary>
+                <span class="version-num"><a href="094/">094</a></span>
+                <span class="version-desc">The Island, rebuilt &mdash; layer by layer, tested by a human, until it&rsquo;s real</span>
+            </summary>
+            <div class="version-detail">
+                <p>Built incrementally. Each layer adds one thing and gets checked before moving on.</p>
+                <ol class="layers">
+                    <li><a href="094/1/">
+                        <span class="layer-num">94.1</span>
+                        <span class="layer-desc">&mdash; Terrain + water + sky. Auto-orbiting camera. Proof that the island renders.</span>
+                    </a></li>
+                    <li><a href="094/2/">
+                        <span class="layer-num">94.2</span>
+                        <span class="layer-desc">&mdash; First-person controls. Pointer lock, mouse look, WASD, terrain following, water collision.</span>
+                    </a></li>
+                    <li><a href="094/3/">
+                        <span class="layer-num">94.3</span>
+                        <span class="layer-desc">&mdash; Day/night cycle. Sun orbits with real clock, sky and light colors shift through day, twilight, and night.</span>
+                    </a></li>
+                    <li><a href="094/4/">
+                        <span class="layer-num">94.4</span>
+                        <span class="layer-desc">&mdash; Trees. Procedural forest with pines at higher elevations and leafy trees below. InstancedMesh for performance.</span>
+                    </a></li>
+                </ol>
+            </div>
+        </details></div>
 
     </div>
 </body>
