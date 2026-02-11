@@ -113,7 +113,8 @@ function escHTML(s) {
 }
 
 // Compare two query results for equivalence
-function resultsMatch(a, b) {
+// When ordered=true, row order matters (for ORDER BY queries)
+function resultsMatch(a, b, ordered) {
     if (a.error || b.error) return false;
     if (a.columns.length !== b.columns.length) return false;
     if (a.rows.length !== b.rows.length) return false;
@@ -121,11 +122,19 @@ function resultsMatch(a, b) {
     const colsA = a.columns.map(c => c.toLowerCase());
     const colsB = b.columns.map(c => c.toLowerCase());
     if (colsA.join(',') !== colsB.join(',')) return false;
-    // Sort rows for comparison
-    const sortRows = rows => rows.map(r => r.map(v => String(v ?? '').toLowerCase().trim()).join('|')).sort();
-    const ra = sortRows(a.rows);
-    const rb = sortRows(b.rows);
-    return ra.join('\n') === rb.join('\n');
+    // Normalize rows
+    const normalize = rows => rows.map(r => r.map(v => String(v ?? '').toLowerCase().trim()).join('|'));
+    const ra = normalize(a.rows);
+    const rb = normalize(b.rows);
+    if (ordered) {
+        return ra.join('\n') === rb.join('\n');
+    }
+    return ra.sort().join('\n') === rb.sort().join('\n');
+}
+
+// Detect if a query uses ORDER BY (so we compare row order)
+function hasOrderBy(sql) {
+    return /ORDER\s+BY/i.test(sql);
 }
 
 // ===== Sidebar & Navigation =====
@@ -306,7 +315,7 @@ function checkExercise(i) {
         execSQL(ex.solution);
         const expectedVerify = execSQL(ex.verify);
 
-        if (resultsMatch(userVerify, expectedVerify)) {
+        if (resultsMatch(userVerify, expectedVerify, hasOrderBy(ex.solution))) {
             markExerciseDone(i);
             feedback.className = 'exercise-feedback correct';
             feedback.textContent = 'Correct!';
@@ -329,7 +338,7 @@ function checkExercise(i) {
             return;
         }
         const expectedResult = execSQL(ex.solution);
-        if (resultsMatch(userResult, expectedResult)) {
+        if (resultsMatch(userResult, expectedResult, hasOrderBy(ex.solution))) {
             markExerciseDone(i);
             feedback.className = 'exercise-feedback correct';
             feedback.textContent = 'Correct!';
@@ -463,7 +472,7 @@ function submitTestAnswer(q, selectedMCQ) {
                 initDB(currentLesson);
                 execSQL(q.solution);
                 const expectedVerify = execSQL(q.verify);
-                correct = resultsMatch(userVerify, expectedVerify);
+                correct = resultsMatch(userVerify, expectedVerify, hasOrderBy(q.solution));
             }
         } else {
             // SELECT: compare results
@@ -472,7 +481,7 @@ function submitTestAnswer(q, selectedMCQ) {
             else {
                 initDB(currentLesson);
                 const expectedResult = execSQL(q.solution);
-                correct = resultsMatch(userResult, expectedResult);
+                correct = resultsMatch(userResult, expectedResult, hasOrderBy(q.solution));
             }
         }
     }
@@ -1021,7 +1030,7 @@ INSERT INTO example_items VALUES (1,'Widget',100,9.99,'2024-01-01'),(2,'Gadget',
     defaultQuery: 'SELECT * FROM example_items;',
     exercises: [
         { instruction: "Create a table called 'students' with columns: id INTEGER PRIMARY KEY, name TEXT NOT NULL, age INT, grade REAL.", hint: 'CREATE TABLE students (id INTEGER PRIMARY KEY, name TEXT NOT NULL, age INT, grade REAL)', solution: 'CREATE TABLE students (id INTEGER PRIMARY KEY, name TEXT NOT NULL, age INT, grade REAL)', verify: "SELECT name FROM sqlite_master WHERE type='table' AND name='students'" },
-        { instruction: "Insert a row into your new students table: id=1, name='Alex', age=20, grade=3.8.", hint: "INSERT INTO students VALUES (1,'Alex',20,3.8)", solution: "CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY, name TEXT NOT NULL, age INT, grade REAL); INSERT INTO students VALUES (1,'Alex',20,3.8)", verify: "SELECT * FROM students WHERE id = 1" },
+        { instruction: "Insert a new item into example_items: id=5, name='Gizmo', quantity=150, price=19.99, created='2024-02-01'.", hint: "INSERT INTO example_items VALUES (5,'Gizmo',150,19.99,'2024-02-01')", solution: "INSERT INTO example_items VALUES (5,'Gizmo',150,19.99,'2024-02-01')", verify: "SELECT * FROM example_items WHERE id = 5" },
         { instruction: "Create a table 'products' with: id INTEGER PRIMARY KEY, name TEXT NOT NULL, price REAL DEFAULT 0, in_stock INT DEFAULT 1.", hint: 'Use DEFAULT keyword for default values', solution: "CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT NOT NULL, price REAL DEFAULT 0, in_stock INT DEFAULT 1)", verify: "SELECT name FROM sqlite_master WHERE type='table' AND name='products'" }
     ],
     tests: [
@@ -1068,7 +1077,7 @@ INSERT INTO enrollments VALUES (1,1,'Fall','A'),(1,2,'Fall','B'),(2,1,'Fall','B'
         () => { const teacher = pick(['Dr. Park','Ms. Chen','Dr. Ruiz','Mr. Adams','Ms. Kim']); return { type:'write', question:`Find all student names enrolled in classes taught by '${teacher}'.`, solution:`SELECT students.name FROM enrollments JOIN students ON enrollments.student_id = students.id JOIN classes ON enrollments.class_id = classes.id WHERE classes.teacher = '${teacher}'` }; },
         () => ({ type:'mcq', question:'What does INNER JOIN return?', options:['Only rows with matches in both tables','All rows from both tables','All rows from the left table','All rows from the right table'], answer:0 }),
         () => ({ type:'mcq', question:'What does LEFT JOIN return for unmatched rows?', options:['The left table row with NULLs for right table columns','Nothing (skips unmatched)','An error','The right table row with NULLs'], answer:0 }),
-        () => ({ type:'fix', question:'Fix this query:', broken:'SELECT * FROM enrollments JOIN students ON student_id = id;', solution:'SELECT * FROM enrollments JOIN students ON enrollments.student_id = students.id;' }),
+        () => ({ type:'fix', question:'Fix this query (wrong join condition):', broken:'SELECT students.name, enrollments.grade_letter FROM enrollments JOIN students ON enrollments.class_id = students.id;', solution:'SELECT students.name, enrollments.grade_letter FROM enrollments JOIN students ON enrollments.student_id = students.id;' }),
         () => ({ type:'fix', question:'Fix this query (missing ON clause):', broken:'SELECT students.name, classes.name FROM enrollments JOIN students JOIN classes;', solution:'SELECT students.name, classes.name FROM enrollments JOIN students ON enrollments.student_id = students.id JOIN classes ON enrollments.class_id = classes.id;' }),
     ]
 },
