@@ -1,73 +1,87 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="css/home.css">
-    <title>John Escobedo</title>
-  </head>
-  <body>
-    <div class="container">
-      <header class="hero">
-        <h1>John Escobedo</h1>
-        <p class="subtitle">Personal Homepage</p>
-      </header>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Directory</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #c9d1d9; padding: 2rem; max-width: 900px; margin: 0 auto; }
+  h1 { color: #f0f6fc; margin-bottom: 0.25rem; font-size: 1.5rem; }
+  .subtitle { color: #8b949e; margin-bottom: 2rem; font-size: 0.85rem; }
+  details { margin-left: 1rem; margin-bottom: 0.25rem; }
+  summary { cursor: pointer; padding: 0.3rem 0; color: #8b949e; font-weight: 600; font-size: 0.95rem; list-style: none; }
+  summary::before { content: "▸ "; color: #484f58; }
+  details[open] > summary::before { content: "▾ "; }
+  summary:hover { color: #c9d1d9; }
+  .tree { margin-top: 0.5rem; }
+  .tree > details, .tree > .leaf { margin-left: 0; }
+  a { color: #58a6ff; text-decoration: none; display: inline-block; padding: 0.2rem 0; }
+  a:hover { text-decoration: underline; color: #79c0ff; }
+  .leaf { margin-left: 1rem; padding: 0.15rem 0; }
+  .leaf::before { content: "─ "; color: #484f58; }
+  .title-hint { color: #8b949e; font-size: 0.8rem; margin-left: 0.5rem; }
+</style>
+</head>
+<body>
 
-      <nav class="nav-grid">
+<h1>\code\</h1>
+<p class="subtitle">Local project directory — all paths with index.html</p>
 
-        <a href="https://www.karaokedirectory.com/" class="nav-card karaoke">
-          <span class="card-icon">&#127908;</span>
-          <span class="card-title">Karaoke</span>
-          <span class="card-description">Greater Austin karaoke schedule and venues</span>
-        </a>
+<div class="tree">
 
-        <a href="/resume/" class="nav-card resume">
-          <span class="card-icon">&#128196;</span>
-          <span class="card-title">Resume</span>
-          <span class="card-description">Professional experience, skills, and qualifications</span>
-        </a>
+  <div class="leaf"><a href="/decode/index.html">decode</a><span class="title-hint">Decode</span></div>
 
-        <a href="/resume/writing/" class="nav-card writing">
-          <span class="card-icon">&#9997;</span>
-          <span class="card-title">Writing</span>
-          <span class="card-description">Portfolio of essays, technical docs, and fiction</span>
-        </a>
+  <details>
+    <summary>edu</summary>
+    <div class="leaf"><a href="/edu/sql/index.html">sql</a><span class="title-hint">SQL Course — Interactive SQL Tutorial</span></div>
+  </details>
 
-        <a href="/games/" class="nav-card games">
-          <span class="card-icon">&#127918;</span>
-          <span class="card-title">Games</span>
-          <span class="card-description">Blackout poetry, car racing, and interactive fiction</span>
-        </a>
+  <details open>
+    <summary>games</summary>
+    <div class="leaf"><a href="/games/blackout/index.html">blackout</a><span class="title-hint">Blackout Poetry</span></div>
+    <div class="leaf"><a href="/games/carrace/index.html">carrace</a><span class="title-hint">Car Physics Sandbox</span></div>
+    <div class="leaf"><a href="/games/farm/index.html">farm</a><span class="title-hint">A Farmer's Heart - Interactive Story</span></div>
+    <div class="leaf"><a href="/games/farmink/index.html">farmink</a><span class="title-hint">Farmers_Heart</span></div>
+  </details>
 
-        <a href="/monkeys/" class="nav-card games">
-          <span class="card-icon">&#128018;</span>
-          <span class="card-title">Infinite Monkeys</span>
-          <span class="card-description">Visual simulation of the Infinite Monkey Theorem</span>
-        </a>
+  <details>
+    <summary>gently-lang</summary>
+    <div class="leaf"><a href="/gently-lang/dist/index.html">dist</a><span class="title-hint">Gently - Programming Language Playground</span></div>
+    <div class="leaf"><a href="/gently-lang/playground/index.html">playground</a><span class="title-hint">Gently - Programming Language Playground</span></div>
+  </details>
 
-        <a href="/zork1/" class="nav-card games">
-          <span class="card-icon">&#128123;</span>
-          <span class="card-title">Zork I</span>
-          <span class="card-description">Translating Zork from Zil to Inform 7</span>
-        </a>
+  <div class="leaf"><a href="/karaoke/index.html">karaoke</a><span class="title-hint">Karaoke Schedule</span></div>
 
-        <a href="/tools/jobfinder/" class="nav-card tools">
-          <span class="card-icon">&#128270;</span>
-          <span class="card-title">Job Finder</span>
-          <span class="card-description">Aggregated job board links by location and search terms</span>
-        </a>
+  <div class="leaf"><a href="https://www.karaokedirectory.com">karaokedirectory</a><span class="title-hint">Austin Karaoke Directory</span></div>
 
-        <a href="/tools/proofread/" class="nav-card tools">
-          <span class="card-icon">&#128221;</span>
-          <span class="card-title">Proofreader</span>
-          <span class="card-description">Sentence-by-sentence text review tool</span>
-        </a>
+  <div class="leaf"><a href="/monkeys/index.html">monkeys</a><span class="title-hint">Infinite Monkey Theorem</span></div>
 
-      </nav>
+  <details>
+    <summary>playwrite</summary>
+    <div class="leaf"><a href="/playwrite/playwright-report/index.html">playwright-report</a><span class="title-hint">Playwright Test Report</span></div>
+  </details>
 
-      <footer class="footer">
-        <p>&copy; John Escobedo</p>
-      </footer>
-    </div>
-  </body>
+  <details>
+    <summary>resume</summary>
+    <div class="leaf"><a href="/resume/index.html">index</a><span class="title-hint">John Escobedo - Online Resume</span></div>
+    <div class="leaf"><a href="/resume/writing/index.html">writing</a><span class="title-hint">Writing Portfolio</span></div>
+  </details>
+
+  <div class="leaf"><a href="/spotcheck/index.html">spotcheck</a><span class="title-hint">Spotcheck</span></div>
+
+  <details>
+    <summary>tools</summary>
+    <div class="leaf"><a href="/tools/jobfinder/index.html">jobfinder</a><span class="title-hint">JobFinder</span></div>
+    <div class="leaf"><a href="/tools/proofread/index.html">proofread</a><span class="title-hint">Sentence Proofreader</span></div>
+  </details>
+
+  <details>
+    <summary>zork1</summary>
+    <div class="leaf"><a href="/zork1/web/index.html">web</a><span class="title-hint">Zork I — Inform 7 Edition</span></div>
+  </details>
+
+</div>
+
+</body>
 </html>
