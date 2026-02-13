@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ifMUD Quick Reference & Comprehensive Guide</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #2980b9; margin-top: 30px; }
+        h3 { color: #27ae60; }
+        
+        .quick-ref {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: #fff;
+        }
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        th { background: #3498db; color: white; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        
+        code {
+            background: #ecf0f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        
+        details {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        summary {
+            padding: 12px 15px;
+            cursor: pointer;
+            font-weight: bold;
+            background: #ecf0f1;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        summary:hover { background: #d5dbdb; }
+        
+        details[open] summary { border-radius: 5px 5px 0 0; }
+        
+        details > div {
+            padding: 15px;
+        }
+        
+        .section-group {
+            margin: 20px 0;
+        }
+        
+        .section-group > summary {
+            background: #3498db;
+            color: white;
+            font-size: 1.1em;
+        }
+        
+        .section-group > summary:hover {
+            background: #2980b9;
+        }
+        
+        .help-entry {
+            margin: 8px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-left: 3px solid #3498db;
+        }
+        
+        .help-entry code {
+            display: block;
+            margin-top: 5px;
+        }
+        
+        .credit {
+            margin-top: 40px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .credit a { color: #3498db; }
+        
+        .toc {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .toc ul {
+            list-style: none;
+            padding-left: 20px;
+        }
+        
+        .toc a { text-decoration: none; color: #2980b9; }
+        .toc a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<h1>ifMUD Quick Reference & Comprehensive Guide</h1>
+
+<!-- QUICK REFERENCE SECTION -->
+<div class="quick-ref">
+<h2>Quick Reference</h2>
+
+<h3>Essential Commands</h3>
+<table>
+    <tr><th>Action</th><th>Command</th><th>Shortcut</th></tr>
+    <tr><td>Say something</td><td><code>say hello</code></td><td><code>"hello</code></td></tr>
+    <tr><td>Emote/action</td><td><code>emote waves</code></td><td><code>:waves</code></td></tr>
+    <tr><td>Look around</td><td><code>look</code></td><td><code>l</code></td></tr>
+    <tr><td>Examine object</td><td><code>examine thing</code></td><td></td></tr>
+    <tr><td>Move</td><td><code>north, south, east, west, up, down</code></td><td><code>n, s, e, w, u, d</code></td></tr>
+    <tr><td>Go home</td><td><code>home</code></td><td></td></tr>
+    <tr><td>Repeat last</td><td><code>again</code></td><td><code>g</code></td></tr>
+    <tr><td>Inventory</td><td><code>inventory</code></td><td><code>i</code></td></tr>
+    <tr><td>Get item</td><td><code>get thing</code></td><td></td></tr>
+    <tr><td>Drop item</td><td><code>drop thing</code></td><td></td></tr>
+    <tr><td>Give item</td><td><code>give thing to person</code></td><td></td></tr>
+    <tr><td>Quit</td><td><code>quit</code></td><td></td></tr>
+</table>
+
+<h3>Communication</h3>
+<table>
+    <tr><th>Action</th><th>Command</th><th>Shortcut</th></tr>
+    <tr><td>Say to room</td><td><code>say message</code></td><td><code>"message</code></td></tr>
+    <tr><td>Emote</td><td><code>emote action</code></td><td><code>:action</code></td></tr>
+    <tr><td>Whisper (same room)</td><td><code>whisper person = message</code></td><td><code>.person message</code></td></tr>
+    <tr><td>Page (anywhere)</td><td><code>page person = message</code></td><td></td></tr>
+    <tr><td>Channel talk</td><td><code>channelname message</code></td><td><code>;channelname message</code></td></tr>
+</table>
+
+<h3>Bulletin Board</h3>
+<table>
+    <tr><th>Action</th><th>Command</th></tr>
+    <tr><td>Scan for new</td><td><code>bb scan</code></td></tr>
+    <tr><td>List all posts</td><td><code>bb list</code></td></tr>
+    <tr><td>Read post #N</td><td><code>bb read N</code></td></tr>
+    <tr><td>Post new message</td><td><code>bb post</code></td></tr>
+    <tr><td>Delete your post</td><td><code>bb delete N</code></td></tr>
+    <tr><td>Check range</td><td><code>bb range N-M</code></td></tr>
+</table>
+
+<h3>Channels</h3>
+<table>
+    <tr><th>Action</th><th>Command</th></tr>
+    <tr><td>List your channels</td><td><code>@statchannel</code></td></tr>
+    <tr><td>List all channels</td><td><code>@listchannels</code></td></tr>
+    <tr><td>Join a channel</td><td><code>@joinchannels channelname</code></td></tr>
+    <tr><td>Leave a channel</td><td><code>@leavechannels channelname</code></td></tr>
+    <tr><td>Mute a channel</td><td><code>@mutechannels channelname</code></td></tr>
+    <tr><td>Talk on channel</td><td><code>channelname message</code></td></tr>
+</table>
+
+<h3>Player Info</h3>
+<table>
+    <tr><th>Action</th><th>Command</th></tr>
+    <tr><td>See who's online</td><td><code>who</code></td></tr>
+    <tr><td>Find a player</td><td><code>where playername</code></td></tr>
+    <tr><td>Player info</td><td><code>finger playername</code></td></tr>
+    <tr><td>Set your doing</td><td><code>@doing message</code></td></tr>
+    <tr><td>Set away status</td><td><code>@away message</code></td></tr>
+</table>
+</div>
+
+<!-- COMPREHENSIVE GUIDE -->
+<h2>Comprehensive Guide</h2>
+
+<p>The ifMUD help system is organized into topics, commands, flags, fields, and a building tutorial. Type <code>help &lt;topic&gt;</code> in-game for any of these.</p>
+
+<!-- BASIC COMMANDS -->
+<details class="section-group" open>
+<summary>Basic Commands (say, emote, look, read, examine, etc.)</summary>
+<div>
+
+<details>
+<summary># - Comment prefix</summary>
+<div class="help-entry">
+Lines beginning with # are treated as comments and ignored by the MUD.
+</div>
+</details>
+
+<details>
+<summary>; - Channel shortcut</summary>
+<div class="help-entry">
+The semicolon command is used to talk on channels with precision, avoiding ambiguity when multiple channels share a prefix.
+<code>;channelname message</code>
+</div>
+</details>
+
+<details>
+<summary>say</summary>
+<div class="help-entry">
+Speak to everyone in your current room. Can be abbreviated to a double-quote.
+<code>say Hello everyone!</code>
+<code>"Hello everyone!</code>
+Others see: YourName says "Hello everyone!"
+</div>
+</details>
+
+<details>
+<summary>emote</summary>
+<div class="help-entry">
+Express actions or emotions. Can be abbreviated to a colon.
+<code>emote waves happily.</code>
+<code>:waves happily.</code>
+Others see: YourName waves happily.
+</div>
+</details>
+
+<details>
+<summary>look</summary>
+<div class="help-entry">
+Look at your current location, showing the room description, exits, and contents.
+<code>look</code>
+<code>look at painting</code>
+<code>look north</code>
+</div>
+</details>
+
+<details>
+<summary>read</summary>
+<div class="help-entry">
+Read text on an object (if it has readable text set).
+<code>read sign</code>
+</div>
+</details>
+
+<details>
+<summary>examine</summary>
+<div class="help-entry">
+Get detailed information about an object, including its properties.
+<code>examine painting</code>
+</div>
+</details>
+
+<details>
+<summary>inventory</summary>
+<div class="help-entry">
+Show what you're carrying. Shortcut: <code>i</code>
+</div>
+</details>
+
+<details>
+<summary>get / take</summary>
+<div class="help-entry">
+Pick up an object.
+<code>get lamp</code>
+<code>take sword</code>
+</div>
+</details>
+
+<details>
+<summary>drop</summary>
+<div class="help-entry">
+Put down an object you're carrying.
+<code>drop lamp</code>
+</div>
+</details>
+
+<details>
+<summary>give</summary>
+<div class="help-entry">
+Give an object to another player.
+<code>give sword to Bob</code>
+</div>
+</details>
+
+<details>
+<summary>home</summary>
+<div class="help-entry">
+Instantly teleport to your designated home location.
+</div>
+</details>
+
+<details>
+<summary>quit</summary>
+<div class="help-entry">
+Disconnect from ifMUD.
+</div>
+</details>
+
+<details>
+<summary>again</summary>
+<div class="help-entry">
+Repeat your last command. Shortcut: <code>g</code>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- COMMUNICATION -->
+<details class="section-group">
+<summary>Communication (whisper, page, channels)</summary>
+<div>
+
+<details>
+<summary>whisper</summary>
+<div class="help-entry">
+Speak privately to someone in the same room. Shortcut: <code>.</code> (period)
+<code>whisper Bob = I have a secret</code>
+<code>.Bob I have a secret</code>
+<code>whisper Bob, Alice = Hi both</code>
+To privately pose, start with a colon: <code>.Bob :winks</code>
+</div>
+</details>
+
+<details>
+<summary>page</summary>
+<div class="help-entry">
+Send a private message to anyone on the MUD, regardless of location.
+<code>page Bob = Are you coming to the meeting?</code>
+</div>
+</details>
+
+<details>
+<summary>channels</summary>
+<div class="help-entry">
+Channels allow group communication across the entire MUD. Use the channel name followed by your message:
+<code>gweep Hello everyone!</code>
+For emotes on channels: <code>gweep :waves</code>
+See also: @joinchannels, @leavechannels, @statchannel, @listchannels
+</div>
+</details>
+
+<details>
+<summary>channel-aliases</summary>
+<div class="help-entry">
+Channel aliases allow you to create shortcuts for channel names. See <code>help channel-aliases</code> in-game.
+</div>
+</details>
+
+<details>
+<summary>channel-flags</summary>
+<div class="help-entry">
+Channel flags control channel behavior: private, moderated, topiclock, etc. See <code>help channel-flags</code> in-game.
+</div>
+</details>
+
+<details>
+<summary>@joinchannels</summary>
+<div class="help-entry">
+Join one or more channels.
+<code>@joinchannels mudding</code>
+<code>@joinchannels foo bar baz</code>
+</div>
+</details>
+
+<details>
+<summary>@leavechannels</summary>
+<div class="help-entry">
+Leave one or more channels.
+<code>@leavechannels mudding</code>
+</div>
+</details>
+
+<details>
+<summary>@listchannels</summary>
+<div class="help-entry">
+List all available channels on the MUD.
+</div>
+</details>
+
+<details>
+<summary>@statchannel</summary>
+<div class="help-entry">
+Show details about channels. Without arguments, lists channels you're on with their topics.
+<code>@statchannel</code> - Your channels
+<code>@statchannel gweep</code> - Details about gweep
+<code>@statchannel b*</code> - All channels starting with 'b'
+Popes (admins) show with +, cardinals with -.
+</div>
+</details>
+
+<details>
+<summary>@mutechannels / @unmutechannel</summary>
+<div class="help-entry">
+Temporarily mute a channel without leaving it.
+<code>@mutechannels gweep</code>
+<code>@unmutechannel gweep</code>
+</div>
+</details>
+
+<details>
+<summary>@makechannel</summary>
+<div class="help-entry">
+Create a new channel. Creator becomes the "pope" (admin).
+<code>@makechannel mychannel</code>
+<code>@makechannel mychannel = private</code>
+<code>@makechannel mychannel = moderated private</code>
+<code>@makechannel #games/mychannel</code> - In a category
+</div>
+</details>
+
+<details>
+<summary>@paste / @endpaste</summary>
+<div class="help-entry">
+Enter paste mode to send multiple lines with a prefix.
+<code>@paste #peanut-gallery</code>
+<code>Line one</code>
+<code>Line two</code>
+<code>@endpaste</code>
+</div>
+</details>
+
+<details>
+<summary>smartresolve</summary>
+<div class="help-entry">
+Option that restricts channel searches to recently-used channels, reducing ambiguity errors.
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- BULLETIN BOARD -->
+<details class="section-group">
+<summary>Bulletin Board (bb commands)</summary>
+<div>
+
+<details>
+<summary>bb</summary>
+<div class="help-entry">
+The bulletin board system for community announcements and discussions.
+</div>
+</details>
+
+<details>
+<summary>bb scan</summary>
+<div class="help-entry">
+Check for new/unread messages on the bulletin board.
+</div>
+</details>
+
+<details>
+<summary>bb list</summary>
+<div class="help-entry">
+List all messages on the bulletin board.
+<code>bb list</code>
+<code>bb list 20</code> - Last 20 messages
+</div>
+</details>
+
+<details>
+<summary>bb read</summary>
+<div class="help-entry">
+Read a specific message.
+<code>bb read 42</code>
+</div>
+</details>
+
+<details>
+<summary>bb range</summary>
+<div class="help-entry">
+Read a range of messages.
+<code>bb range 40-50</code>
+</div>
+</details>
+
+<details>
+<summary>bb post</summary>
+<div class="help-entry">
+Post a new message to the bulletin board. Follow the prompts for subject and body.
+</div>
+</details>
+
+<details>
+<summary>bb delete</summary>
+<div class="help-entry">
+Delete one of your messages.
+<code>bb delete 42</code>
+</div>
+</details>
+
+<details>
+<summary>bb undelete</summary>
+<div class="help-entry">
+Restore a deleted message.
+<code>bb undelete 42</code>
+</div>
+</details>
+
+<details>
+<summary>bb modify</summary>
+<div class="help-entry">
+Edit one of your messages.
+<code>bb modify 42</code>
+</div>
+</details>
+
+<details>
+<summary>bb clear</summary>
+<div class="help-entry">
+Mark all messages as read.
+</div>
+</details>
+
+<details>
+<summary>bb check</summary>
+<div class="help-entry">
+Check for new messages.
+</div>
+</details>
+
+<details>
+<summary>bbnotify</summary>
+<div class="help-entry">
+Control bulletin board notifications:
+<code>@field me = bbnotify : always</code> - Login and while connected
+<code>@field me = bbnotify : logon</code> - Only on login
+<code>@field me = bbnotify : update</code> - Only while connected
+<code>@field me = bbnotify : never</code> - No notifications
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- PLAYER INFO -->
+<details class="section-group">
+<summary>Player Information (who, where, finger, @doing)</summary>
+<div>
+
+<details>
+<summary>who</summary>
+<div class="help-entry">
+List all connected players with their @doing messages.
+</div>
+</details>
+
+<details>
+<summary>where</summary>
+<div class="help-entry">
+Find where a specific player is located.
+<code>where Bob</code>
+</div>
+</details>
+
+<details>
+<summary>@users</summary>
+<div class="help-entry">
+Detailed list of connected users.
+</div>
+</details>
+
+<details>
+<summary>finger</summary>
+<div class="help-entry">
+View player profile information: last connection, real name, email, URL, IF work, plan.
+<code>finger Bob</code>
+</div>
+</details>
+
+<details>
+<summary>@doing</summary>
+<div class="help-entry">
+Set what appears next to your name in the who list.
+<code>@doing Writing some JotaCode</code>
+</div>
+</details>
+
+<details>
+<summary>@poll</summary>
+<div class="help-entry">
+Set the poll question at the top of the who list.
+<code>@poll Your favorite Infocom game?</code>
+</div>
+</details>
+
+<details>
+<summary>@away</summary>
+<div class="help-entry">
+Set an away message shown to anyone who pages or whispers to you.
+<code>@away Getting coffee, back in 5</code>
+</div>
+</details>
+
+<details>
+<summary>@field</summary>
+<div class="help-entry">
+Set profile fields:
+<code>@field me = rname : Your Real Name</code>
+<code>@field me = address : your@email.com</code>
+<code>@field me = url : https://yoursite.com</code>
+<code>@field me = game : Your IF Game</code>
+<code>@field me = plan : Currently working on...</code>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- BUILDING COMMANDS -->
+<details class="section-group">
+<summary>Building Commands (@dig, @create, @describe, @link, etc.)</summary>
+<div>
+
+<details>
+<summary>@dig</summary>
+<div class="help-entry">
+Create a new room.
+<code>@dig My New Room</code>
+</div>
+</details>
+
+<details>
+<summary>@create</summary>
+<div class="help-entry">
+Create a new object.
+<code>@create sword</code>
+</div>
+</details>
+
+<details>
+<summary>@describe</summary>
+<div class="help-entry">
+Set the description of an object or room.
+<code>@describe here = A cozy room with a fireplace.</code>
+<code>@describe sword = A gleaming blade.</code>
+</div>
+</details>
+
+<details>
+<summary>@name</summary>
+<div class="help-entry">
+Rename an object. Use semicolons for aliases.
+<code>@name sword = Excalibur;sword;blade</code>
+<code>@name here = The Great Hall</code>
+</div>
+</details>
+
+<details>
+<summary>@link</summary>
+<div class="help-entry">
+Link an object or exit to a destination, or set your home.
+<code>@link me = here</code> - Set home
+<code>@link north = #123</code> - Link exit to room
+</div>
+</details>
+
+<details>
+<summary>@open</summary>
+<div class="help-entry">
+Create an exit from the current room.
+<code>@open north;n</code>
+</div>
+</details>
+
+<details>
+<summary>@action</summary>
+<div class="help-entry">
+Create an action (verb) attached to an object.
+<code>@action push;press = button</code>
+</div>
+</details>
+
+<details>
+<summary>@set</summary>
+<div class="help-entry">
+Set flags on objects.
+<code>@set sword = dark</code>
+<code>@set here = abode</code>
+</div>
+</details>
+
+<details>
+<summary>@lock</summary>
+<div class="help-entry">
+Set a lock on an object or exit.
+<code>@lock door = gold key</code> - Requires carrying the key
+<code>@lock door = *Bob</code> - Only Bob can use it
+<code>@lock door = *Bob | gold key</code> - Bob OR key holder
+<code>@lock door = !*Bob</code> - Anyone except Bob
+</div>
+</details>
+
+<details>
+<summary>@success / @osuccess</summary>
+<div class="help-entry">
+Messages shown when someone passes a lock.
+<code>@success door = You open the door.</code>
+<code>@osuccess door = opens the door.</code>
+</div>
+</details>
+
+<details>
+<summary>@fail / @ofail</summary>
+<div class="help-entry">
+Messages shown when someone fails a lock.
+<code>@fail door = The door is locked.</code>
+<code>@ofail door = tries the door but it's locked.</code>
+</div>
+</details>
+
+<details>
+<summary>@drop / @odrop</summary>
+<div class="help-entry">
+Messages shown when an object is dropped (or when exiting through an exit).
+<code>@drop sword = You set down the sword carefully.</code>
+<code>@odrop sword = sets down a sword.</code>
+</div>
+</details>
+
+<details>
+<summary>@teleport</summary>
+<div class="help-entry">
+Teleport yourself or an object to a location.
+<code>@teleport me = #123</code>
+<code>@teleport sword = here</code>
+</div>
+</details>
+
+<details>
+<summary>@find</summary>
+<div class="help-entry">
+Search for objects by name.
+<code>@find sword</code>
+</div>
+</details>
+
+<details>
+<summary>@recycle</summary>
+<div class="help-entry">
+Delete an object you own.
+<code>@recycle sword</code>
+</div>
+</details>
+
+<details>
+<summary>@chown</summary>
+<div class="help-entry">
+Change ownership of an object (requires permission).
+</div>
+</details>
+
+<details>
+<summary>@clone</summary>
+<div class="help-entry">
+Create a copy of an object.
+<code>@clone sword</code>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- FLAGS -->
+<details class="section-group">
+<summary>Flags (abode, dark, quiet, etc.)</summary>
+<div>
+
+<details>
+<summary>abode</summary>
+<div class="help-entry">
+If a location is set abode, anyone can set their home to that location.
+<code>@set here = abode</code>
+</div>
+</details>
+
+<details>
+<summary>dark</summary>
+<div class="help-entry">
+Objects set dark don't appear in room descriptions. Dark rooms don't show contents.
+</div>
+</details>
+
+<details>
+<summary>quiet</summary>
+<div class="help-entry">
+Quiet locations don't announce arrivals/departures. Quiet players don't announce connects/disconnects. Quiet objects don't show success/fail messages.
+</div>
+</details>
+
+<details>
+<summary>examinable</summary>
+<div class="help-entry">
+Allows others to examine the object's properties.
+</div>
+</details>
+
+<details>
+<summary>chownok</summary>
+<div class="help-entry">
+Allows others to @chown the object to themselves.
+</div>
+</details>
+
+<details>
+<summary>jumpok</summary>
+<div class="help-entry">
+Allows others to @teleport to this location.
+</div>
+</details>
+
+<details>
+<summary>linkok</summary>
+<div class="help-entry">
+Allows others to @link exits to this location.
+</div>
+</details>
+
+<details>
+<summary>visible</summary>
+<div class="help-entry">
+Object is visible even in dark rooms.
+</div>
+</details>
+
+<details>
+<summary>slippery</summary>
+<div class="help-entry">
+Object cannot be picked up.
+</div>
+</details>
+
+<details>
+<summary>zoned</summary>
+<div class="help-entry">
+Player is "zoned out" and will show away messages.
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- BUILDING TUTORIAL -->
+<details class="section-group">
+<summary>Building Tutorial (t-concepts, t-rooms, t-exits, t-objects, t-locks, etc.)</summary>
+<div>
+
+<details>
+<summary>tutorial</summary>
+<div class="help-entry">
+Start here: <code>help tutorial</code> in-game for the building tutorial overview.
+</div>
+</details>
+
+<details>
+<summary>t-concepts</summary>
+<div class="help-entry">
+Basic MUD concepts: rooms, objects, exits, players, and database references (dbrefs).
+</div>
+</details>
+
+<details>
+<summary>t-rooms / t-rooms2 / t-rooms3</summary>
+<div class="help-entry">
+Creating and describing rooms with @dig and @describe.
+</div>
+</details>
+
+<details>
+<summary>t-exits / t-exits2 / t-exits3</summary>
+<div class="help-entry">
+Creating exits with @open, linking with @link, and creating two-way connections.
+</div>
+</details>
+
+<details>
+<summary>t-objects / t-objects2 / t-objects3</summary>
+<div class="help-entry">
+Creating objects with @create, describing them, and setting properties.
+</div>
+</details>
+
+<details>
+<summary>t-locks / t-locks2 / t-locks3 / t-locks4</summary>
+<div class="help-entry">
+Locking objects and exits:
+<ul>
+<li><code>@lock door = key</code> - Requires carrying key</li>
+<li><code>@lock door = *Bob</code> - Only player Bob</li>
+<li><code>@lock door = key | *Bob</code> - Key OR Bob (| = OR)</li>
+<li><code>@lock door = key & badge</code> - Key AND badge (& = AND)</li>
+<li><code>@lock door = !*Bob</code> - NOT Bob (anyone except Bob)</li>
+<li>Use parentheses for complex locks: <code>(key | *Bob) & !*Evil</code></li>
+</ul>
+</div>
+</details>
+
+<details>
+<summary>t-verbs / t-verbs2 / t-verbs3</summary>
+<div class="help-entry">
+Creating custom verbs with @action and setting success/fail messages.
+</div>
+</details>
+
+<details>
+<summary>t-nouns / t-nouns2</summary>
+<div class="help-entry">
+Object naming with semicolon aliases: <code>@name obj = sword;blade;weapon</code>
+</div>
+</details>
+
+<details>
+<summary>t-programs / t-programs2 / t-programs3</summary>
+<div class="help-entry">
+Introduction to JotaCode programming for dynamic MUD content.
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- PROGRAMMING -->
+<details class="section-group">
+<summary>JotaCode Programming (functions, substitutions, variables)</summary>
+<div>
+
+<details>
+<summary>programming</summary>
+<div class="help-entry">
+Overview of JotaCode, ifMUD's programming language for dynamic content.
+</div>
+</details>
+
+<details>
+<summary>functions</summary>
+<div class="help-entry">
+List of available JotaCode functions. See <code>help functions</code> in-game.
+</div>
+</details>
+
+<details>
+<summary>substitutions / subs-list</summary>
+<div class="help-entry">
+Text substitutions like %n (player name), %s (subjective pronoun), %o (objective pronoun), etc.
+</div>
+</details>
+
+<details>
+<summary>jotavars</summary>
+<div class="help-entry">
+JotaCode variables:
+<ul>
+<li><code>*self</code> / <code>*this</code> - The object running the code</li>
+<li><code>*player</code> / <code>*me</code> - The player executing the command</li>
+<li><code>*field</code> / <code>*value</code> - For @fieldloop</li>
+<li><code>*nowhere</code> / <code>*home</code> - Special location constants</li>
+</ul>
+</div>
+</details>
+
+<details>
+<summary>Math functions</summary>
+<div class="help-entry">
+<code>@add()</code>, <code>@sub()</code>, <code>@mul()</code>, <code>@div()</code>, <code>@idiv()</code>, <code>@mod()</code>, <code>@neg()</code>, <code>@exp()</code>, <code>@ln()</code>, <code>@log()</code>
+</div>
+</details>
+
+<details>
+<summary>Boolean functions</summary>
+<div class="help-entry">
+<code>@eq()</code>, <code>@gt()</code>, <code>@lt()</code>, <code>@and()</code>, <code>@or()</code>, <code>@not()</code>, <code>@xor()</code>
+</div>
+</details>
+
+<details>
+<summary>String functions</summary>
+<div class="help-entry">
+<code>@strlen()</code>, <code>@substr()</code>, <code>@strcheck()</code>, <code>@strloop()</code>, <code>@lc()</code>/<code>@lcase()</code>, <code>@uc()</code>/<code>@ucase()</code>, <code>@lcfirst()</code>, <code>@ucfirst()</code>, <code>@substitute()</code>
+</div>
+</details>
+
+<details>
+<summary>Object functions</summary>
+<div class="help-entry">
+<code>@name()</code>, <code>@shortname()</code>, <code>@location()</code>, <code>@object()</code>, <code>@player()</code>, <code>@type()</code>, <code>@exit()</code>, <code>@getfield()</code>, <code>@setfield()</code>, <code>@testflag()</code>, <code>@setflag()</code>
+</div>
+</details>
+
+<details>
+<summary>Control functions</summary>
+<div class="help-entry">
+<code>@switch()</code>, <code>@let()</code>, <code>@contentsloop()</code>, <code>@fieldloop()</code>, <code>@call()</code>, <code>@execute()</code>, <code>@print()</code>, <code>@tell()</code>, <code>@tellroom()</code>, <code>@move()</code>, <code>@setdest()</code>
+</div>
+</details>
+
+<details>
+<summary>Utility functions</summary>
+<div class="help-entry">
+<code>@rand()</code>, <code>@time()</code>, <code>@s()</code>, <code>@g()</code>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- VERBS -->
+<details class="section-group">
+<summary>Standard Verbs (eat, wear, push, pull, etc.)</summary>
+<div>
+
+<details>
+<summary>verblist</summary>
+<div class="help-entry">
+Standard verbs and their aliases:
+<table>
+<tr><th>Verb</th><th>Aliases</th></tr>
+<tr><td>eat</td><td>eat, drink, taste</td></tr>
+<tr><td>wear</td><td>wear, don, put on</td></tr>
+<tr><td>remove</td><td>remove, doff, take off</td></tr>
+<tr><td>talk</td><td>ask about, tell about, talk to about</td></tr>
+<tr><td>search</td><td>search, look behind/in/through/under</td></tr>
+<tr><td>turnon</td><td>turn on, activate, switch on</td></tr>
+<tr><td>turnoff</td><td>turn off, deactivate, switch off</td></tr>
+<tr><td>push</td><td>push, press, touch</td></tr>
+<tr><td>pull</td><td>pull, yank, tug</td></tr>
+</table>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- APARTMENTS -->
+<details class="section-group">
+<summary>Apartments & Personal Space</summary>
+<div>
+
+<details>
+<summary>apartments</summary>
+<div class="help-entry">
+Free apartment space is available at Edifice Towers. To get there:
+<code>xyzzy</code>, then <code>south</code> three times.
+Each floor has 10 exits that can be claimed.
+</div>
+</details>
+
+<details>
+<summary>apartments2</summary>
+<div class="help-entry">
+Instructions for claiming apartment space. See <code>help apartments2</code> in-game.
+</div>
+</details>
+
+<details>
+<summary>Setting your home</summary>
+<div class="help-entry">
+Once you have a room (or are in an ABODE room):
+<code>@link me = here</code>
+Now <code>home</code> will teleport you there.
+</div>
+</details>
+
+<details>
+<summary>homemsg / ohomemsg</summary>
+<div class="help-entry">
+Customize messages when you go home:
+<code>@field me = homemsg : vanishes in a puff of smoke</code>
+<code>@field me = ohomemsg : appears in a puff of smoke</code>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- SETTINGS -->
+<details class="section-group">
+<summary>Settings & Options (@options, @rows, @gag, etc.)</summary>
+<div>
+
+<details>
+<summary>@options / option-list</summary>
+<div class="help-entry">
+View and set various options. See <code>help option-list</code> in-game for all options.
+</div>
+</details>
+
+<details>
+<summary>@rows</summary>
+<div class="help-entry">
+Set screen height for paging long output.
+<code>@rows 50</code>
+</div>
+</details>
+
+<details>
+<summary>@gag / @ungag</summary>
+<div class="help-entry">
+Block/unblock messages from a player.
+<code>@gag Bob</code>
+<code>@ungag Bob</code>
+</div>
+</details>
+
+<details>
+<summary>@ignore / @unignore</summary>
+<div class="help-entry">
+More complete blocking of a player.
+<code>@ignore Bob</code>
+<code>@unignore Bob</code>
+</div>
+</details>
+
+<details>
+<summary>muteconn / mutedisc</summary>
+<div class="help-entry">
+Options to hide connect/disconnect announcements.
+<code>@set me = muteconn</code>
+<code>@set me = mutedisc</code>
+</div>
+</details>
+
+<details>
+<summary>exitmode</summary>
+<div class="help-entry">
+Controls how exits are displayed in room descriptions.
+</div>
+</details>
+
+<details>
+<summary>saymode</summary>
+<div class="help-entry">
+Controls formatting of say output.
+</div>
+</details>
+
+<details>
+<summary>whomode</summary>
+<div class="help-entry">
+Controls formatting of who output.
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- ADMIN -->
+<details class="section-group">
+<summary>Admin Commands (wizard only)</summary>
+<div>
+
+<details>
+<summary>admin</summary>
+<div class="help-entry">
+Administrative commands for wizards. See <code>help admin</code> in-game.
+</div>
+</details>
+
+<details>
+<summary>@pcreate</summary>
+<div class="help-entry">
+Create a new player (wizard only).
+</div>
+</details>
+
+<details>
+<summary>@toad</summary>
+<div class="help-entry">
+Turn a player into a toad, removing their player status (wizard only).
+</div>
+</details>
+
+<details>
+<summary>@boot</summary>
+<div class="help-entry">
+Disconnect a player (wizard only).
+</div>
+</details>
+
+<details>
+<summary>@wall / @holler</summary>
+<div class="help-entry">
+Broadcast a message to all connected players.
+</div>
+</details>
+
+<details>
+<summary>@shutdown</summary>
+<div class="help-entry">
+Shut down the MUD (wizard only).
+</div>
+</details>
+
+<details>
+<summary>@dump</summary>
+<div class="help-entry">
+Force a database dump (wizard only).
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- OTHER TOPICS -->
+<details class="section-group">
+<summary>Other Topics</summary>
+<div>
+
+<details>
+<summary>rules</summary>
+<div class="help-entry">
+MUD rules and guidelines. See <code>help rules</code> in-game.
+</div>
+</details>
+
+<details>
+<summary>faq</summary>
+<div class="help-entry">
+Frequently asked questions. Also see the official FAQ at the URL in <code>help</code>.
+</div>
+</details>
+
+<details>
+<summary>motd</summary>
+<div class="help-entry">
+Message of the day.
+</div>
+</details>
+
+<details>
+<summary>welcome</summary>
+<div class="help-entry">
+Welcome message shown at login.
+</div>
+</details>
+
+<details>
+<summary>connect / disconnect</summary>
+<div class="help-entry">
+Information about connecting and disconnecting.
+</div>
+</details>
+
+<details>
+<summary>mail</summary>
+<div class="help-entry">
+In-MUD mail system. See <code>help mail</code> in-game.
+</div>
+</details>
+
+<details>
+<summary>zones</summary>
+<div class="help-entry">
+Zone system for organizing areas. See <code>help zones</code> in-game.
+</div>
+</details>
+
+<details>
+<summary>book</summary>
+<div class="help-entry">
+Information about the guestbook.
+</div>
+</details>
+
+<details>
+<summary>puzzle</summary>
+<div class="help-entry">
+Flag for puzzle objects.
+</div>
+</details>
+
+<details>
+<summary>beginner / expert</summary>
+<div class="help-entry">
+Beginner and expert modes affect what information is displayed.
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- COMPLETE COMMAND INDEX -->
+<details class="section-group">
+<summary>Complete Command Index (alphabetical)</summary>
+<div>
+<p>All commands from <code>help commands</code>:</p>
+<p>
+<code>say</code>, <code>emote</code>, <code>look</code>, <code>read</code>, <code>examine</code>, <code>inventory</code>, <code>drop</code>, <code>get</code>, <code>give</code>, <code>quit</code>, <code>home</code>, <code>who</code>, <code>where</code>, <code>finger</code>, <code>sign</code>, <code>help</code>, <code>motd</code>, <code>welcome</code>, <code>whisper</code>, <code>page</code>, <code>mail</code>, <code>bb</code>, <code>@wall</code>, <code>@dig</code>, <code>@doing</code>, <code>@users</code>, <code>@create</code>, <code>@stats</code>, <code>@set</code>, <code>@describe</code>, <code>@name</code>, <code>@chown</code>, <code>@pcreate</code>, <code>@password</code>, <code>@teleport</code>, <code>@link</code>, <code>@open</code>, <code>@action</code>, <code>@fail</code>, <code>@ofail</code>, <code>@success</code>, <code>@osuccess</code>, <code>@drop</code>, <code>@odrop</code>, <code>@zone</code>, <code>@lock</code>, <code>@backlinks</code>, <code>@boot</code>, <code>@clean</code>, <code>@find</code>, <code>@recycle</code>, <code>@toad</code>, <code>@shutdown</code>, <code>@dump</code>, <code>@rows</code>, <code>@gag</code>, <code>@ungag</code>, <code>@away</code>, <code>@holler</code>, <code>@poll</code>, <code>@garbage</code>, <code>@reload</code>, <code>@from</code>, <code>@clone</code>
+</p>
+
+<p>All @ functions (JotaCode):</p>
+<p>
+<code>@add()</code>, <code>@and()</code>, <code>@call()</code>, <code>@contentsloop()</code>, <code>@div()</code>, <code>@eq()</code>, <code>@execute()</code>, <code>@exit()</code>, <code>@exp()</code>, <code>@fieldloop()</code>, <code>@g()</code>, <code>@getfield()</code>, <code>@gt()</code>, <code>@idiv()</code>, <code>@lc()</code>, <code>@lcase()</code>, <code>@lcfirst()</code>, <code>@let()</code>, <code>@ln()</code>, <code>@location()</code>, <code>@log()</code>, <code>@lt()</code>, <code>@mod()</code>, <code>@move()</code>, <code>@mul()</code>, <code>@name()</code>, <code>@neg()</code>, <code>@not()</code>, <code>@object()</code>, <code>@or()</code>, <code>@player()</code>, <code>@print()</code>, <code>@rand()</code>, <code>@s()</code>, <code>@setdest()</code>, <code>@setfield()</code>, <code>@setflag()</code>, <code>@shortname()</code>, <code>@strcheck()</code>, <code>@strlen()</code>, <code>@strloop()</code>, <code>@sub()</code>, <code>@substitute()</code>, <code>@substr()</code>, <code>@switch()</code>, <code>@tell()</code>, <code>@tellroom()</code>, <code>@testflag()</code>, <code>@time()</code>, <code>@type()</code>, <code>@uc()</code>, <code>@ucase()</code>, <code>@ucfirst()</code>, <code>@xor()</code>
+</p>
+
+<p>Channel commands:</p>
+<p>
+<code>@addtochannel</code>, <code>@delcategory</code>, <code>@delchannel</code>, <code>@flagchannel</code>, <code>@joinchannels</code>, <code>@leavechannels</code>, <code>@listchannels</code>, <code>@makechannel</code>, <code>@mutechannels</code>, <code>@newchannels</code>, <code>@popeme</code>, <code>@remfromchannel</code>, <code>@renamechannel</code>, <code>@statchannel</code>, <code>@topicchannel</code>, <code>@unmutechannel</code>
+</p>
+</div>
+</details>
+
+<div class="credit">
+<p>This guide was compiled from the ifMUD help system documentation at<br>
+<a href="https://www.jczorkmid.net/~jpenney/ifmud_docs/">https://www.jczorkmid.net/~jpenney/ifmud_docs/</a></p>
+<p>For the most current information, use the in-game <code>help</code> command.</p>
+</div>
+
+</body>
+</html>
