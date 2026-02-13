@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>We Are Better Together</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        /* ══════════════════════════════════════════
+           MOBILE-FIRST
+           ══════════════════════════════════════════ */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --cherry: #d6163e;
+            --deep-rose: #8b2252;
+            --hot-pink: #ff2d6f;
+            --warm-pink: #e25482;
+            --rose: #e8849a;
+            --soft-pink: #f2b5c8;
+            --blush: #fce4ec;
+            --petal: #fff0f3;
+            --white: #ffffff;
+            --text: #3d2b3e;
+        }
+
+        html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Lora', Georgia, serif;
+            background: var(--petal);
+            color: var(--text);
+            overflow-x: hidden;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Canvas for heart particles ── */
+        #heartCanvas {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* ── Floating Hearts Background ── */
+        .hearts-bg {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .floating-heart {
+            position: absolute;
+            opacity: 0;
+            font-size: 1rem;
+            will-change: transform;
+        }
+
+        .floating-heart.rise { animation: floatUp linear forwards; }
+        .floating-heart.sway { animation: floatSway linear forwards; }
+        .floating-heart.spiral { animation: floatSpiral linear forwards; }
+        .floating-heart.large.rise { animation: floatUpLarge linear forwards; }
+        .floating-heart.large.sway { animation: floatSwayLarge linear forwards; }
+        .floating-heart.large.spiral { animation: floatSpiralLarge linear forwards; }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) rotate(0deg) scale(0.4); opacity: 0; }
+            8% { opacity: 0.25; }
+            50% { opacity: 0.2; }
+            92% { opacity: 0.1; }
+            100% { transform: translateY(-10vh) rotate(360deg) scale(1.1); opacity: 0; }
+        }
+        @keyframes floatSway {
+            0% { transform: translateY(100vh) translateX(0) rotate(0deg) scale(0.3); opacity: 0; }
+            8% { opacity: 0.2; }
+            25% { transform: translateY(75vh) translateX(40px) rotate(90deg) scale(0.5); }
+            50% { transform: translateY(50vh) translateX(-30px) rotate(180deg) scale(0.7); opacity: 0.18; }
+            75% { transform: translateY(25vh) translateX(50px) rotate(270deg) scale(0.9); }
+            100% { transform: translateY(-10vh) translateX(-20px) rotate(360deg) scale(1); opacity: 0; }
+        }
+        @keyframes floatSpiral {
+            0% { transform: translateY(100vh) translateX(0) rotate(0deg) scale(0.3); opacity: 0; }
+            10% { opacity: 0.22; }
+            25% { transform: translateY(75vh) translateX(60px) rotate(180deg) scale(0.5); }
+            50% { transform: translateY(50vh) translateX(-60px) rotate(360deg) scale(0.7); opacity: 0.15; }
+            75% { transform: translateY(25vh) translateX(60px) rotate(540deg) scale(0.85); }
+            100% { transform: translateY(-10vh) translateX(0) rotate(720deg) scale(1); opacity: 0; }
+        }
+
+        @keyframes floatUpLarge {
+            0% { transform: translateY(100vh) rotate(0deg) scale(0.5); opacity: 0; }
+            8% { opacity: 0.07; }
+            50% { opacity: 0.06; }
+            92% { opacity: 0.03; }
+            100% { transform: translateY(-10vh) rotate(180deg) scale(1); opacity: 0; }
+        }
+        @keyframes floatSwayLarge {
+            0% { transform: translateY(100vh) translateX(0) rotate(0deg) scale(0.5); opacity: 0; }
+            8% { opacity: 0.06; }
+            25% { transform: translateY(75vh) translateX(50px) rotate(45deg) scale(0.65); }
+            50% { transform: translateY(50vh) translateX(-40px) rotate(90deg) scale(0.8); opacity: 0.05; }
+            75% { transform: translateY(25vh) translateX(60px) rotate(135deg) scale(0.9); }
+            100% { transform: translateY(-10vh) translateX(-20px) rotate(180deg) scale(1); opacity: 0; }
+        }
+        @keyframes floatSpiralLarge {
+            0% { transform: translateY(100vh) translateX(0) rotate(0deg) scale(0.5); opacity: 0; }
+            10% { opacity: 0.06; }
+            25% { transform: translateY(75vh) translateX(70px) rotate(90deg) scale(0.65); }
+            50% { transform: translateY(50vh) translateX(-70px) rotate(180deg) scale(0.8); opacity: 0.05; }
+            75% { transform: translateY(25vh) translateX(70px) rotate(270deg) scale(0.9); }
+            100% { transform: translateY(-10vh) translateX(0) rotate(360deg) scale(1); opacity: 0; }
+        }
+
+        /* ── Touch/Mouse Heart Trail ── */
+        .trail-heart {
+            position: fixed;
+            pointer-events: none;
+            z-index: 10000;
+            font-size: 1.2rem;
+            animation: trailPop 0.8s ease-out forwards;
+        }
+        @keyframes trailPop {
+            0% { opacity: 1; transform: scale(0.3) translateY(0); }
+            50% { opacity: 0.7; transform: scale(1) translateY(-20px); }
+            100% { opacity: 0; transform: scale(0.5) translateY(-50px) rotate(30deg); }
+        }
+
+        /* ── Hero Section ── */
+        .hero {
+            position: relative;
+            min-height: 100svh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1.5rem 1rem;
+            z-index: 1;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 50% 80%, rgba(255, 45, 111, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 30% 30%, rgba(226, 84, 130, 0.12) 0%, transparent 40%),
+                radial-gradient(ellipse at 70% 20%, rgba(214, 22, 62, 0.08) 0%, transparent 40%),
+                radial-gradient(ellipse at 50% 50%, var(--blush) 0%, var(--petal) 70%);
+            z-index: -1;
+        }
+
+        .hero-hearts-ring {
+            position: relative;
+            width: 120px; height: 120px;
+            margin-bottom: 1rem;
+        }
+        .hero-hearts-ring .ring-heart {
+            position: absolute;
+            font-size: 1.4rem;
+            opacity: 0;
+            color: var(--cherry);
+        }
+        @keyframes ringAppear {
+            from { opacity: 0; transform: scale(0); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .hero-center-heart {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            color: var(--cherry);
+            opacity: 0;
+            animation: heartPulseIn 2s ease-out 0.3s forwards;
+        }
+        @keyframes heartPulseIn {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            70% { transform: translate(-50%, -50%) scale(0.95); }
+            100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .hero h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--cherry);
+            line-height: 1.15;
+            margin-bottom: 0.8rem;
+            opacity: 0;
+            animation: fadeSlideUp 1.5s ease-out 0.8s forwards;
+            text-shadow: 0 2px 20px rgba(214, 22, 62, 0.1);
+        }
+        .hero h1 em { color: var(--hot-pink); font-style: italic; }
+
+        .hero .subtitle {
+            font-family: 'Lora', Georgia, serif;
+            font-size: 1rem;
+            color: var(--warm-pink);
+            font-style: italic;
+            opacity: 0;
+            animation: fadeSlideUp 1.5s ease-out 1.4s forwards;
+            max-width: 320px;
+            padding: 0 0.5rem;
+        }
+
+        .scroll-hint {
+            position: absolute;
+            bottom: 1.5rem;
+            opacity: 0;
+            animation: fadeSlideUp 1s ease-out 2.5s forwards, gentleBounce 2s ease-in-out 3.5s infinite;
+            font-size: 0.8rem;
+            color: var(--warm-pink);
+            letter-spacing: 0.1em;
+        }
+        .scroll-hint span { display: block; font-size: 1.3rem; margin-top: 0.2rem; }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes gentleBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(8px); }
+        }
+
+        /* ── Main Content ── */
+        .content {
+            position: relative;
+            z-index: 1;
+            margin: 0 auto;
+            padding: 1.5rem 0.75rem 3rem;
+        }
+
+        /* ── Cards ── */
+        .card {
+            opacity: 0;
+            transform: translateY(40px);
+            margin-bottom: 1.5rem;
+        }
+
+        /* ── Photo Card Wrapper (holds the bg heart + card) ── */
+        .photo-wrapper {
+            position: relative;
+            margin: 0 auto 2rem;
+            /* Extra padding so the bg heart can overflow */
+            padding: 1.5rem;
+        }
+        .photo-wrapper.align-left,
+        .photo-wrapper.align-right,
+        .photo-wrapper.align-center { margin-left: auto; margin-right: auto; }
+
+        /* The big background heart behind each photo */
+        .photo-wrapper .bg-heart {
+            position: absolute;
+            font-size: 8rem;
+            color: var(--soft-pink);
+            opacity: 0.08;
+            pointer-events: none;
+            z-index: 0;
+            line-height: 1;
+            transition: opacity 0.8s ease;
+        }
+        .photo-wrapper.revealed .bg-heart {
+            opacity: 0.1;
+        }
+
+        /* Photo Cards */
+        .photo-card {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+            z-index: 1;
+            box-shadow:
+                0 4px 20px rgba(214, 22, 62, 0.12),
+                0 0 0 1px rgba(242, 181, 200, 0.3);
+        }
+
+        .photo-card::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--hot-pink), var(--soft-pink), var(--cherry), var(--rose));
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .photo-card.glow-active::after { opacity: 1; }
+
+        .photo-card img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        .photo-card .photo-frame {
+            padding: 4px;
+            background: white;
+        }
+
+        /* Photo Captions */
+        .photo-caption {
+            padding: 1rem 1.2rem;
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1rem;
+            line-height: 1.5;
+            text-align: center;
+        }
+        .photo-caption .caption-heart {
+            display: inline-block;
+            animation: captionPulse 2s ease-in-out infinite;
+        }
+        @keyframes captionPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .caption-blush {
+            background: linear-gradient(135deg, var(--blush), var(--white));
+            color: var(--deep-rose);
+        }
+        .caption-rose {
+            background: linear-gradient(135deg, var(--cherry), var(--hot-pink));
+            color: white;
+        }
+        .caption-white {
+            background: white;
+            color: var(--cherry);
+            border-top: 2px solid var(--soft-pink);
+        }
+        .caption-deep {
+            background: linear-gradient(135deg, var(--warm-pink), var(--cherry));
+            color: white;
+        }
+
+        /* ── Pink Ribbon Sections ── */
+        .ribbon-section {
+            background: linear-gradient(135deg, var(--cherry), var(--hot-pink));
+            margin: 2rem -0.75rem;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .ribbon-section::before,
+        .ribbon-section::after {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 30px;
+            background: var(--petal);
+            left: -50%;
+        }
+        .ribbon-section::before { top: -15px; border-radius: 0 0 50% 50%; }
+        .ribbon-section::after { bottom: -15px; border-radius: 50% 50% 0 0; }
+        .ribbon-section p {
+            font-family: 'Playfair Display', Georgia, serif;
+            color: white;
+            font-size: 1.3rem;
+            font-style: italic;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+        .ribbon-section .ribbon-hearts {
+            margin-top: 0.5rem;
+            font-size: 1.2rem;
+            letter-spacing: 0.3rem;
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* ── Finale Section ── */
+        .finale {
+            text-align: center;
+            padding: 4rem 1.5rem 5rem;
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(180deg, var(--petal) 0%, var(--blush) 40%, var(--soft-pink) 100%);
+        }
+        .finale h2 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.8rem;
+            color: var(--cherry);
+            margin-bottom: 0.8rem;
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 1s ease, transform 1s ease;
+            text-shadow: 0 2px 15px rgba(214, 22, 62, 0.15);
+        }
+        .finale h2.visible { opacity: 1; transform: translateY(0); }
+
+        .finale .finale-sub {
+            font-size: 1.1rem;
+            color: var(--deep-rose);
+            font-style: italic;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1s ease 0.3s, transform 1s ease 0.3s;
+        }
+        .finale .finale-sub.visible { opacity: 1; transform: translateY(0); }
+
+        .finale .big-heart {
+            font-size: 4rem;
+            display: block;
+            margin-top: 1.5rem;
+            color: var(--cherry);
+            opacity: 0;
+            transition: opacity 1s ease 0.6s, transform 1s ease 0.6s;
+            transform: scale(0.5);
+            filter: drop-shadow(0 0 20px rgba(255, 45, 111, 0.4));
+        }
+        .finale .big-heart.visible {
+            opacity: 1;
+            transform: scale(1);
+            animation: bigHeartbeat 1.2s ease-in-out 1.6s infinite;
+        }
+        @keyframes bigHeartbeat {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(255, 45, 111, 0.4)); }
+            15% { transform: scale(1.2); filter: drop-shadow(0 0 40px rgba(255, 45, 111, 0.6)); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.12); filter: drop-shadow(0 0 30px rgba(255, 45, 111, 0.5)); }
+            60% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(255, 45, 111, 0.4)); }
+        }
+
+        .finale .heart-shower {
+            margin-top: 1rem;
+            font-size: 1.4rem;
+            letter-spacing: 0.4rem;
+            color: var(--warm-pink);
+            opacity: 0;
+            transition: opacity 1s ease 1s;
+        }
+        .finale .heart-shower.visible { opacity: 0.5; }
+
+        /* ══════════════════════════════════════════
+           TABLET (min-width: 600px)
+           ══════════════════════════════════════════ */
+        @media (min-width: 600px) {
+            .hero-hearts-ring { width: 150px; height: 150px; }
+            .hero-center-heart { font-size: 3.5rem; }
+            .hero-hearts-ring .ring-heart { font-size: 1.6rem; }
+            .hero h1 { font-size: 3rem; }
+            .hero .subtitle { font-size: 1.15rem; max-width: 420px; }
+
+            .content { padding: 2rem 1.5rem 4rem; max-width: 700px; }
+            .card { margin-bottom: 2rem; }
+
+            .photo-wrapper { padding: 2rem; margin-bottom: 2.5rem; }
+            .photo-wrapper .bg-heart { font-size: 10rem; }
+            .photo-card { border-radius: 14px; max-width: 520px; }
+            .photo-card .photo-frame { padding: 5px; }
+
+            .photo-caption { padding: 1.1rem 1.4rem; font-size: 1.1rem; }
+
+            .ribbon-section { margin: 2.5rem -1.5rem; padding: 2.5rem 2rem; }
+            .ribbon-section p { font-size: 1.5rem; }
+
+            .finale { padding: 5rem 2rem; }
+            .finale h2 { font-size: 2.2rem; }
+        }
+
+        /* ══════════════════════════════════════════
+           DESKTOP (min-width: 900px)
+           ══════════════════════════════════════════ */
+        @media (min-width: 900px) {
+            .hero { padding: 2rem; min-height: 100vh; }
+            .hero-hearts-ring { width: 180px; height: 180px; }
+            .hero-center-heart { font-size: 4rem; }
+            .hero-hearts-ring .ring-heart { font-size: 1.8rem; }
+            .hero h1 { font-size: clamp(3rem, 5vw, 5rem); }
+            .hero .subtitle { font-size: 1.4rem; max-width: 500px; }
+
+            .content { max-width: 1100px; padding: 2rem 2rem 6rem; }
+            .card { margin-bottom: 3rem; }
+
+            .photo-wrapper { padding: 2.5rem; margin-bottom: 3rem; }
+            .photo-wrapper .bg-heart { font-size: 14rem; }
+            .photo-wrapper.align-left { margin-right: auto; margin-left: 0; }
+            .photo-wrapper.align-right { margin-left: auto; margin-right: 0; }
+            .photo-wrapper.align-center { margin: 0 auto 3rem; }
+
+            .photo-card {
+                border-radius: 16px;
+                max-width: 600px;
+                box-shadow: 0 8px 40px rgba(214, 22, 62, 0.15), 0 0 0 1px rgba(242, 181, 200, 0.3);
+            }
+            .photo-card .photo-frame { padding: 6px; }
+            .photo-card img { transition: transform 0.6s ease; }
+            .photo-card:hover img { transform: scale(1.03); }
+            .photo-card:hover { box-shadow: 0 12px 50px rgba(255, 45, 111, 0.2), 0 0 80px rgba(255, 45, 111, 0.08); }
+
+            .photo-caption { padding: 1.2rem 1.6rem; font-size: 1.2rem; }
+
+            .ribbon-section { margin: 3rem -2rem; padding: 3rem; }
+            .ribbon-section p { font-size: 1.7rem; }
+
+            .finale { padding: 6rem 2rem; }
+            .finale h2 { font-size: clamp(2rem, 5vw, 3.5rem); }
+            .finale .finale-sub { font-size: 1.2rem; }
+            .finale .big-heart { font-size: 5rem; margin-top: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="heartCanvas"></canvas>
+<div class="hearts-bg" id="heartsBg"></div>
+
+<!-- ── Hero ── -->
+<section class="hero" id="hero">
+    <div class="hero-hearts-ring" id="heroRing">
+        <span class="hero-center-heart">&hearts;</span>
+    </div>
+    <h1>We Are <em>Better Together</em></h1>
+    <p class="subtitle">Happy Valentine's Day, my love. Every moment with you is my favorite.</p>
+    <div class="scroll-hint">scroll down <span>&darr;</span></div>
+</section>
+
+<!-- ── Gallery Content ── -->
+<main class="content" id="gallery"></main>
+
+<!-- ── Finale ── -->
+<section class="finale" id="finale">
+    <h2>Better together. Today, tomorrow, always.</h2>
+    <p class="finale-sub">I love you, Erin &hearts;</p>
+    <span class="big-heart">&hearts;</span>
+    <div class="heart-shower" id="heartShower"></div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script>
+(function() {
+    const H = '\u2665'; // ♥ — the one and only heart
+    const isDesktop = window.matchMedia('(min-width: 900px)').matches;
+    const isMobile = !window.matchMedia('(min-width: 600px)').matches;
+
+    // ══════════════════════════════════════════════════════════
+    //  HERO — orbiting hearts ring
+    // ══════════════════════════════════════════════════════════
+    const heroRing = document.getElementById('heroRing');
+    const ringCount = 6;
+    const ringR = isMobile ? 50 : isDesktop ? 75 : 62;
+    for (let i = 0; i < ringCount; i++) {
+        const s = document.createElement('span');
+        s.className = 'ring-heart';
+        s.textContent = H;
+        s.style.top = '50%';
+        s.style.left = '50%';
+        s.style.marginTop = '-0.7em';
+        s.style.marginLeft = '-0.7em';
+        heroRing.appendChild(s);
+
+        const angle = i * (360 / ringCount);
+        s.style.animation = `ringAppear 0.5s ${0.5 + i * 0.15}s ease-out forwards`;
+        setTimeout(() => {
+            s.style.animation = 'none';
+            s.style.opacity = 1;
+            s.style.transform = `rotate(${angle}deg) translateX(${ringR}px) rotate(-${angle}deg)`;
+            requestAnimationFrame(() => {
+                const sheet = document.createElement('style');
+                sheet.textContent = `@keyframes ro${i}{from{transform:rotate(${angle}deg) translateX(${ringR}px) rotate(-${angle}deg)}to{transform:rotate(${angle+360}deg) translateX(${ringR}px) rotate(-${angle+360}deg)}}`;
+                document.head.appendChild(sheet);
+                s.style.animation = `ro${i} ${8 + i * 0.3}s linear infinite`;
+            });
+        }, (0.5 + i * 0.15) * 1000 + 500);
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  PHOTOS & MESSAGES
+    // ══════════════════════════════════════════════════════════
+    const photos = [
+        "photos/20240920_214848.jpg", "photos/20240929_024953.jpg",
+        "photos/20241018_212125.jpg", "photos/20241030_203957.jpg",
+        "photos/20241103_124951.jpg", "photos/20241111_202323.jpg",
+        "photos/20241113_222122.jpg", "photos/20241210_214820.jpg",
+        "photos/20250103_200616.jpg", "photos/20250103_214423.jpg",
+        "photos/20250112_140757~2.jpg", "photos/20250112_163102.jpg",
+        "photos/20250114_215832.jpg", "photos/20250202_213157.jpg",
+        "photos/20250503_191121-COLLAGE.jpg", "photos/20250531_122002.jpg",
+        "photos/20250912_193135.jpg", "photos/20251018_193318.jpg",
+        "photos/20251019_172816.jpg", "photos/20251020_142239.jpg",
+        "photos/20251102_145235.jpg", "photos/20260208_145809.jpg"
+    ];
+
+    const messages = [
+        "You make ordinary moments feel extraordinary.",
+        "My favorite place is next to you.",
+        "With you, everything just makes sense.",
+        "You are my today and all of my tomorrows.",
+        "Every love story is beautiful, but ours is my favorite.",
+        "I didn't know what home felt like until I found you.",
+        "You're the reason I believe in magic.",
+        "Together is the most beautiful place to be.",
+        "I choose you. And I'll choose you over and over.",
+        "You are my sun, my moon, and all my stars.",
+        "Life with you is my greatest adventure.",
+        "You make my heart smile.",
+        "In you, I've found the love of my life and my closest friend.",
+        "We are better together \u2014 and I have the proof right here."
+    ];
+
+    const ribbonMessages = [
+        "You + Me = Everything",
+        "Two hearts, one love",
+        "Forever starts with us"
+    ];
+
+    function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    const shuffledPhotos = shuffle(photos);
+    const shuffledMessages = shuffle(messages);
+    const alignments = ['align-left', 'align-right', 'align-center'];
+    const captionStyles = ['caption-blush', 'caption-rose', 'caption-white', 'caption-deep'];
+    // Background heart colors (all warm pinks/reds)
+    const bgHeartColors = ['#f2b5c8', '#fce4ec', '#e8849a', '#f4889a', '#ff9ec0', '#c9516e', '#e25482'];
+
+    const maxPhotos = 20;
+    const photosToUse = shuffledPhotos.slice(0, maxPhotos);
+
+    // Decide which photos get captions
+    const captionSlots = new Set();
+    const indices = shuffle(Array.from({length: photosToUse.length}, (_, i) => i));
+    for (let i = 0; i < Math.min(shuffledMessages.length, photosToUse.length); i++) {
+        captionSlots.add(indices[i]);
+    }
+
+    // Background heart offset positions (off-center in various directions)
+    const bgOffsets = [
+        { top: '-15%', left: '-12%', rot: -12 },
+        { top: '-10%', right: '-10%', rot: 8 },
+        { bottom: '-18%', left: '-8%', rot: -20 },
+        { bottom: '-12%', right: '-15%', rot: 15 },
+        { top: '-20%', left: '60%', rot: -5 },
+        { top: '50%', left: '-15%', rot: 10 },
+        { top: '-8%', right: '-18%', rot: -18 },
+        { bottom: '-10%', left: '55%', rot: 22 },
+    ];
+
+    const gallery = document.getElementById('gallery');
+    let mi = 0, ribbonIndex = 0, groupCount = 0;
+
+    for (let pi = 0; pi < photosToUse.length; pi++) {
+        const align = alignments[(pi + Math.floor(Math.random() * 3)) % 3];
+
+        // Wrapper with background heart
+        const wrapper = document.createElement('div');
+        wrapper.className = `card photo-wrapper ${align}`;
+
+        // Large background heart
+        const bgHeart = document.createElement('span');
+        bgHeart.className = 'bg-heart';
+        bgHeart.textContent = H;
+        const offset = bgOffsets[pi % bgOffsets.length];
+        if (offset.top) bgHeart.style.top = offset.top;
+        if (offset.bottom) bgHeart.style.bottom = offset.bottom;
+        if (offset.left) bgHeart.style.left = offset.left;
+        if (offset.right) bgHeart.style.right = offset.right;
+        bgHeart.style.transform = `rotate(${offset.rot}deg)`;
+        bgHeart.style.color = bgHeartColors[pi % bgHeartColors.length];
+        wrapper.appendChild(bgHeart);
+
+        // Photo card
+        const card = document.createElement('div');
+        card.className = 'photo-card';
+
+        let captionHTML = '';
+        if (captionSlots.has(pi) && mi < shuffledMessages.length) {
+            const style = captionStyles[mi % captionStyles.length];
+            captionHTML = `<div class="photo-caption ${style}"><span class="caption-heart">${H}</span> ${shuffledMessages[mi]}</div>`;
+            mi++;
+        }
+
+        card.innerHTML = `<div class="photo-frame"><img src="${photosToUse[pi]}" alt="Us" loading="lazy"></div>${captionHTML}`;
+        wrapper.appendChild(card);
+        gallery.appendChild(wrapper);
+
+        groupCount++;
+
+        // Ribbon section every ~7 items
+        if (groupCount % 7 === 0 && ribbonIndex < ribbonMessages.length) {
+            const ribbon = document.createElement('div');
+            ribbon.className = 'card ribbon-section';
+            ribbon.innerHTML = `<p>${ribbonMessages[ribbonIndex]}</p><div class="ribbon-hearts">${H} ${H} ${H}</div>`;
+            gallery.appendChild(ribbon);
+            ribbonIndex++;
+        }
+    }
+
+    // Finale heart shower
+    const shower = document.getElementById('heartShower');
+    shower.textContent = Array.from({length: 7}, () => H).join(' ');
+
+    // ══════════════════════════════════════════════════════════
+    //  GSAP SCROLL ANIMATIONS
+    // ══════════════════════════════════════════════════════════
+    gsap.registerPlugin(ScrollTrigger);
+
+    document.querySelectorAll('.photo-wrapper').forEach((wrapper) => {
+        const card = wrapper.querySelector('.photo-card');
+        let xOffset = 0, rotation = 0;
+        if (isDesktop) {
+            xOffset = wrapper.classList.contains('align-left') ? -60 :
+                      wrapper.classList.contains('align-right') ? 60 : 0;
+            rotation = (Math.random() - 0.5) * 4;
+        }
+        gsap.fromTo(wrapper, {
+            opacity: 0, x: xOffset, y: isDesktop ? 50 : 30, rotate: rotation, scale: 0.95
+        }, {
+            opacity: 1, x: 0, y: 0, rotate: 0, scale: 1,
+            duration: isDesktop ? 0.9 : 0.7,
+            ease: "power2.out",
+            scrollTrigger: {
+                trigger: wrapper,
+                start: "top 88%",
+                toggleActions: "play none none none",
+                onEnter: () => {
+                    wrapper.classList.add('revealed');
+                    if (card) card.classList.add('glow-active');
+                    burstHearts(wrapper);
+                }
+            }
+        });
+    });
+
+    // Ribbon sections
+    document.querySelectorAll('.ribbon-section').forEach(ribbon => {
+        gsap.fromTo(ribbon, { opacity: 0, scale: 0.9 }, {
+            opacity: 1, scale: 1, duration: 0.8, ease: "power2.out",
+            scrollTrigger: { trigger: ribbon, start: "top 85%", toggleActions: "play none none none" }
+        });
+    });
+
+    // Finale
+    document.querySelectorAll('#finale h2, #finale .finale-sub, #finale .big-heart, #finale .heart-shower').forEach(el => {
+        ScrollTrigger.create({
+            trigger: el,
+            start: "top 85%",
+            onEnter: () => {
+                el.classList.add('visible');
+                if (el.classList.contains('big-heart')) {
+                    for (let i = 0; i < 20; i++) {
+                        setTimeout(() => burstHearts(el, 3), i * 80);
+                    }
+                }
+            }
+        });
+    });
+
+    // ══════════════════════════════════════════════════════════
+    //  HEART BURST EFFECT
+    // ══════════════════════════════════════════════════════════
+    function burstHearts(el, count) {
+        const rect = el.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const n = count || (isMobile ? 3 : 5);
+        for (let i = 0; i < n; i++) {
+            const h = document.createElement('span');
+            h.className = 'trail-heart';
+            h.textContent = H;
+            h.style.left = (cx + (Math.random() - 0.5) * rect.width * 0.6) + 'px';
+            h.style.top = (cy + (Math.random() - 0.5) * rect.height * 0.4) + 'px';
+            h.style.fontSize = (0.8 + Math.random() * 1) + 'rem';
+            h.style.color = bgHeartColors[Math.floor(Math.random() * bgHeartColors.length)];
+            document.body.appendChild(h);
+            setTimeout(() => h.remove(), 800);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  FLOATING HEARTS BACKGROUND (CSS layer — simple ♥)
+    // ══════════════════════════════════════════════════════════
+    const heartsBg = document.getElementById('heartsBg');
+    const floatStyles = ['rise', 'sway', 'spiral'];
+    const pinkShades = ['#ff2d6f', '#e25482', '#f2b5c8', '#d6163e', '#e8849a', '#ff6b9d', '#c9516e', '#f4889a', '#ff9ec0'];
+
+    function spawnFloatingHeart(forceLarge) {
+        const isLarge = forceLarge || Math.random() < 0.1;
+        const span = document.createElement('span');
+        const style = floatStyles[Math.floor(Math.random() * floatStyles.length)];
+        span.className = 'floating-heart ' + style + (isLarge ? ' large' : '');
+        span.textContent = H;
+        span.style.left = Math.random() * 100 + '%';
+        if (isLarge) {
+            span.style.fontSize = (3 + Math.random() * 3) + 'rem';
+            span.style.filter = 'blur(1px)';
+            span.style.animationDuration = (16 + Math.random() * 12) + 's';
+        } else {
+            span.style.fontSize = (0.7 + Math.random() * 1.2) + 'rem';
+            span.style.animationDuration = (8 + Math.random() * 14) + 's';
+        }
+        span.style.color = pinkShades[Math.floor(Math.random() * pinkShades.length)];
+        heartsBg.appendChild(span);
+        setTimeout(() => span.remove(), 28000);
+    }
+
+    const heartInterval = isMobile ? 1800 : isDesktop ? 600 : 1000;
+    const initialBurst = isMobile ? 5 : isDesktop ? 15 : 8;
+    setInterval(spawnFloatingHeart, heartInterval);
+    setInterval(() => spawnFloatingHeart(true), isMobile ? 5000 : 3000);
+    for (let i = 0; i < initialBurst; i++) setTimeout(spawnFloatingHeart, i * 150);
+
+    // ══════════════════════════════════════════════════════════
+    //  TOUCH / MOUSE HEART TRAIL (simple ♥)
+    // ══════════════════════════════════════════════════════════
+    let lastTrail = 0;
+    function spawnTrailHeart(x, y) {
+        const now = Date.now();
+        if (now - lastTrail < 80) return;
+        lastTrail = now;
+        const h = document.createElement('span');
+        h.className = 'trail-heart';
+        h.textContent = H;
+        h.style.left = (x + (Math.random() - 0.5) * 20) + 'px';
+        h.style.top = (y + (Math.random() - 0.5) * 20) + 'px';
+        h.style.fontSize = (0.8 + Math.random() * 0.8) + 'rem';
+        h.style.color = pinkShades[Math.floor(Math.random() * pinkShades.length)];
+        document.body.appendChild(h);
+        setTimeout(() => h.remove(), 800);
+    }
+
+    document.addEventListener('mousemove', e => spawnTrailHeart(e.clientX, e.clientY));
+    document.addEventListener('touchmove', e => {
+        const t = e.touches[0];
+        if (t) spawnTrailHeart(t.clientX, t.clientY);
+    }, { passive: true });
+
+    // ══════════════════════════════════════════════════════════
+    //  CANVAS HEART PARTICLE SYSTEM (simple heart shapes)
+    // ══════════════════════════════════════════════════════════
+    const canvas = document.getElementById('heartCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    const maxParticles = isMobile ? 25 : isDesktop ? 60 : 40;
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    function drawHeart(cx, cy, size, color, alpha) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        const s = size;
+        ctx.moveTo(cx, cy + s * 0.3);
+        ctx.bezierCurveTo(cx, cy, cx - s, cy, cx - s, cy + s * 0.3);
+        ctx.bezierCurveTo(cx - s, cy + s * 0.75, cx, cy + s, cx, cy + s * 1.2);
+        ctx.bezierCurveTo(cx, cy + s, cx + s, cy + s * 0.75, cx + s, cy + s * 0.3);
+        ctx.bezierCurveTo(cx + s, cy, cx, cy, cx, cy + s * 0.3);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    const heartColors = ['#ff2d6f', '#e25482', '#d6163e', '#f2b5c8', '#ff6b9d', '#c9516e', '#ff9ec0', '#e8849a', '#fce4ec'];
+
+    function spawnParticle() {
+        if (particles.length >= maxParticles) return;
+        const isLarge = Math.random() < 0.12;
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: isLarge ? -80 : -20,
+            size: isLarge ? (25 + Math.random() * 40) : (3 + Math.random() * 8),
+            speed: isLarge ? (0.15 + Math.random() * 0.3) : (0.3 + Math.random() * 0.8),
+            drift: (Math.random() - 0.5) * (isLarge ? 0.2 : 0.5),
+            wobble: Math.random() * Math.PI * 2,
+            wobbleSpeed: isLarge ? (0.005 + Math.random() * 0.008) : (0.01 + Math.random() * 0.02),
+            color: heartColors[Math.floor(Math.random() * heartColors.length)],
+            alpha: isLarge ? (0.03 + Math.random() * 0.04) : (0.08 + Math.random() * 0.12),
+            rotation: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * (isLarge ? 0.005 : 0.02)
+        });
+    }
+
+    function animateParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.y += p.speed;
+            p.x += p.drift + Math.sin(p.wobble) * 0.3;
+            p.wobble += p.wobbleSpeed;
+            p.rotation += p.rotSpeed;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rotation);
+            drawHeart(0, 0, p.size, p.color, p.alpha);
+            ctx.restore();
+            if (p.y > canvas.height + 30) particles.splice(i, 1);
+        }
+        requestAnimationFrame(animateParticles);
+    }
+
+    const spawnInterval = isMobile ? 400 : isDesktop ? 150 : 250;
+    setInterval(spawnParticle, spawnInterval);
+    animateParticles();
+
+})();
+</script>
+
+</body>
+</html>
