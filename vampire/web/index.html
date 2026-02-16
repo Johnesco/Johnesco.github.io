@@ -246,6 +246,11 @@ td.lc {
   padding: 0 20px 0 0;
 }
 
+/* BASIC has no line-number column, so add left padding */
+#code-basic td.lc {
+  padding-left: 20px;
+}
+
 tr.heading-line td { padding-top: 8px; }
 tr.heading-line td.lc { font-weight: bold; color: #e0c8a0; font-size: 15px; }
 tr.heading-line td.ln { color: #5a4030; }
@@ -261,6 +266,52 @@ tr:target td.ln, tr.highlight td.ln { color: #806050; }
 .bas-ln   { color: #7a6050; }
 .bas-func { color: #7ea8b0; }
 .bas-op   { color: #b89860; }
+
+/* --- BASIC annotation blocks --- */
+tr.bas-annotation td.lc {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13px;
+  color: #7a9a6a;
+  line-height: 1.45;
+  padding: 1px 20px 1px 24px;
+  border-left: 2px solid #2a4a20;
+  white-space: pre-wrap;
+}
+
+tr.bas-annotation + tr:not(.bas-annotation) td.lc { padding-top: 6px; }
+tr:not(.bas-annotation) + tr.bas-annotation td.lc { padding-top: 6px; }
+
+/* separator lines (@@  === or @@ ---) rendered as thin rules */
+tr.bas-annotation.anno-rule td.lc {
+  padding-top: 10px;
+  padding-bottom: 2px;
+  border-left-color: transparent;
+  color: #3a5a30;
+}
+
+/* --- Toggle button in toolbar --- */
+.toggle-btn {
+  padding: 4px 14px;
+  background: #1a100a;
+  border: 1px solid #3a2018;
+  border-radius: 4px;
+  color: #a08060;
+  font-family: inherit;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.toggle-btn:hover {
+  background: #2a1810;
+  border-color: #6a4030;
+  color: #d4a060;
+}
+.toggle-btn.active {
+  background: #1a2a10;
+  border-color: #4a6a30;
+  color: #8bab6e;
+}
 
 /* --- Inform 7 syntax colors --- */
 .syn-str  { color: #8bab6e; }
@@ -678,7 +729,8 @@ footer a {
   </div>
   <div class="source-view">
     <div class="source-toolbar">
-      <span class="file-path">src/basic/dracula.bas</span>
+      <span class="file-path" id="filepath-basic">src/basic/dracula.bas</span>
+      <button class="toggle-btn" id="toggle-annotations" onclick="toggleAnnotations()">Annotated Code</button>
       <input type="text" class="search-box" id="search-basic" placeholder="Search... (Ctrl+F)">
       <span class="line-count" id="lc-basic"></span>
     </div>
@@ -900,30 +952,89 @@ function highlightI7Keywords(html) {
 }
 
 /* ==================================================================
-   LOAD BASIC SOURCE
+   LOAD BASIC SOURCE (with annotation toggle)
    ================================================================== */
+let basicAnnotated = false;       // current mode
+let basicOriginalHtml = '';       // cached rendered HTML for original
+let basicAnnotatedHtml = '';      // cached rendered HTML for annotated
+let basicOriginalCount = 0;
+let basicAnnotatedCount = 0;
+
+function renderAnnotationText(raw) {
+  // Strip the @@ prefix and leading space
+  let text = raw.replace(/^@@\s?/, '');
+  // Detect separator lines (=== or ---)
+  if (/^[-=]{3,}/.test(text.trim()) || text.trim() === '') return { text: text, isRule: /^[-=]{3,}/.test(text.trim()) };
+  return { text: text, isRule: false };
+}
+
 async function loadBasic() {
   const wrap = document.getElementById('code-basic');
   const lcEl = document.getElementById('lc-basic');
 
   try {
-    const res = await fetch('../src/basic/dracula.bas');
+    // Load annotated file (superset — contains original lines and @@ annotations)
+    const res = await fetch('../src/basic/dracula-annotated.bas');
     if (!res.ok) throw new Error(res.status);
     const source = await res.text();
-    const lines = source.split('\n');
-    lcEl.textContent = lines.length + ' lines';
+    const allLines = source.split('\n');
 
-    const rows = lines.map((raw, i) => {
-      const num = i + 1;
-      return '<tr id="B' + num + '"><td class="ln">' + num + '</td><td class="lc">' + highlightBasic(raw) + '</td></tr>';
+    // Build annotated view (all lines, no line number column)
+    const annoRows = allLines.map((raw, i) => {
+      const isAnnotation = /^@@/.test(raw);
+      if (isAnnotation) {
+        const { text, isRule } = renderAnnotationText(raw);
+        const cls = 'bas-annotation' + (isRule ? ' anno-rule' : '');
+        return '<tr class="' + cls + '"><td class="lc">' + esc(text) + '</td></tr>';
+      }
+      return '<tr><td class="lc">' + highlightBasic(raw) + '</td></tr>';
     });
+    basicAnnotatedHtml = '<table class="code">' + annoRows.join('') + '</table>';
+    basicAnnotatedCount = allLines.filter(l => !/^@@/.test(l)).length;
 
-    wrap.innerHTML = '<table class="code">' + rows.join('') + '</table>';
+    // Build original view (filter out @@ lines, no line number column)
+    const origLines = allLines.filter(line => !/^@@/.test(line));
+    const origRows = origLines.map((raw) => {
+      return '<tr><td class="lc">' + highlightBasic(raw) + '</td></tr>';
+    });
+    basicOriginalHtml = '<table class="code">' + origRows.join('') + '</table>';
+    basicOriginalCount = origLines.length;
+
+    // Show original by default
+    wrap.innerHTML = basicOriginalHtml;
+    lcEl.textContent = basicOriginalCount + ' lines';
     loaded.basic = true;
     initSearch('basic', 'search-basic', 'code-basic');
   } catch (e) {
     wrap.innerHTML = '<div class="error-msg">Failed to load BASIC source. Make sure you are serving this page from a web server (not file://).</div>';
   }
+}
+
+function toggleAnnotations() {
+  if (!loaded.basic) return;
+  basicAnnotated = !basicAnnotated;
+
+  const wrap = document.getElementById('code-basic');
+  const lcEl = document.getElementById('lc-basic');
+  const btn = document.getElementById('toggle-annotations');
+  const fp = document.getElementById('filepath-basic');
+
+  if (basicAnnotated) {
+    wrap.innerHTML = basicAnnotatedHtml;
+    lcEl.textContent = basicAnnotatedCount + ' lines of code';
+    btn.textContent = 'Original Code';
+    btn.classList.add('active');
+    fp.textContent = 'src/basic/dracula-annotated.bas';
+  } else {
+    wrap.innerHTML = basicOriginalHtml;
+    lcEl.textContent = basicOriginalCount + ' lines';
+    btn.textContent = 'Annotated Code';
+    btn.classList.remove('active');
+    fp.textContent = 'src/basic/dracula.bas';
+  }
+
+  // Re-init search for new content
+  initSearch('basic', 'search-basic', 'code-basic');
 }
 
 /* ==================================================================
