@@ -674,7 +674,7 @@ footer a {
     <button class="tab-btn" onclick="showTab('landing')">Home</button>
     <button class="tab-btn active" data-tab="basic">BASIC Source</button>
     <button class="tab-btn" onclick="showTab('inform')">Inform 7 Source</button>
-    <button class="tab-btn" onclick="showTab('play')">Play</button>
+    <a class="tab-btn" href="play.html" style="text-decoration:none;">Play</a>
   </div>
   <div class="source-view">
     <div class="source-toolbar">
@@ -694,7 +694,7 @@ footer a {
     <button class="tab-btn" onclick="showTab('landing')">Home</button>
     <button class="tab-btn" onclick="showTab('basic')">BASIC Source</button>
     <button class="tab-btn active" data-tab="inform">Inform 7 Source</button>
-    <button class="tab-btn" onclick="showTab('play')">Play</button>
+    <a class="tab-btn" href="play.html" style="text-decoration:none;">Play</a>
   </div>
   <div class="source-with-nav">
     <div class="sidebar">
@@ -713,38 +713,6 @@ footer a {
   </div>
 </div>
 
-<!-- ===== PLAY VIEW ===== -->
-<div class="tab-content" id="tab-play">
-  <div class="tab-bar">
-    <button class="tab-btn" onclick="showTab('landing')">Home</button>
-    <button class="tab-btn" onclick="showTab('basic')">BASIC Source</button>
-    <button class="tab-btn" onclick="showTab('inform')">Inform 7 Source</button>
-    <button class="tab-btn active" data-tab="play">Play</button>
-  </div>
-  <div class="play-area" id="play-area">
-    <div class="play-placeholder" id="play-placeholder">
-      <h3>Play Dracula's Castle</h3>
-      <p>
-        To play the game in your browser, you need a compiled story file
-        (<code>.ulx</code> or <code>.z8</code>) produced by the Inform 7 IDE.
-      </p>
-      <p>
-        Compile <code>src/inform/story.ni</code> in the Inform 7 IDE, then
-        drag and drop the resulting story file below to launch it in Parchment.
-      </p>
-      <div class="file-drop" id="file-drop">
-        <p>Drop a <strong>.ulx</strong>, <strong>.z8</strong>, <strong>.z5</strong>,
-        or <strong>.gblorb</strong> file here</p>
-        <p style="font-size:0.85em; margin-top:8px;">or click to browse</p>
-        <input type="file" id="story-file" accept=".ulx,.z8,.z5,.z3,.gblorb,.zblorb,.blorb">
-      </div>
-      <p style="font-size:0.85em; color:#604838; margin-top:16px;">
-        Powered by <a href="https://github.com/curiousdannii/parchment">Parchment</a>,
-        the web-based interactive fiction interpreter.
-      </p>
-    </div>
-  </div>
-</div>
 
 <footer>
   <p>
@@ -1063,100 +1031,6 @@ function initSearch(id, inputId, wrapId) {
   });
 }
 
-/* ==================================================================
-   PLAY - FILE DROP & PARCHMENT LAUNCH
-   ================================================================== */
-(function() {
-  const drop = document.getElementById('file-drop');
-  const fileInput = document.getElementById('story-file');
-
-  drop.addEventListener('click', () => fileInput.click());
-  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag-over'); });
-  drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
-  drop.addEventListener('drop', e => {
-    e.preventDefault();
-    drop.classList.remove('drag-over');
-    if (e.dataTransfer.files.length) launchStory(e.dataTransfer.files[0]);
-  });
-  fileInput.addEventListener('change', () => { if (fileInput.files.length) launchStory(fileInput.files[0]); });
-
-  function launchStory(file) {
-    const area = document.getElementById('play-area');
-    const url = URL.createObjectURL(file);
-    const parchmentUrl = 'https://iplayif.com/?story=' + encodeURIComponent(url);
-
-    // iplayif won't accept blob URLs, so we use a data URL approach
-    const reader = new FileReader();
-    reader.onload = function() {
-      const base64 = reader.result.split(',')[1];
-      const ext = file.name.split('.').pop().toLowerCase();
-      const mime = ext === 'ulx' ? 'application/x-glulx' :
-                   ext === 'gblorb' ? 'application/x-blorb' :
-                   'application/x-zmachine';
-
-      // Build a self-contained Parchment page in a blob
-      const html = buildParchmentPage(base64, ext, file.name);
-      const blob = new Blob([html], { type: 'text/html' });
-      const blobUrl = URL.createObjectURL(blob);
-
-      area.innerHTML = '<iframe src="' + blobUrl + '" style="width:100%;height:90vh;border:1px solid #2a1810;border-radius:4px;background:#000;"></iframe>' +
-        '<p style="margin-top:12px;font-size:0.85em;color:#604838;">Playing: ' + esc(file.name) + ' &mdash; <a href="#" onclick="document.getElementById(\'play-area\').innerHTML=document.getElementById(\'play-placeholder-backup\').innerHTML;showTab(\'play\');return false;">Stop</a></p>';
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function buildParchmentPage(base64Data, ext, filename) {
-    // Use iplayif.com's Parchment build via a data URI story
-    return '<!DOCTYPE html>\n<html>\n<head>\n<meta charset="utf-8">\n' +
-      '<title>Dracula\'s Castle</title>\n' +
-      '<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0">\n' +
-      '<style>\n' +
-      'html,body{margin:0;padding:0;height:100%;background:#1a1a1a;color:#ccccaa;}\n' +
-      '#parchment{font-family:"Iowan Old Style",Palatino,Georgia,serif;}\n' +
-      '.StatusWindow{background:#333;color:#aaa;}\n' +
-      '#loading{text-align:center;padding:80px 20px;font-family:Georgia,serif;color:#887755;font-size:1.2em;}\n' +
-      '</style>\n' +
-      '<script>\n' +
-      'parchment_options={\n' +
-      '  proxy_url:"https://iplayif.com/proxy/",\n' +
-      '  lib_path:"https://iplayif.com/lib/",\n' +
-      '  lock_story:1,\n' +
-      '  lock_options:1,\n' +
-      '  page_title:0\n' +
-      '};\n' +
-      '(function(){\n' +
-      '  var b64="' + base64Data + '";\n' +
-      '  var bin=atob(b64);\n' +
-      '  var arr=new Uint8Array(bin.length);\n' +
-      '  for(var i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);\n' +
-      '  var blob=new Blob([arr]);\n' +
-      '  var url=URL.createObjectURL(blob);\n' +
-      '  parchment_options.default_story=[url];\n' +
-      '})();\n' +
-      '<\/script>\n' +
-      '<script src="https://iplayif.com/lib/jquery.min.js"><\/script>\n' +
-      '<script src="https://iplayif.com/lib/ie.js" nomodule><\/script>\n' +
-      '<script src="https://iplayif.com/lib/web.js" type="module"><\/script>\n' +
-      '<link rel="stylesheet" href="https://iplayif.com/lib/web.css">\n' +
-      '</head>\n<body>\n' +
-      '<div id="gameport">\n' +
-      '  <div id="windowport"></div>\n' +
-      '  <div id="loadingpane" style="display:none">\n' +
-      '    <img src="https://iplayif.com/lib/waiting.gif" alt="Loading"><br>\n' +
-      '    <em>Loading game...</em>\n' +
-      '  </div>\n' +
-      '</div>\n' +
-      '</body>\n</html>';
-  }
-})();
-
-// Keep a backup of the placeholder
-document.addEventListener('DOMContentLoaded', function() {
-  var backup = document.createElement('template');
-  backup.id = 'play-placeholder-backup';
-  backup.innerHTML = document.getElementById('play-placeholder').outerHTML;
-  document.body.appendChild(backup);
-});
 
 /* ==================================================================
    KEYBOARD SHORTCUTS
