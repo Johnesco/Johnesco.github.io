@@ -16,7 +16,8 @@
       "WebFetch(domain:www.mobygames.com)",
       "WebFetch(domain:www.dosgames.com)",
       "WebFetch(domain:archive.org)",
-      "WebFetch(domain:tropedia.fandom.com)"
+      "WebFetch(domain:tropedia.fandom.com)",
+      "Bash(python3:*)"
     ]
   }
 }

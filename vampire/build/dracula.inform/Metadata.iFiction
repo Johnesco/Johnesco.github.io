@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ifindex version="1.0" xmlns="http://babel.ifarchive.org/protocol/iFiction/">
+    <story>
+        <identification>
+            <ifid>CB81E4DE-4117-4243-8B4B-58E6E5C52C80
+            </ifid>
+            <format>glulx</format>
+        </identification>
+        <bibliographic>
+            <title>Dracula's Castle</title>
+            <author>Anonymous</author>
+            <headline>An Interactive Adventure</headline>
+            <genre>Horror</genre>
+            <firstpublished>2026</firstpublished>
+            <description>Explore Dracula's Castle and uncover its dark secret before midnight strikes.</description>
+            <language>en</language>
+            <group>Inform</group>
+        </bibliographic>
+        <releases>
+            <attached>
+                <release>
+                    <releasedate>2026-02-15</releasedate>
+                    <version>1</version>
+                    <compiler>Inform 7</compiler>
+                    <compilerversion>Inform 10.1.2 (build )</compilerversion>
+                </release>
+            </attached>
+        </releases>
+        <colophon>
+            <generator>Inform 7</generator>
+            <generatorversion>Inform 10.1.2 (build )</generatorversion>
+            <originated>2026-02-15</originated>
+        </colophon>
+        <glulx>
+            <serial>260215</serial>
+            <release>1</release>
+            <compiler>Inform Inform 10.1.2 (build )</compiler>
+        </glulx>
+    </story>
+</ifindex>

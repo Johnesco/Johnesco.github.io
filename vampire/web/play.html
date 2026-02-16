@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dracula's Castle</title>
+<meta name="viewport" content="width=device-width, user-scalable=no">
+
+<style>
+/* === Reset & Base === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: #0a0408;
+  color: #c8b8a0;
+  font-family: Georgia, "Times New Roman", serif;
+  overflow: hidden;
+}
+
+/* === Game Port (Quixe container) === */
+#gameport {
+  position: absolute;
+  overflow: hidden;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  background: #0e0808;
+  margin: 0;
+}
+
+/* === GlkOte core === */
+#windowport {
+  width: 100%;
+  height: 100%;
+}
+
+#errorpane {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  background: #4a1010;
+  border-bottom: 2px solid #882020;
+  z-index: 100;
+}
+
+#errorpane.WarningPane {
+  background: #1a1a40;
+  border-bottom: 2px solid #3333aa;
+}
+
+#errorpane:hover {
+  opacity: 0.7;
+}
+
+#errorcontent {
+  font-size: 1em;
+  padding: 0.8em;
+  text-align: center;
+  color: #ff9999;
+}
+
+#loadingpane {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  top: 35%;
+  color: #8a6040;
+  font-size: 1.2em;
+}
+
+#loadingpane img {
+  display: none;
+}
+
+/* === Window Frames === */
+.WindowFrame {
+  position: absolute;
+  margin: 0;
+  background: #0e0808;
+}
+
+/* === Buffer Window (main text) === */
+.BufferWindow {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  font-family: "Iowan Old Style", Palatino, Georgia, "Times New Roman", serif;
+  font-size: 16px;
+  line-height: 1.6;
+  padding: 20px 40px;
+  color: #c8b8a0;
+  background: #0e0808;
+}
+
+.BufferWindow::-webkit-scrollbar { width: 8px; }
+.BufferWindow::-webkit-scrollbar-track { background: #0a0408; }
+.BufferWindow::-webkit-scrollbar-thumb { background: #2a1810; border-radius: 4px; }
+.BufferWindow::-webkit-scrollbar-thumb:hover { background: #3a2818; }
+
+.BufferLine { white-space: pre-wrap; }
+.BlankLineSpan { display: none; }
+.BlankLineSpan:only-child { display: inline; }
+.BufferLine:last-child { margin-bottom: 14px; }
+.HasNoInputField .BufferLine:last-child .BlankLineSpan { display: none; }
+.HasNoInputField .BufferLine:last-child .InvisiblePos { display: none; }
+
+/* === Grid Window (status bar) === */
+.GridWindow {
+  background: #1a100a;
+  overflow: hidden;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 14px;
+  padding: 6px 12px;
+  color: #a08060;
+  border-bottom: 1px solid #2a1810;
+}
+
+.GridLine { white-space: pre; }
+
+/* === Cursor === */
+.InvisibleCursor { position: relative; }
+
+/* === More Prompt === */
+.MorePrompt {
+  font-weight: bold;
+  position: absolute;
+  pointer-events: none;
+  background: #2a1810;
+  color: #c8b8a0;
+  opacity: 0.7;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.PreviousMark {
+  position: absolute;
+  background: #2a1810;
+  height: 2px;
+  width: 12px;
+  top: 0;
+  right: 0;
+}
+
+/* === Input Field === */
+.Input {
+  border: none;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  background: none;
+  font-weight: bold;
+  color: #d4a060;
+  caret-color: #d4a060;
+}
+
+.BufferWindow .Input {
+  font-family: "Iowan Old Style", Palatino, Georgia, "Times New Roman", serif;
+  font-size: 16px;
+}
+
+.GridWindow .Input {
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 14px;
+}
+
+.Input:focus::placeholder { color: transparent; }
+
+/* === Images === */
+.ImageMarginLeft  { float: left; margin-right: 0.5em; }
+.ImageMarginRight { float: right; margin-left: 0.5em; }
+.ImageInlineDown  { vertical-align: text-top; }
+.ImageInlineUp    { vertical-align: text-bottom; }
+.ImageInlineCenter { vertical-align: middle; }
+.FlowBreak { clear: both; }
+
+.GraphicsWindow canvas {
+  display: block;
+  background-color: #0e0808;
+}
+
+/* === Glk Text Styles === */
+.Style_normal { }
+.Style_emphasized { font-style: italic; }
+.Style_preformatted {
+  font-family: "SF Mono", "Fira Code", Consolas, "Courier New", monospace;
+}
+.Style_header { font-weight: bold; color: #e0c8a0; }
+.BufferWindow .Style_header { font-size: 18px; }
+.Style_subheader { font-weight: bold; }
+.Style_alert { font-weight: bold; color: #c06040; }
+.Style_note { font-style: italic; color: #a08060; }
+.Style_blockquote { background: #1a100a; padding: 2px 4px; }
+.Style_input { font-weight: bold; color: #d4a060; }
+.Style_user1 { }
+.Style_user2 { }
+
+/* === Dialog boxes (save/restore) === */
+#dialog_screen {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  opacity: 0.6;
+}
+
+#dialog_frame {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+#dialog {
+  position: relative;
+  width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 100px;
+  background: #1a100a;
+  border: 2px solid #3a2018;
+  border-radius: 8px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.8);
+  color: #c8b8a0;
+}
+
+#dialog .DiaCaption { margin: 16px; }
+#dialog .DiaWarning { margin: 16px; font-size: 14px; font-style: italic; }
+#dialog .DiaInput { margin: 16px; }
+#dialog input {
+  width: 100%;
+  background: #0e0808;
+  border: 1px solid #3a2018;
+  color: #c8b8a0;
+  padding: 4px 8px;
+}
+#dialog .DiaBody { margin: 16px; clear: both; }
+#dialog select {
+  width: 100%;
+  background: #0e0808;
+  color: #c8b8a0;
+  border: 1px solid #3a2018;
+}
+#dialog button {
+  margin-left: 8px;
+  background: #2a1810;
+  color: #c8b8a0;
+  border: 1px solid #4a3020;
+  padding: 4px 16px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+#dialog button:hover { background: #3a2818; }
+#dialog .DiaButtons { margin: 16px; text-align: right; }
+#dialog .DiaButtonsFloat { margin: 0 16px; float: right; }
+#dialog .DiaDisplayText {
+  font-family: inherit;
+  height: 200px;
+  padding: 4px 8px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  font-size: 14px;
+  white-space: pre-wrap;
+  background: #080404;
+  color: #a08060;
+}
+
+/* === Loading screen === */
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+#loadingpane em {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+</style>
+
+<script src="lib/jquery-1.12.4.min.js"></script>
+<script src="lib/glkote.min.js"></script>
+<script src="lib/quixe.min.js"></script>
+
+<script>
+game_options = {
+  use_query_story: false,
+  log_execution_time: false,
+  set_page_title: true
+};
+</script>
+
+<script src="dracula.ulx.js"></script>
+
+<script>
+$(document).ready(function() {
+  GiLoad.load_run(game_options, defined_game_b64, 'base64');
+});
+</script>
+
+</head>
+<body>
+
+<div id="gameport">
+  <div id="windowport">
+    <noscript>
+      <div style="text-align:center; padding:40px; color:#a06040;">
+        <h2>DRACULA'S CASTLE</h2>
+        <p>JavaScript is required to play this game.</p>
+      </div>
+    </noscript>
+  </div>
+  <div id="loadingpane">
+    <div style="margin-bottom:20px; font-size:1.4em; color:#a08060; letter-spacing:4px;">DRACULA'S CASTLE</div>
+    <em>Enter if you dare...</em>
+  </div>
+  <div id="errorpane" style="display:none;">
+    <div id="errorcontent">...</div>
+  </div>
+</div>
+
+</body>
+</html>
