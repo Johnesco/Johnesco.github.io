@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:iplayif.com)",
+      "WebFetch(domain:intfiction.org)",
+      "WebFetch(domain:gist.github.com)",
+      "WebFetch(domain:www.ifwiki.org)",
+      "Bash(wc:*)",
+      "WebFetch(domain:groups.google.com)",
+      "WebFetch(domain:www.macintoshrepository.org)",
+      "WebFetch(domain:bluerenga.blog)",
+      "WebFetch(domain:www.vintageisthenewold.com)",
+      "WebFetch(domain:www.myabandonware.com)",
+      "WebFetch(domain:www.mobygames.com)",
+      "WebFetch(domain:www.dosgames.com)",
+      "WebFetch(domain:archive.org)",
+      "WebFetch(domain:tropedia.fandom.com)"
+    ]
+  }
+}
