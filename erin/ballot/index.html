@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>March 2026 Texas Democratic Primary - Voter Guide</title>
+    <style>
+        :root {
+            --primary-blue: #1a4480;
+            --secondary-blue: #2e6db4;
+            --light-blue: #e8f0f8;
+            --accent-red: #b50d0d;
+            --text-dark: #1b1b1b;
+            --text-muted: #5c5c5c;
+            --border-color: #dfe1e2;
+            --bg-light: #f7f7f7;
+            --success: #2e7d32;
+            --warning: #ed6c02;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background: var(--bg-light);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        header .precinct {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+            display: inline-block;
+            font-size: 0.9rem;
+        }
+
+        .toc {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .toc h2 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--primary-blue);
+        }
+
+        .toc ul {
+            list-style: none;
+            columns: 2;
+            gap: 20px;
+        }
+
+        .toc li {
+            margin-bottom: 8px;
+        }
+
+        .toc a {
+            color: var(--secondary-blue);
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        h2.section-title {
+            font-size: 1.4rem;
+            color: var(--primary-blue);
+            border-bottom: 3px solid var(--primary-blue);
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+        }
+
+        .race {
+            margin-bottom: 35px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .race:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .race-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .race-number {
+            background: var(--primary-blue);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .race-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .race-tag {
+            font-size: 0.75rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tag-marquee {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .tag-frontrunner {
+            background: var(--success);
+            color: white;
+        }
+
+        .tag-contested {
+            background: var(--warning);
+            color: white;
+        }
+
+        .tag-unopposed {
+            background: var(--border-color);
+            color: var(--text-muted);
+        }
+
+        .candidate-cards {
+            display: grid;
+            gap: 15px;
+        }
+
+        .candidate-card {
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            background: var(--bg-light);
+        }
+
+        .candidate-card.frontrunner {
+            border-color: var(--success);
+            border-width: 2px;
+            background: linear-gradient(to right, rgba(46, 125, 50, 0.05), transparent);
+        }
+
+        .candidate-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-blue);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .candidate-name .badge {
+            font-size: 0.7rem;
+            background: var(--success);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .candidate-background {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 12px;
+        }
+
+        .pros, .cons {
+            font-size: 0.85rem;
+        }
+
+        .pros h4, .cons h4 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .pros h4 {
+            color: var(--success);
+        }
+
+        .cons h4 {
+            color: var(--accent-red);
+        }
+
+        .pros ul, .cons ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .pros li, .cons li {
+            padding-left: 16px;
+            position: relative;
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+
+        .pros li::before {
+            content: "+";
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .cons li::before {
+            content: "−";
+            position: absolute;
+            left: 0;
+            color: var(--accent-red);
+            font-weight: bold;
+        }
+
+        .analysis-box {
+            background: var(--light-blue);
+            border-left: 4px solid var(--secondary-blue);
+            padding: 15px 20px;
+            margin-top: 20px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9rem;
+        }
+
+        .analysis-box strong {
+            color: var(--primary-blue);
+        }
+
+        .unopposed-note {
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+
+        .propositions-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .propositions-table th {
+            background: var(--primary-blue);
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .propositions-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .propositions-table tr:nth-child(even) {
+            background: var(--bg-light);
+        }
+
+        .propositions-table .prop-num {
+            font-weight: 600;
+            color: var(--primary-blue);
+            width: 50px;
+        }
+
+        .summary-box {
+            background: linear-gradient(135deg, var(--light-blue) 0%, white 100%);
+            border: 2px solid var(--secondary-blue);
+            border-radius: 12px;
+            padding: 25px;
+        }
+
+        .summary-box h3 {
+            color: var(--primary-blue);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .summary-box ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .summary-box li {
+            margin-bottom: 8px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+
+            header {
+                padding: 25px 15px;
+            }
+
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            section {
+                padding: 20px;
+            }
+
+            .toc ul {
+                columns: 1;
+            }
+
+            .pros-cons {
+                grid-template-columns: 1fr;
+            }
+
+            .race-header {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🗳️ March 3, 2026 Texas Democratic Primary</h1>
+        <p class="subtitle">Voter Guide with Candidate Summaries</p>
+        <div class="precinct">
+            <strong>Precinct:</strong> S 126.5 &nbsp;|&nbsp; <strong>Ballot Style:</strong> D 126 126A
+        </div>
+    </header>
+
+    <div class="container">
+        <nav class="toc">
+            <h2>📋 Quick Navigation</h2>
+            <ul>
+                <li><a href="#federal">Federal Offices</a></li>
+                <li><a href="#state">State Offices</a></li>
+                <li><a href="#judicial">Judicial Races</a></li>
+                <li><a href="#county">County Offices</a></li>
+                <li><a href="#propositions">Propositions</a></li>
+                <li><a href="#summary">Summary & Key Decisions</a></li>
+            </ul>
+        </nav>
+
+        <!-- FEDERAL OFFICES -->
+        <section id="federal">
+            <h2 class="section-title">Federal Offices</h2>
+
+            <!-- US Senate -->
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-number">1</span>
+                    <span class="race-title">United States Senator</span>
+                    <span class="race-tag tag-marquee">Marquee Race</span>
+                </div>
+
+                <div class="candidate-cards">
+                    <div class="candidate-card frontrunner">
+                        <div class="candidate-name">
+                            Jasmine Crockett
+                            <span class="badge">Polling Leader (47%)</span>
+                        </div>
+                        <p class="candidate-background">
+                            Current U.S. Representative (TX-30, Dallas), former Texas state rep, civil rights attorney, former public defender. Known for viral confrontations with Republicans in Congress.
+                        </p>
+                        <div class="pros-cons">
+                            <div class="pros">
+                                <h4>✓ Pros</h4>
+                                <ul>
+                                    <li>National name recognition from high-profile GOP clashes</li>
+                                    <li>Strong fundraising ($6.5M+)</li>
+                                    <li>Energizes Democratic base</li>
+                                    <li>Congressional experience</li>
+                                </ul>
+                            </div>
+                            <div class="cons">
+                                <h4>✗ Cons</h4>
+                                <ul>
+                                    <li>Progressive label may limit crossover appeal</li>
+                                    <li>Criticized for AI-generated ad imagery</li>
+                                    <li>Strategy focuses on turnout over persuasion</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="candidate-card">
+                        <div class="candidate-name">
+                            James Talarico
+                            <span class="badge" style="background: var(--secondary-blue);">Polling 39%</span>
+                        </div>
+                        <p class="candidate-background">
+                            State Rep since 2018 (flipped a GOP seat), former middle school teacher, Harvard grad, Presbyterian seminarian, Type 1 diabetic. Recently had interview censored by CBS/Colbert.
+                        </p>
+                        <div class="pros-cons">
+                            <div class="pros">
+                                <h4>✓ Pros</h4>
+                                <ul>
+                                    <li>Flipped Republican seat in 2018</li>
+                                    <li>Named Top 10 Best Legislator by Texas Monthly</li>
+                                    <li>Passed $25 insulin cap bill</li>
+                                    <li>Appeals to swing voters</li>
+                                    <li>Houston Chronicle endorsement</li>
+                                </ul>
+                            </div>
+                            <div class="cons">
+                                <h4>✗ Cons</h4>
+                                <ul>
+                                    <li>Less national name recognition</li>
+                                    <li>Criticized for returning early from 2021 quorum break</li>
+                                    <li>Trails in primary polls</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="candidate-card">
+                        <div class="candidate-name">Ahmad R. Hassan</div>
+                        <p class="candidate-background">
+                            Real estate/mortgage broker, Egyptian immigrant (1984), attorney. Perennial candidate who has run for many offices including U.S. Senate in Minnesota (2024).
+                        </p>
+                        <div class="pros-cons">
+                            <div class="pros">
+                                <h4>✓ Pros</h4>
+                                <ul>
+                                    <li>Immigrant perspective</li>
+                                    <li>Business experience</li>
+                                </ul>
+                            </div>
+                            <div class="cons">
+                                <h4>✗ Cons</h4>
+                                <ul>
+                                    <li>Polling at only 2%</li>
+                                    <li>Limited campaign organization</li>
+                                    <li>Has lost multiple prior races</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analysis-box">
+                    <strong>💡 Key Decision:</strong> This is a genuine contrast in strategies. Crockett is betting her "combative, progressive politics" can drive urban Democratic turnout. Talarico is trying to "energize Democrats while also courting some disaffected Trump voters." Your choice depends on which theory of change you believe can win Texas.
+                </div>
+            </div>
+
+            <!-- US Representative -->
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-number">2</span>
+                    <span class="race-title">U.S. Representative, District 37</span>
+                    <span class="race-tag tag-frontrunner">Incumbent Favored</span>
+                </div>
+
+                <div class="candidate-cards">
+                    <div class="candidate-card frontrunner">
+                        <div class="candidate-name">
+                            Greg Casar
+                            <span class="badge">Incumbent</span>
+                        </div>
+                        <p class="candidate-background">
+                            Current U.S. Rep, Chair of the Congressional Progressive Caucus, former Austin City Council member (2015-2022), son of Mexican immigrants, former labor organizer. Member of "The Squad."
+                        </p>
+                        <div class="pros-cons">
+                            <div class="pros">
+                                <h4>✓ Pros</h4>
+                                <ul>
+                                    <li>Incumbent with established record</li>
+                                    <li>Led first-ever federal heat rule protecting 30M workers</li>
+                                    <li>Passed Austin paid sick leave ordinance</li>
+                                    <li>Endorsed by Sanders, Warren, AOC</li>
+                                </ul>
+                            </div>
+                            <div class="cons">
+                                <h4>✗ Cons</h4>
+                                <ul>
+                                    <li>Has missed 6.5% of roll call votes (median is 2%)</li>
+                                    <li>Very progressive positions</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="candidate-card">
+                        <div class="candidate-name">Esther Amalia de Jesus Fleharty</div>
+                        <p class="candidate-background">
+                            Challenger with limited public information available. Running as an alternative to Casar.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analysis-box">
+                    <strong>💡 Analysis:</strong> Casar is heavily favored as an incumbent with strong progressive credentials in a safe Democratic district.
+                </div>
+            </div>
+        </section>
+
+        <!-- STATE OFFICES -->
+        <section id="state">
+            <h2 class="section-title">State Offices</h2>
+
+            <!-- Governor -->
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-number">3</span>
+                    <span class="race-title">Governor</span>
+                    <span class="race-tag tag-frontrunner">Clear Frontrunner</span>
+                </div>
+
+                <div class="candidate-cards">
+                    <div class="candidate-card frontrunner">
+                        <div class="candidate-name">
+                            Gina Hinojosa
+                            <span class="badge">Polling Leader (37%)</span>
+                        </div>
+                        <p class="candidate-background">
+                            Five-term Austin state representative, former Austin ISD school board president, attorney from Brownsville. Primary opponent of Abbott's school voucher program.
+                        </p>
+                        <div class="pros-cons">
+                            <div class="pros">
+                                <h4>✓ Pros</h4>
+                                <ul>
+                                    <li>Swept all major newspaper endorsements</li>
+                                    <li>Andrew White dropped out and endorsed her</li>
+                                    <li>Strong on public education</li>
+                                    <li>Most legislative experience of any recent Dem candidate</li>
+                                </ul>
+                            </div>
+                            <div class="cons">
+                                <h4>✗ Cons</h4>
+                                <ul>
+                                    <li>Abbott has $86M+ to her ~$1M</li>
+                                    <li>Faces steep uphill battle in general</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="candidate-card">
+                        <div class="candidate-name">Chris Bell</div>
+                        <p class="candidate-background">
+                            Former U.S. Representative (2003-2005), 2006 Democratic gubernatorial nominee. Has run multiple statewide campaigns.
+                        </p>
+                        <div class="pros-cons">
+                            <div class="pros">
+                                <h4>✓ Pros</h4>
+                                <ul>
+                                    <li>Prior statewide experience</li>
+                                </ul>
+                            </div>
+                            <div class="cons">
+                                <h4>✗ Cons</h4>
+                                <ul>
+                                    <li>Polling at only 7%</li>
+                                    <li>Campaign appears inactive</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="candidate-card">
+                        <div class="candidate-name">Bobby Cole</div>
+                        <p class="candidate-background">
+                            Rancher and retired firefighter. Polling at ~6%.
+                        </p>
+                    </div>
+                </div>
+
+                <p style="margin-top: 15px; font-size: 0.9rem; color: var(--text-muted);">
+                    <strong>Other candidates:</strong> Andrew White (dropped out, endorsed Hinojosa—still on ballot), Patricia Abrego, Carlton W. Hart, Jose Navarro Balbuena, Zach Vance, Angela "TiaAngie" Villescaz
+                </p>
+            </div>
+
+            <!-- Lt Governor -->
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-number">4</span>
+                    <span class="race-title">Lieutenant Governor</span>
+                    <span class="race-tag tag-contested">Three-Way Race</span>
+                </div>
+
+                <p style="margin-bottom: 15px; font-size: 0.9rem; background: #fff3cd; padding: 10px 15px; border-radius: 6px;">
+                    ⚠️ <strong>Note:</strong> The Lt. Governor is often called "the most powerful office in Texas" because they control the Senate agenda and committee assignments.
+                </p>
+
+                <div class="candidate-cards">
+                    <div class="candidate-card frontrunner">
+                        <div class="candidate-name">
+                            Vikki Goodwin
+                            <span class="badge">Most Experience</span>
+                        </div>
+                        <p class="candidate-background">
+                            Four-term Austin state representative, serves on House Appropriations Committee, real estate broker, participated in 2021 quorum break for voting rights.
+                        </p>
+                        <div class="pros-cons">
+                            <div class="pros">
+                                <h4>✓ Pros</h4>
+                                <ul>
+                                    <li>Legislative experience on Appropriations</li>
+                                    <li>Policy expertise and Capitol knowledge</li>
+                                    <li>Calm demeanor praised by both parties</li>
+                                </ul>
+                            </div>
+                            <div class="cons">
+                                <h4>✗ Cons</h4>
+                                <ul>
+                                    <li>Patrick has $40M+ to her ~$500K</li>
+                                    <li>If Dem wins, GOP Senate would likely strip office powers</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="candidate-card">
+                        <div class="candidate-name">Marcos Isaias Velez</div>
+                        <p class="candidate-background">
+                            Labor organizer running as a political outsider. Focuses on wages and affordability, coalition-building with working-class voters.
+                        </p>
+                    </div>
+
+                    <div class="candidate-card">
+                        <div class="candidate-name">Courtney Head</div>
+                        <p class="candidate-background">
+                            Legal/compliance professional, contracts & privacy manager for software company. Campaigns as an "average Texan."
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attorney General -->
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-number">5</span>
+                    <span class="race-title">Attorney General</span>
+                    <span class="race-tag tag-contested">Open Seat - Competitive</span>
+                </div>
+
+                <p style="margin-bottom: 15px; font-size: 0.9rem; background: #e3f2fd; padding: 10px 15px; border-radius: 6px;">
+                    📌 <strong>Context:</strong> Ken Paxton is leaving to run for Senate. 40% of Democratic voters are undecided—this race is fluid.
+                </p>
+
+                <div class="candidate-cards">
+                    <div class="candidate-card frontrunner">
+                        <div class="candidate-name">
+                            Nathan Johnson
+                            <span class="badge">Polling Leader (25%)</span>
+                        </div>
+                        <p class="candidate-background">
+                            State Senator from Dallas since 2018. Flipped a 32-year Republican seat. Largest war chest ($652K).
+                        </p>
+                        <div class="pros-cons">
+                            <div class="pros">
+                                <h4>✓ Pros</h4>
+                                <ul>
+                                    <li>Won in Republican territory</li>
+                                    <li>Electability argument</li>
+                                    <li>Best funded</li>
+                                </ul>
+                            </div>
+                            <div class="cons">
+                                <h4>✗ Cons</h4>
+                                <ul>
+                                    <li>Criticized for working with Dan Patrick</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="candidate-card">
+                        <div class="candidate-name">
+                            Joe Jaworski
+                            <span class="badge" style="background: var(--secondary-blue);">Polling 22%</span>
+                        </div>
+                        <p class="candidate-background">
+                            Former Galveston Mayor. Describes himself as "the progressive candidate." Experience rebuilding public housing.
+                        </p>
+                        <div class="pros-cons">
+                            <div class="pros">
+                                <h4>✓ Pros</h4>
+                                <ul>
+                                    <li>Progressive credentials</li>
+                                    <li>Executive experience as mayor</li>
+                                </ul>
+                            </div>
+                            <div class="cons">
+                                <h4>✗ Cons</h4>
+                                <ul>
+                                    <li>Lost 2022 primary to Rochelle Garza</li>
+                                    <li>Trails in fundraising ($220K)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="candidate-card">
+                        <div class="candidate-name">Anthony "Tony" Box</div>
+                        <p class="candidate-background">
+                            Former FBI agent. Polling at 13% with $137K raised.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comptroller -->
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-number">6</span>
+                    <span class="race-title">Comptroller of Public Accounts</span>
+                    <span class="race-tag tag-frontrunner">Clear Frontrunner</span>
+                </div>
+
+                <div class="candidate-cards">
+                    <div class="candidate-card frontrunner">
+                        <div class="candidate-name">
+                            Sarah Eckhardt
+                            <span class="badge">Frontrunner</span>
+                        </div>
+                        <p class="candidate-background">
+                            Third-term State Senator, former Travis County Judge (first woman in that role), 20 years of government experience. Will retain her Senate seat if she loses.
+                        </p>
+                        <div class="pros-cons">
+                            <div class="pros">
+                                <h4>✓ Pros</h4>
+                                <ul>
+                                    <li>Most qualified and experienced</li>
+                                    <li>Strong on fighting waste/fraud</li>
+                                    <li>No risk—keeps Senate seat if she loses</li>
+                                </ul>
+                            </div>
+                            <div class="cons">
+                                <h4>✗ Cons</h4>
+                                <ul>
+                                    <li>Among most liberal Senate Democrats</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="candidate-card">
+                        <div class="candidate-name">Savant Moore</div>
+                        <p class="candidate-background">Limited information available.</p>
+                    </div>
+
+                    <div class="candidate-card">
+                        <div class="candidate-name">Michael Lange</div>
+                        <p class="candidate-background">Investment manager. Ran for Land Commissioner in 2022.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Land Commissioner -->
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-number">7</span>
+                    <span class="race-title">Commissioner of the General Land Office</span>
+                </div>
+                <p>Candidates: <strong>Benjamin Flores</strong> vs <strong>Jose Loya</strong></p>
+                <p class="unopposed-note">Limited information available on these candidates.</p>
+            </div>
+
+            <!-- Agriculture -->
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-number">8</span>
+                    <span class="race-title">Commissioner of Agriculture</span>
+                    <span class="race-tag tag-unopposed">Unopposed</span>
+                </div>
+                <p><strong>Clayton Tucker</strong> — Running unopposed in the Democratic primary.</p>
+            </div>
+
+            <!-- Railroad Commissioner -->
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-number">9</span>
+                    <span class="race-title">Railroad Commissioner</span>
+                    <span class="race-tag tag-unopposed">Unopposed</span>
+                </div>
+                <p><strong>Jon Rosenthal</strong> — Running unopposed in the Democratic primary.</p>
+            </div>
+        </section>
+
+        <!-- JUDICIAL -->
+        <section id="judicial">
+            <h2 class="section-title">Judicial Races (Items 10-32)</h2>
+
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-title">Texas Supreme Court</span>
+                </div>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>#10 Chief Justice:</strong> Maggie Ellis vs Cory L. Carlyle</li>
+                    <li><strong>#11 Place 2 (Unexpired):</strong> Chari Kelly (unopposed)</li>
+                    <li><strong>#12 Place 7:</strong> Kristen Hawkins vs Gordon Goodman</li>
+                    <li><strong>#13 Place 8:</strong> Gisela D. Triana (unopposed)</li>
+                </ul>
+            </div>
+
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-title">Court of Criminal Appeals</span>
+                </div>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>#14 Place 3:</strong> Okey Anyiam (unopposed)</li>
+                    <li><strong>#15 Place 4:</strong> Audra Riley (unopposed)</li>
+                    <li><strong>#16 Place 9:</strong> Holly Taylor (unopposed)</li>
+                </ul>
+            </div>
+
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-title">State Board of Education, District 5</span>
+                    <span class="race-tag tag-contested">6-Way Race</span>
+                </div>
+                <p style="margin-top: 10px;"><strong>#17:</strong> Allison Bush, Abigail Gray, Victor Sampson, Kevin Jackson, Neto Longoria, Stephanie Limon Bazan</p>
+                <div class="analysis-box">
+                    <strong>💡 Note:</strong> With 6 candidates, research these based on your priorities around public education funding, curriculum standards, and school choice policies.
+                </div>
+            </div>
+
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-title">State Representative, District 46</span>
+                    <span class="race-tag tag-unopposed">Unopposed</span>
+                </div>
+                <p style="margin-top: 10px;"><strong>#18: Sheryl Cole</strong> — Incumbent Austin-area Democrat, running unopposed.</p>
+            </div>
+
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-title">Appellate & District Courts (#19-32)</span>
+                </div>
+                <p style="margin-top: 10px;">All candidates running unopposed in the Democratic primary:</p>
+                <ul style="margin-left: 20px; margin-top: 10px; columns: 2; font-size: 0.9rem;">
+                    <li>#19: Jerry Zimmerer</li>
+                    <li>#20: Tom Baker</li>
+                    <li>#21: Marc M. Meyer</li>
+                    <li>#22: Darlene Byrne</li>
+                    <li>#23: Cliff Brown</li>
+                    <li>#24: Amy Clark Meachum</li>
+                    <li>#25: Kennon Lily Wooten</li>
+                    <li>#26: Daniella Deseta Lyttle</li>
+                    <li>#27: Karen R. Sage</li>
+                    <li>#28: Chantal Melissa Eldridge</li>
+                    <li>#29: Brandy Mueller</li>
+                    <li>#30: Catherine A. Mauzy</li>
+                    <li>#31: Laurie Eiserloh</li>
+                    <li>#32: Maya Guerra Gamble</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- COUNTY -->
+        <section id="county">
+            <h2 class="section-title">County Offices (Items 33-46)</h2>
+
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-number">33</span>
+                    <span class="race-title">Travis County Judge</span>
+                    <span class="race-tag tag-unopposed">Unopposed</span>
+                </div>
+                <div class="candidate-card" style="margin-top: 15px;">
+                    <div class="candidate-name">
+                        Andy Brown
+                        <span class="badge">Incumbent</span>
+                    </div>
+                    <p class="candidate-background">
+                        Incumbent since 2020. Oversees the county's $2 billion budget, acts as chief administrator, and serves as Director of Emergency Management. Former Travis County Democratic Party Chair, senior advisor to Beto O'Rourke. Has focused on criminal justice reform, mental health diversion, and affordable housing ($110M investment).
+                    </p>
+                </div>
+            </div>
+
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-title">County Courts at Law (#34-40)</span>
+                    <span class="race-tag tag-unopposed">All Unopposed</span>
+                </div>
+                <ul style="margin-left: 20px; margin-top: 15px;">
+                    <li><strong>#34 Court No. 1:</strong> Todd Wong</li>
+                    <li><strong>#35 Court No. 2:</strong> Leslie Dippel</li>
+                    <li><strong>#36 Court No. 3:</strong> Bianca Garcia</li>
+                    <li><strong>#37 Court No. 4:</strong> Dimple Malhotra</li>
+                    <li><strong>#38 Court No. 5:</strong> Mary Ann Espiritu</li>
+                    <li><strong>#39 Court No. 6:</strong> Denise Hernández</li>
+                    <li><strong>#40 Court No. 7:</strong> Elisabeth Earle</li>
+                </ul>
+            </div>
+
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-title">Other County Offices (#41-44)</span>
+                    <span class="race-tag tag-unopposed">All Unopposed</span>
+                </div>
+                <ul style="margin-left: 20px; margin-top: 15px;">
+                    <li><strong>#41 Probate Court No. 1:</strong> Guy Herman</li>
+                    <li><strong>#42 District Clerk:</strong> Velva L. Price</li>
+                    <li><strong>#43 County Clerk:</strong> Dyana Limon-Mercado</li>
+                    <li><strong>#44 County Treasurer:</strong> Dolores Ortega Carter</li>
+                </ul>
+            </div>
+
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-number">45</span>
+                    <span class="race-title">Justice of the Peace, Precinct 1</span>
+                    <span class="race-tag tag-contested">Contested</span>
+                </div>
+                <p style="margin-top: 10px;"><strong>Ciara Parks</strong> vs <strong>Andrew Reginald Hairston</strong></p>
+                <p class="unopposed-note">Limited information available on these candidates.</p>
+            </div>
+
+            <div class="race">
+                <div class="race-header">
+                    <span class="race-number">46</span>
+                    <span class="race-title">County Democratic Party Chair</span>
+                    <span class="race-tag tag-contested">Contested</span>
+                </div>
+                <p style="margin-top: 10px;"><strong>Jessica Cohen</strong> vs <strong>Doug Greco</strong></p>
+                <p class="unopposed-note">This is a party organizational position, not a government office.</p>
+            </div>
+        </section>
+
+        <!-- PROPOSITIONS -->
+        <section id="propositions">
+            <h2 class="section-title">Propositions (Items 47-59)</h2>
+
+            <p style="margin-bottom: 20px; padding: 15px; background: #fff3cd; border-radius: 8px;">
+                ⚠️ <strong>Note:</strong> These are <em>non-binding survey questions</em> that gauge Democratic voter sentiment. They do not create actual policy but signal party priorities.
+            </p>
+
+            <table class="propositions-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Topic</th>
+                        <th>Summary</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="prop-num">47</td>
+                        <td>Medicaid Expansion</td>
+                        <td>Expand Medicaid and ensure access to affordable healthcare for all</td>
+                    </tr>
+                    <tr>
+                        <td class="prop-num">48</td>
+                        <td>Immigration</td>
+                        <td>Support humane immigration policies and pathways to citizenship</td>
+                    </tr>
+                    <tr>
+                        <td class="prop-num">49</td>
+                        <td>Reproductive Rights</td>
+                        <td>Right to make own healthcare decisions, including reproductive rights</td>
+                    </tr>
+                    <tr>
+                        <td class="prop-num">50</td>
+                        <td>Housing</td>
+                        <td>Address housing crisis in affordability and access (urban and rural)</td>
+                    </tr>
+                    <tr>
+                        <td class="prop-num">51</td>
+                        <td>Public Schools</td>
+                        <td>Fund all public schools at the national per-pupil average</td>
+                    </tr>
+                    <tr>
+                        <td class="prop-num">52</td>
+                        <td>Voter Registration</td>
+                        <td>Secure online voter registration for all eligible residents</td>
+                    </tr>
+                    <tr>
+                        <td class="prop-num">53</td>
+                        <td>Environment</td>
+                        <td>Clean water, air, biodiversity; preserve natural and recreational resources</td>
+                    </tr>
+                    <tr>
+                        <td class="prop-num">54</td>
+                        <td>Cannabis</td>
+                        <td>Legalize cannabis for adults; auto-expunge past low-level offenses</td>
+                    </tr>
+                    <tr>
+                        <td class="prop-num">55</td>
+                        <td>Public Employee Pay</td>
+                        <td>Raise salaries to national average with COL adjustments</td>
+                    </tr>
+                    <tr>
+                        <td class="prop-num">56</td>
+                        <td>Redistricting</td>
+                        <td>Ban racial gerrymandering; create non-partisan redistricting board</td>
+                    </tr>
+                    <tr>
+                        <td class="prop-num">57</td>
+                        <td>Tax Relief</td>
+                        <td>Greater tax relief for working class; shift burden to wealthiest</td>
+                    </tr>
+                    <tr>
+                        <td class="prop-num">58</td>
+                        <td>Public Transit</td>
+                        <td>Expand public transportation in rural and urban communities</td>
+                    </tr>
+                    <tr>
+                        <td class="prop-num">59</td>
+                        <td>Red Flag Laws</td>
+                        <td>Prevent domestic abusers from purchasing firearms</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- SUMMARY -->
+        <section id="summary">
+            <h2 class="section-title">Summary & Key Decisions</h2>
+
+            <div class="summary-box">
+                <h3>🎯 Your Biggest Decision: U.S. Senate</h3>
+                <p><strong>Crockett</strong> = Energize the base with combative progressive politics<br>
+                <strong>Talarico</strong> = Expand the tent by courting swing voters</p>
+            </div>
+
+            <div class="summary-box" style="margin-top: 20px;">
+                <h3>✅ Clear Frontrunners (if you agree with their positions)</h3>
+                <ul>
+                    <li><strong>Gina Hinojosa</strong> — Governor</li>
+                    <li><strong>Vikki Goodwin</strong> — Lieutenant Governor</li>
+                    <li><strong>Sarah Eckhardt</strong> — Comptroller</li>
+                    <li><strong>Greg Casar</strong> — U.S. Representative, District 37</li>
+                    <li><strong>Andy Brown</strong> — Travis County Judge</li>
+                </ul>
+            </div>
+
+            <div class="summary-box" style="margin-top: 20px;">
+                <h3>🔍 Races Worth Additional Research</h3>
+                <ul>
+                    <li><strong>Attorney General</strong> — Johnson vs. Jaworski vs. Box (40% undecided)</li>
+                    <li><strong>State Board of Education, District 5</strong> — 6 candidates</li>
+                    <li><strong>Justice of the Peace, Precinct 1</strong> — Parks vs. Hairston</li>
+                    <li><strong>County Democratic Party Chair</strong> — Cohen vs. Greco</li>
+                </ul>
+            </div>
+        </section>
+
+        <footer>
+            <p>This voter guide was compiled from public sources including Ballotpedia, Texas Tribune, Houston Chronicle, and candidate websites.</p>
+            <p>Research current as of February 18, 2026. Early voting: Feb 17-27. Election Day: March 3, 2026.</p>
+        </footer>
+    </div>
+</body>
+</html>
