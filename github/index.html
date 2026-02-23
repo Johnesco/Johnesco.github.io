@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitHub Pages — How It All Works</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #c9d1d9; padding: 2rem; max-width: 960px; margin: 0 auto; line-height: 1.6; }
+  h1 { color: #f0f6fc; margin-bottom: 0.25rem; font-size: 1.5rem; }
+  h2 { color: #f0f6fc; margin-top: 2rem; margin-bottom: 0.75rem; font-size: 1.2rem; border-bottom: 1px solid #21262d; padding-bottom: 0.4rem; }
+  h3 { color: #e6edf3; margin-top: 1.25rem; margin-bottom: 0.5rem; font-size: 1rem; }
+  .subtitle { color: #8b949e; margin-bottom: 2rem; font-size: 0.85rem; }
+  p { margin-bottom: 0.75rem; }
+  a { color: #58a6ff; text-decoration: none; }
+  a:hover { text-decoration: underline; color: #79c0ff; }
+  code { background: #161b22; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.9em; color: #e6edf3; }
+  pre { background: #161b22; padding: 1rem; border-radius: 6px; overflow-x: auto; margin-bottom: 1rem; font-size: 0.85rem; line-height: 1.5; color: #e6edf3; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+  th { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 2px solid #30363d; color: #f0f6fc; font-weight: 600; }
+  td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #21262d; }
+  tr:hover td { background: #161b22; }
+  .badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+  .badge-actions { background: #1f6feb33; color: #58a6ff; }
+  .badge-direct { background: #23863633; color: #3fb950; }
+  .diagram { background: #161b22; padding: 1.25rem; border-radius: 6px; margin-bottom: 1rem; font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 0.82rem; line-height: 1.6; white-space: pre; overflow-x: auto; color: #8b949e; }
+  .diagram .highlight { color: #58a6ff; }
+  .diagram .path { color: #e6edf3; }
+  .diagram .comment { color: #484f58; }
+  .note { background: #1c2128; border-left: 3px solid #58a6ff; padding: 0.75rem 1rem; border-radius: 0 6px 6px 0; margin-bottom: 1rem; font-size: 0.9rem; }
+  .back { display: inline-block; margin-bottom: 1.5rem; color: #8b949e; font-size: 0.85rem; }
+  .back:hover { color: #c9d1d9; }
+</style>
+</head>
+<body>
+
+<a class="back" href="/">&larr; back to code directory</a>
+
+<h1>GitHub Pages</h1>
+<p class="subtitle">How all the sites under johnesco.github.io are set up</p>
+
+<h2>Overview</h2>
+
+<p>All GitHub Pages sites share a single GitHub account (<a href="https://github.com/Johnesco">Johnesco</a>). There are two deployment patterns:</p>
+
+<table>
+  <thead>
+    <tr><th>Pattern</th><th>How it works</th><th>Deploy trigger</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="badge badge-direct">Direct</span></td>
+      <td>Entire repo is the site. Push to <code>main</code> and GitHub serves it.</td>
+      <td><code>git push</code></td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-actions">Actions</span></td>
+      <td>Only the <code>web/</code> subdirectory is deployed via a GitHub Actions workflow.</td>
+      <td><code>git push</code> triggers <code>.github/workflows/deploy-pages.yml</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>All Sites</h2>
+
+<table>
+  <thead>
+    <tr><th>URL</th><th>Repo</th><th>Local path</th><th>Deploy</th><th>What it is</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><a href="https://johnesco.github.io/">johnesco.github.io</a></td>
+      <td><a href="https://github.com/Johnesco/Johnesco.github.io">Johnesco.github.io</a></td>
+      <td><code>C:\code\Johnesco.github.io\</code></td>
+      <td><span class="badge badge-direct">Direct</span></td>
+      <td>Landing page, portfolio hub, small apps</td>
+    </tr>
+    <tr>
+      <td><a href="https://johnesco.github.io/zork1/">/zork1/</a></td>
+      <td><a href="https://github.com/Johnesco/zork1">zork1</a></td>
+      <td><code>C:\code\i7\zork1\</code></td>
+      <td><span class="badge badge-actions">Actions</span></td>
+      <td>Zork I &mdash; Inform 7 Edition (4 versions)</td>
+    </tr>
+    <tr>
+      <td><a href="https://johnesco.github.io/dracula/">/dracula/</a></td>
+      <td><a href="https://github.com/Johnesco/dracula">dracula</a></td>
+      <td><code>C:\code\i7\dracula\</code></td>
+      <td><span class="badge badge-actions">Actions</span></td>
+      <td>Dracula &mdash; Inform 7 game</td>
+    </tr>
+    <tr>
+      <td><a href="https://johnesco.github.io/RNG/">/RNG/</a></td>
+      <td><a href="https://github.com/Johnesco/RNG">RNG</a></td>
+      <td><code>C:\code\i7\RNG\</code></td>
+      <td><span class="badge badge-actions">Actions</span></td>
+      <td>RNG &mdash; Inform 7 practice game</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>How It Works</h2>
+
+<h3>User site (Direct deploy)</h3>
+
+<p>The <code>Johnesco.github.io</code> repo is a special GitHub user pages repository.
+Everything in the repo root is served directly at <code>https://johnesco.github.io/</code>.
+No build step, no workflow &mdash; just push and it's live.</p>
+
+<div class="diagram"><span class="path">C:\code\Johnesco.github.io\</span>
+├── index.html              <span class="comment">→ johnesco.github.io/</span>
+├── github/index.html       <span class="comment">→ johnesco.github.io/github/  (this page)</span>
+├── edu/sql/index.html      <span class="comment">→ johnesco.github.io/edu/sql/</span>
+├── games/blackout/         <span class="comment">→ johnesco.github.io/games/blackout/</span>
+├── resume_archive/         <span class="comment">→ johnesco.github.io/resume_archive/</span>
+└── ...                     <span class="comment">   every file is served as-is</span></div>
+
+<h3>Project sites (Actions deploy)</h3>
+
+<p>The Inform 7 game repos contain source code, tests, and build artifacts that should NOT be published.
+Only the <code>web/</code> subdirectory gets deployed. A GitHub Actions workflow handles this:</p>
+
+<div class="diagram"><span class="path">C:\code\i7\zork1\</span>            <span class="comment">(same pattern for dracula, RNG)</span>
+├── story.ni                <span class="comment">← source (not deployed)</span>
+├── tests/                  <span class="comment">← test infra (not deployed)</span>
+├── .github/workflows/
+│   └── deploy-pages.yml    <span class="comment">← deploys web/ on push to main</span>
+└── <span class="highlight">web/</span>                     <span class="comment">← THIS is what gets published</span>
+    ├── play.html           <span class="comment">→ johnesco.github.io/zork1/play.html</span>
+    └── lib/parchment/      <span class="comment">→ JS interpreter + base64 game binary</span></div>
+
+<h3>The deploy workflow</h3>
+
+<p>All three Inform 7 projects use the same workflow file:</p>
+
+<pre>name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deployment
+        uses: actions/deploy-pages@v4</pre>
+
+<p>The key line is <code>path: web</code> &mdash; only the <code>web/</code> directory becomes the site root.</p>
+
+<h2>Adding a New Project Site</h2>
+
+<p>To publish a new Inform 7 game (or any project) at <code>johnesco.github.io/&lt;name&gt;/</code>:</p>
+
+<ol style="margin-left: 1.5rem; margin-bottom: 1rem;">
+  <li style="margin-bottom: 0.4rem;">Create the repo on GitHub: <code>gh repo create Johnesco/&lt;name&gt; --public --source=.</code></li>
+  <li style="margin-bottom: 0.4rem;">Copy the workflow above into <code>.github/workflows/deploy-pages.yml</code></li>
+  <li style="margin-bottom: 0.4rem;">Put your site content in a <code>web/</code> directory</li>
+  <li style="margin-bottom: 0.4rem;">Enable Pages: <code>gh api repos/Johnesco/&lt;name&gt;/pages -X POST -f build_type=workflow</code></li>
+  <li style="margin-bottom: 0.4rem;">Push to <code>main</code> &mdash; the workflow deploys automatically</li>
+</ol>
+
+<div class="note">
+  <strong>For Inform 7 games:</strong> use the centralized setup script at
+  <code>C:\code\i7\inform7\tools\web\setup-web.sh</code> to bootstrap the <code>web/</code>
+  directory with Parchment libraries and the base64-encoded game binary.
+</div>
+
+<h2>How the Parchment Web Player Works</h2>
+
+<p>Inform 7 compiles to a <code>.ulx</code> (Glulx) binary. To play in a browser:</p>
+
+<ol style="margin-left: 1.5rem; margin-bottom: 1rem;">
+  <li style="margin-bottom: 0.4rem;">The <code>.ulx</code> file is base64-encoded and wrapped as JSONP: <code>processBase64Zcode('...')</code></li>
+  <li style="margin-bottom: 0.4rem;"><code>main.js</code> (Parchment loader) fetches this file via JSONP</li>
+  <li style="margin-bottom: 0.4rem;">Parchment decodes the base64 back to binary</li>
+  <li style="margin-bottom: 0.4rem;">The Quixe or Glulxe JS engine runs the binary in the browser</li>
+</ol>
+
+<p>Seven library files are required in <code>web/lib/parchment/</code>:</p>
+
+<table>
+  <thead>
+    <tr><th>File</th><th>Role</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>jquery.min.js</code></td><td>DOM library</td></tr>
+    <tr><td><code>main.js</code></td><td>Parchment game loader</td></tr>
+    <tr><td><code>main.css</code></td><td>Layout styling</td></tr>
+    <tr><td><code>parchment.css</code></td><td>Engine styling</td></tr>
+    <tr><td><code>parchment.js</code></td><td>Engine variant</td></tr>
+    <tr><td><code>quixe.js</code></td><td>JS Glulx interpreter (loaded at runtime)</td></tr>
+    <tr><td><code>glulxe.js</code></td><td>WASM Glulx interpreter (loaded at runtime)</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <strong>Common pitfall:</strong> If <code>quixe.js</code> or <code>glulxe.js</code> is missing,
+  the page loads fine but then fails with <em>"Error loading engine: 404"</em>.
+  These engine files are fetched asynchronously by <code>main.js</code>, so the error
+  only appears after the page renders. Always copy all seven files.
+</div>
+
+</body>
+</html>
