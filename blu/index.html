@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bluberi Interview Prep - John Escobedo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        h1 {
+            color: #00d4ff;
+            border-bottom: 3px solid #00d4ff;
+            padding-bottom: 10px;
+            text-align: center;
+        }
+        h2 {
+            color: #ff6b6b;
+            border-left: 4px solid #ff6b6b;
+            padding-left: 12px;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #feca57;
+            margin-top: 20px;
+        }
+        .company-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .company-header h1 {
+            border: none;
+            margin: 0;
+            color: white;
+        }
+        .company-header p {
+            margin: 5px 0 0 0;
+            color: #ddd;
+        }
+        .section {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .highlight-box {
+            background: #0f3460;
+            border-left: 4px solid #00d4ff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .game-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .game-tag {
+            background: #e94560;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        .hardware-tag {
+            background: #00d4ff;
+            color: #1a1a2e;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        .value-tag {
+            background: #feca57;
+            color: #1a1a2e;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            display: inline-block;
+            margin: 3px;
+        }
+        .skill-match {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .skill-item {
+            background: #0f3460;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .skill-item strong {
+            color: #00d4ff;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .question-box {
+            background: #0f3460;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        .question-box strong {
+            color: #ff6b6b;
+        }
+        .answer {
+            color: #aaa;
+            margin-top: 8px;
+            padding-left: 15px;
+            border-left: 2px solid #feca57;
+        }
+        .ask-them {
+            background: #1e5128;
+            padding: 10px 15px;
+            margin: 8px 0;
+            border-radius: 5px;
+        }
+        .key-phrase {
+            background: #4a0072;
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 3px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .warning-box {
+            background: #b8405e;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .success-box {
+            background: #1e5128;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 600px) {
+            .two-column, .skill-match {
+                grid-template-columns: 1fr;
+            }
+        }
+        .quick-facts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .fact-card {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .fact-card .number {
+            font-size: 2em;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+        .fact-card .label {
+            color: #aaa;
+            font-size: 0.9em;
+        }
+        .print-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #00d4ff;
+            color: #1a1a2e;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+        @media print {
+            .print-button { display: none; }
+            body { background: white; color: black; }
+            .section, .highlight-box, .question-box, .skill-item, .fact-card { 
+                background: #f5f5f5; 
+                border: 1px solid #ddd;
+            }
+            h1, h2, h3, .skill-item strong, .fact-card .number { color: #333; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="company-header">
+    <h1>BLUBERI INTERVIEW PREP</h1>
+    <p>Game Integration Tester II | Jackalope Studio | Austin, TX</p>
+    <p style="color: #feca57; font-weight: bold;">John Escobedo | February 2026</p>
+</div>
+
+<div class="section">
+    <h2>Company Quick Facts</h2>
+    <div class="quick-facts">
+        <div class="fact-card">
+            <div class="number">12,000</div>
+            <div class="label">Units in North America</div>
+        </div>
+        <div class="fact-card">
+            <div class="number">194</div>
+            <div class="label">Gaming Licenses</div>
+        </div>
+        <div class="fact-card">
+            <div class="number">4x</div>
+            <div class="label">Revenue Growth (3 years)</div>
+        </div>
+        <div class="fact-card">
+            <div class="number">5</div>
+            <div class="label">Studios (US & Canada)</div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>What Bluberi Does</h2>
+    <p>Bluberi delivers innovative, high-performing slot games and unforgettable player experiences for <strong>Class II, Class III, and HHR</strong> (Historical Horse Racing) markets. They make land-based casino slot machines — both the games and the physical cabinets.</p>
+    
+    <div class="highlight-box">
+        <strong>Their Motto:</strong> "We Are the New School"<br><br>
+        <strong>Quality Philosophy:</strong> "We decided early on we would focus on a lower quantity and higher-quality game and figure out how to scale. We put out four games the first year and all four games were really good."
+    </div>
+
+    <h3>Company Values</h3>
+    <div>
+        <span class="value-tag">We Are the New School</span>
+        <span class="value-tag">Clarity and Transparency</span>
+        <span class="value-tag">Find It, Fix It, Own It</span>
+        <span class="value-tag">Standard Operating Success</span>
+        <span class="value-tag">Easiest Company to do Business With</span>
+        <span class="value-tag">It's A Team Sport</span>
+        <span class="value-tag">Celebrate Wins, But Never Be Satisfied</span>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Austin Studio (Jackalope)</h2>
+    <p>The Austin studio opened in <strong>April 2024</strong>, headed by industry veteran Mike Wabschall (25+ years experience, previously VP of Game Design at Everi).</p>
+    <p>Jackalope Studio leads the development of engaging land-based slot machines, contributing to Bluberi's R&D department in concert with other development teams across the U.S. and Canada.</p>
+    <div class="highlight-box">
+        <strong>Key Insight:</strong> The studio is relatively new. They may value someone who can help establish processes — your specialty.
+    </div>
+</div>
+
+<div class="section">
+    <h2>Their Games (Know These Names)</h2>
+    
+    <h3>Flagship Hit</h3>
+    <p><strong>Devil's Lock™</strong> — A breakthrough game that put them on the map. Simple mechanic: land the Devil to unlock cash balls.</p>
+    
+    <h3>Current Popular Titles</h3>
+    <div class="game-list">
+        <span class="game-tag">Devil's Lock</span>
+        <span class="game-tag">Shark's Lock Slice 'N Dice</span>
+        <span class="game-tag">Shoot for the Loot</span>
+        <span class="game-tag">Cash Raccoons</span>
+        <span class="game-tag">Honey Bomb</span>
+        <span class="game-tag">Timber Jack</span>
+        <span class="game-tag">Raging Red</span>
+        <span class="game-tag">Atomic Duck</span>
+    </div>
+    
+    <h3>Hardware Platforms</h3>
+    <div class="game-list">
+        <span class="hardware-tag">Beacon+</span>
+        <span class="hardware-tag">Beacon Elite</span>
+        <span class="hardware-tag">Beacon Jumbo</span>
+        <span class="hardware-tag">Beacon+ Lighthouse</span>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Slot Game Terminology</h2>
+    <div class="two-column">
+        <div class="skill-item">
+            <strong>Hold & Spin</strong><br>
+            Bonus feature where reels lock and respin for additional prizes
+        </div>
+        <div class="skill-item">
+            <strong>Cash Balls / Cash-on-Reels</strong><br>
+            Credit values that appear directly on reel symbols
+        </div>
+        <div class="skill-item">
+            <strong>Free Games / Free Spins</strong><br>
+            Bonus rounds with no cost to player
+        </div>
+        <div class="skill-item">
+            <strong>Progressive Jackpots</strong><br>
+            Jackpots that grow until won
+        </div>
+        <div class="skill-item">
+            <strong>Symbol Transformations</strong><br>
+            Symbols that change during play
+        </div>
+        <div class="skill-item">
+            <strong>Expanding Reels</strong><br>
+            Reels that grow to add more win opportunities
+        </div>
+    </div>
+    
+    <div class="highlight-box">
+        <strong>Distraction Action:</strong> Non-paying game features and animations that keep players engaged during losing spins.<br><br>
+        <strong>Design Philosophy:</strong> "Giving players a clear path to winning through game rules, mechanics, math, and user interface. A player that knows how to win and what awards to chase will be more likely to adopt a theme long-term."
+    </div>
+</div>
+
+<div class="section">
+    <h2>Regulated Gaming Context</h2>
+    <div class="two-column">
+        <div class="skill-item">
+            <strong>Class II</strong><br>
+            Tribal gaming (bingo-based outcomes)
+        </div>
+        <div class="skill-item">
+            <strong>Class III</strong><br>
+            Traditional casino gaming (RNG-based)
+        </div>
+        <div class="skill-item">
+            <strong>HHR</strong><br>
+            Historical Horse Racing (uses historical race data)
+        </div>
+        <div class="skill-item">
+            <strong>Certification</strong><br>
+            Games must pass testing before deployment
+        </div>
+    </div>
+    
+    <div class="success-box">
+        <strong>YOUR RELEVANT EXPERIENCE:</strong><br>
+        At Linden Lab, you were involved in evaluating in-world games for gambling compliance. Second Life had user-created casinos and games of chance. You helped determine whether games complied with gambling regulations and whether they could remain on the platform. This demonstrates understanding of gambling vs skill-based games, enforcement, and compliance judgment calls.
+    </div>
+</div>
+
+<div class="section">
+    <h2>What "Game Integration Tester II" Means</h2>
+    
+    <h3>"Game Integration Tester"</h3>
+    <p>Not just "find bugs." Integration testing validates that all pieces work together:</p>
+    <ul>
+        <li>Game software + physical cabinet hardware</li>
+        <li>Game math + visual presentation</li>
+        <li>Game features + backend systems</li>
+        <li>New builds + existing stable features</li>
+        <li>Documentation + actual implementation</li>
+    </ul>
+    
+    <h3>"II" (Level 2)</h3>
+    <ul>
+        <li>Mid-level, not entry-level</li>
+        <li>Work independently without constant supervision</li>
+        <li>May mentor or support Level I testers</li>
+        <li>Contribute to process improvement</li>
+        <li>Handle complexity and make judgment calls</li>
+    </ul>
+    
+    <div class="highlight-box">
+        <strong>Think of it like your Apptronik role:</strong> Embedded with engineering, translating observed behaviors into actionable documentation, establishing SOPs, bridging operations and engineering. Same concept, but for slot games on physical cabinets.
+    </div>
+</div>
+
+<div class="section">
+    <h2>Your Skills to Emphasize</h2>
+    
+    <div class="skill-match">
+        <div class="skill-item">
+            <strong>1. Gaming QA Roots</strong><br>
+            Aspyr, Linden Lab, Blizzard, Heatwave. This is a return, not a pivot.
+        </div>
+        <div class="skill-item">
+            <strong>2. Building QA From Scratch</strong><br>
+            DocbookMD, YouScience, CSD, EverlyWell. Austin studio is new (2024).
+        </div>
+        <div class="skill-item">
+            <strong>3. Embedded Team Experience</strong><br>
+            You work with developers, not siloed at the end.
+        </div>
+        <div class="skill-item">
+            <strong>4. Hardware Testing</strong><br>
+            Super Happy Fun Fun (100+ devices), Apptronik (robots), VirtualBox at CSD.
+        </div>
+        <div class="skill-item">
+            <strong>5. JIRA Expertise</strong><br>
+            Extensive use including administration, workflow configuration.
+        </div>
+        <div class="skill-item">
+            <strong>6. Test Planning & Documentation</strong><br>
+            Test plans, test cases, milestone readiness.
+        </div>
+        <div class="skill-item">
+            <strong>7. Fast Turnaround Under Pressure</strong><br>
+            Tradeshow demos, production issues, crisis response.
+        </div>
+        <div class="skill-item">
+            <strong>8. Regulated Environment</strong><br>
+            6 years VA healthcare (HIPAA, 508), Linden Lab gambling compliance.
+        </div>
+        <div class="skill-item">
+            <strong>9. Player Experience Focus</strong><br>
+            Blizzard GM (player trust), CSD (learned ASL for users).
+        </div>
+        <div class="skill-item">
+            <strong>10. Lab Operations / Hardware Setup</strong><br>
+            Apptronik: reduced setup time 75%, created SOPs for physical testing.
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Questions They May Ask</h2>
+    
+    <div class="question-box">
+        <strong>"Tell me about your gaming QA experience."</strong>
+        <div class="answer">Lead with Aspyr (Call of Duty 2, Civ IV Mac ports), Linden Lab (Second Life, 3 promotions to QA Analyst, gambling compliance), Blizzard (Game Master, player trust), Heatwave (led QA team). "I started in gaming and want to return."</div>
+    </div>
+    
+    <div class="question-box">
+        <strong>"How do you handle testing in a fast-paced environment?"</strong>
+        <div class="answer">Daily build validation, milestone pressure, tradeshow deadlines. RetailMeNot production issues, VA healthcare releases, Apptronik rapid documentation needs.</div>
+    </div>
+    
+    <div class="question-box">
+        <strong>"What experience do you have with hardware testing?"</strong>
+        <div class="answer">Super Happy Fun Fun (100+ device models), Apptronik (physical robot testing, SOP creation, reduced setup time 75%), VirtualBox solution at CSD to expand test coverage.</div>
+    </div>
+    
+    <div class="question-box">
+        <strong>"How do you work with developers?"</strong>
+        <div class="answer">Embedded, not adversarial. Provide actionable feedback quickly, root cause analysis with engineering, reduce iteration cycles by catching issues early. At Apptronik, I bridged operations and engineering communication.</div>
+    </div>
+    
+    <div class="question-box">
+        <strong>"Tell me about a time you built QA processes from scratch."</strong>
+        <div class="answer">Pick one: DocbookMD (HIPAA compliance, grew team from solo to full), YouScience (sole QA, built everything), CSD (first QA function ever), EverlyWell (JIRA workflows, release gates). Tell the story.</div>
+    </div>
+    
+    <div class="question-box">
+        <strong>"What do you know about regulated gaming?"</strong>
+        <div class="answer">At Linden Lab, I evaluated user-created games for gambling compliance. I understand the distinction between gambling and skill-based games, enforcement decisions, and compliance judgment calls. I also have 6 years in regulated healthcare (VA, HIPAA) — I understand documentation rigor and audit trails.</div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Questions to Ask Them</h2>
+    
+    <div class="ask-them">What does the QA workflow look like from feature development through certification submission?</div>
+    <div class="ask-them">How does the Austin studio (Jackalope) coordinate with the other studios?</div>
+    <div class="ask-them">What is the typical milestone cadence for a game in development?</div>
+    <div class="ask-them">What test management and defect tracking tools does the team use?</div>
+    <div class="ask-them">What does success look like in this role at 90 days?</div>
+    <div class="ask-them">What is the team structure in Austin?</div>
+</div>
+
+<div class="section">
+    <h2>Key Phrases to Use</h2>
+    <div>
+        <span class="key-phrase">Feature validation early in development to reduce risk</span>
+        <span class="key-phrase">Build stability and integration confidence</span>
+        <span class="key-phrase">Milestone readiness</span>
+        <span class="key-phrase">Player experience</span>
+        <span class="key-phrase">Actionable feedback for fast resolution</span>
+        <span class="key-phrase">Quality over quantity</span>
+        <span class="key-phrase">I figure things out</span>
+        <span class="key-phrase">Find it, fix it, own it</span>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Potential Concerns to Address</h2>
+    
+    <div class="warning-box">
+        <strong>No slot game experience:</strong><br>
+        Acknowledge directly. Frame your gaming QA background (Aspyr, Linden Lab, Blizzard, Heatwave) as foundation. Emphasize you learn domains quickly (VA healthcare, robotics, telehealth). Mention Linden Lab gambling compliance work.
+    </div>
+    
+    <div class="warning-box">
+        <strong>18+ years experience for a Level II role:</strong><br>
+        If it comes up: "I am excited about the gaming industry and want hands-on work. I am not looking to manage from a distance. I want to be embedded with the team and contribute directly."
+    </div>
+</div>
+
+<div class="section">
+    <h2>Your Gaming QA Timeline</h2>
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr style="background: #0f3460;">
+            <td style="padding: 10px; border: 1px solid #333;"><strong>2006</strong></td>
+            <td style="padding: 10px; border: 1px solid #333;">Aspyr Media — QA Test Lead, Mac game ports (Call of Duty 2, Civilization IV)</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; border: 1px solid #333;"><strong>2006-2007</strong></td>
+            <td style="padding: 10px; border: 1px solid #333;">Super Happy Fun Fun — QA Tester, mobile games (100+ device models)</td>
+        </tr>
+        <tr style="background: #0f3460;">
+            <td style="padding: 10px; border: 1px solid #333;"><strong>2007-2010</strong></td>
+            <td style="padding: 10px; border: 1px solid #333;">Linden Lab — 3 promotions to QA Analyst, Second Life, gambling compliance</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; border: 1px solid #333;"><strong>2010-2011</strong></td>
+            <td style="padding: 10px; border: 1px solid #333;">Blizzard Entertainment — Game Master, World of Warcraft</td>
+        </tr>
+        <tr style="background: #0f3460;">
+            <td style="padding: 10px; border: 1px solid #333;"><strong>2011-2012</strong></td>
+            <td style="padding: 10px; border: 1px solid #333;">Heatwave Interactive (via Luna Data) — QA Test Lead, led team across multiple game titles</td>
+        </tr>
+    </table>
+</div>
+
+<div class="section" style="text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <h2 style="color: white; border: none;">You've Got This!</h2>
+    <p style="font-size: 1.2em;">Gaming is where you started. This is a return home.</p>
+    <p>"Find It, Fix It, Own It" — that is exactly what you do.</p>
+</div>
+
+<button class="print-button" onclick="window.print()">Print / Save PDF</button>
+
+</body>
+</html>
