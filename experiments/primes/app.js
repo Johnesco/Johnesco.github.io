@@ -58,6 +58,22 @@ const infoPairs = document.getElementById("info-pairs");
 
 let activeView = "2d"; // "2d" | "3d"
 
+// ─── Frequency Filtering ────────────────────────────────────
+let filterMin = 1;
+let filterMax = Infinity;
+const filterMinInput = document.getElementById("filter-min");
+const filterMaxInput = document.getElementById("filter-max");
+const infoShown = document.getElementById("info-shown");
+
+filterMinInput.addEventListener("input", () => {
+  const v = parseInt(filterMinInput.value, 10);
+  filterMin = v >= 1 ? v : 1;
+});
+filterMaxInput.addEventListener("input", () => {
+  const v = parseInt(filterMaxInput.value, 10);
+  filterMax = v >= 1 ? v : Infinity;
+});
+
 btn2d.addEventListener("click", () => switchView("2d"));
 btn3d.addEventListener("click", () => switchView("3d"));
 
@@ -96,7 +112,10 @@ function drawHeatmap() {
   ctx.fillStyle = "#0a0a1a";
   ctx.fillRect(0, 0, w, h);
 
+  let shownCount = 0;
   for (const [key, count] of freq) {
+    if (count < filterMin || count > filterMax) continue;
+    shownCount++;
     const [gx, gy] = key.split(",").map(Number);
     const t = Math.log(count + 1) / logMax; // 0..1 log scale
     // cool (240° blue) → warm (0° red)
@@ -106,6 +125,7 @@ function drawHeatmap() {
     ctx.fillStyle = `rgb(${r},${g},${b})`;
     ctx.fillRect(gx * cellW, gy * cellH, Math.ceil(cellW), Math.ceil(cellH));
   }
+  lastShownCount = shownCount;
 
   // Axis labels
   ctx.fillStyle = "#555";
@@ -165,14 +185,15 @@ function getBarColor(t) {
 
 function updateBars() {
   const logMax = Math.log(maxFreq + 1);
+  let shownCount = 0;
 
   for (const [key, count] of freq) {
     const [gx, gy] = key.split(",").map(Number);
     let bar = bars.get(key);
-    const t = Math.log(count + 1) / logMax;
-    const height = Math.max(0.1, t * GRID_SIZE * 0.6);
+    const visible = count >= filterMin && count <= filterMax;
 
     if (!bar) {
+      const t = Math.log(count + 1) / logMax;
       const mat = new THREE.MeshStandardMaterial({ color: getBarColor(t) });
       bar = new THREE.Mesh(barGeo, mat);
       bar.position.x = gx + 0.5;
@@ -181,10 +202,17 @@ function updateBars() {
       bars.set(key, bar);
     }
 
-    bar.scale.y = height;
-    bar.position.y = height / 2;
-    bar.material.color.copy(getBarColor(t));
+    bar.visible = visible;
+    if (visible) {
+      shownCount++;
+      const t = Math.log(count + 1) / logMax;
+      const height = Math.max(0.1, t * GRID_SIZE * 0.6);
+      bar.scale.y = height;
+      bar.position.y = height / 2;
+      bar.material.color.copy(getBarColor(t));
+    }
   }
+  lastShownCount = shownCount;
 }
 
 function onWindowResize() {
@@ -203,6 +231,7 @@ onWindowResize();
 
 // ─── Main Loop ───────────────────────────────────────────────
 let frameCount = 0;
+let lastShownCount = 0;
 
 function loop() {
   // Ensure enough primes
@@ -222,6 +251,7 @@ function loop() {
     infoIndex.textContent = currentIndex.toLocaleString();
     infoPrime.textContent = primes[currentIndex].toLocaleString();
     infoPairs.textContent = uniquePairs.toLocaleString();
+    infoShown.textContent = lastShownCount.toLocaleString();
   }
 
   // Render active view

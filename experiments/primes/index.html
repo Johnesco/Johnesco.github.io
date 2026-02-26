@@ -44,6 +44,27 @@
       gap: 20px;
     }
     #info span { color: #aaf; }
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #888;
+    }
+    .filter-group input[type="number"] {
+      width: 64px;
+      background: #2a2a4a;
+      color: #aaf;
+      border: 1px solid #444;
+      padding: 4px 6px;
+      font-family: inherit;
+      font-size: 12px;
+      border-radius: 3px;
+    }
+    .filter-group input[type="number"]:focus {
+      outline: none;
+      border-color: #88f;
+    }
     #view-container {
       flex: 1;
       position: relative;
@@ -68,10 +89,15 @@
   <div id="controls">
     <button id="btn-2d" class="active">2D Heatmap</button>
     <button id="btn-3d">3D Heightmap</button>
+    <div class="filter-group">
+      Freq: <input type="number" id="filter-min" min="1" value="1" placeholder="min">
+      – <input type="number" id="filter-max" min="1" placeholder="max (∞)">
+    </div>
     <div id="info">
       <div>Index: <span id="info-index">0</span></div>
       <div>Prime: <span id="info-prime">3</span></div>
       <div>Unique pairs: <span id="info-pairs">0</span></div>
+      <div>Shown: <span id="info-shown">0</span></div>
     </div>
   </div>
   <div id="view-container">
