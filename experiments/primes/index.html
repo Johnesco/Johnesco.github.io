@@ -24,6 +24,7 @@
       border-bottom: 1px solid #222;
       flex-shrink: 0;
       z-index: 10;
+      flex-wrap: wrap;
     }
     #controls button {
       background: #2a2a4a;
@@ -37,6 +38,8 @@
     }
     #controls button:hover { background: #3a3a6a; }
     #controls button.active { background: #4a4a8a; border-color: #88f; }
+    #controls button.danger { color: #f88; border-color: #644; }
+    #controls button.danger:hover { background: #4a2a2a; }
     #info {
       font-size: 12px;
       color: #888;
@@ -62,6 +65,19 @@
       border-radius: 3px;
     }
     .filter-group input[type="number"]:focus {
+      outline: none;
+      border-color: #88f;
+    }
+    .filter-group select {
+      background: #2a2a4a;
+      color: #aaf;
+      border: 1px solid #444;
+      padding: 4px 6px;
+      font-family: inherit;
+      font-size: 12px;
+      border-radius: 3px;
+    }
+    .filter-group select:focus {
       outline: none;
       border-color: #88f;
     }
@@ -91,11 +107,25 @@
     <button id="btn-3d">3D Heightmap</button>
     <div class="filter-group">
       Freq: <input type="number" id="filter-min" min="1" value="1" placeholder="min">
-      – <input type="number" id="filter-max" min="1" placeholder="max (∞)">
+      &ndash; <input type="number" id="filter-max" min="1" placeholder="max (&infin;)">
     </div>
     <label class="filter-group" style="cursor:pointer;">
       <input type="checkbox" id="log-toggle" checked> Log scale
     </label>
+    <div class="filter-group">
+      Overlay:
+      <select id="viz-mode">
+        <option value="normal">None</option>
+        <option value="flash" selected>Flash new</option>
+        <option value="trail">Trail</option>
+        <option value="discovery">Discovery order</option>
+        <option value="ripples">Ripples</option>
+        <option value="connections">Connections</option>
+        <option value="rate">Discovery rate</option>
+      </select>
+    </div>
+    <button id="btn-replay">Replay</button>
+    <button id="btn-reset" class="danger">Reset data</button>
     <div id="info">
       <div>Index: <span id="info-index">0</span></div>
       <div>Prime: <span id="info-prime">3</span></div>
