@@ -65,6 +65,10 @@ const filterMinInput = document.getElementById("filter-min");
 const filterMaxInput = document.getElementById("filter-max");
 const infoShown = document.getElementById("info-shown");
 
+let useLog = true;
+const logToggle = document.getElementById("log-toggle");
+logToggle.addEventListener("change", () => { useLog = logToggle.checked; });
+
 filterMinInput.addEventListener("input", () => {
   const v = parseInt(filterMinInput.value, 10);
   filterMin = v >= 1 ? v : 1;
@@ -117,7 +121,7 @@ function drawHeatmap() {
     if (count < filterMin || count > filterMax) continue;
     shownCount++;
     const [gx, gy] = key.split(",").map(Number);
-    const t = Math.log(count + 1) / logMax; // 0..1 log scale
+    const t = useLog ? Math.log(count + 1) / logMax : count / maxFreq;
     // cool (240° blue) → warm (0° red)
     const hue = 240 - t * 240;
     const lightness = 10 + t * 50;
@@ -193,7 +197,7 @@ function updateBars() {
     const visible = count >= filterMin && count <= filterMax;
 
     if (!bar) {
-      const t = Math.log(count + 1) / logMax;
+      const t = useLog ? Math.log(count + 1) / logMax : count / maxFreq;
       const mat = new THREE.MeshStandardMaterial({ color: getBarColor(t) });
       bar = new THREE.Mesh(barGeo, mat);
       bar.position.x = gx + 0.5;
@@ -205,7 +209,7 @@ function updateBars() {
     bar.visible = visible;
     if (visible) {
       shownCount++;
-      const t = Math.log(count + 1) / logMax;
+      const t = useLog ? Math.log(count + 1) / logMax : count / maxFreq;
       const height = Math.max(0.1, t * GRID_SIZE * 0.6);
       bar.scale.y = height;
       bar.position.y = height / 2;
