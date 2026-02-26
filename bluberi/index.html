@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bluberi Video Interview Prep - John Escobedo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.7;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #eee;
+            min-height: 100vh;
+        }
+        h1 {
+            color: #00d4ff;
+            border-bottom: 3px solid #00d4ff;
+            padding-bottom: 10px;
+            text-align: center;
+        }
+        h2 {
+            color: #ff6b6b;
+            border-left: 4px solid #ff6b6b;
+            padding-left: 12px;
+            margin-top: 40px;
+        }
+        h3 {
+            color: #feca57;
+            margin-top: 25px;
+        }
+        .header-banner {
+            background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(233, 69, 96, 0.3);
+        }
+        .header-banner h1 {
+            border: none;
+            margin: 0;
+            color: white;
+            font-size: 2em;
+        }
+        .header-banner p {
+            margin: 10px 0 0 0;
+            color: #fff;
+            font-size: 1.1em;
+        }
+        .header-banner .date {
+            background: rgba(0,0,0,0.2);
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-top: 10px;
+        }
+        .section {
+            background: #16213e;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        .mindset-box {
+            background: linear-gradient(135deg, #1e5128 0%, #2d6a4f 100%);
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 5px solid #40916c;
+        }
+        .mindset-box h3 {
+            color: #95d5b2;
+            margin-top: 0;
+        }
+        .confidence-reminder {
+            background: linear-gradient(135deg, #4a0072 0%, #7b2cbf 100%);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 1.2em;
+        }
+        .highlight-box {
+            background: #0f3460;
+            border-left: 4px solid #00d4ff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 12px 12px 0;
+        }
+        .question-card {
+            background: #0f3460;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 12px;
+            border-left: 4px solid #ff6b6b;
+        }
+        .question-card .question {
+            color: #ff6b6b;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+        }
+        .question-card .why {
+            color: #feca57;
+            font-style: italic;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+        .question-card .answer {
+            color: #ccc;
+            padding-left: 15px;
+            border-left: 2px solid #00d4ff;
+        }
+        .question-card .key-point {
+            background: #1e5128;
+            color: #95d5b2;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.95em;
+        }
+        .ask-card {
+            background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+            padding: 20px;
+            margin: 12px 0;
+            border-radius: 12px;
+            border-left: 4px solid #00d4ff;
+        }
+        .ask-card .question {
+            color: #00d4ff;
+            font-weight: bold;
+            font-size: 1.05em;
+        }
+        .ask-card .why-ask {
+            color: #aaa;
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+        .story-card {
+            background: #0f3460;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 12px;
+        }
+        .story-card .title {
+            color: #feca57;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .story-card .situation {
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+        .story-card .action {
+            color: #ccc;
+            margin-bottom: 8px;
+        }
+        .story-card .result {
+            color: #95d5b2;
+        }
+        .checklist {
+            background: #0f3460;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+        }
+        .checklist-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #1a1a2e;
+            display: flex;
+            align-items: center;
+        }
+        .checklist-item:last-child {
+            border-bottom: none;
+        }
+        .checklist-item::before {
+            content: "☐";
+            margin-right: 15px;
+            font-size: 1.3em;
+            color: #00d4ff;
+        }
+        .power-phrase {
+            background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+            display: inline-block;
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 25px;
+            font-size: 0.95em;
+            color: white;
+        }
+        .warning-box {
+            background: linear-gradient(135deg, #b8405e 0%, #d63031 100%);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .warning-box h3 {
+            color: white;
+            margin-top: 0;
+        }
+        .breathing-box {
+            background: linear-gradient(135deg, #0f3460 0%, #1e3a5f 100%);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 25px 0;
+            border: 2px solid #00d4ff;
+        }
+        .breathing-box h3 {
+            color: #00d4ff;
+            margin-top: 0;
+        }
+        .breath-step {
+            font-size: 1.3em;
+            margin: 15px 0;
+            color: #feca57;
+        }
+        .final-reminder {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 30px;
+            box-shadow: 0 10px 40px rgba(118, 75, 162, 0.3);
+        }
+        .final-reminder h2 {
+            color: white;
+            border: none;
+            padding: 0;
+            margin: 0 0 15px 0;
+        }
+        .final-reminder p {
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 700px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+        .value-match {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .value-match .their-value {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+        .value-match .your-proof {
+            color: #95d5b2;
+            margin-top: 5px;
+        }
+        .print-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #00d4ff;
+            color: #1a1a2e;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+            z-index: 1000;
+        }
+        @media print {
+            .print-button { display: none; }
+            body { background: white; color: black; }
+            .section, .question-card, .ask-card, .story-card, .checklist, .value-match { 
+                background: #f5f5f5; 
+                border: 1px solid #ddd;
+            }
+            h1, h2, h3 { color: #333; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header-banner">
+    <h1>🎮 BLUBERI VIDEO INTERVIEW</h1>
+    <p>Game Integration Tester II | Jackalope Studio | Austin, TX</p>
+    <div class="date">Today - You've Got This!</div>
+</div>
+
+<div class="section">
+    <h2>🧠 Mental Preparation</h2>
+    
+    <div class="confidence-reminder">
+        <strong>They already like you.</strong><br>
+        The phone screen went well. They want someone to introduce QA to their process.<br>
+        That is literally what you do. You have done it 5+ times.
+    </div>
+    
+    <div class="mindset-box">
+        <h3>Remember Who You Are</h3>
+        <ul>
+            <li><strong>18 years of QA experience</strong> — you are not hoping to learn, you are bringing expertise</li>
+            <li><strong>Built QA from scratch 5 times</strong> — DocbookMD, YouScience, CSD, EverlyWell, Apptronik</li>
+            <li><strong>Gaming is where you started</strong> — Aspyr, Linden Lab, Blizzard, Heatwave</li>
+            <li><strong>You evaluate gambling compliance</strong> — Linden Lab, directly relevant to casino gaming</li>
+            <li><strong>You figure things out</strong> — every new domain, you ramp up fast</li>
+        </ul>
+    </div>
+    
+    <div class="mindset-box">
+        <h3>What They Need (And Why You Are The Answer)</h3>
+        <p>They told you: <strong>"They want someone to come in and introduce QA to the process."</strong></p>
+        <p>This is your superpower. You do not just test — you build the foundations that make software shippable. You introduce version control discipline, release candidate processes, and documentation standards to teams shipping without structure.</p>
+        <p>You are not applying for a job. You are offering a solution to their problem.</p>
+    </div>
+</div>
+
+<div class="section">
+    <h2>🎯 Your Value Proposition (Say This)</h2>
+    
+    <div class="highlight-box">
+        <p style="font-size: 1.1em; margin: 0;">"I specialize in building QA foundations from scratch. I have done this five times in my career — at startups, healthcare companies, and most recently at a robotics company. I introduce the processes, documentation, and quality gates that help teams ship with confidence instead of crossing their fingers. Gaming is where I started, and I am excited to bring that experience back to the industry."</p>
+    </div>
+</div>
+
+<div class="section">
+    <h2>🔗 Match Their Values to Your Experience</h2>
+    
+    <div class="value-match">
+        <div class="their-value">"Find It, Fix It, Own It"</div>
+        <div class="your-proof">At Apptronik, I authored SOPs that did not exist. At CSD, I built the first QA function ever. I do not wait to be told — I see gaps and fill them.</div>
+    </div>
+    
+    <div class="value-match">
+        <div class="their-value">"We Are the New School"</div>
+        <div class="your-proof">I have brought modern QA practices to teams stuck in old ways. At GeekSI, I championed the Waterfall-to-Agile transition and got leadership buy-in.</div>
+    </div>
+    
+    <div class="value-match">
+        <div class="their-value">"It's A Team Sport"</div>
+        <div class="your-proof">I am embedded QA, not siloed. I work alongside developers, not against them. At Apptronik, I bridged operations and engineering. At Blizzard, I connected player feedback to development.</div>
+    </div>
+    
+    <div class="value-match">
+        <div class="their-value">"Standard Operating Success"</div>
+        <div class="your-proof">I create the SOPs, the test plans, the documentation that makes success repeatable. At Apptronik, I reduced setup time 75% by standardizing the preparation pattern.</div>
+    </div>
+    
+    <div class="value-match">
+        <div class="their-value">"Clarity and Transparency"</div>
+        <div class="your-proof">I write clear bug reports, clear test plans, clear status updates. No surprises. I communicate quality risks directly to stakeholders.</div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>❓ Questions They Will Likely Ask</h2>
+    
+    <div class="question-card">
+        <div class="question">"Tell me about yourself / Walk me through your background."</div>
+        <div class="why">They want the highlight reel, not your life story. 2-3 minutes max.</div>
+        <div class="answer">
+            "I started in gaming QA — Aspyr, Linden Lab, Blizzard, Heatwave. That foundation taught me how to find bugs, work with developers, and understand what players care about. Over 18 years, I have specialized in building QA from scratch at companies that needed structure. Most recently at a robotics startup, I wrote the SOPs that did not exist and reduced testing setup time by 75%. I am excited about Bluberi because gaming is where I started, and introducing QA to the Jackalope studio is exactly the kind of work I do best."
+        </div>
+        <div class="key-point">Keep it tight. End with why Bluberi.</div>
+    </div>
+    
+    <div class="question-card">
+        <div class="question">"How would you approach introducing QA to a team that doesn't have formal processes?"</div>
+        <div class="why">This is THE question. They told you this is what they need.</div>
+        <div class="answer">
+            "First, I listen and observe. I learn how the team currently works, what their pain points are, where defects slip through. I do not come in with a rigid playbook — I adapt to the team's culture and workflow.<br><br>
+            Then I start small. Maybe it is a simple checklist for build validation, or a template for bug reports that actually helps developers fix issues faster. Quick wins build trust.<br><br>
+            From there, I layer in more structure — test plans tied to milestones, requirements traceability, release criteria that everyone agrees on. The goal is not process for process sake. It is giving the team confidence that what they ship is ready."
+        </div>
+        <div class="key-point">Show you are collaborative, not prescriptive. You adapt to them.</div>
+    </div>
+    
+    <div class="question-card">
+        <div class="question">"Tell me about a time you built QA processes from scratch."</div>
+        <div class="why">They want a specific story. Pick one and tell it well.</div>
+        <div class="answer">
+            <strong>Use: DocbookMD (HIPAA healthcare app)</strong><br><br>
+            "When I joined DocbookMD, there was no QA. The founders were shipping a HIPAA-compliant messaging app without formal testing. I started by understanding the regulatory requirements — what had to be tested for compliance. Then I created our first test plans, defined what a release-ready build looked like, and established defect tracking. I grew the department from just me to a full team, hiring and mentoring new analysts. By the time I left, we had repeatable processes that ensured every release met HIPAA standards."
+        </div>
+        <div class="key-point">Situation → Action → Result. Keep it concrete.</div>
+    </div>
+    
+    <div class="question-card">
+        <div class="question">"What experience do you have with hardware testing?"</div>
+        <div class="why">The role involves physical slot cabinets.</div>
+        <div class="answer">
+            "At Apptronik, I tested humanoid robots — physical hardware in a lab environment. I wrote the startup, shutdown, and emergency procedures. I configured test stations and reduced setup time by 75% by standardizing the process. Earlier in my career, at Super Happy Fun Fun, I tested mobile games across 100+ physical device models. I am comfortable with hands-on hardware testing and lab operations."
+        </div>
+        <div class="key-point">Apptronik is your strongest hardware story. Lead with it.</div>
+    </div>
+    
+    <div class="question-card">
+        <div class="question">"You don't have slot game experience. How will you ramp up?"</div>
+        <div class="why">Address the obvious gap directly.</div>
+        <div class="answer">
+            "You are right, I have not tested slot games specifically. But I have ramped up on new domains quickly throughout my career — VA healthcare systems, robotics, HIPAA compliance. My approach is to immerse myself: play the games, read the documentation, ask questions, and learn the math and mechanics. I also have relevant experience from Linden Lab, where I evaluated user-created games for gambling compliance. I understand the regulatory mindset. The QA fundamentals transfer — what changes is the domain knowledge, and I pick that up fast."
+        </div>
+        <div class="key-point">Acknowledge the gap, then pivot to your learning speed and transferable experience.</div>
+    </div>
+    
+    <div class="question-card">
+        <div class="question">"How do you handle working with developers who may be resistant to QA?"</div>
+        <div class="why">New QA in a team can create friction.</div>
+        <div class="answer">
+            "I earn trust by being helpful, not by being a gatekeeper. My job is to make their lives easier — catch issues before they become expensive, write bug reports that are actually useful, and never waste their time with noise. I am embedded with the team, not separate from it. I find that when developers see QA as a partner rather than a critic, resistance fades. At YouScience, I was the first QA person ever. Within months, developers were coming to me before releases because they trusted the process we built together."
+        </div>
+        <div class="key-point">You are a partner, not a gatekeeper.</div>
+    </div>
+    
+    <div class="question-card">
+        <div class="question">"Why Bluberi? Why this role?"</div>
+        <div class="why">They want to know you are genuinely interested.</div>
+        <div class="answer">
+            "Gaming is where I started my career, and I have wanted to return. Bluberi's growth story is compelling — from 1,500 units to 12,000, quality over quantity approach, and the Austin studio is new. The chance to introduce QA to the Jackalope team, to help build something from the ground up, that is exactly the work I find most meaningful. I am not looking for a job where I maintain someone else's process. I want to create the foundation."
+        </div>
+        <div class="key-point">Show you did your research. Connect to their growth and your specialty.</div>
+    </div>
+    
+    <div class="question-card">
+        <div class="question">"Where do you see yourself in 2-3 years?"</div>
+        <div class="why">They want to know you will stick around.</div>
+        <div class="answer">
+            "I want to be a QA leader who has helped Bluberi scale. Once the foundation is solid, I see myself mentoring other testers, contributing to QA strategy across studios, and continuing to grow with the company. I am not looking for a stepping stone — I am looking for a place to build something lasting."
+        </div>
+        <div class="key-point">Show commitment and growth within the company.</div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>📖 Your Stories (Have These Ready)</h2>
+    
+    <div class="story-card">
+        <div class="title">🏗️ Building QA From Zero — DocbookMD</div>
+        <div class="situation"><strong>Situation:</strong> Healthcare messaging startup with no QA, shipping HIPAA-compliant app without formal testing.</div>
+        <div class="action"><strong>Action:</strong> Analyzed compliance requirements, created first test plans, established defect tracking, hired and mentored team.</div>
+        <div class="result"><strong>Result:</strong> Grew QA from solo to full team. Every release met HIPAA standards. Repeatable process that outlasted me.</div>
+    </div>
+    
+    <div class="story-card">
+        <div class="title">🤖 Hardware Testing & SOPs — Apptronik</div>
+        <div class="situation"><strong>Situation:</strong> Robotics startup, novel humanoid robot testing role, no documentation existed.</div>
+        <div class="action"><strong>Action:</strong> Authored SOPs for startup/shutdown/emergency procedures. Standardized test environment setup. Bridged operations and engineering.</div>
+        <div class="result"><strong>Result:</strong> Reduced setup time by 75%. Created documentation adopted as team standard. Accelerated issue resolution.</div>
+    </div>
+    
+    <div class="story-card">
+        <div class="title">🎰 Gambling Compliance — Linden Lab</div>
+        <div class="situation"><strong>Situation:</strong> Second Life had user-created casinos. Linden Lab needed to enforce gambling regulations.</div>
+        <div class="action"><strong>Action:</strong> Evaluated games against compliance criteria. Determined what was gambling vs skill-based. Made enforcement decisions.</div>
+        <div class="result"><strong>Result:</strong> Gained understanding of gambling regulations, game mechanics evaluation, compliance judgment calls.</div>
+    </div>
+    
+    <div class="story-card">
+        <div class="title">🎮 Player Trust — Blizzard</div>
+        <div class="situation"><strong>Situation:</strong> WoW players with compromised accounts, lost items, frustrated experiences.</div>
+        <div class="action"><strong>Action:</strong> De-escalated frustrated users. Restored accounts with precision. Documented fraud cases for development teams.</div>
+        <div class="result"><strong>Result:</strong> Turned negative experiences into moments of trust. Understood what players care about emotionally.</div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>🙋 Questions YOU Should Ask</h2>
+    
+    <div class="ask-card">
+        <div class="question">"What does the current development workflow look like, and where do you see QA fitting in?"</div>
+        <div class="why-ask">Shows you are thinking about integration, not just testing in isolation.</div>
+    </div>
+    
+    <div class="ask-card">
+        <div class="question">"What are the biggest quality challenges the team faces right now?"</div>
+        <div class="why-ask">Demonstrates you want to solve their actual problems. Listen carefully to the answer.</div>
+    </div>
+    
+    <div class="ask-card">
+        <div class="question">"How does the Austin studio coordinate with the other Bluberi studios?"</div>
+        <div class="why-ask">Shows you understand the distributed nature of the company.</div>
+    </div>
+    
+    <div class="ask-card">
+        <div class="question">"What does a typical milestone look like from development to certification submission?"</div>
+        <div class="why-ask">Gets at the rhythm of the work and where QA would add value.</div>
+    </div>
+    
+    <div class="ask-card">
+        <div class="question">"What tools does the team currently use for defect tracking and documentation?"</div>
+        <div class="why-ask">Practical question that shows you are thinking about execution.</div>
+    </div>
+    
+    <div class="ask-card">
+        <div class="question">"What does success look like for this role at 90 days?"</div>
+        <div class="why-ask">Shows you are thinking about delivering value quickly. Classic strong question.</div>
+    </div>
+    
+    <div class="ask-card">
+        <div class="question">"What is the team structure in Austin? Who would I be working with most closely?"</div>
+        <div class="why-ask">Understand the people and dynamics.</div>
+    </div>
+    
+    <div class="ask-card">
+        <div class="question">"What drew you to Bluberi?" (Ask the interviewer personally)</div>
+        <div class="why-ask">Builds rapport. People like talking about themselves. Gives you insight into culture.</div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>💬 Power Phrases to Use</h2>
+    <div>
+        <span class="power-phrase">Build QA from the ground up</span>
+        <span class="power-phrase">Introduce quality discipline</span>
+        <span class="power-phrase">Embedded with the team</span>
+        <span class="power-phrase">Reduce risk early</span>
+        <span class="power-phrase">Actionable feedback</span>
+        <span class="power-phrase">Milestone readiness</span>
+        <span class="power-phrase">Player experience</span>
+        <span class="power-phrase">I figure things out</span>
+        <span class="power-phrase">Quick wins build trust</span>
+        <span class="power-phrase">Partner, not gatekeeper</span>
+        <span class="power-phrase">Foundation for scaling</span>
+        <span class="power-phrase">Quality over quantity</span>
+    </div>
+</div>
+
+<div class="section">
+    <h2>⚠️ Things to Avoid</h2>
+    
+    <div class="warning-box">
+        <h3>Do Not...</h3>
+        <ul>
+            <li><strong>Oversell automation skills</strong> — Be honest that you are collaborative, not a developer. They know your background.</li>
+            <li><strong>Apologize for not having slot experience</strong> — Acknowledge it once, then pivot to what you bring.</li>
+            <li><strong>Talk too long</strong> — Keep answers to 1-2 minutes. Let them ask follow-ups.</li>
+            <li><strong>Be negative about past employers</strong> — Even if true, it reflects poorly.</li>
+            <li><strong>Forget to ask questions</strong> — Have 3-4 ready. It shows engagement.</li>
+            <li><strong>Be robotic</strong> — They are a fun company. Let your personality show.</li>
+        </ul>
+    </div>
+</div>
+
+<div class="section">
+    <h2>✅ Pre-Interview Checklist</h2>
+    
+    <div class="checklist">
+        <div class="checklist-item">Camera at eye level, good lighting on face</div>
+        <div class="checklist-item">Background clean and professional</div>
+        <div class="checklist-item">Water nearby</div>
+        <div class="checklist-item">Phone on silent, notifications off</div>
+        <div class="checklist-item">Quiet environment, no interruptions</div>
+        <div class="checklist-item">Test video/audio before the call</div>
+        <div class="checklist-item">Have this prep doc open (but off camera)</div>
+        <div class="checklist-item">Notepad for jotting questions/notes</div>
+        <div class="checklist-item">Dress professionally (at least top half)</div>
+        <div class="checklist-item">Smile when you join the call</div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>🧘 One Minute Before the Call</h2>
+    
+    <div class="breathing-box">
+        <h3>Calm Your Nerves</h3>
+        <div class="breath-step">Breathe in slowly... 4 seconds</div>
+        <div class="breath-step">Hold... 4 seconds</div>
+        <div class="breath-step">Breathe out slowly... 4 seconds</div>
+        <div class="breath-step">Repeat 3 times</div>
+        <p style="margin-top: 20px; color: #aaa;">You have done this work for 18 years. You know what you are talking about. They already like you from the phone screen. This is a conversation, not an interrogation.</p>
+    </div>
+</div>
+
+<div class="final-reminder">
+    <h2>🎯 Your Core Message</h2>
+    <p>"I build QA foundations from scratch. Gaming is where I started. I am ready to do it again for Bluberi."</p>
+    <p style="font-size: 1em; color: #ddd; margin-top: 20px;">You are not asking for a chance. You are offering a solution.<br>Go get it.</p>
+</div>
+
+<button class="print-button" onclick="window.print()">Print / Save PDF</button>
+
+</body>
+</html>
