@@ -110,7 +110,12 @@ const TRAIL_LENGTH = 60;
 const RIPPLE_DURATION = 600;
 const CONNECTION_COUNT = 80;
 const RATE_WINDOW = 3000;
-const ACTIVITY_WINDOW = 600;
+const FLASH_FRAMES = 10;     // activity flash duration in frames
+const FLASH_COOLDOWN = 24;   // frames before a cell can re-flash
+
+// Activity flash: frame-based with refractory cooldown
+let actStartFrame = new Int32Array(GRID_CELLS);
+actStartFrame.fill(-1000);
 
 // Gap history for replay — parallel flat arrays (no object alloc)
 let ghKeys = [];   // numeric grid keys
@@ -126,6 +131,9 @@ function recordGap(index) {
   ghKeys.push(key);
   ghIdxs.push(index);
   lastSeenArr[key] = currentIndex;
+  if (frameCount - actStartFrame[key] >= FLASH_COOLDOWN) {
+    actStartFrame[key] = frameCount;
+  }
   const prev = freqArr[key];
   if (prev === 0) {
     uniquePairs++;
@@ -202,6 +210,7 @@ function startReplay() {
   rDiscAtArr.fill(-1);
   rLastSeenArr = new Int32Array(GRID_CELLS);
   rLastSeenArr.fill(-1);
+  actStartFrame.fill(-1000);
   rDiscoveryHistory = [];
   rMaxFreq = 1;
   rUniquePairs = 0;
@@ -230,6 +239,9 @@ function advanceReplay() {
     const key = ghKeys[i];
     rIndex = ghIdxs[i];
     rLastSeenArr[key] = rIndex;
+    if (frameCount - actStartFrame[key] >= FLASH_COOLDOWN) {
+      actStartFrame[key] = frameCount;
+    }
     const prev = rFreqArr[key];
     if (prev === 0) {
       rUniquePairs++;
@@ -752,7 +764,7 @@ function draw2dRate() {
   return n;
 }
 
-// --- Activity: flash every cell on each increment ---
+// --- Activity: flash every cell on each increment (frame-based pulse) ---
 function draw2dActivity() {
   clearPixels();
   let n = 0;
@@ -763,18 +775,13 @@ function draw2dActivity() {
     n++;
     const li = lutIndex(getT(count));
     let r = freqLUT[li], g = freqLUT[li + 1], b = freqLUT[li + 2];
-    const seen = lastSeenArr[key];
-    if (seen >= 0) {
-      const age = currentIndex - seen;
-      if (age < ACTIVITY_WINDOW) {
-        const fade = (1 - age / ACTIVITY_WINDOW);
-        // Dampen flash for high-frequency cells so they don't stay white
-        const damp = 1 / (1 + Math.log(count));
-        const f = fade * fade * damp;
-        r = r + (255 - r) * f;
-        g = g + (240 - g) * f;
-        b = b + (180 - b) * f;
-      }
+    const elapsed = frameCount - actStartFrame[key];
+    if (elapsed >= 0 && elapsed < FLASH_FRAMES) {
+      const f = 1 - elapsed / FLASH_FRAMES;
+      const ff = f * f;
+      r = r + (255 - r) * ff;
+      g = g + (240 - g) * ff;
+      b = b + (180 - b) * ff;
     }
     const pi = key * 4;
     pixels[pi] = r; pixels[pi + 1] = g; pixels[pi + 2] = b;
@@ -963,15 +970,11 @@ function updateBars() {
 
       case "activity": {
         bar.material.color.copy(getBarColor(t));
-        const seen = lastSeenArr[key];
-        if (seen >= 0) {
-          const age = currentIndex - seen;
-          if (age < ACTIVITY_WINDOW) {
-            const fade = (1 - age / ACTIVITY_WINDOW);
-            const damp = 1 / (1 + Math.log(count));
-            const f = fade * fade * damp;
-            bar.material.emissive.setRGB(0.9 * f, 0.85 * f, 0.5 * f);
-          }
+        const elapsed = frameCount - actStartFrame[key];
+        if (elapsed >= 0 && elapsed < FLASH_FRAMES) {
+          const f = 1 - elapsed / FLASH_FRAMES;
+          const ff = f * f;
+          bar.material.emissive.setRGB(0.9 * ff, 0.85 * ff, 0.5 * ff);
         }
         break;
       }
