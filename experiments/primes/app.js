@@ -768,7 +768,9 @@ function draw2dActivity() {
       const age = currentIndex - seen;
       if (age < ACTIVITY_WINDOW) {
         const fade = (1 - age / ACTIVITY_WINDOW);
-        const f = fade * fade; // quadratic ease-out for snappy flash
+        // Dampen flash for high-frequency cells so they don't stay white
+        const damp = 1 / (1 + Math.log(count));
+        const f = fade * fade * damp;
         r = r + (255 - r) * f;
         g = g + (240 - g) * f;
         b = b + (180 - b) * f;
@@ -965,8 +967,10 @@ function updateBars() {
         if (seen >= 0) {
           const age = currentIndex - seen;
           if (age < ACTIVITY_WINDOW) {
-            const f = (1 - age / ACTIVITY_WINDOW);
-            bar.material.emissive.setRGB(0.9 * f * f, 0.85 * f * f, 0.5 * f * f);
+            const fade = (1 - age / ACTIVITY_WINDOW);
+            const damp = 1 / (1 + Math.log(count));
+            const f = fade * fade * damp;
+            bar.material.emissive.setRGB(0.9 * f, 0.85 * f, 0.5 * f);
           }
         }
         break;
