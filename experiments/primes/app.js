@@ -184,13 +184,15 @@ const REPLAY_SPEED = 500;
 let rFreqArr = new Uint32Array(GRID_CELLS);
 let rDiscAtArr = new Int32Array(GRID_CELLS);
 rDiscAtArr.fill(-1);
+let rLastSeenArr = new Int32Array(GRID_CELLS);
+rLastSeenArr.fill(-1);
 let rDiscoveryHistory = [];
 let rMaxFreq = 1;
 let rUniquePairs = 0;
 let rIndex = 0;
 
 // Live state refs (saved during swap)
-let liveFreqArr, liveDiscAtArr, liveDiscoveryHistory, liveMaxFreq, liveUniquePairs, liveCurrentIndex;
+let liveFreqArr, liveDiscAtArr, liveLastSeenArr, liveDiscoveryHistory, liveMaxFreq, liveUniquePairs, liveCurrentIndex;
 
 function startReplay() {
   replayActive = true;
@@ -198,6 +200,8 @@ function startReplay() {
   rFreqArr = new Uint32Array(GRID_CELLS);
   rDiscAtArr = new Int32Array(GRID_CELLS);
   rDiscAtArr.fill(-1);
+  rLastSeenArr = new Int32Array(GRID_CELLS);
+  rLastSeenArr.fill(-1);
   rDiscoveryHistory = [];
   rMaxFreq = 1;
   rUniquePairs = 0;
@@ -225,6 +229,7 @@ function advanceReplay() {
   for (let i = replayPos; i < end; i++) {
     const key = ghKeys[i];
     rIndex = ghIdxs[i];
+    rLastSeenArr[key] = rIndex;
     const prev = rFreqArr[key];
     if (prev === 0) {
       rUniquePairs++;
@@ -240,14 +245,17 @@ function advanceReplay() {
 }
 
 function swapToReplay() {
-  liveFreqArr = freqArr; liveDiscAtArr = discAtArr; liveDiscoveryHistory = discoveryHistory;
+  liveFreqArr = freqArr; liveDiscAtArr = discAtArr; liveLastSeenArr = lastSeenArr;
+  liveDiscoveryHistory = discoveryHistory;
   liveMaxFreq = maxFreq; liveUniquePairs = uniquePairs; liveCurrentIndex = currentIndex;
-  freqArr = rFreqArr; discAtArr = rDiscAtArr; discoveryHistory = rDiscoveryHistory;
+  freqArr = rFreqArr; discAtArr = rDiscAtArr; lastSeenArr = rLastSeenArr;
+  discoveryHistory = rDiscoveryHistory;
   maxFreq = rMaxFreq; uniquePairs = rUniquePairs; currentIndex = rIndex;
 }
 
 function swapToLive() {
-  freqArr = liveFreqArr; discAtArr = liveDiscAtArr; discoveryHistory = liveDiscoveryHistory;
+  freqArr = liveFreqArr; discAtArr = liveDiscAtArr; lastSeenArr = liveLastSeenArr;
+  discoveryHistory = liveDiscoveryHistory;
   maxFreq = liveMaxFreq; uniquePairs = liveUniquePairs; currentIndex = liveCurrentIndex;
 }
 
