@@ -98,6 +98,35 @@
       height: 100%;
       display: none;
     }
+    #tooltip {
+      position: absolute;
+      display: none;
+      pointer-events: none;
+      z-index: 20;
+      background: rgba(10,10,30,0.92);
+      border: 1px solid #444;
+      padding: 6px 10px;
+      font-size: 11px;
+      color: #ccc;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    #discovery-log {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      display: none;
+      z-index: 15;
+      background: rgba(10,10,30,0.85);
+      border: 1px solid #333;
+      max-height: 200px;
+      width: 320px;
+      overflow-y: auto;
+      font-size: 11px;
+      color: #aaa;
+      padding: 6px;
+      border-radius: 3px;
+    }
     a { color: #88f; }
   </style>
 </head>
@@ -109,9 +138,19 @@
       Freq: <input type="number" id="filter-min" min="1" value="1" placeholder="min">
       &ndash; <input type="number" id="filter-max" min="1" placeholder="max (&infin;)">
     </div>
-    <label class="filter-group" style="cursor:pointer;">
-      <input type="checkbox" id="log-toggle" checked> Log scale
-    </label>
+    <div class="filter-group">
+      Scale:
+      <select id="scale-mode">
+        <option value="log" selected>Logarithmic</option>
+        <option value="sqrt">Square root</option>
+        <option value="cbrt">Cube root</option>
+        <option value="pow4">Fourth root</option>
+        <option value="linear">Linear</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      Unit H: <input type="number" id="unit-height" min="0.01" max="10" step="0.1" value="1">
+    </div>
     <div class="filter-group">
       Overlay:
       <select id="viz-mode">
@@ -122,8 +161,10 @@
         <option value="ripples">Ripples</option>
         <option value="connections">Connections</option>
         <option value="rate">Discovery rate</option>
+        <option value="activity">Activity</option>
       </select>
     </div>
+    <button id="btn-log">Log</button>
     <button id="btn-replay">Replay</button>
     <button id="btn-reset" class="danger">Reset data</button>
     <div id="info">
@@ -131,11 +172,14 @@
       <div>Prime: <span id="info-prime">3</span></div>
       <div>Unique pairs: <span id="info-pairs">0</span></div>
       <div>Shown: <span id="info-shown">0</span></div>
+      <div>Disc rate: <span id="info-disc-rate">&mdash;</span></div>
     </div>
   </div>
   <div id="view-container">
     <canvas id="heatmap-canvas"></canvas>
     <div id="three-container"></div>
+    <div id="tooltip"></div>
+    <div id="discovery-log"><div id="log-entries"></div></div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
