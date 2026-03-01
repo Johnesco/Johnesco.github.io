@@ -181,6 +181,89 @@ const btnLog = document.getElementById("btn-log");
 
 let activeView = "2d";
 
+// ─── Mode Registry ──────────────────────────────────────────
+window.PRIME_MODES = window.PRIME_MODES || {};
+let currentMode = "gap-grid";
+let currentModeObj = null;
+const mainModeSelect = document.getElementById("main-mode");
+const gridControlsEl = document.getElementById("grid-controls");
+const modeControlsEl = document.getElementById("mode-controls");
+const infoGridOnly = document.getElementById("info-grid-only");
+
+function buildModeControls(container, mode) {
+  container.innerHTML = "";
+  if (!mode.controls || mode.controls.length === 0) return;
+  for (const ctrl of mode.controls) {
+    const grp = document.createElement("div");
+    grp.className = "filter-group";
+    const lbl = document.createTextNode(ctrl.label + ": ");
+    grp.appendChild(lbl);
+    if (ctrl.type === "select") {
+      const sel = document.createElement("select");
+      sel.id = ctrl.id;
+      for (const opt of ctrl.options) {
+        const o = document.createElement("option");
+        o.value = opt.value;
+        o.textContent = opt.label;
+        if (opt.value === String(ctrl.default)) o.selected = true;
+        sel.appendChild(o);
+      }
+      sel.addEventListener("change", () => {
+        if (mode.onControl) mode.onControl(ctrl.id, sel.value);
+      });
+      grp.appendChild(sel);
+    } else if (ctrl.type === "range") {
+      const inp = document.createElement("input");
+      inp.type = "range";
+      inp.id = ctrl.id;
+      inp.min = ctrl.min; inp.max = ctrl.max; inp.step = ctrl.step || 1;
+      inp.value = ctrl.default;
+      inp.style.width = "80px";
+      const valSpan = document.createElement("span");
+      valSpan.textContent = ctrl.default;
+      valSpan.style.marginLeft = "4px";
+      inp.addEventListener("input", () => {
+        valSpan.textContent = inp.value;
+        if (mode.onControl) mode.onControl(ctrl.id, Number(inp.value));
+      });
+      grp.appendChild(inp);
+      grp.appendChild(valSpan);
+    }
+    container.appendChild(grp);
+  }
+}
+
+function switchMode(modeId) {
+  // Cleanup previous custom mode
+  if (currentModeObj && currentModeObj.cleanup) currentModeObj.cleanup();
+  currentModeObj = null;
+  currentMode = modeId;
+
+  if (modeId === "gap-grid") {
+    gridControlsEl.style.display = "";
+    modeControlsEl.innerHTML = "";
+    infoGridOnly.style.display = "";
+    // Restore current view
+    switchView(activeView);
+  } else {
+    gridControlsEl.style.display = "none";
+    infoGridOnly.style.display = "none";
+    // Force 2D canvas, hide 3D
+    canvas.style.display = "block";
+    threeContainer.style.display = "none";
+
+    const mode = window.PRIME_MODES[modeId];
+    if (mode) {
+      currentModeObj = mode;
+      buildModeControls(modeControlsEl, mode);
+      if (mode.init) mode.init(ctx, canvas, primes);
+      if (mode.resize) mode.resize(cachedW, cachedH);
+    }
+  }
+}
+
+mainModeSelect.addEventListener("change", () => switchMode(mainModeSelect.value));
+
 // ─── Replay ─────────────────────────────────────────────────
 const btnReplay = document.getElementById("btn-replay");
 
@@ -339,7 +422,7 @@ btnLog.addEventListener("click", () => {
 
 // ─── Tooltip Interaction ─────────────────────────────────────
 canvas.addEventListener("mousemove", (e) => {
-  if (activeView !== "2d") { tooltipEl.style.display = "none"; return; }
+  if (activeView !== "2d" || currentMode !== "gap-grid") { tooltipEl.style.display = "none"; return; }
   const rect = canvas.getBoundingClientRect();
   const mx = e.clientX - rect.left;
   const my = e.clientY - rect.top;
@@ -1064,6 +1147,7 @@ function onWindowResize() {
 window.addEventListener("resize", () => {
   resizeCanvas();
   onWindowResize();
+  if (currentModeObj && currentModeObj.resize) currentModeObj.resize(cachedW, cachedH);
 });
 
 // ─── Async Gap History Rebuild ───────────────────────────────
@@ -1166,12 +1250,17 @@ function loop() {
     }
   }
 
-  if (activeView === "2d") {
-    drawHeatmap();
-  } else {
-    updateBars();
-    orbitControls.update();
-    renderer.render(scene, camera);
+  if (currentMode === "gap-grid") {
+    if (activeView === "2d") {
+      drawHeatmap();
+    } else {
+      updateBars();
+      orbitControls.update();
+      renderer.render(scene, camera);
+    }
+  } else if (currentModeObj) {
+    currentModeObj.update(primes, currentIndex);
+    currentModeObj.draw(ctx, cachedW, cachedH);
   }
 
   if (wasReplaying) swapToLive();

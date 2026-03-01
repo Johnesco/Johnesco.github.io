@@ -81,6 +81,12 @@
       outline: none;
       border-color: #88f;
     }
+    .filter-group input[type="range"] {
+      accent-color: #88f;
+    }
+    #grid-controls, #mode-controls {
+      display: contents;
+    }
     #view-container {
       flex: 1;
       position: relative;
@@ -132,6 +138,18 @@
 </head>
 <body>
   <div id="controls">
+    <div class="filter-group">
+      Mode:
+      <select id="main-mode">
+        <option value="gap-grid" selected>Gap Grid</option>
+        <option value="ulam-spiral">Ulam Spiral</option>
+        <option value="sacks-spiral">Sacks Spiral</option>
+        <option value="record-gaps">Record Gaps</option>
+        <option value="gap-histogram">Gap Histogram</option>
+        <option value="gap-landscape">Gap Landscape</option>
+      </select>
+    </div>
+    <span id="grid-controls">
     <button id="btn-2d" class="active">2D Heatmap</button>
     <button id="btn-3d">3D Heightmap</button>
     <div class="filter-group">
@@ -167,12 +185,16 @@
     <button id="btn-log">Log</button>
     <button id="btn-replay">Replay</button>
     <button id="btn-reset" class="danger">Reset data</button>
+    </span>
+    <span id="mode-controls"></span>
     <div id="info">
       <div>Index: <span id="info-index">0</span></div>
       <div>Prime: <span id="info-prime">3</span></div>
-      <div>Unique pairs: <span id="info-pairs">0</span></div>
-      <div>Shown: <span id="info-shown">0</span></div>
-      <div>Disc rate: <span id="info-disc-rate">&mdash;</span></div>
+      <div id="info-grid-only">
+        <div style="display:inline;margin-right:20px">Unique pairs: <span id="info-pairs">0</span></div>
+        <div style="display:inline;margin-right:20px">Shown: <span id="info-shown">0</span></div>
+        <div style="display:inline">Disc rate: <span id="info-disc-rate">&mdash;</span></div>
+      </div>
     </div>
   </div>
   <div id="view-container">
@@ -184,6 +206,12 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script>window.PRIME_MODES = {};</script>
+  <script src="modes/gap-histogram.js"></script>
+  <script src="modes/record-gaps.js"></script>
+  <script src="modes/ulam-spiral.js"></script>
+  <script src="modes/sacks-spiral.js"></script>
+  <script src="modes/gap-landscape.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
