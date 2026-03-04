@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apple ][ Number Race</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: monospace;
+  }
+
+  .monitor {
+    background: #2a2a2a;
+    border-radius: 32px;
+    padding: 40px 36px 50px;
+    box-shadow:
+      0 0 60px rgba(0,0,0,0.8),
+      inset 0 2px 4px rgba(255,255,255,0.05);
+    position: relative;
+  }
+
+  .monitor::after {
+    content: '';
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 6px;
+    background: #444;
+    border-radius: 3px;
+  }
+
+  .bezel {
+    background: #000;
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: inset 0 0 30px rgba(0,0,0,1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .screen {
+    position: relative;
+    background: #000;
+    border-radius: 4px;
+    padding: 12px;
+    overflow: hidden;
+  }
+
+  /* CRT scanline overlay */
+  .screen::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* CRT glow */
+  .screen::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 60%,
+      rgba(0,0,0,0.4) 100%
+    );
+    pointer-events: none;
+    z-index: 11;
+  }
+
+  #crt {
+    font-family: 'Courier New', 'Lucida Console', monospace;
+    font-size: 18px;
+    line-height: 1.2;
+    color: #33ff33;
+    white-space: pre;
+    text-shadow: 0 0 8px rgba(51,255,51,0.4);
+    letter-spacing: 1px;
+    min-width: calc(40ch + 1px);
+    position: relative;
+    z-index: 1;
+  }
+
+  .row {
+    height: 1.2em;
+  }
+
+  /* Blinking cursor */
+  @keyframes blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+
+  .cursor {
+    animation: blink 1s step-end infinite;
+  }
+
+  /* Flicker effect */
+  @keyframes flicker {
+    0% { opacity: 0.97; }
+    50% { opacity: 1; }
+    100% { opacity: 0.98; }
+  }
+
+  .bezel {
+    animation: flicker 0.1s infinite alternate;
+  }
+
+  .instructions {
+    color: #666;
+    text-align: center;
+    margin-top: 16px;
+    font-size: 13px;
+    font-family: 'Courier New', monospace;
+  }
+</style>
+</head>
+<body>
+
+<div class="monitor">
+  <div class="bezel">
+    <div class="screen">
+      <div id="crt"></div>
+    </div>
+  </div>
+  <div class="instructions">PRESS ANY KEY OR CLICK TO START</div>
+</div>
+
+<script>
+const COLS = 40;
+const ROWS = 24;
+const FINISH_COL = 36;
+const NUM_RACERS = 5;
+
+// Racer row positions (spread across screen)
+const RACER_ROWS = [5, 8, 11, 14, 17];
+
+// Screen buffer — 24 rows x 40 cols
+let screenBuf = [];
+let gameState = 'title'; // title | racing | finished
+let racerPositions = [];
+let timers = [];
+let winner = -1;
+let cursorVisible = true;
+let cursorTimer = null;
+
+// ── Screen buffer helpers (like HTAB/VTAB + PRINT) ──
+
+function clearScreen() {
+  screenBuf = [];
+  for (let r = 0; r < ROWS; r++) {
+    screenBuf.push(new Array(COLS).fill(' '));
+  }
+}
+
+function poke(row, col, ch) {
+  if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
+    screenBuf[row][col] = ch;
+  }
+}
+
+function printAt(row, col, str) {
+  for (let i = 0; i < str.length; i++) {
+    poke(row, col + i, str[i]);
+  }
+}
+
+function render() {
+  const el = document.getElementById('crt');
+  let html = '';
+  for (let r = 0; r < ROWS; r++) {
+    html += '<div class="row">' + screenBuf[r].map(escapeChar).join('') + '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function escapeChar(ch) {
+  if (ch === '<') return '&lt;';
+  if (ch === '>') return '&gt;';
+  if (ch === '&') return '&amp;';
+  return ch;
+}
+
+// ── Title screen ──
+
+function showTitle() {
+  gameState = 'title';
+  clearScreen();
+
+  printAt(2,  6, '######################');
+  printAt(3,  6, '#                    #');
+  printAt(4,  6, '#   APPLE ][ RACES   #');
+  printAt(5,  6, '#                    #');
+  printAt(6,  6, '#   NUMBER  SPRINT   #');
+  printAt(7,  6, '#                    #');
+  printAt(8,  6, '######################');
+
+  printAt(11, 5, '5 NUMBERS RACE TO THE');
+  printAt(12, 5, 'FINISH LINE. WHO WILL');
+  printAt(13, 5, 'BE THE FASTEST?');
+
+  printAt(16, 4, 'RACERS:  1  2  3  4  5');
+
+  printAt(19, 5, 'PRESS ANY KEY TO START');
+
+  printAt(22, 4, '(C) 2026 JOHNESCO SOFT');
+
+  render();
+}
+
+// ── Draw the race track ──
+
+function drawTrack() {
+  clearScreen();
+
+  // Title bar
+  printAt(0, 10, 'APPLE ][ RACES');
+
+  // Track lanes
+  for (let i = 0; i < NUM_RACERS; i++) {
+    const row = RACER_ROWS[i];
+
+    // Lane label
+    printAt(row - 1, 0, '----------------------------------------');
+
+    // Starting position
+    printAt(row, 0, String(i + 1));
+
+    // Dots for the track
+    for (let c = 1; c < FINISH_COL; c++) {
+      poke(row, c, '.');
+    }
+  }
+
+  // Bottom border of last lane
+  printAt(RACER_ROWS[NUM_RACERS - 1] + 1, 0, '----------------------------------------');
+
+  // Finish line
+  printAt(2, FINISH_COL, 'F');
+  printAt(3, FINISH_COL, 'I');
+  for (let r = 4; r < RACER_ROWS[NUM_RACERS - 1] + 2; r++) {
+    poke(r, FINISH_COL, '|');
+  }
+  printAt(RACER_ROWS[NUM_RACERS - 1] + 2, FINISH_COL - 3, 'FINISH');
+
+  // Status
+  printAt(22, 6, 'AND THEY\'RE OFF!');
+  printAt(23, 4, 'PRESS R TO RESTART');
+
+  render();
+}
+
+// ── Start the race ──
+
+function startRace() {
+  gameState = 'racing';
+  winner = -1;
+
+  // All racers start at column 0
+  racerPositions = new Array(NUM_RACERS).fill(0);
+
+  drawTrack();
+
+  // Start random timers for each racer
+  for (let i = 0; i < NUM_RACERS; i++) {
+    scheduleMove(i);
+  }
+}
+
+function scheduleMove(racerIndex) {
+  // Random interval: 100ms to 500ms
+  const delay = 100 + Math.random() * 400;
+  timers[racerIndex] = setTimeout(() => {
+    moveRacer(racerIndex);
+  }, delay);
+}
+
+function moveRacer(racerIndex) {
+  if (gameState !== 'racing') return;
+
+  const row = RACER_ROWS[racerIndex];
+  const oldCol = racerPositions[racerIndex];
+
+  // Clear old position
+  poke(row, oldCol, oldCol === 0 ? '.' : '.');
+
+  // Advance
+  racerPositions[racerIndex]++;
+  const newCol = racerPositions[racerIndex];
+
+  // Draw racer at new position — show the number
+  poke(row, newCol, String(racerIndex + 1));
+
+  // Leave a trail
+  if (oldCol > 0) {
+    poke(row, oldCol, '.');
+  }
+
+  render();
+
+  // Check for finish
+  if (newCol >= FINISH_COL) {
+    finishRace(racerIndex);
+    return;
+  }
+
+  // Schedule next move
+  scheduleMove(racerIndex);
+}
+
+function finishRace(racerIndex) {
+  gameState = 'finished';
+  winner = racerIndex;
+
+  // Stop all timers
+  for (let i = 0; i < NUM_RACERS; i++) {
+    clearTimeout(timers[i]);
+  }
+
+  // Victory message
+  const winNum = racerIndex + 1;
+  printAt(22, 2, '** RACER ' + winNum + ' WINS THE RACE! **');
+  printAt(23, 4, 'PRESS ANY KEY TO PLAY');
+
+  // Flash the winner
+  let flashOn = true;
+  const flashInterval = setInterval(() => {
+    const row = RACER_ROWS[racerIndex];
+    const col = racerPositions[racerIndex];
+    if (flashOn) {
+      poke(row, col, '*');
+      printAt(row, col - 1, '*' + winNum + '*');
+    } else {
+      poke(row, col - 1, '.');
+      poke(row, col, String(winNum));
+      poke(row, col + 1, col + 1 < COLS ? ' ' : ' ');
+    }
+    flashOn = !flashOn;
+    render();
+  }, 300);
+
+  // Store flash interval so we can clear it
+  timers.flashInterval = flashInterval;
+}
+
+// ── Boot sequence ──
+
+async function bootSequence() {
+  clearScreen();
+  render();
+
+  await typeText(0, 0, 'APPLE ][', 60);
+  await pause(400);
+  await typeText(2, 0, '*SYSTEM CHECK OK', 30);
+  await pause(300);
+  await typeText(3, 0, '16K RAM AVAILABLE', 30);
+  await pause(300);
+  await typeText(5, 0, ']LOAD RACES', 50);
+  await pause(500);
+  await typeText(6, 0, ']RUN', 50);
+  await pause(600);
+
+  showTitle();
+}
+
+function typeText(row, col, text, speed) {
+  return new Promise(resolve => {
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < text.length) {
+        poke(row, col + i, text[i]);
+        render();
+        i++;
+      } else {
+        clearInterval(interval);
+        resolve();
+      }
+    }, speed);
+  });
+}
+
+function pause(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ── Input handling ──
+
+function handleInput(e) {
+  if (e.key === 'r' || e.key === 'R') {
+    if (gameState === 'racing' || gameState === 'finished') {
+      stopAll();
+      startRace();
+      return;
+    }
+  }
+
+  if (gameState === 'title') {
+    startRace();
+  } else if (gameState === 'finished') {
+    stopAll();
+    startRace();
+  }
+}
+
+function stopAll() {
+  for (let i = 0; i < NUM_RACERS; i++) {
+    clearTimeout(timers[i]);
+  }
+  if (timers.flashInterval) {
+    clearInterval(timers.flashInterval);
+  }
+}
+
+document.addEventListener('keydown', handleInput);
+document.addEventListener('click', () => {
+  if (gameState === 'title' || gameState === 'finished') {
+    stopAll();
+    if (gameState === 'title') {
+      startRace();
+    } else {
+      startRace();
+    }
+  }
+});
+
+// ── Init ──
+bootSequence();
+</script>
+</body>
+</html>
