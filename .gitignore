@@ -15,3 +15,4 @@ jobfinder/CLAUDE.md
 resume/claude.md
 experiments/neuralpong/nul
 experiments/todooo/nul
+experiments/wordcluster/build/glove*
