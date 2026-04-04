@@ -3,81 +3,220 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Code Directory</title>
+<title>John Escobedo — Built with Claude</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #c9d1d9; padding: 2rem; max-width: 900px; margin: 0 auto; }
-  h1 { color: #f0f6fc; margin-bottom: 0.25rem; font-size: 1.5rem; }
-  .subtitle { color: #8b949e; margin-bottom: 2rem; font-size: 0.85rem; }
-  details { margin-left: 1rem; margin-bottom: 0.25rem; }
-  summary { cursor: pointer; padding: 0.3rem 0; color: #8b949e; font-weight: 600; font-size: 0.95rem; list-style: none; }
-  summary::before { content: "▸ "; color: #484f58; }
-  details[open] > summary::before { content: "▾ "; }
-  summary:hover { color: #c9d1d9; }
-  .tree { margin-top: 0.5rem; }
-  .tree > details, .tree > .leaf { margin-left: 0; }
-  a { color: #58a6ff; text-decoration: none; display: inline-block; padding: 0.2rem 0; }
-  a:hover { text-decoration: underline; color: #79c0ff; }
-  .leaf { margin-left: 1rem; padding: 0.15rem 0; }
-  .leaf::before { content: "─ "; color: #484f58; }
-  .title-hint { color: #8b949e; font-size: 0.8rem; margin-left: 0.5rem; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0d1117;
+    color: #c9d1d9;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 3rem 2rem 4rem;
+  }
+
+  /* ── Header ── */
+  header {
+    margin-bottom: 3rem;
+  }
+  header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #f0f6fc;
+    letter-spacing: -0.02em;
+  }
+  header p {
+    color: #8b949e;
+    margin-top: 0.4rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  /* ── Showcase Grid ── */
+  .showcase {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-bottom: 3rem;
+  }
+
+  .card {
+    background: #161b22;
+    border: 1px solid #21262d;
+    border-radius: 8px;
+    padding: 1.25rem 1.4rem;
+    transition: border-color 0.2s, transform 0.15s;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+  }
+  .card:hover {
+    border-color: #388bfd;
+    transform: translateY(-2px);
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #f0f6fc;
+    margin-bottom: 0.35rem;
+  }
+
+  .card-desc {
+    color: #8b949e;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    flex: 1;
+  }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+  }
+
+  .tag {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 99px;
+    background: #21262d;
+    color: #8b949e;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Other Section ── */
+  .other-heading {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #484f58;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #21262d;
+  }
+
+  .other-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 1.25rem;
+    list-style: none;
+  }
+
+  .other-list a {
+    color: #58a6ff;
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 0.2rem 0;
+    transition: color 0.15s;
+  }
+  .other-list a:hover {
+    color: #79c0ff;
+    text-decoration: underline;
+  }
+  .other-list .hint {
+    color: #484f58;
+    font-size: 0.75rem;
+    margin-left: 0.3rem;
+  }
 </style>
 </head>
 <body>
 
-<h1>\claude code\</h1>
-<p class="subtitle">Claude Code Projects</p>
+<div class="container">
 
-<div class="tree">
+  <header>
+    <h1>Built with Claude</h1>
+    <p>Projects built entirely through conversation with Claude Code — from first line to deployment.</p>
+  </header>
 
-  <details open>
-    <summary>Favorites</summary>
-    <div class="leaf"><a href="/ifhub/">IF Hub</a><span class="title-hint">Interactive Fiction Hub — Play all IF games</span></div>
-    <div class="leaf"><a href="https://www.karaokedirectory.com">karaokedirectory</a><span class="title-hint">Austin Karaoke Directory</span></div>
-    <div class="leaf"><a href="/ifhub/app.html?game=zork1-v4">zork1</a><span class="title-hint">Zork I — Inform 7 Edition (IF Hub)</span></div>
-    <div class="leaf"><a href="/edu/sql/index.html">sql</a><span class="title-hint">SQL Course — Interactive SQL Tutorial</span></div>
-    <div class="leaf"><a href="/games/blackout/index.html">blackout</a><span class="title-hint">Blackout Poetry</span></div>
-    <div class="leaf"><a href="/sample/play.html">sample</a><span class="title-hint">Sample — Inform 7 Practice Game</span></div>
-  </details>
-  
-  <details open>
-    <summary>edu</summary>
-    <div class="leaf"><a href="/edu/sql/index.html">sql</a><span class="title-hint">SQL Course — Interactive SQL Tutorial</span></div>
-  </details>
+  <div class="showcase">
 
-  <details open>
-    <summary>games</summary>
-    <div class="leaf"><a href="/ifhub/">IF Hub</a><span class="title-hint">Interactive Fiction Hub — Play all IF games</span></div>
-    <div class="leaf"><a href="/games/blackout/index.html">blackout</a><span class="title-hint">Blackout Poetry</span></div>
-    <div class="leaf"><a href="/monkeys/index.html">monkeys</a><span class="title-hint">Infinite Monkey Theorem</span></div>
-    <div class="leaf"><a href="/games/carrace/index.html">carrace</a><span class="title-hint">Car Physics Sandbox</span></div>
-    <div class="leaf"><a href="/games/farmink/index.html">farmink</a><span class="title-hint">Farmers_Heart</span></div>
-    <div class="leaf"><a href="/games/farm/index.html">farm</a><span class="title-hint">A Farmer's Heart - Interactive Story</span></div>
-    <div class="leaf"><a href="/ifhub/app.html?game=zork1-v4">zork1</a><span class="title-hint">Zork I — Inform 7 Edition (IF Hub)</span></div>
-    <div class="leaf"><a href="/ifhub/app.html?game=dracula">dracula</a><span class="title-hint">Dracula — Inform 7 Edition (IF Hub)</span></div>
-    <div class="leaf"><a href="/sample/play.html">sample</a><span class="title-hint">Sample — Inform 7 Practice Game</span></div>
- </details>
-  <details open>
-    <summary>resume</summary>
-    <div class="leaf"><a href="/resume/index.html">index</a><span class="title-hint">John Escobedo - Online Resume</span></div>
-  </details>
+    <a class="card" href="/ifhub/">
+      <div class="card-title">IF Hub</div>
+      <div class="card-desc">Interactive Fiction platform with a game registry, web player, theme system, and GitHub Actions deployment pipeline. Play Zork, Dracula, and custom Inform 7 games in the browser.</div>
+      <div class="card-tags">
+        <span class="tag">Inform 7</span>
+        <span class="tag">Parchment</span>
+        <span class="tag">GitHub Actions</span>
+      </div>
+    </a>
 
-  <details open>
-    <summary>tools</summary>
-    <div class="leaf"><a href="/tools/jobfinder/index.html">jobfinder</a><span class="title-hint">JobFinder</span></div>
-    <div class="leaf"><a href="/tools/proofread/index.html">proofread</a><span class="title-hint">Sentence Proofreader</span></div>
-  </details>
+    <a class="card" href="/edu/sql/index.html">
+      <div class="card-title">SQL Course</div>
+      <div class="card-desc">20-lesson interactive SQL tutorial running a real SQLite database in the browser via WebAssembly. Includes a sandbox, exercises, tests, and progress tracking.</div>
+      <div class="card-tags">
+        <span class="tag">SQLite</span>
+        <span class="tag">WASM</span>
+        <span class="tag">Education</span>
+      </div>
+    </a>
 
+    <a class="card" href="/ca/">
+      <div class="card-title">Cellular Automata</div>
+      <div class="card-desc">Rust-powered cellular automata simulator compiled to WebAssembly. Five types: Conway's Life variants, Elementary 1D, Brian's Brain, Wireworld, and Cyclic.</div>
+      <div class="card-tags">
+        <span class="tag">Rust</span>
+        <span class="tag">WASM</span>
+        <span class="tag">Canvas</span>
+      </div>
+    </a>
 
-  <details open>
-    <summary>experiments</summary>
-    <div class="leaf"><a href="/experiments/">silly experiments</a><span class="title-hint">Things that probably didn't need to exist</span></div>
-  </details>
+    <a class="card" href="https://www.karaokedirectory.com">
+      <div class="card-title">Austin Karaoke Directory</div>
+      <div class="card-desc">Live directory of karaoke venues across Austin. Real deployed product with venue data, schedules, and search.</div>
+      <div class="card-tags">
+        <span class="tag">Live Site</span>
+        <span class="tag">Directory</span>
+      </div>
+    </a>
 
-  <details open>
-    <summary>meta</summary>
-    <div class="leaf"><a href="/github/index.html">github pages</a><span class="title-hint">How all the GitHub Pages sites are set up</span></div>
-  </details>
+    <a class="card" href="/tools/jobfinder/index.html">
+      <div class="card-title">JobFinder</div>
+      <div class="card-desc">Job board aggregator with multi-priority search, 14 built-in boards, click tracking, import/export, and multiple view modes.</div>
+      <div class="card-tags">
+        <span class="tag">Productivity</span>
+        <span class="tag">Search</span>
+      </div>
+    </a>
+
+    <a class="card" href="/resume/index.html">
+      <div class="card-title">Dynamic Resume</div>
+      <div class="card-desc">JSON-driven resume system with multiple role profiles, real-time customization, and print-to-PDF export.</div>
+      <div class="card-tags">
+        <span class="tag">JSON</span>
+        <span class="tag">Multi-profile</span>
+      </div>
+    </a>
+
+    <a class="card" href="/games/blackout/index.html">
+      <div class="card-title">Blackout Poetry</div>
+      <div class="card-desc">Interactive blackout poetry tool — select words from a page of text to compose found poems. Four iterations of the concept.</div>
+      <div class="card-tags">
+        <span class="tag">Creative</span>
+        <span class="tag">Interactive</span>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="other-heading">Other Experiments</div>
+  <ul class="other-list">
+    <li><a href="/games/farmink/index.html">Farmer's Heart<span class="hint">ink interactive story</span></a></li>
+    <li><a href="/monkeys/index.html">Infinite Monkeys<span class="hint">theorem visualization</span></a></li>
+    <li><a href="/tools/proofread/index.html">Proofreader<span class="hint">grammar tool</span></a></li>
+    <li><a href="/sample/play.html">Sample IF<span class="hint">Inform 7 practice</span></a></li>
+    <li><a href="/games/carrace/index.html">Car Physics<span class="hint">sandbox</span></a></li>
+    <li><a href="/experiments/">Experiments<span class="hint">calculator, hyperpaint, primes, etc.</span></a></li>
+  </ul>
 
 </div>
 
