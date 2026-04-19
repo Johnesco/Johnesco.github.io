@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SONGORDER</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>SONGORDER</h1>
+    <p class="subtitle">karaoke queue fairness simulator</p>
+  </header>
+
+  <div class="sim-row">
+    <div class="sim-container">
+      <canvas id="sim-canvas"></canvas>
+    </div>
+    <div class="queue-sidebar">
+      <div class="panel-title">Song Queue</div>
+      <div id="queue-list">
+        <div class="queue-empty">no songs queued</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="btn-play" class="active">Play</button>
+    <button id="btn-pause">Pause</button>
+    <button id="btn-step">Step</button>
+    <label>Speed
+      <input type="range" id="speed" min="1" max="200" value="1">
+      <span class="speed-label" id="speed-label">1x</span>
+    </label>
+    <label>Seed
+      <input type="number" id="seed" value="42">
+    </label>
+    <label>Venue
+      <input type="range" id="venue-size" min="0" max="4" value="2" step="1">
+      <span class="venue-label" id="venue-size-label">Medium</span>
+    </label>
+    <button id="btn-reset">Reset</button>
+    <button id="btn-next-night" class="hidden">Next Night</button>
+    <label class="checkbox-label">
+      <input type="checkbox" id="pause-nights"> Pause between nights
+    </label>
+  </div>
+
+  <div class="rules-panel">
+    <span class="rules-title">Rotation Rules</span>
+    <label class="rule-toggle">
+      <input type="checkbox" id="rule-first-timer"> First-timer priority
+    </label>
+    <label class="rule-toggle">
+      <input type="checkbox" id="rule-fair-rotation"> Fair rotation
+    </label>
+    <label class="rule-toggle">
+      <input type="checkbox" id="rule-must-sing" checked> Must sing before re-submit
+    </label>
+    <label class="rule-toggle">
+      <input type="checkbox" id="rule-allow-resignup" checked> Allow re-signup
+    </label>
+  </div>
+
+  <div class="stats-bar">
+    <span id="stat-night-wrap" class="hidden">Night: <span class="value" id="stat-night">1</span></span>
+    <span>Time: <span class="value" id="stat-time">8:00 PM</span> <span class="value phase-indicator" id="stat-phase"></span></span>
+    <span>Patrons: <span class="value" id="stat-patrons">0</span></span>
+    <span>Seats: <span class="value" id="stat-seats">0/0</span></span>
+    <span>Queue: <span class="value" id="stat-queue">0</span></span>
+    <span>Singing: <span class="value accent" id="stat-singing">-</span></span>
+    <span>Avg Wait: <span class="value" id="stat-avg-wait">-</span></span>
+    <span>Stage: <span class="value" id="stat-utilization">0%</span></span>
+  </div>
+
+  <div class="dashboard">
+    <div class="panel fairness-panel">
+      <div class="panel-title">Wait Time by Arrival Cohort</div>
+      <canvas id="fairness-canvas"></canvas>
+    </div>
+    <div class="panel stats-detail-panel">
+      <div class="panel-title">Detailed Stats</div>
+      <div id="stats-detail"></div>
+    </div>
+    <div class="panel timeline-panel">
+      <div class="panel-title">Queue Length Over Time</div>
+      <canvas id="timeline-canvas"></canvas>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
