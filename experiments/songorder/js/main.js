@@ -1,4 +1,4 @@
-import { SIM, PHASE, BOARD, VENUE_SIZES, DEFAULT_VENUE_SIZE } from './config.js';
+import { SIM, PHASE, BOARD, VENUE_SIZES, DEFAULT_VENUE_SIZE, STATE_NAMES } from './config.js';
 import { Simulation } from './simulation.js';
 import { Renderer } from './renderer.js';
 import { Analytics } from './analytics.js';
@@ -41,6 +41,14 @@ const statsDetailEl = document.getElementById('stats-detail');
 const fairnessCanvas = document.getElementById('fairness-canvas');
 const timelineCanvas = document.getElementById('timeline-canvas');
 
+// Focus panel refs
+const focusPanel = document.getElementById('patron-focus');
+const focusClose = document.getElementById('focus-close');
+const focusDot = document.getElementById('focus-dot');
+const focusName = document.getElementById('focus-name');
+const focusDetails = document.getElementById('focus-details');
+const simContainer = document.querySelector('.sim-container');
+
 const PHASE_LABELS = {
   [PHASE.OPEN]: '',
   [PHASE.LAST_CALL]: 'LAST CALL',
@@ -71,6 +79,85 @@ let analytics = null;
 let speed = 1;
 let running = true;
 let loopTimer = null;
+let selectedPatronId = null;
+
+// ── Patron selection / focus panel ──
+function selectPatron(patronId) {
+  selectedPatronId = patronId;
+  updateFocusPanel();
+  updateSelectedVisuals();
+}
+
+function deselectPatron() {
+  selectedPatronId = null;
+  focusPanel.classList.add('hidden');
+  updateSelectedVisuals();
+}
+
+function updateSelectedVisuals() {
+  // Patron dot highlight in overlay
+  const overlay = document.getElementById('sim-overlay');
+  if (overlay) {
+    overlay.querySelectorAll('.patron.selected').forEach(el => el.classList.remove('selected'));
+    if (selectedPatronId !== null) {
+      const el = overlay.querySelector(`.patron[data-patron-id="${selectedPatronId}"]`);
+      if (el) el.classList.add('selected');
+    }
+  }
+}
+
+function updateFocusPanel() {
+  if (selectedPatronId === null || !sim) {
+    focusPanel.classList.add('hidden');
+    return;
+  }
+
+  const patron = sim.findPatron(selectedPatronId);
+  if (!patron) {
+    deselectPatron();
+    return;
+  }
+
+  focusPanel.classList.remove('hidden');
+  focusDot.style.background = patron.color;
+  focusName.textContent = patron.name;
+
+  // State description
+  const stateLabel = STATE_NAMES[patron.state] || 'unknown';
+  const queuePos = sim.queue.getPosition(patron.id);
+  let stateStr = stateLabel;
+  if (queuePos >= 0) {
+    stateStr += ` (#${queuePos + 1} in queue)`;
+  }
+
+  // Time here
+  const ticksHere = sim.tick - patron.arrivalTick;
+
+  // Wait time (if in queue)
+  let waitStr = null;
+  if (patron.signupTick !== null && patron.songsSung === 0 && queuePos >= 0) {
+    waitStr = fmtTime(sim.tick - patron.signupTick);
+  }
+
+  // Patience
+  const patiencePct = Math.max(0, patron.patienceRemaining / patron.patience * 100);
+  const patienceColor = patiencePct > 50 ? '#00ff88' : patiencePct > 20 ? '#ffaa33' : '#ff5544';
+
+  let html = '';
+  html += `<div class="focus-row"><span>Status</span><span class="focus-val">${stateStr}</span></div>`;
+  html += `<div class="focus-row"><span>Songs sung</span><span class="focus-val${patron.songsSung > 0 ? ' accent' : ''}">${patron.songsSung}</span></div>`;
+  html += `<div class="focus-row"><span>Time here</span><span class="focus-val">${fmtTime(ticksHere)}</span></div>`;
+  if (waitStr) {
+    html += `<div class="focus-row"><span>Waiting</span><span class="focus-val warn">${waitStr}</span></div>`;
+  }
+  html += `<div class="focus-row"><span>Will sign up</span><span class="focus-val">${patron.willSignUp ? 'yes' : 'no'}</span></div>`;
+  if (patron.departedTick !== null) {
+    html += `<div class="focus-row"><span>Status</span><span class="focus-val warn">departed</span></div>`;
+  }
+  html += `<div class="patience-bar"><div class="patience-fill" style="width:${patiencePct}%;background:${patienceColor}"></div></div>`;
+
+  focusDetails.innerHTML = html;
+}
 
 function readRules() {
   return {
@@ -99,6 +186,8 @@ function init() {
 
   btnNextNight.classList.add('hidden');
   statNightWrap.classList.add('hidden');
+  selectedPatronId = null;
+  focusPanel.classList.add('hidden');
   updateUI();
   renderer.draw(sim);
 }
@@ -225,12 +314,13 @@ function updateUI() {
       const color = patron ? patron.color : '#666';
       const isTop3 = i < BOARD.VISIBLE_SLOTS;
       const topClass = isTop3 ? ' top-3' : '';
+      const selClass = entry.patronId === selectedPatronId ? ' selected' : '';
       const metaTag = songs > 0
         ? `<span class="repeat">\u00d7${songs}</span>`
         : `<span class="tag">new</span>`;
       const waitTicks = sim.tick - entry.submittedAtTick;
 
-      html += `<div class="queue-entry${topClass}">` +
+      html += `<div class="queue-entry${topClass}${selClass}" data-patron-id="${entry.patronId}">` +
         `<span class="dot" style="background:${color}">${i + 1}</span>` +
         `<span class="name">${name}</span>` +
         `<span class="meta">${metaTag} ${fmtTime(waitTicks)}</span>` +
@@ -240,6 +330,12 @@ function updateUI() {
       html += `<div class="queue-entry"><span class="dot" style="background:#333">+</span><span class="name">${entries.length - maxShow} more</span><span class="meta"></span></div>`;
     }
     queueListEl.innerHTML = html;
+  }
+
+  // Update focus panel (live data while selected)
+  if (selectedPatronId !== null) {
+    updateFocusPanel();
+    updateSelectedVisuals();
   }
 }
 
@@ -379,6 +475,35 @@ btnNextNight.addEventListener('click', () => {
   btnPause.classList.remove('active');
   startLoop();
 });
+
+// ── Patron selection handlers ──
+
+// Click patron dot in simulation
+simContainer.addEventListener('click', (e) => {
+  const patronEl = e.target.closest('.patron[data-patron-id]');
+  if (patronEl) {
+    const id = parseInt(patronEl.dataset.patronId);
+    selectPatron(id);
+  } else if (e.target === canvas) {
+    // Clicked empty canvas area
+    deselectPatron();
+  }
+});
+
+// Click queue entry in sidebar
+queueListEl.addEventListener('click', (e) => {
+  const entry = e.target.closest('.queue-entry[data-patron-id]');
+  if (entry) {
+    const id = parseInt(entry.dataset.patronId);
+    selectPatron(id);
+  }
+});
+
+// Close focus panel
+focusClose.addEventListener('click', () => deselectPatron());
+
+// Deselect on reset
+btnReset.addEventListener('click', () => deselectPatron());
 
 // Init
 init();

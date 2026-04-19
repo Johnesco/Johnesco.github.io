@@ -17,6 +17,14 @@
       <canvas id="sim-canvas"></canvas>
     </div>
     <div class="queue-sidebar">
+      <div id="patron-focus" class="patron-focus hidden">
+        <button class="focus-close" id="focus-close">&times;</button>
+        <div class="focus-header">
+          <span class="focus-dot" id="focus-dot"></span>
+          <span class="focus-name" id="focus-name"></span>
+        </div>
+        <div class="focus-details" id="focus-details"></div>
+      </div>
       <div class="panel-title">Song Queue</div>
       <div id="queue-list">
         <div class="queue-empty">no songs queued</div>

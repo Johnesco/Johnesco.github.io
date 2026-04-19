@@ -62,6 +62,96 @@ header .subtitle {
   /* max-height set by JS to match canvas height */
 }
 
+/* Patron focus panel */
+.patron-focus {
+  padding: 8px 10px;
+  border-bottom: 1px solid #1e1e2e;
+  position: relative;
+  background: #16162a;
+}
+
+.patron-focus .focus-close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background: none;
+  border: none;
+  color: #6a7280;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.patron-focus .focus-close:hover {
+  color: #c9d1d9;
+}
+
+.patron-focus .focus-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.patron-focus .focus-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+}
+
+.patron-focus .focus-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.patron-focus .focus-details {
+  font-size: 10px;
+  color: #8a8a9a;
+  line-height: 1.6;
+}
+
+.patron-focus .focus-details .focus-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.patron-focus .focus-details .focus-row > span:first-child {
+  flex-shrink: 0;
+}
+
+.patron-focus .focus-details .focus-val {
+  color: #c9d1d9;
+  font-weight: 600;
+}
+
+.patron-focus .focus-details .focus-val.accent {
+  color: #00ff88;
+}
+
+.patron-focus .focus-details .focus-val.warn {
+  color: #ff8855;
+}
+
+/* Patience bar */
+.patience-bar {
+  height: 3px;
+  background: #2a2a3e;
+  border-radius: 2px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.patience-bar .patience-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
 .queue-sidebar .panel-title {
   padding: 0 10px 6px;
   border-bottom: 1px solid #1e1e2e;
@@ -99,6 +189,8 @@ canvas#sim-canvas {
   align-items: center;
   justify-content: center;
   z-index: 2;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .patron.singing {
@@ -119,6 +211,13 @@ canvas#sim-canvas {
       0 0 18px 8px rgba(255, 200, 100, 0.5),
       0 1px 3px rgba(0, 0, 0, 0.4);
   }
+}
+
+.patron.selected {
+  border-color: #ffffff;
+  border-width: 2px;
+  box-shadow: 0 0 10px 3px rgba(255, 255, 255, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
+  z-index: 5;
 }
 
 .patron .queue-num {
@@ -481,6 +580,17 @@ canvas#sim-canvas {
   padding: 3px 10px;
   border-bottom: 1px solid #1a1a24;
   gap: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.queue-entry:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.queue-entry.selected {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 2px 0 0 #fff;
 }
 
 .queue-entry.top-3 {

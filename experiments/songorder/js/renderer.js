@@ -402,6 +402,7 @@ export class Renderer {
   _createPatronEl(patron) {
     const el = document.createElement('div');
     el.className = 'patron';
+    el.dataset.patronId = patron.id;
     el.style.backgroundColor = patron.color;
     el._wasSinging = false;
     el._lastState = -1;
