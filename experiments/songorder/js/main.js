@@ -23,6 +23,7 @@ const ruleFirstTimer = document.getElementById('rule-first-timer');
 const ruleFairRotation = document.getElementById('rule-fair-rotation');
 const ruleMustSing = document.getElementById('rule-must-sing');
 const ruleAllowResignup = document.getElementById('rule-allow-resignup');
+const ruleInsertPos = document.getElementById('rule-insert-pos');
 
 const statNightWrap = document.getElementById('stat-night-wrap');
 const statNight = document.getElementById('stat-night');
@@ -74,6 +75,7 @@ let loopTimer = null;
 function readRules() {
   return {
     firstTimerPriority: ruleFirstTimer.checked,
+    firstTimerInsertPos: parseInt(ruleInsertPos.value) || 0,
     fairRotation: ruleFairRotation.checked,
     mustSingFirst: ruleMustSing.checked,
     allowResignup: ruleAllowResignup.checked,
@@ -254,7 +256,10 @@ function updateDashboard() {
   const cohorts = analytics.getCohortStats(sim);
 
   const activeRules = [];
-  if (sim.rules.firstTimerPriority) activeRules.push('First-timer priority');
+  if (sim.rules.firstTimerPriority) {
+    const pos = sim.rules.firstTimerInsertPos || 0;
+    activeRules.push(pos === 0 ? 'First-timers at top' : `First-timers at #${pos + 1}`);
+  }
   if (sim.rules.fairRotation) activeRules.push('Fair rotation');
   if (sim.rules.mustSingFirst) activeRules.push('Must sing first');
   if (sim.rules.allowResignup) activeRules.push('Allow re-signup');
@@ -351,6 +356,7 @@ ruleFirstTimer.addEventListener('change', onRuleChange);
 ruleFairRotation.addEventListener('change', onRuleChange);
 ruleMustSing.addEventListener('change', onRuleChange);
 ruleAllowResignup.addEventListener('change', onRuleChange);
+ruleInsertPos.addEventListener('change', onRuleChange);
 
 btnReset.addEventListener('click', () => {
   running = false;

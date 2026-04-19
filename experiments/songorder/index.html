@@ -47,19 +47,46 @@
   </div>
 
   <div class="rules-panel">
-    <span class="rules-title">Rotation Rules</span>
-    <label class="rule-toggle">
-      <input type="checkbox" id="rule-first-timer"> First-timer priority
-    </label>
-    <label class="rule-toggle">
-      <input type="checkbox" id="rule-fair-rotation"> Fair rotation
-    </label>
-    <label class="rule-toggle">
-      <input type="checkbox" id="rule-must-sing" checked> Must sing before re-submit
-    </label>
-    <label class="rule-toggle">
-      <input type="checkbox" id="rule-allow-resignup" checked> Allow re-signup
-    </label>
+    <div class="rules-header">Rotation Rules</div>
+
+    <div class="rule-card">
+      <label class="rule-main">
+        <input type="checkbox" id="rule-first-timer"> First-timer priority
+      </label>
+      <p class="rule-desc">New singers who haven't performed yet get bumped ahead of repeat singers in the queue.</p>
+      <div class="rule-sub" id="sub-first-timer">
+        <label class="rule-sub-label">Insert new singer at
+          <select id="rule-insert-pos">
+            <option value="0">Top of queue</option>
+            <option value="3">3rd from top</option>
+            <option value="5" selected>5th from top</option>
+            <option value="10">10th from top</option>
+          </select>
+        </label>
+        <p class="rule-sub-desc">Where a first-timer lands among the existing repeat singers. Lower = more aggressive priority.</p>
+      </div>
+    </div>
+
+    <div class="rule-card">
+      <label class="rule-main">
+        <input type="checkbox" id="rule-fair-rotation"> Fair rotation
+      </label>
+      <p class="rule-desc">Everyone who signed up gets to sing before anyone goes a second time. Enforces strict round-robin across the whole queue.</p>
+    </div>
+
+    <div class="rule-card">
+      <label class="rule-main">
+        <input type="checkbox" id="rule-must-sing" checked> Must sing before re-submit
+      </label>
+      <p class="rule-desc">A singer can't put another slip in the book until they've actually performed. Prevents queue-stacking.</p>
+    </div>
+
+    <div class="rule-card">
+      <label class="rule-main">
+        <input type="checkbox" id="rule-allow-resignup" checked> Allow re-signup
+      </label>
+      <p class="rule-desc">After singing, a patron can sign up again for another song. Turn this off for one-song-per-person nights.</p>
+    </div>
   </div>
 
   <div class="stats-bar">

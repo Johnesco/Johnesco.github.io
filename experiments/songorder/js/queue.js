@@ -14,22 +14,26 @@ export class RuleBasedQueue {
 
   // Sort entries by active rules, returning priority-ordered list
   _sorted() {
-    return [...this.entries].sort((a, b) => {
-      // 1. First-timer priority: songsSung === 0 goes before > 0
-      if (this.rules.firstTimerPriority) {
-        const aNew = a.songsSung === 0 ? 0 : 1;
-        const bNew = b.songsSung === 0 ? 0 : 1;
-        if (aNew !== bNew) return aNew - bNew;
+    // Base comparator: fairRotation then FIFO
+    const baseSort = (a, b) => {
+      if (this.rules.fairRotation && a.songsSung !== b.songsSung) {
+        return a.songsSung - b.songsSung;
       }
-
-      // 2. Fair rotation: fewer songs sung goes first
-      if (this.rules.fairRotation) {
-        if (a.songsSung !== b.songsSung) return a.songsSung - b.songsSung;
-      }
-
-      // 3. FIFO fallback — earlier submission goes first
       return a.submittedAtTick - b.submittedAtTick;
-    });
+    };
+
+    if (this.rules.firstTimerPriority) {
+      // Separate first-timers from repeats, insert at configured position
+      const firstTimers = this.entries.filter(e => e.songsSung === 0).sort(baseSort);
+      const repeats = this.entries.filter(e => e.songsSung > 0).sort(baseSort);
+
+      const insertAt = Math.min(this.rules.firstTimerInsertPos || 0, repeats.length);
+      const result = [...repeats];
+      result.splice(insertAt, 0, ...firstTimers);
+      return result;
+    }
+
+    return [...this.entries].sort(baseSort);
   }
 
   peekNext() {
