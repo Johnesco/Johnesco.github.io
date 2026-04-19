@@ -29,7 +29,7 @@
     <button id="btn-pause">Pause</button>
     <button id="btn-step">Step</button>
     <label>Speed
-      <input type="range" id="speed" min="1" max="200" value="1">
+      <input type="range" id="speed" min="1" max="1000" value="1">
       <span class="speed-label" id="speed-label">1x</span>
     </label>
     <label>Seed
@@ -58,12 +58,15 @@
         <label class="rule-sub-label">Insert new singer at
           <select id="rule-insert-pos">
             <option value="0">Top of queue</option>
-            <option value="3">3rd from top</option>
-            <option value="5" selected>5th from top</option>
-            <option value="10">10th from top</option>
+            <option value="3">3 from top</option>
+            <option value="5" selected>5 from top</option>
+            <option value="10">10 from top</option>
+            <option value="-5">5 from bottom</option>
+            <option value="-3">3 from bottom</option>
+            <option value="999">Bottom of queue</option>
           </select>
         </label>
-        <p class="rule-sub-desc">Where a first-timer lands among the existing repeat singers. Lower = more aggressive priority.</p>
+        <p class="rule-sub-desc">Where a first-timer lands among repeat singers. "Top" = maximum priority, "Bottom" = just FIFO within their group.</p>
       </div>
     </div>
 

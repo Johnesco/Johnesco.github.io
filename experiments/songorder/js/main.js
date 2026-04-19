@@ -258,7 +258,12 @@ function updateDashboard() {
   const activeRules = [];
   if (sim.rules.firstTimerPriority) {
     const pos = sim.rules.firstTimerInsertPos || 0;
-    activeRules.push(pos === 0 ? 'First-timers at top' : `First-timers at #${pos + 1}`);
+    let posLabel;
+    if (pos === 0) posLabel = 'First-timers at top';
+    else if (pos >= 999) posLabel = 'First-timers at bottom';
+    else if (pos > 0) posLabel = `First-timers ${pos} from top`;
+    else posLabel = `First-timers ${Math.abs(pos)} from bottom`;
+    activeRules.push(posLabel);
   }
   if (sim.rules.fairRotation) activeRules.push('Fair rotation');
   if (sim.rules.mustSingFirst) activeRules.push('Must sing first');

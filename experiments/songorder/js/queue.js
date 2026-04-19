@@ -27,7 +27,16 @@ export class RuleBasedQueue {
       const firstTimers = this.entries.filter(e => e.songsSung === 0).sort(baseSort);
       const repeats = this.entries.filter(e => e.songsSung > 0).sort(baseSort);
 
-      const insertAt = Math.min(this.rules.firstTimerInsertPos || 0, repeats.length);
+      // Compute insertion position: positive = from top, negative = from bottom, 999 = bottom
+      const pos = this.rules.firstTimerInsertPos || 0;
+      let insertAt;
+      if (pos >= 999) {
+        insertAt = repeats.length; // bottom of queue
+      } else if (pos < 0) {
+        insertAt = Math.max(0, repeats.length + pos); // from bottom
+      } else {
+        insertAt = Math.min(pos, repeats.length); // from top
+      }
       const result = [...repeats];
       result.splice(insertAt, 0, ...firstTimers);
       return result;

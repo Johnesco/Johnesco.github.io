@@ -189,7 +189,7 @@ export const QUEUE_MODE = {
 // ── Rotation rules (individual toggles) ──
 export const DEFAULT_RULES = {
   firstTimerPriority: false, // new singers go before repeat singers
-  firstTimerInsertPos: 5,    // where first-timers land among repeats (0=top)
+  firstTimerInsertPos: 5,    // positive=from top, negative=from bottom, 999=bottom
   fairRotation: false,       // everyone sings before anyone repeats
   mustSingFirst: true,       // can't re-submit until you've sung
   allowResignup: true,       // can sign up again after singing
