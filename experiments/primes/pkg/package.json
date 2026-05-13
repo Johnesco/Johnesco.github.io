@@ -1,0 +1,15 @@
+{
+  "name": "prime-engine",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "prime_engine_bg.wasm",
+    "prime_engine.js",
+    "prime_engine.d.ts"
+  ],
+  "main": "prime_engine.js",
+  "types": "prime_engine.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

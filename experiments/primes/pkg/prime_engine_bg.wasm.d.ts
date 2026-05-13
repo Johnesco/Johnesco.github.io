@@ -1,0 +1,33 @@
+/* tslint:disable */
+/* eslint-disable */
+export const memory: WebAssembly.Memory;
+export const __wbg_primeengine_free: (a: number, b: number) => void;
+export const primeengine_current_index: (a: number) => number;
+export const primeengine_disc_at_ptr: (a: number) => number;
+export const primeengine_discovery_history_len: (a: number) => number;
+export const primeengine_discovery_history_ptr: (a: number) => number;
+export const primeengine_ensure_primes_count: (a: number, b: number) => void;
+export const primeengine_freq_ptr: (a: number) => number;
+export const primeengine_gh_idxs_len: (a: number) => number;
+export const primeengine_gh_idxs_ptr: (a: number) => number;
+export const primeengine_gh_keys_len: (a: number) => number;
+export const primeengine_gh_keys_ptr: (a: number) => number;
+export const primeengine_import_discovery_history: (a: number, b: number, c: number) => void;
+export const primeengine_last_seen_ptr: (a: number) => number;
+export const primeengine_max_freq: (a: number) => number;
+export const primeengine_new: () => number;
+export const primeengine_new_disc_idxs_ptr: (a: number) => number;
+export const primeengine_new_disc_intervals_ptr: (a: number) => number;
+export const primeengine_new_disc_keys_ptr: (a: number) => number;
+export const primeengine_new_disc_len: (a: number) => number;
+export const primeengine_primes_len: (a: number) => number;
+export const primeengine_primes_ptr: (a: number) => number;
+export const primeengine_rebuild_gap_history: (a: number) => void;
+export const primeengine_set_state: (a: number, b: number, c: number, d: number) => void;
+export const primeengine_tick: (a: number, b: number) => number;
+export const primeengine_unique_pairs: (a: number) => number;
+export const primeengine_updated_keys_len: (a: number) => number;
+export const primeengine_updated_keys_ptr: (a: number) => number;
+export const __wbindgen_externrefs: WebAssembly.Table;
+export const __wbindgen_malloc: (a: number, b: number) => number;
+export const __wbindgen_start: () => void;

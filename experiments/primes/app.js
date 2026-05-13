@@ -1,108 +1,39 @@
-// ─── Prime Generation ────────────────────────────────────────
-const primes = [2, 3];
+// ─── WASM Engine Import ──────────────────────────────────────
+import init, { PrimeEngine } from './pkg/prime_engine.js';
 
-// Use known primes as trial divisors (3.7x faster than all-odd-numbers)
-function isPrime(num) {
-  if (num < 2) return false;
-  if (num === 2) return true;
-  if (num % 2 === 0) return false;
-  for (let i = 1; i < primes.length; i++) {
-    const p = primes[i];
-    if (p * p > num) return true;
-    if (num % p === 0) return false;
-  }
-  return true;
-}
+const wasmModule = await init();
+const engine = new PrimeEngine();
 
-function addPrime() {
-  let candidate = primes[primes.length - 1] + (primes.length === 1 ? 1 : 2);
-  while (!isPrime(candidate)) candidate += 2;
-  primes.push(candidate);
-}
-
-// Seed enough primes so index 0 works (need at least 3)
-while (primes.length < 100) addPrime();
-
-// ─── Segmented Sieve (for bulk prime catch-up after load) ────
-// Orders of magnitude faster than trial division for millions of primes.
-// Runs one segment per frame (~1M numbers → ~5-15ms) so the page never blocks.
-const SIEVE_SEG_SIZE = 1_000_000;
-let sieveActive = false;
-let sieveSmallPrimes = null; // primes up to sqrt(limit)
-let sieveSegStart = 0;       // start of next segment to sieve
-let sieveLimit = 0;          // upper bound on largest prime we need
-let sieveNeeded = 0;         // how many primes we need total
-
-function estimateNthPrime(n) {
-  if (n < 6) return 13;
-  const ln = Math.log(n);
-  // Generous overestimate: p(n) < n * (ln(n) + ln(ln(n)) + 2)
-  return Math.ceil(n * (ln + Math.log(ln) + 2)) + 1000;
-}
-
-function startSieve(primesNeeded) {
-  sieveNeeded = primesNeeded;
-  sieveLimit = estimateNthPrime(primesNeeded);
-
-  // Extend primes to cover sqrt(limit) using addPrime (trivial — a few hundred primes)
-  const sqrtLimit = Math.floor(Math.sqrt(sieveLimit)) + 1;
-  while (primes[primes.length - 1] < sqrtLimit) addPrime();
-
-  // Collect small primes for sieving
-  sieveSmallPrimes = [];
-  for (let i = 0; i < primes.length && primes[i] <= sqrtLimit; i++) {
-    sieveSmallPrimes.push(primes[i]);
-  }
-
-  // Start sieving from just past our last known prime
-  sieveSegStart = primes[primes.length - 1] + 1;
-  sieveActive = true;
-}
-
-function advanceSieve() {
-  if (!sieveActive) return;
-  if (primes.length >= sieveNeeded) { sieveActive = false; return; }
-
-  const low = sieveSegStart;
-  const high = Math.min(low + SIEVE_SEG_SIZE - 1, sieveLimit);
-  const segLen = high - low + 1;
-  const seg = new Uint8Array(segLen); // 0 = not marked (prime candidate)
-
-  for (let si = 0; si < sieveSmallPrimes.length; si++) {
-    const p = sieveSmallPrimes[si];
-    // First multiple of p >= low
-    let start = Math.ceil(low / p) * p;
-    if (start === p) start += p; // don't mark p itself
-    for (let j = start - low; j < segLen; j += p) seg[j] = 1;
-  }
-
-  for (let i = 0; i < segLen; i++) {
-    if (!seg[i]) primes.push(low + i);
-  }
-
-  sieveSegStart = high + 1;
-  if (primes.length >= sieveNeeded || sieveSegStart > sieveLimit) {
-    sieveActive = false;
-  }
-}
-
-// Whether primes are ready for the main loop to generate new gaps
-function primesReady() {
-  return primes.length >= currentIndex + PRIMES_PER_FRAME + 3;
-}
-
-// ─── Frequency Grid (flat typed arrays) ─────────────────────
-// Key encoding: key = y * GRID_SIZE + x
-// Decode: x = key % GRID_SIZE, y = (key / GRID_SIZE) | 0
+// ─── Frequency Grid ─────────────────────────────────────────
 const GRID_SIZE = 60;
 const GRID_CELLS = GRID_SIZE * GRID_SIZE;
 
-let freqArr = new Uint32Array(GRID_CELLS);
-let discAtArr = new Int32Array(GRID_CELLS);  // discoveredAt (-1 = unseen)
-discAtArr.fill(-1);
-let discoveryHistory = [];   // numeric keys in first-seen order
+// These get refreshed from WASM memory each frame
+let freqArr = new Uint32Array(wasmModule.memory.buffer, engine.freq_ptr(), GRID_CELLS);
+let discAtArr = new Int32Array(wasmModule.memory.buffer, engine.disc_at_ptr(), GRID_CELLS);
+let lastSeenArr = new Int32Array(wasmModule.memory.buffer, engine.last_seen_ptr(), GRID_CELLS);
+let discoveryHistory = new Uint32Array(wasmModule.memory.buffer, engine.discovery_history_ptr(), engine.discovery_history_len());
+let ghKeys = new Uint32Array(wasmModule.memory.buffer, engine.gh_keys_ptr(), engine.gh_keys_len());
+let ghIdxs = new Uint32Array(wasmModule.memory.buffer, engine.gh_idxs_ptr(), engine.gh_idxs_len());
+let primes = new Uint32Array(wasmModule.memory.buffer, engine.primes_ptr(), engine.primes_len());
+
+let currentIndex = 0;
 let maxFreq = 1;
 let uniquePairs = 0;
+
+function refreshViews() {
+  const buf = wasmModule.memory.buffer;
+  freqArr = new Uint32Array(buf, engine.freq_ptr(), GRID_CELLS);
+  discAtArr = new Int32Array(buf, engine.disc_at_ptr(), GRID_CELLS);
+  lastSeenArr = new Int32Array(buf, engine.last_seen_ptr(), GRID_CELLS);
+  discoveryHistory = new Uint32Array(buf, engine.discovery_history_ptr(), engine.discovery_history_len());
+  ghKeys = new Uint32Array(buf, engine.gh_keys_ptr(), engine.gh_keys_len());
+  ghIdxs = new Uint32Array(buf, engine.gh_idxs_ptr(), engine.gh_idxs_len());
+  primes = new Uint32Array(buf, engine.primes_ptr(), engine.primes_len());
+  currentIndex = engine.current_index();
+  maxFreq = engine.max_freq();
+  uniquePairs = engine.unique_pairs();
+}
 
 // Visualization constants
 const HIGHLIGHT_WINDOW = 800;
@@ -110,55 +41,14 @@ const TRAIL_LENGTH = 60;
 const RIPPLE_DURATION = 600;
 const CONNECTION_COUNT = 80;
 const RATE_WINDOW = 3000;
-const FLASH_FRAMES = 10;     // activity flash duration in frames
-const FLASH_COOLDOWN = 24;   // frames before a cell can re-flash
+const FLASH_FRAMES = 10;
+const FLASH_COOLDOWN = 24;
 
 // Activity flash: frame-based with refractory cooldown
 let actStartFrame = new Int32Array(GRID_CELLS);
 actStartFrame.fill(-1000);
 
-// Gap history for replay — parallel flat arrays (no object alloc)
-let ghKeys = [];   // numeric grid keys
-let ghIdxs = [];   // prime indices
-
-function recordGap(index) {
-  const g1 = primes[index + 1] - primes[index];
-  const g2 = primes[index + 2] - primes[index + 1];
-  const x = g1 <= 1 ? g1 : g1 / 2;
-  const y = g2 <= 1 ? g2 : g2 / 2;
-  if (x >= GRID_SIZE || y >= GRID_SIZE) return;
-  const key = y * GRID_SIZE + x;
-  ghKeys.push(key);
-  ghIdxs.push(index);
-  lastSeenArr[key] = currentIndex;
-  if (frameCount - actStartFrame[key] >= FLASH_COOLDOWN) {
-    actStartFrame[key] = frameCount;
-  }
-  const prev = freqArr[key];
-  if (prev === 0) {
-    uniquePairs++;
-    discAtArr[key] = currentIndex;
-    discoveryHistory.push(key);
-    const interval = currentIndex - lastDiscoveryIdx;
-    discoveryLog.push({ key, primeIdx: currentIndex, interval });
-    if (discoveryLog.length > DISCOVERY_LOG_MAX) discoveryLog.shift();
-    lastDiscoveryIdx = currentIndex;
-    appendLogEntry(key, currentIndex, interval);
-  }
-  const next = prev + 1;
-  freqArr[key] = next;
-  if (next > maxFreq) maxFreq = next;
-}
-
-// ─── Discovery Log ───────────────────────────────────────────
-let lastSeenArr = new Int32Array(GRID_CELLS);
-lastSeenArr.fill(-1);
-let discoveryLog = [];       // [{key, primeIdx, interval}, ...]
-let lastDiscoveryIdx = 0;
-const DISCOVERY_LOG_MAX = 200;
-
 // ─── State ───────────────────────────────────────────────────
-let currentIndex = 0;
 const PRIMES_PER_FRAME = 200;
 let unitHeight = 1;
 
@@ -182,7 +72,6 @@ const btnLog = document.getElementById("btn-log");
 let activeView = "2d";
 
 // ─── Mode Registry ──────────────────────────────────────────
-window.PRIME_MODES = window.PRIME_MODES || {};
 let currentMode = "gap-grid";
 let currentModeObj = null;
 const mainModeSelect = document.getElementById("main-mode");
@@ -234,7 +123,6 @@ function buildModeControls(container, mode) {
 }
 
 function switchMode(modeId) {
-  // Cleanup previous custom mode
   if (currentModeObj && currentModeObj.cleanup) currentModeObj.cleanup();
   currentModeObj = null;
   currentMode = modeId;
@@ -243,12 +131,10 @@ function switchMode(modeId) {
     gridControlsEl.style.display = "";
     modeControlsEl.innerHTML = "";
     infoGridOnly.style.display = "";
-    // Restore current view
     switchView(activeView);
   } else {
     gridControlsEl.style.display = "none";
     infoGridOnly.style.display = "none";
-    // Force 2D canvas, hide 3D
     canvas.style.display = "block";
     threeContainer.style.display = "none";
 
@@ -271,7 +157,7 @@ let replayActive = false;
 let replayPos = 0;
 const REPLAY_SPEED = 500;
 
-// Replay data (separate from live state)
+// Replay data (separate JS arrays, independent of WASM)
 let rFreqArr = new Uint32Array(GRID_CELLS);
 let rDiscAtArr = new Int32Array(GRID_CELLS);
 rDiscAtArr.fill(-1);
@@ -317,10 +203,16 @@ btnReplay.addEventListener("click", () => {
 });
 
 function advanceReplay() {
-  const end = Math.min(replayPos + REPLAY_SPEED, ghKeys.length);
+  // Re-read ghKeys/ghIdxs from WASM (they may have been rebuilt)
+  refreshViews();
+  const ghLen = engine.gh_keys_len();
+  const end = Math.min(replayPos + REPLAY_SPEED, ghLen);
+  const buf = wasmModule.memory.buffer;
+  const replayGhKeys = new Uint32Array(buf, engine.gh_keys_ptr(), ghLen);
+  const replayGhIdxs = new Uint32Array(buf, engine.gh_idxs_ptr(), ghLen);
   for (let i = replayPos; i < end; i++) {
-    const key = ghKeys[i];
-    rIndex = ghIdxs[i];
+    const key = replayGhKeys[i];
+    rIndex = replayGhIdxs[i];
     rLastSeenArr[key] = rIndex;
     if (frameCount - actStartFrame[key] >= FLASH_COOLDOWN) {
       actStartFrame[key] = frameCount;
@@ -336,7 +228,7 @@ function advanceReplay() {
     if (next > rMaxFreq) rMaxFreq = next;
   }
   replayPos = end;
-  if (replayPos >= ghKeys.length) stopReplay();
+  if (replayPos >= ghLen) stopReplay();
 }
 
 function swapToReplay() {
@@ -400,6 +292,10 @@ function switchView(view) {
 }
 
 // ─── Discovery Log Panel ─────────────────────────────────────
+let discoveryLog = [];
+let lastDiscoveryIdx = 0;
+const DISCOVERY_LOG_MAX = 200;
+
 function appendLogEntry(key, primeIdx, interval) {
   const x = key % GRID_SIZE;
   const y = (key / GRID_SIZE) | 0;
@@ -407,7 +303,6 @@ function appendLogEntry(key, primeIdx, interval) {
   const line = document.createElement("div");
   line.textContent = `#${n}: (${x},${y}) at idx ${primeIdx.toLocaleString()} \u2014 gap ${interval.toLocaleString()} since last`;
   logEntriesEl.appendChild(line);
-  // Trim old entries
   while (logEntriesEl.children.length > DISCOVERY_LOG_MAX) {
     logEntriesEl.removeChild(logEntriesEl.firstChild);
   }
@@ -448,11 +343,9 @@ canvas.addEventListener("mousemove", (e) => {
   html += `Last seen at: idx ${lastSeen >= 0 ? lastSeen.toLocaleString() : "\u2014"}`;
   tooltipEl.innerHTML = html;
   tooltipEl.style.display = "block";
-  // Position tooltip near cursor, offset slightly
   const container = canvas.parentElement.getBoundingClientRect();
   let tx = e.clientX - container.left + 14;
   let ty = e.clientY - container.top + 14;
-  // Keep tooltip on screen
   if (tx + 200 > container.width) tx = e.clientX - container.left - 200;
   if (ty + 100 > container.height) ty = e.clientY - container.top - 100;
   tooltipEl.style.left = tx + "px";
@@ -467,22 +360,27 @@ canvas.addEventListener("mouseleave", () => {
 const STORAGE_KEY = "primeGapViz";
 
 function saveState() {
-  // Only save non-zero entries to keep JSON small
+  // Read live state from WASM views (not replay state)
+  const liveFreq = new Uint32Array(wasmModule.memory.buffer, engine.freq_ptr(), GRID_CELLS);
+  const liveDisc = new Int32Array(wasmModule.memory.buffer, engine.disc_at_ptr(), GRID_CELLS);
+  const dhLen = engine.discovery_history_len();
+  const liveDiscHistory = new Uint32Array(wasmModule.memory.buffer, engine.discovery_history_ptr(), dhLen);
+
   const fEntries = [];
   const dEntries = [];
   for (let i = 0; i < GRID_CELLS; i++) {
-    if (freqArr[i] > 0) fEntries.push([i, freqArr[i]]);
-    if (discAtArr[i] >= 0) dEntries.push([i, discAtArr[i]]);
+    if (liveFreq[i] > 0) fEntries.push([i, liveFreq[i]]);
+    if (liveDisc[i] >= 0) dEntries.push([i, liveDisc[i]]);
   }
   const data = {
     v: 2,
-    currentIndex,
-    maxFreq,
-    uniquePairs,
+    currentIndex: engine.current_index(),
+    maxFreq: engine.max_freq(),
+    uniquePairs: engine.unique_pairs(),
     freq: fEntries,
     discoveredAt: dEntries,
-    discoveryHistory,
-    primesLen: primes.length,
+    discoveryHistory: Array.from(liveDiscHistory),
+    primesLen: engine.primes_len(),
     unitHeight
   };
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
@@ -493,37 +391,46 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
     const data = JSON.parse(raw);
-    currentIndex = data.currentIndex;
-    maxFreq = data.maxFreq;
-    uniquePairs = data.uniquePairs;
 
-    freqArr.fill(0);
-    discAtArr.fill(-1);
+    // Write freq and disc_at directly into WASM memory
+    const wFreq = new Uint32Array(wasmModule.memory.buffer, engine.freq_ptr(), GRID_CELLS);
+    const wDisc = new Int32Array(wasmModule.memory.buffer, engine.disc_at_ptr(), GRID_CELLS);
+    wFreq.fill(0);
+    wDisc.fill(-1);
 
     if (data.v === 2 || data.v === 3) {
-      // Numeric-key format
-      for (const [k, v] of data.freq) freqArr[k] = v;
-      for (const [k, v] of data.discoveredAt) discAtArr[k] = v;
-      // Safe copy without spread (avoids stack overflow on large arrays)
-      discoveryHistory = data.discoveryHistory.slice();
+      for (const [k, v] of data.freq) wFreq[k] = v;
+      for (const [k, v] of data.discoveredAt) wDisc[k] = v;
+      engine.import_discovery_history(new Uint32Array(data.discoveryHistory));
     } else {
       // Migrate old string-key format ("x,y" → y*GRID_SIZE+x)
       for (const [k, v] of data.freq) {
         const ci = k.indexOf(",");
-        freqArr[( +k.slice(ci + 1)) * GRID_SIZE + (+k.slice(0, ci))] = v;
+        wFreq[(+k.slice(ci + 1)) * GRID_SIZE + (+k.slice(0, ci))] = v;
       }
       for (const [k, v] of data.discoveredAt) {
         const ci = k.indexOf(",");
-        discAtArr[(+k.slice(ci + 1)) * GRID_SIZE + (+k.slice(0, ci))] = v;
+        wDisc[(+k.slice(ci + 1)) * GRID_SIZE + (+k.slice(0, ci))] = v;
       }
-      discoveryHistory = [];
+      const dh = [];
       for (const k of data.discoveryHistory) {
         const ci = k.indexOf(",");
-        discoveryHistory.push((+k.slice(ci + 1)) * GRID_SIZE + (+k.slice(0, ci)));
+        dh.push((+k.slice(ci + 1)) * GRID_SIZE + (+k.slice(0, ci)));
       }
+      engine.import_discovery_history(new Uint32Array(dh));
     }
 
-    // Restore unit height
+    engine.set_state(data.currentIndex, data.maxFreq, data.uniquePairs);
+
+    // Regenerate primes via WASM sieve (fast — milliseconds)
+    const needed = data.currentIndex + PRIMES_PER_FRAME + 10;
+    engine.ensure_primes_count(needed);
+
+    // Rebuild gap history for replay (fast in WASM)
+    engine.rebuild_gap_history();
+
+    refreshViews();
+
     if (data.unitHeight != null) unitHeight = data.unitHeight;
     unitHeightInput.value = unitHeight;
     return true;
@@ -552,7 +459,6 @@ function scaleCount(count) {
   }
 }
 
-// Cached per-frame to avoid redundant scaleCount(maxFreq)
 let cachedScaleMax = 0;
 
 function getT(count) {
@@ -598,9 +504,8 @@ offCanvas.width = GRID_SIZE;
 offCanvas.height = GRID_SIZE;
 const offCtx = offCanvas.getContext("2d");
 const imgData = offCtx.createImageData(GRID_SIZE, GRID_SIZE);
-const pixels = imgData.data;   // Uint8ClampedArray, length = GRID_CELLS * 4
+const pixels = imgData.data;
 
-// Pre-filled background buffer for fast clear via .set()
 const BG_R = 10, BG_G = 10, BG_B = 26;
 const bgBuf = new Uint8Array(GRID_CELLS * 4);
 for (let i = 0; i < bgBuf.length; i += 4) {
@@ -609,7 +514,7 @@ for (let i = 0; i < bgBuf.length; i += 4) {
 
 function clearPixels() { pixels.set(bgBuf); }
 
-// ─── 2D: Cached layout (only recomputed on resize) ─────────
+// ─── 2D: Cached layout ─────────────────────────────────────
 let cachedW = 0, cachedH = 0, cachedCell = 0, cachedOx = 0, cachedOy = 0, cachedGridPx = 0;
 
 function resizeCanvas() {
@@ -627,7 +532,6 @@ function resizeCanvas() {
 }
 resizeCanvas();
 
-// Blit offscreen 60×60 ImageData → main canvas, scaled with nearest-neighbor
 function blitToMain() {
   offCtx.putImageData(imgData, 0, 0);
   ctx.fillStyle = "#0a0a1a";
@@ -653,7 +557,6 @@ function drawHeatmap() {
   }
   lastShownCount = shownCount;
 
-  // Axis labels (drawn on main canvas after blit)
   ctx.fillStyle = "#555";
   ctx.font = "11px monospace";
   ctx.fillText("gap(n)\u2192", cachedOx + 4, cachedOy + cachedGridPx - 6);
@@ -664,7 +567,6 @@ function drawHeatmap() {
   ctx.restore();
 }
 
-// --- Normal: plain frequency heatmap via ImageData ---
 function draw2dNormal() {
   clearPixels();
   let n = 0;
@@ -681,7 +583,6 @@ function draw2dNormal() {
   return n;
 }
 
-// --- Flash: merged single pass (no double iteration) ---
 function draw2dFlash() {
   clearPixels();
   let n = 0;
@@ -706,7 +607,6 @@ function draw2dFlash() {
   return n;
 }
 
-// --- Trail: last N discoveries ---
 function draw2dTrail() {
   clearPixels();
   const start = Math.max(0, discoveryHistory.length - TRAIL_LENGTH);
@@ -731,7 +631,6 @@ function draw2dTrail() {
   return n;
 }
 
-// --- Discovery order ---
 function draw2dDiscovery() {
   clearPixels();
   let n = 0;
@@ -750,7 +649,6 @@ function draw2dDiscovery() {
   return n;
 }
 
-// --- Ripples: dimmed heatmap + rings on main canvas ---
 function draw2dRipples() {
   clearPixels();
   let n = 0;
@@ -764,7 +662,6 @@ function draw2dRipples() {
     pixels[pi] = rippleDimLUT[li]; pixels[pi + 1] = rippleDimLUT[li + 1]; pixels[pi + 2] = rippleDimLUT[li + 2];
   }
   blitToMain();
-  // Expanding rings (few, drawn with canvas primitives)
   const c = cachedCell;
   for (let i = discoveryHistory.length - 1; i >= 0; i--) {
     const key = discoveryHistory[i];
@@ -784,7 +681,6 @@ function draw2dRipples() {
   return n;
 }
 
-// --- Connections: dimmed heatmap + lines on main canvas ---
 function draw2dConnections() {
   clearPixels();
   let n = 0;
@@ -798,7 +694,6 @@ function draw2dConnections() {
     pixels[pi] = connDimLUT[li]; pixels[pi + 1] = connDimLUT[li + 1]; pixels[pi + 2] = connDimLUT[li + 2];
   }
   blitToMain();
-  // Lines (on main canvas)
   const c = cachedCell;
   const ox = cachedOx, oy = cachedOy;
   const start = Math.max(0, discoveryHistory.length - CONNECTION_COUNT);
@@ -824,7 +719,6 @@ function draw2dConnections() {
   return n;
 }
 
-// --- Discovery rate ---
 function draw2dRate() {
   clearPixels();
   let n = 0;
@@ -847,7 +741,6 @@ function draw2dRate() {
   return n;
 }
 
-// --- Activity: flash every cell on each increment (frame-based pulse) ---
 function draw2dActivity() {
   clearPixels();
   let n = 0;
@@ -889,14 +782,12 @@ orbitControls.target.set(GRID_SIZE / 2, 0, GRID_SIZE / 2);
 orbitControls.enableDamping = true;
 orbitControls.dampingFactor = 0.08;
 
-// Lighting
 const ambient = new THREE.AmbientLight(0x404060, 0.6);
 scene.add(ambient);
 const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
 dirLight.position.set(GRID_SIZE, GRID_SIZE * 2, GRID_SIZE);
 scene.add(dirLight);
 
-// Ground plane
 const groundGeo = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE);
 const groundMat = new THREE.MeshStandardMaterial({ color: 0x111128, side: THREE.DoubleSide });
 const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -904,11 +795,8 @@ ground.rotation.x = -Math.PI / 2;
 ground.position.set(GRID_SIZE / 2, -0.01, GRID_SIZE / 2);
 scene.add(ground);
 
-// Bar pool (keyed by numeric grid key)
 const barGeo = new THREE.BoxGeometry(0.85, 1, 0.85);
 const bars = new Map();
-
-// Scratch THREE.Color reused across all bar updates (no per-frame allocation)
 const _c = new THREE.Color();
 
 function getBarColor(t) {
@@ -916,7 +804,6 @@ function getBarColor(t) {
   return _c;
 }
 
-// 3D Ripple pool
 const RIPPLE_POOL_SIZE = 30;
 const rippleRingGeo = new THREE.RingGeometry(0.4, 0.6, 32);
 const ripplePool = [];
@@ -933,7 +820,6 @@ for (let i = 0; i < RIPPLE_POOL_SIZE; i++) {
 let ripplePoolIdx = 0;
 let lastDiscoveryLen = 0;
 
-// 3D Connection line
 const CONN_MAX = CONNECTION_COUNT;
 const connPositions = new Float32Array(CONN_MAX * 3);
 const connColors = new Float32Array(CONN_MAX * 3);
@@ -945,7 +831,6 @@ const connLine = new THREE.Line(connGeo, connMat);
 connLine.visible = false;
 scene.add(connLine);
 
-// ─── 3D Update ──────────────────────────────────────────────
 function ensureBar(key) {
   let bar = bars.get(key);
   if (!bar) {
@@ -965,10 +850,8 @@ function updateBars() {
   cachedScaleMax = scaleCount(maxFreq);
   let shownCount = 0;
 
-  // Hide all bars first (needed for replay where freq is smaller)
   for (const bar of bars.values()) bar.visible = false;
 
-  // Pre-build trail lookup map (avoids O(n) indexOf per bar)
   let trailMap = null;
   let trailStart = 0;
   if (vizMode === "trail") {
@@ -1101,7 +984,7 @@ function updateBars() {
     }
   }
 
-  // 3D connection line (no .slice(), direct indexing)
+  // 3D connection line
   if (vizMode === "connections") {
     connLine.visible = true;
     const start = Math.max(0, discoveryHistory.length - CONN_MAX);
@@ -1150,54 +1033,9 @@ window.addEventListener("resize", () => {
   if (currentModeObj && currentModeObj.resize) currentModeObj.resize(cachedW, cachedH);
 });
 
-// ─── Async Gap History Rebuild ───────────────────────────────
-// Rebuilds ghKeys in chunks after sieve completes.
-// Only needed for replay — the visualization works from saved freq data.
-let rebuildInProgress = false;
-let rebuildTarget = 0;
-let rebuildPos = 0;
-const REBUILD_CHUNK = 50000;
-
-function startGapHistoryRebuild() {
-  ghKeys.length = 0;
-  ghIdxs.length = 0;
-  rebuildTarget = currentIndex;
-  rebuildPos = 0;
-  rebuildInProgress = true;
-}
-
-function advanceGapHistoryRebuild() {
-  // Don't advance until sieve is done — we need primes
-  if (sieveActive) return;
-  const end = Math.min(rebuildPos + REBUILD_CHUNK, rebuildTarget);
-  if (end + 2 >= primes.length) return; // not enough primes yet
-  for (let i = rebuildPos; i < end; i++) {
-    if (i + 2 >= primes.length) break;
-    const g1 = primes[i + 1] - primes[i];
-    const g2 = primes[i + 2] - primes[i + 1];
-    const x = g1 <= 1 ? g1 : g1 / 2;
-    const y = g2 <= 1 ? g2 : g2 / 2;
-    if (x >= GRID_SIZE || y >= GRID_SIZE) continue;
-    ghKeys.push(y * GRID_SIZE + x);
-    ghIdxs.push(i);
-  }
-  rebuildPos = end;
-  if (rebuildPos >= rebuildTarget) {
-    rebuildInProgress = false;
-  }
-}
-
-// ─── Startup Sequence ────────────────────────────────────────
+// ─── Startup ────────────────────────────────────────────────
 const hadSave = loadState();
-if (hadSave) {
-  // Kick off sieve to regenerate primes in background (chunked, non-blocking)
-  const needed = currentIndex + PRIMES_PER_FRAME + 10;
-  if (needed > primes.length) {
-    startSieve(needed);
-  }
-  // Gap history rebuild starts after sieve finishes
-  startGapHistoryRebuild();
-}
+if (!hadSave) refreshViews();
 onWindowResize();
 setInterval(saveState, 5000);
 
@@ -1206,29 +1044,46 @@ let frameCount = 0;
 let lastShownCount = 0;
 
 function loop() {
-  // Advance sieve (one segment per frame, ~5-15ms each)
-  if (sieveActive) {
-    advanceSieve();
-  }
-
-  // Advance async gap history rebuild (waits for sieve to finish)
-  if (rebuildInProgress) {
-    advanceGapHistoryRebuild();
-  }
-
   const wasReplaying = replayActive;
 
   if (wasReplaying) {
     advanceReplay();
     swapToReplay();
-  } else if (primesReady()) {
-    // Only generate new gaps when primes have caught up
-    for (let i = 0; i < PRIMES_PER_FRAME; i++) {
-      recordGap(currentIndex);
-      currentIndex++;
+  } else {
+    // Generate gaps via WASM engine
+    engine.tick(PRIMES_PER_FRAME);
+    refreshViews();
+
+    // Bridge activity flash from WASM events
+    const updLen = engine.updated_keys_len();
+    if (updLen > 0) {
+      const buf = wasmModule.memory.buffer;
+      const updKeys = new Uint32Array(buf, engine.updated_keys_ptr(), updLen);
+      for (let i = 0; i < updLen; i++) {
+        const key = updKeys[i];
+        if (frameCount - actStartFrame[key] >= FLASH_COOLDOWN) {
+          actStartFrame[key] = frameCount;
+        }
+      }
     }
-    // Generate primes for next frame (incremental, uses optimized isPrime)
-    while (primes.length < currentIndex + PRIMES_PER_FRAME + 3) addPrime();
+
+    // Bridge discovery log from WASM events
+    const newDiscLen = engine.new_disc_len();
+    if (newDiscLen > 0) {
+      const buf = wasmModule.memory.buffer;
+      const ndKeys = new Uint32Array(buf, engine.new_disc_keys_ptr(), newDiscLen);
+      const ndIdxs = new Uint32Array(buf, engine.new_disc_idxs_ptr(), newDiscLen);
+      const ndIntervals = new Uint32Array(buf, engine.new_disc_intervals_ptr(), newDiscLen);
+      for (let i = 0; i < newDiscLen; i++) {
+        const key = ndKeys[i];
+        const primeIdx = ndIdxs[i];
+        const interval = ndIntervals[i];
+        discoveryLog.push({ key, primeIdx, interval });
+        if (discoveryLog.length > DISCOVERY_LOG_MAX) discoveryLog.shift();
+        lastDiscoveryIdx = primeIdx;
+        appendLogEntry(key, primeIdx, interval);
+      }
+    }
   }
 
   // Update info every 5 frames
@@ -1238,7 +1093,6 @@ function loop() {
     infoPrime.textContent = (currentIndex < primes.length ? primes[currentIndex].toLocaleString() : "...");
     infoPairs.textContent = uniquePairs.toLocaleString();
     infoShown.textContent = lastShownCount.toLocaleString();
-    // Discovery rate: average of last 10 inter-discovery intervals
     if (discoveryLog.length >= 2) {
       const last10 = discoveryLog.slice(-10);
       let sum = 0;
