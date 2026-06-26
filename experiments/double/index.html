@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Double Pendulum Field</title>
+<style>
+  :root { color-scheme: dark; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+  body { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  #stage { position: fixed; inset: 0; display: block; background: #000; }
+
+  /* ---- HUD ---- */
+  #hud {
+    position: fixed; left: 14px; bottom: 14px;
+    color: #cdd2ff; font-size: 12px; line-height: 1.55;
+    background: rgba(8,8,18,0.55);
+    border: 1px solid rgba(124,131,255,0.25);
+    border-radius: 10px; padding: 11px 14px;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    user-select: none; pointer-events: none;
+    transition: opacity .25s ease;
+    max-width: 280px;
+  }
+  #hud b { color: #fff; }
+  #hud .key {
+    display: inline-block; min-width: 1.4em; text-align: center;
+    padding: 0 5px; margin-right: 4px;
+    background: rgba(124,131,255,0.18);
+    border: 1px solid rgba(124,131,255,0.35);
+    border-radius: 5px; color: #fff; font-weight: 600;
+  }
+  #hud .row { white-space: nowrap; }
+  #hud .stat { color: #7c83ff; }
+  #hud.hidden { opacity: 0; }
+
+  #title {
+    position: fixed; right: 16px; top: 14px; text-align: right;
+    color: rgba(205,210,255,0.55); font-size: 12px; line-height: 1.4;
+    user-select: none; pointer-events: none; transition: opacity .25s ease;
+  }
+  #title b { color: rgba(255,255,255,0.85); font-size: 13px; letter-spacing: .5px; }
+  #title.hidden { opacity: 0; }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<div id="title"><b>DOUBLE PENDULUM FIELD</b><br>brightness = inner arm · hue = outer arm</div>
+
+<div id="hud">
+  <div class="row"><span class="key">space</span> show / hide pendulums</div>
+  <div class="row"><span class="key">R</span> reseed the field</div>
+  <div class="row"><span class="key">←→</span> density <span class="stat" id="sDensity">—</span></div>
+  <div class="row"><span class="key">↑↓</span> speed <span class="stat" id="sSpeed">—</span></div>
+  <div class="row"><span class="key">P</span> pattern <span class="stat" id="sPattern">—</span></div>
+  <div class="row"><span class="key">H</span> hide this panel</div>
+  <div class="row" style="margin-top:6px;opacity:.7"><span class="stat" id="sStats">—</span></div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================================
+   Double Pendulum Field
+   ----------------------------------------------------------------------------
+   A grid of dots on black. Every dot owns an independent double pendulum.
+     - INNER arm angle  -> dot BRIGHTNESS  (down = bright, up = black)
+     - OUTER arm angle  -> dot HUE         (full rotation = full color wheel)
+   Tiny per-cell differences in the starting angles diverge chaotically, so a
+   coherent field dissolves into turbulent color over a few seconds.
+
+   Performance notes:
+     - State lives in flat Float64Arrays (no per-pendulum objects -> no GC).
+     - Physics is RK4, fully inlined per step (no array allocs in the hot loop).
+     - Colors come from a precomputed string palette (hue x value) so we never
+       build a color string per dot per frame.
+   This comfortably runs several thousand pendulums at 60fps in plain JS. The
+   integrate() loop is self-contained and could be dropped into Rust/WASM later
+   if you want to push into the tens of thousands.
+   ========================================================================== */
+
+const canvas = document.getElementById('stage');
+const ctx = canvas.getContext('2d', { alpha: false });
+
+// ---- physics constants ----
+const G = 9.81, L1 = 1, L2 = 1, M1 = 1, M2 = 1;
+const RAD2DEG = 180 / Math.PI;
+const MAX_DT = 0.008;          // largest stable RK4 step
+const TAU = Math.PI * 2;
+
+// ---- tunables ----
+let cols = 0, rows = 0, N = 0;
+let targetCols = 56;           // density (columns); rows derived from aspect
+const MIN_COLS = 12, MAX_COLS = 170;
+let speed = 1.0;               // sim seconds advanced per real second
+let showPend = false;          // draw the arms inside each dot
+let hudHidden = false;
+let pattern = 0;               // seeding pattern index
+
+// ---- state (flat typed arrays) ----
+let a1, a2, v1, v2;            // angles & angular velocities
+let cx, cy;                    // precomputed dot centers (device px)
+let cell = 0, dotR = 0, armL = 0;
+let dpr = 1;
+
+// ---- color palette (hue x value -> "rgb(...)" string) ----
+const HUE_STEPS = 360, VAL_STEPS = 80;
+const palette = new Array(HUE_STEPS * VAL_STEPS);
+(function buildPalette(){
+  for (let h = 0; h < HUE_STEPS; h++) {
+    const hp = h / 60;
+    const x = 1 - Math.abs((hp % 2) - 1);
+    let rr, gg, bb;
+    if (hp < 1)      { rr = 1; gg = x; bb = 0; }
+    else if (hp < 2) { rr = x; gg = 1; bb = 0; }
+    else if (hp < 3) { rr = 0; gg = 1; bb = x; }
+    else if (hp < 4) { rr = 0; gg = x; bb = 1; }
+    else if (hp < 5) { rr = x; gg = 0; bb = 1; }
+    else             { rr = 1; gg = 0; bb = x; }
+    for (let vi = 0; vi < VAL_STEPS; vi++) {
+      const v = vi / (VAL_STEPS - 1);
+      const r = (rr * v * 255 + 0.5) | 0;
+      const g = (gg * v * 255 + 0.5) | 0;
+      const b = (bb * v * 255 + 0.5) | 0;
+      palette[h * VAL_STEPS + vi] = "rgb(" + r + "," + g + "," + b + ")";
+    }
+  }
+})();
+
+// ---------------------------------------------------------------------------
+// Layout: size the canvas to the screen and choose a square-ish cell grid.
+// ---------------------------------------------------------------------------
+function layout() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cssW = window.innerWidth, cssH = window.innerHeight;
+  canvas.style.width = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  canvas.width  = Math.round(cssW * dpr);
+  canvas.height = Math.round(cssH * dpr);
+
+  cols = Math.max(MIN_COLS, Math.min(MAX_COLS, targetCols | 0));
+  cell = canvas.width / cols;                 // device px per cell
+  rows = Math.max(1, Math.floor(canvas.height / cell));
+  N = cols * rows;
+
+  dotR = cell * 0.40;
+  armL = cell * 0.18;
+
+  cx = new Float64Array(N);
+  cy = new Float64Array(N);
+  const offY = (canvas.height - rows * cell) * 0.5; // center vertically
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const i = r * cols + c;
+      cx[i] = (c + 0.5) * cell;
+      cy[i] = offY + (r + 0.5) * cell;
+    }
+  }
+  seed();
+  document.getElementById('sDensity').textContent = cols + '×' + rows + ' (' + N + ')';
+}
+
+// ---------------------------------------------------------------------------
+// Seed the field. Small smooth spatial gradients in the starting angles read
+// as a coherent pattern that chaos then tears apart.
+// ---------------------------------------------------------------------------
+const PATTERNS = ['ripple', 'rainbow', 'twins', 'cascade'];
+function seed() {
+  a1 = new Float64Array(N);
+  a2 = new Float64Array(N);
+  v1 = new Float64Array(N);
+  v2 = new Float64Array(N);
+  const HALF = Math.PI / 2;
+  for (let r = 0; r < rows; r++) {
+    const fr = rows > 1 ? r / (rows - 1) : 0.5;
+    for (let c = 0; c < cols; c++) {
+      const fc = cols > 1 ? c / (cols - 1) : 0.5;
+      const i = r * cols + c;
+      let t1, t2;
+      switch (pattern) {
+        case 1: // rainbow: full spread of energy & hue across the grid
+          t1 = HALF + (fc - 0.5) * Math.PI;
+          t2 = fr * TAU;
+          break;
+        case 2: // twins: nearly identical -> dramatic sync-to-chaos reveal
+          t1 = HALF + (fc - 0.5) * 0.05 + (fr - 0.5) * 0.05;
+          t2 = HALF;
+          break;
+        case 3: // cascade: a diagonal wave
+          t1 = Math.PI + Math.sin((fc + fr) * Math.PI) * 1.1;
+          t2 = Math.PI + Math.cos((fc - fr) * Math.PI) * 1.1;
+          break;
+        default: // ripple: gentle radial gradient, lively everywhere
+          t1 = HALF + (fc - 0.5) * 0.6;
+          t2 = HALF + (fr - 0.5) * 0.6;
+      }
+      a1[i] = t1; a2[i] = t2;
+    }
+  }
+  document.getElementById('sPattern').textContent = PATTERNS[pattern];
+}
+
+// ---------------------------------------------------------------------------
+// Physics. deriv() writes angular accelerations into module scratch vars to
+// avoid allocating an array on every call (this runs N*4 times per substep).
+// ---------------------------------------------------------------------------
+let _o1 = 0, _o2 = 0;
+function deriv(t1, t2, w1, w2) {
+  const d = t1 - t2;
+  const sd = Math.sin(d), cd = Math.cos(d);
+  const den = 2 * M1 + M2 - M2 * Math.cos(2 * d);
+  _o1 = (-G * (2 * M1 + M2) * Math.sin(t1)
+         - M2 * G * Math.sin(t1 - 2 * t2)
+         - 2 * sd * M2 * (w2 * w2 * L2 + w1 * w1 * L1 * cd)) / (L1 * den);
+  _o2 = (2 * sd * (w1 * w1 * L1 * (M1 + M2)
+         + G * (M1 + M2) * Math.cos(t1)
+         + w2 * w2 * L2 * M2 * cd)) / (L2 * den);
+}
+
+function integrate(dt) {
+  const h = dt, h2 = dt * 0.5, h6 = dt / 6;
+  for (let i = 0; i < N; i++) {
+    const t1 = a1[i], t2 = a2[i], w1 = v1[i], w2 = v2[i];
+
+    deriv(t1, t2, w1, w2);
+    const k1t1 = w1, k1t2 = w2, k1w1 = _o1, k1w2 = _o2;
+
+    deriv(t1 + h2 * k1t1, t2 + h2 * k1t2, w1 + h2 * k1w1, w2 + h2 * k1w2);
+    const k2t1 = w1 + h2 * k1w1, k2t2 = w2 + h2 * k1w2, k2w1 = _o1, k2w2 = _o2;
+
+    deriv(t1 + h2 * k2t1, t2 + h2 * k2t2, w1 + h2 * k2w1, w2 + h2 * k2w2);
+    const k3t1 = w1 + h2 * k2w1, k3t2 = w2 + h2 * k2w2, k3w1 = _o1, k3w2 = _o2;
+
+    deriv(t1 + h * k3t1, t2 + h * k3t2, w1 + h * k3w1, w2 + h * k3w2);
+    const k4t1 = w1 + h * k3w1, k4t2 = w2 + h * k3w2, k4w1 = _o1, k4w2 = _o2;
+
+    a1[i] = t1 + h6 * (k1t1 + 2 * k2t1 + 2 * k3t1 + k4t1);
+    a2[i] = t2 + h6 * (k1t2 + 2 * k2t2 + 2 * k3t2 + k4t2);
+    v1[i] = w1 + h6 * (k1w1 + 2 * k2w1 + 2 * k3w1 + k4w1);
+    v2[i] = w2 + h6 * (k1w2 + 2 * k2w2 + 2 * k3w2 + k4w2);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Render.
+// ---------------------------------------------------------------------------
+function render() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const VS1 = VAL_STEPS - 1;
+  for (let i = 0; i < N; i++) {
+    const t1 = a1[i];
+    // brightness: inner arm. down (t1=0) -> 1, up (t1=±pi) -> 0
+    const bright = (1 + Math.cos(t1)) * 0.5;
+    // hue: outer arm absolute angle wrapped to [0,360)
+    let hue = a2[i] * RAD2DEG;
+    hue = hue - Math.floor(hue / 360) * 360;
+    let hIdx = hue | 0; if (hIdx > 359) hIdx = 359;
+    let vIdx = (bright * VS1 + 0.5) | 0;
+    if (vIdx > VS1) vIdx = VS1; else if (vIdx < 0) vIdx = 0;
+
+    ctx.fillStyle = palette[hIdx * VAL_STEPS + vIdx];
+    ctx.beginPath();
+    ctx.arc(cx[i], cy[i], dotR, 0, TAU);
+    ctx.fill();
+  }
+
+  if (showPend) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = Math.max(1, cell * 0.035);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const px = cx[i], py = cy[i];
+      const j1x = px + armL * Math.sin(a1[i]);
+      const j1y = py + armL * Math.cos(a1[i]);
+      const j2x = j1x + armL * Math.sin(a2[i]);
+      const j2y = j1y + armL * Math.cos(a2[i]);
+      ctx.moveTo(px, py); ctx.lineTo(j1x, j1y); ctx.lineTo(j2x, j2y);
+    }
+    ctx.stroke();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Main loop. Advance ~speed*realtime per frame, split into stable substeps.
+// ---------------------------------------------------------------------------
+let lastT = 0, fps = 0, fpsT = 0, fpsN = 0;
+function frame(now) {
+  if (!lastT) lastT = now;
+  let elapsed = (now - lastT) / 1000;
+  lastT = now;
+  if (elapsed > 0.05) elapsed = 0.05;          // clamp after tab-away
+
+  let simDt = elapsed * speed;
+  if (simDt > 0) {
+    const sub = Math.max(1, Math.ceil(simDt / MAX_DT));
+    const dt = simDt / sub;
+    for (let s = 0; s < sub; s++) integrate(dt);
+  }
+  render();
+
+  // fps readout
+  fpsN++; fpsT += elapsed;
+  if (fpsT >= 0.5) {
+    fps = Math.round(fpsN / fpsT); fpsT = 0; fpsN = 0;
+    document.getElementById('sStats').textContent = fps + ' fps · ' + N + ' pendulums';
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---------------------------------------------------------------------------
+// Input.
+// ---------------------------------------------------------------------------
+function setSpeed(s) {
+  speed = Math.max(0, Math.min(6, s));
+  document.getElementById('sSpeed').textContent = speed.toFixed(2) + '×';
+}
+window.addEventListener('keydown', (e) => {
+  switch (e.key) {
+    case ' ':
+      showPend = !showPend; e.preventDefault(); break;
+    case 'r': case 'R':
+      seed(); break;
+    case 'ArrowLeft':
+      targetCols = Math.max(MIN_COLS, targetCols - 6); layout(); e.preventDefault(); break;
+    case 'ArrowRight':
+      targetCols = Math.min(MAX_COLS, targetCols + 6); layout(); e.preventDefault(); break;
+    case 'ArrowUp':
+      setSpeed(speed + 0.25); e.preventDefault(); break;
+    case 'ArrowDown':
+      setSpeed(speed - 0.25); e.preventDefault(); break;
+    case 'p': case 'P':
+      pattern = (pattern + 1) % PATTERNS.length; seed(); break;
+    case 'h': case 'H':
+      hudHidden = !hudHidden;
+      document.getElementById('hud').classList.toggle('hidden', hudHidden);
+      document.getElementById('title').classList.toggle('hidden', hudHidden);
+      break;
+  }
+});
+
+let resizeRAF = 0;
+window.addEventListener('resize', () => {
+  cancelAnimationFrame(resizeRAF);
+  resizeRAF = requestAnimationFrame(layout);
+});
+
+// ---------------------------------------------------------------------------
+// Go.
+// ---------------------------------------------------------------------------
+setSpeed(1.0);
+layout();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
