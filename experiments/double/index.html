@@ -11,7 +11,6 @@
   body { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
   #stage { position: fixed; inset: 0; display: block; background: #000; }
 
-  /* ---- HUD ---- */
   #hud {
     position: fixed; left: 14px; bottom: 14px;
     color: #cdd2ff; font-size: 12px; line-height: 1.55;
@@ -20,8 +19,7 @@
     border-radius: 10px; padding: 11px 14px;
     backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     user-select: none; pointer-events: none;
-    transition: opacity .25s ease;
-    max-width: 280px;
+    transition: opacity .25s ease; max-width: 320px;
   }
   #hud b { color: #fff; }
   #hud .key {
@@ -42,271 +40,420 @@
   }
   #title b { color: rgba(255,255,255,0.85); font-size: 13px; letter-spacing: .5px; }
   #title.hidden { opacity: 0; }
+
+  #fatal {
+    position: fixed; inset: 0; display: none;
+    align-items: center; justify-content: center; padding: 40px;
+    color: #ffb0b0; font-size: 14px; line-height: 1.6; text-align: center;
+  }
+  #fatal.show { display: flex; }
 </style>
 </head>
 <body>
 <canvas id="stage"></canvas>
 
-<div id="title"><b>DOUBLE PENDULUM FIELD</b><br>brightness = inner arm · hue = outer arm</div>
+<div id="title"><b>DOUBLE PENDULUM FIELD</b><br>brightness = inner arm · hue = outer arm<br><span style="opacity:.7">WASM physics · WebGL instanced</span></div>
 
 <div id="hud">
   <div class="row"><span class="key">space</span> show / hide pendulums</div>
   <div class="row"><span class="key">R</span> reseed the field</div>
-  <div class="row"><span class="key">←→</span> density <span class="stat" id="sDensity">—</span></div>
+  <div class="row"><span class="key">1–6</span> count <span class="stat" id="sCount">—</span></div>
+  <div class="row" style="opacity:.7;padding-left:2px">6 = one per pixel · &lt;10px → solid</div>
+  <div class="row"><span class="key">←→</span> fine count</div>
   <div class="row"><span class="key">↑↓</span> speed <span class="stat" id="sSpeed">—</span></div>
   <div class="row"><span class="key">P</span> pattern <span class="stat" id="sPattern">—</span></div>
   <div class="row"><span class="key">H</span> hide this panel</div>
-  <div class="row" style="margin-top:6px;opacity:.7"><span class="stat" id="sStats">—</span></div>
+  <div class="row" style="margin-top:6px;opacity:.75"><span class="stat" id="sStats">—</span></div>
 </div>
 
-<script>
+<div id="fatal"></div>
+
+<script type="module">
 "use strict";
 /* ============================================================================
-   Double Pendulum Field
+   Double Pendulum Field — WASM physics + WebGL2 instanced rendering
    ----------------------------------------------------------------------------
-   A grid of dots on black. Every dot owns an independent double pendulum.
-     - INNER arm angle  -> dot BRIGHTNESS  (down = bright, up = black)
-     - OUTER arm angle  -> dot HUE         (full rotation = full color wheel)
-   Tiny per-cell differences in the starting angles diverge chaotically, so a
-   coherent field dissolves into turbulent color over a few seconds.
+   A grid of dots on black, each an independent double pendulum.
+     INNER arm angle -> dot BRIGHTNESS  (down = bright, up = black)
+     OUTER arm angle -> dot HUE         (full rotation = full color wheel)
 
-   Performance notes:
-     - State lives in flat Float64Arrays (no per-pendulum objects -> no GC).
-     - Physics is RK4, fully inlined per step (no array allocs in the hot loop).
-     - Colors come from a precomputed string palette (hue x value) so we never
-       build a color string per dot per frame.
-   This comfortably runs several thousand pendulums at 60fps in plain JS. The
-   integrate() loop is self-contained and could be dropped into Rust/WASM later
-   if you want to push into the tens of thousands.
+   Two performance moves let this scale to hundreds of thousands of dots:
+     1. PHYSICS in Rust/WASM. RK4 over flat f64 arrays; the result is packed
+        into an interleaved f32 [θ1,θ2] buffer that lives in wasm memory.
+     2. RENDERING in one WebGL2 instanced draw call. Each dot is an instance;
+        the vertex shader derives its grid position from gl_InstanceID and its
+        color (HSV->RGB from the two angles) on the GPU. The CPU uploads the
+        angle buffer once per frame and issues a single draw — no per-dot work.
+
+   A pure-JS physics path is kept as a fallback if the wasm module can't load.
    ========================================================================== */
 
 const canvas = document.getElementById('stage');
-const ctx = canvas.getContext('2d', { alpha: false });
+const fatal = document.getElementById('fatal');
+const gl = canvas.getContext('webgl2', { alpha: false, antialias: false, premultipliedAlpha: false });
 
-// ---- physics constants ----
-const G = 9.81, L1 = 1, L2 = 1, M1 = 1, M2 = 1;
-const RAD2DEG = 180 / Math.PI;
-const MAX_DT = 0.008;          // largest stable RK4 step
+function die(msg) { fatal.textContent = msg; fatal.classList.add('show'); throw new Error(msg); }
+if (!gl) die('This experiment needs WebGL2, which this browser/device does not provide.');
+
 const TAU = Math.PI * 2;
 
-// ---- tunables ----
-let cols = 0, rows = 0, N = 0;
-let targetCols = 56;           // density (columns); rows derived from aspect
-const MIN_COLS = 12, MAX_COLS = 170;
-let speed = 1.0;               // sim seconds advanced per real second
-let showPend = false;          // draw the arms inside each dot
+// ---- tunables / state ----
+const COUNT_PRESETS = [2000, 20000, 100000, 300000, 800000, 'pixel'];
+const MAX_N = 1500000;          // safety ceiling so a 4K screen can't OOM
+let targetCount = 30000;
+let everyPixel = false;         // density 6: one pendulum per device pixel
+let speed = 1.0;
+let showPend = false;
 let hudHidden = false;
-let pattern = 0;               // seeding pattern index
+let pattern = 0;
+const PATTERNS = ['ripple', 'rainbow', 'twins', 'cascade'];
 
-// ---- state (flat typed arrays) ----
-let a1, a2, v1, v2;            // angles & angular velocities
-let cx, cy;                    // precomputed dot centers (device px)
-let cell = 0, dotR = 0, armL = 0;
+let cols = 0, rows = 0, N = 0;
+let cell = 0, halfExt = 0, roundFactor = 1, armL = 0, offX = 0, offY = 0;
+let cellCss = 0;
 let dpr = 1;
-
-// ---- color palette (hue x value -> "rgb(...)" string) ----
-const HUE_STEPS = 360, VAL_STEPS = 80;
-const palette = new Array(HUE_STEPS * VAL_STEPS);
-(function buildPalette(){
-  for (let h = 0; h < HUE_STEPS; h++) {
-    const hp = h / 60;
-    const x = 1 - Math.abs((hp % 2) - 1);
-    let rr, gg, bb;
-    if (hp < 1)      { rr = 1; gg = x; bb = 0; }
-    else if (hp < 2) { rr = x; gg = 1; bb = 0; }
-    else if (hp < 3) { rr = 0; gg = 1; bb = x; }
-    else if (hp < 4) { rr = 0; gg = x; bb = 1; }
-    else if (hp < 5) { rr = x; gg = 0; bb = 1; }
-    else             { rr = 1; gg = 0; bb = x; }
-    for (let vi = 0; vi < VAL_STEPS; vi++) {
-      const v = vi / (VAL_STEPS - 1);
-      const r = (rr * v * 255 + 0.5) | 0;
-      const g = (gg * v * 255 + 0.5) | 0;
-      const b = (bb * v * 255 + 0.5) | 0;
-      palette[h * VAL_STEPS + vi] = "rgb(" + r + "," + g + "," + b + ")";
-    }
-  }
-})();
+let engineName = 'wasm';
 
 // ---------------------------------------------------------------------------
-// Layout: size the canvas to the screen and choose a square-ish cell grid.
+// Shaders
+// ---------------------------------------------------------------------------
+const DOT_VS = `#version 300 es
+precision highp float;
+layout(location=0) in vec2 aCorner;   // unit-square corner [-1,1], per vertex
+layout(location=1) in vec2 aState;    // (theta1, theta2), per instance
+uniform vec2 uRes;       // drawing-buffer size in px
+uniform float uCell, uOffX, uOffY, uCols, uHalf;
+out vec3 vColor;
+out vec2 vLocal;
+vec3 hsv2rgb(float h, float s, float v){
+  vec3 p = abs(fract(vec3(h) + vec3(0.0, 2.0/3.0, 1.0/3.0)) * 6.0 - 3.0);
+  return v * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), s);
+}
+void main(){
+  float id  = float(gl_InstanceID);
+  float col = mod(id, uCols);
+  float row = floor(id / uCols);
+  vec2 center = vec2(uOffX + (col + 0.5) * uCell, uOffY + (row + 0.5) * uCell);
+  vec2 pos = center + aCorner * uHalf;
+  gl_Position = vec4(pos.x / uRes.x * 2.0 - 1.0, 1.0 - pos.y / uRes.y * 2.0, 0.0, 1.0);
+  vLocal = aCorner;
+  float bright = (1.0 + cos(aState.x)) * 0.5;        // inner arm -> brightness
+  float hue    = fract(aState.y / 6.28318530718);    // outer arm -> hue
+  vColor = hsv2rgb(hue, 1.0, bright);
+}`;
+
+const DOT_FS = `#version 300 es
+precision highp float;
+in vec3 vColor;
+in vec2 vLocal;
+uniform float uRound;     // 1 = round dot w/ gap, 0 = solid square cell
+out vec4 frag;
+void main(){
+  float r = length(vLocal);
+  float aa = fwidth(r);
+  float roundA = 1.0 - smoothstep(1.0 - aa, 1.0, r);  // soft round edge
+  float alpha = mix(1.0, roundA, uRound);             // morph to solid square
+  if (alpha <= 0.0) discard;
+  frag = vec4(vColor, alpha);
+}`;
+
+const ARM_VS = `#version 300 es
+precision highp float;
+layout(location=0) in float aVid;   // 0..3 (pivot, j1, j1, j2) per vertex
+layout(location=1) in vec2 aState;  // (theta1, theta2) per instance
+uniform vec2 uRes;
+uniform float uCell, uOffX, uOffY, uCols, uArm;
+void main(){
+  float id  = float(gl_InstanceID);
+  float col = mod(id, uCols);
+  float row = floor(id / uCols);
+  vec2 center = vec2(uOffX + (col + 0.5) * uCell, uOffY + (row + 0.5) * uCell);
+  vec2 j1 = center + uArm * vec2(sin(aState.x), cos(aState.x));
+  vec2 j2 = j1     + uArm * vec2(sin(aState.y), cos(aState.y));
+  vec2 p = aVid < 0.5 ? center : (aVid < 2.5 ? j1 : j2);
+  gl_Position = vec4(p.x / uRes.x * 2.0 - 1.0, 1.0 - p.y / uRes.y * 2.0, 0.0, 1.0);
+}`;
+
+const ARM_FS = `#version 300 es
+precision highp float;
+out vec4 frag;
+void main(){ frag = vec4(1.0, 1.0, 1.0, 0.55); }`;
+
+function compile(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) die('Shader error: ' + gl.getShaderInfoLog(s));
+  return s;
+}
+function program(vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) die('Link error: ' + gl.getProgramInfoLog(p));
+  return p;
+}
+function uniforms(p, names) {
+  const u = {};
+  for (const n of names) u[n] = gl.getUniformLocation(p, n);
+  return u;
+}
+
+const dotProg = program(DOT_VS, DOT_FS);
+const armProg = program(ARM_VS, ARM_FS);
+const dotU = uniforms(dotProg, ['uRes', 'uCell', 'uOffX', 'uOffY', 'uCols', 'uHalf', 'uRound']);
+const armU = uniforms(armProg, ['uRes', 'uCell', 'uOffX', 'uOffY', 'uCols', 'uArm']);
+
+// ---- static geometry buffers ----
+const quadBuf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+
+const vidBuf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, vidBuf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 1, 2, 3]), gl.STATIC_DRAW);
+
+// ---- per-instance state buffer (re-uploaded each frame) ----
+const stateBuf = gl.createBuffer();
+
+// ---- VAOs ----
+const vaoDots = gl.createVertexArray();
+gl.bindVertexArray(vaoDots);
+gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+gl.bindBuffer(gl.ARRAY_BUFFER, stateBuf);
+gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
+gl.vertexAttribDivisor(1, 1);
+
+const vaoArms = gl.createVertexArray();
+gl.bindVertexArray(vaoArms);
+gl.bindBuffer(gl.ARRAY_BUFFER, vidBuf);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 1, gl.FLOAT, false, 0, 0);
+gl.bindBuffer(gl.ARRAY_BUFFER, stateBuf);
+gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
+gl.vertexAttribDivisor(1, 1);
+gl.bindVertexArray(null);
+
+gl.enable(gl.BLEND);
+gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+gl.clearColor(0, 0, 0, 1);
+
+// ---------------------------------------------------------------------------
+// Physics — WASM core, with a JS fallback that exposes the same interface:
+//   resize(cols, rows), seed(pattern), step(simDt, maxSub), .count, .renderView
+// ---------------------------------------------------------------------------
+const MAX_SUB = 12;
+
+let physics = null;
+let wasm = null;
+
+class WasmField {
+  constructor(Field, mem) { this.Field = Field; this.mem = mem; this.f = new Field(); this.renderView = new Float32Array(0); this.count = 0; }
+  resize(c, r) { this.f.resize(c, r); this._rebind(); }
+  _rebind() { this.count = this.f.count(); this.renderView = new Float32Array(this.mem.buffer, this.f.render_ptr(), this.count * 2); }
+  seed(p) { this.f.seed(p); this._guard(); }
+  step(dt, sub) { this.f.step(dt, sub); this._guard(); }
+  // wasm memory can be detached if it ever grows; rebuild the view if so
+  _guard() { if (this.renderView.buffer !== this.mem.buffer) this._rebind(); }
+}
+
+// Fast sincos + derivative for the JS fallback, mirroring src/lib.rs.
+let _s = 0, _c = 0, _o1 = 0, _o2 = 0;
+function jsSinCos(x) {
+  const q = Math.round(x * 0.636619772367581343);   // 2/π
+  const r = x - q * 1.5707963267948966;              // π/2 ; r ∈ [-π/4, π/4]
+  const r2 = r * r;
+  const s = r * (1 - r2 * (1 / 6 - r2 * (1 / 120 - r2 * (1 / 5040))));
+  const c = 1 - r2 * (0.5 - r2 * (1 / 24 - r2 * (1 / 720)));
+  const qi = q - 4 * Math.floor(q / 4);              // 0..3, no 32-bit limit
+  if (qi < 0.5) { _s = s; _c = c; }
+  else if (qi < 1.5) { _s = c; _c = -s; }
+  else if (qi < 2.5) { _s = -s; _c = -c; }
+  else { _s = -c; _c = s; }
+}
+function jsDeriv(t1, t2, w1, w2) {
+  const G = 9.81;
+  jsSinCos(t1 - t2); const sd = _s, cd = _c;
+  jsSinCos(t1); const st1 = _s, ct1 = _c;
+  jsSinCos(t1 - 2 * t2); const sm = _s;
+  const cos2d = 1 - 2 * sd * sd;
+  const den = 3 - cos2d;                             // 2m1+m2 - m2·cos2d, units=1
+  _o1 = (-G * 3 * st1 - G * sm - 2 * sd * (w2 * w2 + w1 * w1 * cd)) / den;
+  _o2 = (2 * sd * (w1 * w1 * 2 + G * 2 * ct1 + w2 * w2 * cd)) / den;
+}
+
+// Pure-JS double pendulum, mirrors src/lib.rs exactly.
+class JsField {
+  constructor() { this.cols = 0; this.rows = 0; this.count = 0; this.renderView = new Float32Array(0); }
+  resize(c, r) {
+    this.cols = c; this.rows = r; this.count = c * r;
+    this.a1 = new Float64Array(this.count); this.a2 = new Float64Array(this.count);
+    this.v1 = new Float64Array(this.count); this.v2 = new Float64Array(this.count);
+    this.renderView = new Float32Array(this.count * 2);
+  }
+  seed(p) {
+    const { cols, rows } = this, HALF = Math.PI / 2, PI = Math.PI;
+    for (let r = 0; r < rows; r++) {
+      const fr = rows > 1 ? r / (rows - 1) : 0.5;
+      for (let c = 0; c < cols; c++) {
+        const fc = cols > 1 ? c / (cols - 1) : 0.5, i = r * cols + c;
+        let t1, t2;
+        switch (p) {
+          case 1: t1 = HALF + (fc - 0.5) * PI; t2 = fr * TAU; break;
+          case 2: t1 = HALF + (fc - 0.5) * 0.05 + (fr - 0.5) * 0.05; t2 = HALF; break;
+          case 3: t1 = PI + Math.sin((fc + fr) * PI) * 1.1; t2 = PI + Math.cos((fc - fr) * PI) * 1.1; break;
+          default: t1 = HALF + (fc - 0.5) * 0.6; t2 = HALF + (fr - 0.5) * 0.6;
+        }
+        this.a1[i] = t1; this.a2[i] = t2; this.v1[i] = 0; this.v2[i] = 0;
+      }
+    }
+    this._fill();
+  }
+  step(simDt, maxSub) {
+    if (simDt <= 0 || this.count === 0) return;
+    const want = Math.ceil(simDt / 0.008);
+    const sub = Math.max(1, Math.min(maxSub, want));
+    const dt = Math.min(simDt / sub, 0.008);   // cap for stability (slow-mo when capped)
+    for (let s = 0; s < sub; s++) this._integrate(dt);
+    this._fill();
+  }
+  _integrate(dt) {
+    const h = dt, h2 = dt * 0.5, h6 = dt / 6, n = this.count;
+    const A1 = this.a1, A2 = this.a2, V1 = this.v1, V2 = this.v2;
+    for (let i = 0; i < n; i++) {
+      const t1 = A1[i], t2 = A2[i], w1 = V1[i], w2 = V2[i];
+      jsDeriv(t1, t2, w1, w2);
+      const k1t1 = w1, k1t2 = w2, k1w1 = _o1, k1w2 = _o2;
+      jsDeriv(t1 + h2 * k1t1, t2 + h2 * k1t2, w1 + h2 * k1w1, w2 + h2 * k1w2);
+      const k2t1 = w1 + h2 * k1w1, k2t2 = w2 + h2 * k1w2, k2w1 = _o1, k2w2 = _o2;
+      jsDeriv(t1 + h2 * k2t1, t2 + h2 * k2t2, w1 + h2 * k2w1, w2 + h2 * k2w2);
+      const k3t1 = w1 + h2 * k2w1, k3t2 = w2 + h2 * k2w2, k3w1 = _o1, k3w2 = _o2;
+      jsDeriv(t1 + h * k3t1, t2 + h * k3t2, w1 + h * k3w1, w2 + h * k3w2);
+      const k4t1 = w1 + h * k3w1, k4t2 = w2 + h * k3w2, k4w1 = _o1, k4w2 = _o2;
+      A1[i] = t1 + h6 * (k1t1 + 2 * k2t1 + 2 * k3t1 + k4t1);
+      A2[i] = t2 + h6 * (k1t2 + 2 * k2t2 + 2 * k3t2 + k4t2);
+      V1[i] = w1 + h6 * (k1w1 + 2 * k2w1 + 2 * k3w1 + k4w1);
+      V2[i] = w2 + h6 * (k1w2 + 2 * k2w2 + 2 * k3w2 + k4w2);
+    }
+  }
+  _fill() {
+    const rv = this.renderView, A1 = this.a1, A2 = this.a2, n = this.count;
+    for (let i = 0; i < n; i++) { rv[2 * i] = A1[i]; rv[2 * i + 1] = A2[i]; }
+  }
+}
+
+async function initPhysics() {
+  try {
+    const mod = await import('./pkg/double_pendulum.js');
+    wasm = await mod.default();          // returns the wasm instance exports (incl. memory)
+    physics = new WasmField(mod.Field, wasm.memory);
+    engineName = 'wasm';
+  } catch (e) {
+    console.warn('WASM physics unavailable, falling back to JS:', e);
+    physics = new JsField();
+    engineName = 'js';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Layout: size canvas, choose a grid of ~targetCount cells that fills the
+// screen, then (re)allocate the field.
 // ---------------------------------------------------------------------------
 function layout() {
   dpr = Math.min(window.devicePixelRatio || 1, 2);
   const cssW = window.innerWidth, cssH = window.innerHeight;
   canvas.style.width = cssW + 'px';
   canvas.style.height = cssH + 'px';
-  canvas.width  = Math.round(cssW * dpr);
-  canvas.height = Math.round(cssH * dpr);
+  canvas.width = Math.max(1, Math.round(cssW * dpr));
+  canvas.height = Math.max(1, Math.round(cssH * dpr));
+  gl.viewport(0, 0, canvas.width, canvas.height);
 
-  cols = Math.max(MIN_COLS, Math.min(MAX_COLS, targetCols | 0));
-  cell = canvas.width / cols;                 // device px per cell
-  rows = Math.max(1, Math.floor(canvas.height / cell));
+  const W = canvas.width, H = canvas.height;
+  // pick a grid of ~target cells, or one-per-pixel at the top of the range
+  let want = everyPixel ? W * H : targetCount;
+  want = Math.min(want, MAX_N);
+  const c = Math.sqrt((W * H) / want);
+  cols = Math.max(2, Math.round(W / c));
+  rows = Math.max(2, Math.round(H / c));
+  cell = W / cols;                       // fill width exactly
+  offX = 0;
+  offY = (H - rows * cell) * 0.5;        // center vertically
   N = cols * rows;
 
-  dotR = cell * 0.40;
+  // Shape: big cells -> round dots with a gap; below ~10 CSS px morph into
+  // solid square cells that tile edge-to-edge (a continuous field); at 1px,
+  // every pixel is a pendulum.
+  cellCss = cell / dpr;
+  roundFactor = Math.min(1, Math.max(0, (cellCss - 8) / 4)); // 1 @>=12px, 0 @<=8px
+  const halfRound = cell * 0.46, halfSquare = cell * 0.5;
+  halfExt = halfSquare + (halfRound - halfSquare) * roundFactor;
   armL = cell * 0.18;
 
-  cx = new Float64Array(N);
-  cy = new Float64Array(N);
-  const offY = (canvas.height - rows * cell) * 0.5; // center vertically
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const i = r * cols + c;
-      cx[i] = (c + 0.5) * cell;
-      cy[i] = offY + (r + 0.5) * cell;
-    }
-  }
+  physics.resize(cols, rows);
   seed();
-  document.getElementById('sDensity').textContent = cols + '×' + rows + ' (' + N + ')';
+  document.getElementById('sCount').textContent = cols + '×' + rows + ' = ' + N.toLocaleString();
 }
 
-// ---------------------------------------------------------------------------
-// Seed the field. Small smooth spatial gradients in the starting angles read
-// as a coherent pattern that chaos then tears apart.
-// ---------------------------------------------------------------------------
-const PATTERNS = ['ripple', 'rainbow', 'twins', 'cascade'];
 function seed() {
-  a1 = new Float64Array(N);
-  a2 = new Float64Array(N);
-  v1 = new Float64Array(N);
-  v2 = new Float64Array(N);
-  const HALF = Math.PI / 2;
-  for (let r = 0; r < rows; r++) {
-    const fr = rows > 1 ? r / (rows - 1) : 0.5;
-    for (let c = 0; c < cols; c++) {
-      const fc = cols > 1 ? c / (cols - 1) : 0.5;
-      const i = r * cols + c;
-      let t1, t2;
-      switch (pattern) {
-        case 1: // rainbow: full spread of energy & hue across the grid
-          t1 = HALF + (fc - 0.5) * Math.PI;
-          t2 = fr * TAU;
-          break;
-        case 2: // twins: nearly identical -> dramatic sync-to-chaos reveal
-          t1 = HALF + (fc - 0.5) * 0.05 + (fr - 0.5) * 0.05;
-          t2 = HALF;
-          break;
-        case 3: // cascade: a diagonal wave
-          t1 = Math.PI + Math.sin((fc + fr) * Math.PI) * 1.1;
-          t2 = Math.PI + Math.cos((fc - fr) * Math.PI) * 1.1;
-          break;
-        default: // ripple: gentle radial gradient, lively everywhere
-          t1 = HALF + (fc - 0.5) * 0.6;
-          t2 = HALF + (fr - 0.5) * 0.6;
-      }
-      a1[i] = t1; a2[i] = t2;
-    }
-  }
+  physics.seed(pattern);
   document.getElementById('sPattern').textContent = PATTERNS[pattern];
 }
 
 // ---------------------------------------------------------------------------
-// Physics. deriv() writes angular accelerations into module scratch vars to
-// avoid allocating an array on every call (this runs N*4 times per substep).
-// ---------------------------------------------------------------------------
-let _o1 = 0, _o2 = 0;
-function deriv(t1, t2, w1, w2) {
-  const d = t1 - t2;
-  const sd = Math.sin(d), cd = Math.cos(d);
-  const den = 2 * M1 + M2 - M2 * Math.cos(2 * d);
-  _o1 = (-G * (2 * M1 + M2) * Math.sin(t1)
-         - M2 * G * Math.sin(t1 - 2 * t2)
-         - 2 * sd * M2 * (w2 * w2 * L2 + w1 * w1 * L1 * cd)) / (L1 * den);
-  _o2 = (2 * sd * (w1 * w1 * L1 * (M1 + M2)
-         + G * (M1 + M2) * Math.cos(t1)
-         + w2 * w2 * L2 * M2 * cd)) / (L2 * den);
-}
-
-function integrate(dt) {
-  const h = dt, h2 = dt * 0.5, h6 = dt / 6;
-  for (let i = 0; i < N; i++) {
-    const t1 = a1[i], t2 = a2[i], w1 = v1[i], w2 = v2[i];
-
-    deriv(t1, t2, w1, w2);
-    const k1t1 = w1, k1t2 = w2, k1w1 = _o1, k1w2 = _o2;
-
-    deriv(t1 + h2 * k1t1, t2 + h2 * k1t2, w1 + h2 * k1w1, w2 + h2 * k1w2);
-    const k2t1 = w1 + h2 * k1w1, k2t2 = w2 + h2 * k1w2, k2w1 = _o1, k2w2 = _o2;
-
-    deriv(t1 + h2 * k2t1, t2 + h2 * k2t2, w1 + h2 * k2w1, w2 + h2 * k2w2);
-    const k3t1 = w1 + h2 * k2w1, k3t2 = w2 + h2 * k2w2, k3w1 = _o1, k3w2 = _o2;
-
-    deriv(t1 + h * k3t1, t2 + h * k3t2, w1 + h * k3w1, w2 + h * k3w2);
-    const k4t1 = w1 + h * k3w1, k4t2 = w2 + h * k3w2, k4w1 = _o1, k4w2 = _o2;
-
-    a1[i] = t1 + h6 * (k1t1 + 2 * k2t1 + 2 * k3t1 + k4t1);
-    a2[i] = t2 + h6 * (k1t2 + 2 * k2t2 + 2 * k3t2 + k4t2);
-    v1[i] = w1 + h6 * (k1w1 + 2 * k2w1 + 2 * k3w1 + k4w1);
-    v2[i] = w2 + h6 * (k1w2 + 2 * k2w2 + 2 * k3w2 + k4w2);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Render.
+// Render — upload the angle buffer once, then one instanced draw per layer.
 // ---------------------------------------------------------------------------
 function render() {
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  gl.clear(gl.COLOR_BUFFER_BIT);
 
-  const VS1 = VAL_STEPS - 1;
-  for (let i = 0; i < N; i++) {
-    const t1 = a1[i];
-    // brightness: inner arm. down (t1=0) -> 1, up (t1=±pi) -> 0
-    const bright = (1 + Math.cos(t1)) * 0.5;
-    // hue: outer arm absolute angle wrapped to [0,360)
-    let hue = a2[i] * RAD2DEG;
-    hue = hue - Math.floor(hue / 360) * 360;
-    let hIdx = hue | 0; if (hIdx > 359) hIdx = 359;
-    let vIdx = (bright * VS1 + 0.5) | 0;
-    if (vIdx > VS1) vIdx = VS1; else if (vIdx < 0) vIdx = 0;
+  gl.bindBuffer(gl.ARRAY_BUFFER, stateBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, physics.renderView, gl.DYNAMIC_DRAW);
 
-    ctx.fillStyle = palette[hIdx * VAL_STEPS + vIdx];
-    ctx.beginPath();
-    ctx.arc(cx[i], cy[i], dotR, 0, TAU);
-    ctx.fill();
+  gl.useProgram(dotProg);
+  gl.uniform2f(dotU.uRes, canvas.width, canvas.height);
+  gl.uniform1f(dotU.uCell, cell);
+  gl.uniform1f(dotU.uOffX, offX);
+  gl.uniform1f(dotU.uOffY, offY);
+  gl.uniform1f(dotU.uCols, cols);
+  gl.uniform1f(dotU.uHalf, halfExt);
+  gl.uniform1f(dotU.uRound, roundFactor);
+  gl.bindVertexArray(vaoDots);
+  gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, N);
+
+  if (showPend && cellCss >= 5) {   // arms are sub-pixel below this
+    gl.useProgram(armProg);
+    gl.uniform2f(armU.uRes, canvas.width, canvas.height);
+    gl.uniform1f(armU.uCell, cell);
+    gl.uniform1f(armU.uOffX, offX);
+    gl.uniform1f(armU.uOffY, offY);
+    gl.uniform1f(armU.uCols, cols);
+    gl.uniform1f(armU.uArm, armL);
+    gl.bindVertexArray(vaoArms);
+    gl.drawArraysInstanced(gl.LINES, 0, 4, N);
   }
-
-  if (showPend) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-    ctx.lineWidth = Math.max(1, cell * 0.035);
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    for (let i = 0; i < N; i++) {
-      const px = cx[i], py = cy[i];
-      const j1x = px + armL * Math.sin(a1[i]);
-      const j1y = py + armL * Math.cos(a1[i]);
-      const j2x = j1x + armL * Math.sin(a2[i]);
-      const j2y = j1y + armL * Math.cos(a2[i]);
-      ctx.moveTo(px, py); ctx.lineTo(j1x, j1y); ctx.lineTo(j2x, j2y);
-    }
-    ctx.stroke();
-  }
+  gl.bindVertexArray(null);
 }
 
 // ---------------------------------------------------------------------------
-// Main loop. Advance ~speed*realtime per frame, split into stable substeps.
+// Main loop.
 // ---------------------------------------------------------------------------
-let lastT = 0, fps = 0, fpsT = 0, fpsN = 0;
+let lastT = 0, fpsT = 0, fpsN = 0;
 function frame(now) {
   if (!lastT) lastT = now;
   let elapsed = (now - lastT) / 1000;
   lastT = now;
-  if (elapsed > 0.05) elapsed = 0.05;          // clamp after tab-away
+  if (elapsed > 0.05) elapsed = 0.05;     // clamp after a stall / tab-away
 
-  let simDt = elapsed * speed;
-  if (simDt > 0) {
-    const sub = Math.max(1, Math.ceil(simDt / MAX_DT));
-    const dt = simDt / sub;
-    for (let s = 0; s < sub; s++) integrate(dt);
-  }
+  // Fewer substeps as the field grows, to bound per-frame physics cost. With
+  // the dt cap in step(), capping substeps just means graceful slow motion.
+  const sub = N > 400000 ? 1 : N > 120000 ? 2 : N > 40000 ? 4 : MAX_SUB;
+  physics.step(elapsed * speed, sub);
   render();
 
-  // fps readout
   fpsN++; fpsT += elapsed;
   if (fpsT >= 0.5) {
-    fps = Math.round(fpsN / fpsT); fpsT = 0; fpsN = 0;
-    document.getElementById('sStats').textContent = fps + ' fps · ' + N + ' pendulums';
+    const fps = Math.round(fpsN / fpsT); fpsT = 0; fpsN = 0;
+    document.getElementById('sStats').textContent =
+      fps + ' fps · ' + N.toLocaleString() + ' pendulums · ' + engineName.toUpperCase();
   }
   requestAnimationFrame(frame);
 }
@@ -315,25 +462,28 @@ function frame(now) {
 // Input.
 // ---------------------------------------------------------------------------
 function setSpeed(s) {
-  speed = Math.max(0, Math.min(6, s));
+  speed = Math.max(0, Math.min(8, s));
   document.getElementById('sSpeed').textContent = speed.toFixed(2) + '×';
 }
+function setCount(n) {
+  everyPixel = false;
+  targetCount = Math.max(200, Math.min(MAX_N, Math.round(n)));
+  layout();
+}
+function setPreset(p) {
+  if (p === 'pixel') { everyPixel = true; layout(); }
+  else setCount(p);
+}
 window.addEventListener('keydown', (e) => {
+  if (e.key >= '1' && e.key <= '6') { setPreset(COUNT_PRESETS[+e.key - 1]); return; }
   switch (e.key) {
-    case ' ':
-      showPend = !showPend; e.preventDefault(); break;
-    case 'r': case 'R':
-      seed(); break;
-    case 'ArrowLeft':
-      targetCols = Math.max(MIN_COLS, targetCols - 6); layout(); e.preventDefault(); break;
-    case 'ArrowRight':
-      targetCols = Math.min(MAX_COLS, targetCols + 6); layout(); e.preventDefault(); break;
-    case 'ArrowUp':
-      setSpeed(speed + 0.25); e.preventDefault(); break;
-    case 'ArrowDown':
-      setSpeed(speed - 0.25); e.preventDefault(); break;
-    case 'p': case 'P':
-      pattern = (pattern + 1) % PATTERNS.length; seed(); break;
+    case ' ': showPend = !showPend; e.preventDefault(); break;
+    case 'r': case 'R': seed(); break;
+    case 'ArrowLeft': setCount(N * 0.8); e.preventDefault(); break;
+    case 'ArrowRight': setCount(N * 1.25); e.preventDefault(); break;
+    case 'ArrowUp': setSpeed(speed + 0.25); e.preventDefault(); break;
+    case 'ArrowDown': setSpeed(speed - 0.25); e.preventDefault(); break;
+    case 'p': case 'P': pattern = (pattern + 1) % PATTERNS.length; seed(); break;
     case 'h': case 'H':
       hudHidden = !hudHidden;
       document.getElementById('hud').classList.toggle('hidden', hudHidden);
@@ -348,10 +498,16 @@ window.addEventListener('resize', () => {
   resizeRAF = requestAnimationFrame(layout);
 });
 
+// small console hook (handy for poking at the field)
+window.DP = { get N() { return N; }, get engine() { return engineName; },
+  get cellCss() { return cellCss; }, toggleArms() { showPend = !showPend; },
+  setCount, setPreset, setSpeed };
+
 // ---------------------------------------------------------------------------
 // Go.
 // ---------------------------------------------------------------------------
 setSpeed(1.0);
+await initPhysics();
 layout();
 requestAnimationFrame(frame);
 </script>

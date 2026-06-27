@@ -1,0 +1,15 @@
+{
+  "name": "double-pendulum",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "double_pendulum_bg.wasm",
+    "double_pendulum.js",
+    "double_pendulum.d.ts"
+  ],
+  "main": "double_pendulum.js",
+  "types": "double_pendulum.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
