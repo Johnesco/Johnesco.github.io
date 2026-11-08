@@ -8,7 +8,7 @@
   "projects": [
     {
       "name": "Texas Votes, Raised",
-      "url": "https://johnesco.github.io/texas/",
+      "url": "https://johnesco.github.io/usavote/",
       "blurb": "All 18 statewide races from the Texas 2026 election. The flat county map rises into columns sized by votes cast, which shows how a mostly red map can still belong to a Democratic win.",
       "tech": "Interactive map, election data",
       "status": "featured",
