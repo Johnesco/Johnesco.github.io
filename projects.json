@@ -1,0 +1,102 @@
+{
+  "groups": [
+    "Games",
+    "Learning",
+    "Tools",
+    "Experiments"
+  ],
+  "projects": [
+    {
+      "name": "Texas Votes, Raised",
+      "url": "https://johnesco.github.io/texas/",
+      "blurb": "All 18 statewide races from the Texas 2026 election. The flat county map rises into columns sized by votes cast, which shows how a mostly red map can still belong to a Democratic win.",
+      "tech": "Interactive map, election data",
+      "status": "featured",
+      "image": "img/texas.webp"
+    },
+    {
+      "name": "Pavement Pursuit",
+      "url": "https://vibecodedgames.itch.io/pavement",
+      "blurb": "A top-down arcade racer on procedurally generated roads, from bright noon to pitch dark. Chase a medal across a season while the law closes in. Plays on phones and desktops.",
+      "tech": "PixiJS, on itch.io",
+      "status": "featured",
+      "image": "img/pavement.webp"
+    },
+    {
+      "name": "IF Hub",
+      "url": "https://johnesco.github.io/ifhub/",
+      "blurb": "Play text adventures in the browser, with each game's source code and walkthrough alongside it. Games come from Inform 7, Sharpee, Ink and Rez workspaces.",
+      "tech": "Interactive fiction, GitHub Actions",
+      "status": "featured",
+      "image": "img/ifhub.webp"
+    },
+    {
+      "name": "Austin Karaoke Directory",
+      "url": "https://www.karaokedirectory.com/",
+      "blurb": "A live directory of karaoke venues across Austin, with venue details, schedules and search.",
+      "tech": "Live site",
+      "status": "featured",
+      "image": "img/karaokedirectory.webp"
+    },
+    {
+      "name": "Chord Builder",
+      "url": "https://johnesco.github.io/chord-builder/",
+      "blurb": "Click piano keys to build chords, see them named automatically, drag them into a progression, then play it back.",
+      "tech": "Tone.js, Tonal.js",
+      "status": "featured",
+      "image": "img/chord-builder.webp"
+    },
+    {
+      "name": "Cellular Automata",
+      "url": "https://johnesco.github.io/ca/",
+      "blurb": "A simulator for five kinds of automata: Conway's Life variants, Elementary 1D, Brian's Brain, Wireworld and Cyclic.",
+      "tech": "Rust, WebAssembly, Canvas",
+      "status": "featured",
+      "image": "img/ca.webp"
+    },
+    {
+      "name": "SQL Course",
+      "url": "https://johnesco.github.io/edu/sql/index.html",
+      "blurb": "Twenty interactive lessons on a real SQLite database running in your browser, with a sandbox, exercises and progress tracking.",
+      "tech": "SQLite, WebAssembly",
+      "status": "featured",
+      "image": "img/sql.webp"
+    },
+    {
+      "name": "Calculator Romanus",
+      "url": "https://johnesco.github.io/roman-calculator/",
+      "blurb": "A working calculator that uses only Roman numerals, on the display and on the buttons, down to fractions in twelfths.",
+      "tech": "HTML, CSS, JavaScript",
+      "status": "featured",
+      "image": "img/roman.webp"
+    },
+
+    { "name": "All games", "url": "https://johnesco.github.io/games/", "blurb": "A public workbench of works in progress", "group": "Games", "status": "listed" },
+    { "name": "Gridland", "url": "https://johnesco.github.io/games/gridland/", "blurb": "A tiny world of villagers you can watch", "group": "Games", "status": "listed" },
+    { "name": "Blackout Poetry", "url": "https://johnesco.github.io/games/blackout/index.html", "blurb": "Compose found poems from a page of text", "group": "Games", "status": "listed" },
+    { "name": "Snake", "url": "https://johnesco.github.io/games/snake/", "blurb": "The classic, on a 20 by 15 grid", "group": "Games", "status": "listed" },
+
+    { "name": "Learn ASL!", "url": "https://johnesco.github.io/deaf/", "blurb": "A guide to finding ASL learning resources", "group": "Learning", "status": "listed" },
+    { "name": "Fun Learning", "url": "https://johnesco.github.io/edu/", "blurb": "Lessons on braille, Git, SQL, states and more", "group": "Learning", "status": "listed" },
+    { "name": "GitHub Pages explained", "url": "https://johnesco.github.io/github/", "blurb": "How it all works", "group": "Learning", "status": "listed" },
+    { "name": "Building a Calculator", "url": "https://johnesco.github.io/experiments/calculator/", "blurb": "A step-by-step walkthrough", "group": "Learning", "status": "listed" },
+
+
+    { "name": "Dynamic Resume", "url": "https://johnesco.github.io/resume/index.html", "blurb": "A JSON-driven resume with role profiles", "group": "Tools", "status": "listed" },
+    { "name": "JobFinder", "url": "https://johnesco.github.io/tools/jobfinder/index.html", "blurb": "Search many job boards at once", "group": "Tools", "status": "listed" },
+    { "name": "Proofreader", "url": "https://johnesco.github.io/tools/proofread/index.html", "blurb": "A sentence-level grammar tool", "group": "Tools", "status": "listed" },
+    { "name": "Decode", "url": "https://johnesco.github.io/decode/", "blurb": "A decoder ring", "group": "Tools", "status": "listed" },
+    { "name": "ifPlayer", "url": "https://johnesco.github.io/ifplayer/", "blurb": "A test runner for Inform 7 games", "group": "Tools", "status": "listed" },
+    { "name": "Portman", "url": "https://github.com/Johnesco/portman", "blurb": "One local server for all your projects", "group": "Tools", "status": "listed" },
+    { "name": "sdlc-baseline", "url": "https://github.com/Johnesco/sdlc-baseline", "blurb": "A lightweight GitHub-native process for solo developers", "group": "Tools", "status": "listed" },
+
+    { "name": "All experiments", "url": "https://johnesco.github.io/experiments/", "blurb": "Everything in the sandbox", "group": "Experiments", "status": "listed" },
+    { "name": "Songorder", "url": "https://johnesco.github.io/experiments/songorder/", "blurb": "A karaoke queue fairness simulator", "group": "Experiments", "status": "listed" },
+    { "name": "Double Pendulum Field", "url": "https://johnesco.github.io/experiments/double/", "blurb": "Thousands of pendulums drawn as one moving field", "group": "Experiments", "status": "listed" },
+    { "name": "NeuralPong", "url": "https://johnesco.github.io/experiments/neuralpong/", "blurb": "Watch an AI learn Pong", "group": "Experiments", "status": "listed" },
+    { "name": "HyperPaint", "url": "https://johnesco.github.io/experiments/hyperpaint/", "blurb": "Natural media painting", "group": "Experiments", "status": "listed" },
+    { "name": "Prime Gaps", "url": "https://johnesco.github.io/experiments/primes/", "blurb": "A prime gap visualizer in Rust and WebAssembly", "group": "Experiments", "status": "listed" },
+    { "name": "Wordcluster", "url": "https://johnesco.github.io/experiments/wordcluster/", "blurb": "A word-association poetry game", "group": "Experiments", "status": "listed" },
+    { "name": "Infinite Monkeys", "url": "https://johnesco.github.io/monkeys/index.html", "blurb": "The theorem, visualized", "group": "Experiments", "status": "listed" }
+  ]
+}

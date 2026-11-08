@@ -19,3 +19,4 @@ experiments/wordcluster/build/glove*
 experiments/primes/target/
 experiments/double/target/
 experiments/double/.claude/
+.claude/

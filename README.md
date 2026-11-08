@@ -1,31 +1,40 @@
 # johnesco.github.io
 
-Personal website and portfolio hosted on GitHub Pages.
+John Escobedo's portfolio, hosted on GitHub Pages: **[johnesco.github.io](https://johnesco.github.io/)**
 
-**[View Site](https://johnesco.github.io/)**
+Pushing to `master` publishes the site. There is no build step.
 
----
+## Change what the portfolio shows
 
-## Sections
+Edit [`projects.json`](projects.json). `index.html` draws the page from it.
 
-| Directory | Description |
-|-----------|-------------|
-| [`/resume`](resume/) | Interactive resume with filtering, multiple formats, and visual timeline |
-| `/karaoke` | Karaoke song catalog |
-| `/javascript` | JavaScript experiments and tools |
-| `/writing` | Writing samples |
-| `/decode` | Decoder ring tool |
+| Field | Meaning |
+|---|---|
+| `name` | Title shown on the page |
+| `url` | Full URL, including `https://` |
+| `blurb` | What it is, in plain words |
+| `status` | `featured` (in the "Top projects" carousel, with a screenshot), `listed` (in "More to try") or `hidden` (not drawn) |
+| `group` | For `listed` projects: one of the names in `groups` |
+| `tech` | Optional, for `featured` projects: what it's built with |
+| `image` | Optional, for `featured` projects: a file in `img/`, about 1000×625 |
 
----
+The order in the file is the order on the page.
 
-## Tech Stack
+`hidden` only removes a project from this page. The project stays reachable at its own URL, and this file is public, so keep private notes out of it. To take a project offline, turn off Pages in that project's repo.
 
-- Vanilla JavaScript (no frameworks)
-- CSS3 with Grid/Flexbox
-- GitHub Pages (static hosting)
+## How projects get here
 
----
+Each project lives in its own repo and folder under `C:\code`. Any repo with Pages turned on is served at `johnesco.github.io/<repo>/`, so this site only links to it. Don't copy projects in here, and don't create a folder here with the same name as a Pages repo.
 
-## Local Development
+Small pieces with no repo of their own, like `experiments/`, can stay in this repo.
 
-Open any `index.html` in a browser. No build step required.
+## Preview locally
+
+The page loads `projects.json`, so opening `index.html` directly from disk won't show the list. Serve it with [Portman](https://github.com/Johnesco/portman), which needs Flask (`pip install flask`):
+
+```bash
+python C:/code/portman/portman.py add portfolio C:/code/Johnesco.github.io
+python C:/code/portman/portman.py
+```
+
+Then open http://127.0.0.1:9000/portfolio/. Project links go to the live sites.
