@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page not found</title>
+<script>
+  // The voter map moved from /texas/ to /usavote/. Keep old links working,
+  // including their page, ?race= parameters and #hash.
+  (function () {
+    var match = location.pathname.match(/^\/texas(\/.*)?$/i);
+    if (match) location.replace('/usavote' + (match[1] || '/') + location.search + location.hash);
+  })();
+</script>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 20vh auto 0; max-width: 32rem; padding: 0 16px; text-align: center; }
+</style>
+</head>
+<body>
+<h1>Page not found</h1>
+<p><a href="/">Go to the home page</a></p>
+</body>
+</html>
