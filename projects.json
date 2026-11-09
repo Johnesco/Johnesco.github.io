@@ -87,8 +87,6 @@
     { "name": "Proofreader", "url": "https://johnesco.github.io/tools/proofread/index.html", "blurb": "A sentence-level grammar tool", "group": "Tools", "status": "listed" },
     { "name": "Decode", "url": "https://johnesco.github.io/decode/", "blurb": "A decoder ring", "group": "Tools", "status": "listed" },
     { "name": "ifPlayer", "url": "https://johnesco.github.io/ifplayer/", "blurb": "A test runner for Inform 7 games", "group": "Tools", "status": "listed" },
-    { "name": "Portman", "url": "https://github.com/Johnesco/portman", "blurb": "One local server for all your projects", "group": "Tools", "status": "listed" },
-    { "name": "sdlc-baseline", "url": "https://github.com/Johnesco/sdlc-baseline", "blurb": "A lightweight GitHub-native process for solo developers", "group": "Tools", "status": "listed" },
 
     { "name": "All experiments", "url": "https://johnesco.github.io/experiments/", "blurb": "Everything in the sandbox", "group": "Experiments", "status": "listed" },
     { "name": "Songorder", "url": "https://johnesco.github.io/experiments/songorder/", "blurb": "A karaoke queue fairness simulator", "group": "Experiments", "status": "listed" },
