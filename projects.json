@@ -73,7 +73,6 @@
 
     { "name": "All games", "url": "https://johnesco.github.io/games/", "blurb": "A public workbench of works in progress", "group": "Games", "status": "listed" },
     { "name": "Gridland", "url": "https://johnesco.github.io/games/gridland/", "blurb": "A tiny world of villagers you can watch", "group": "Games", "status": "listed" },
-    { "name": "Blackout Poetry", "url": "https://johnesco.github.io/games/blackout/index.html", "blurb": "Compose found poems from a page of text", "group": "Games", "status": "listed" },
     { "name": "Snake", "url": "https://johnesco.github.io/games/snake/", "blurb": "The classic, on a 20 by 15 grid", "group": "Games", "status": "listed" },
 
     { "name": "Learn ASL!", "url": "https://johnesco.github.io/deaf/", "blurb": "A guide to finding ASL learning resources", "group": "Learning", "status": "listed" },
@@ -82,10 +81,11 @@
     { "name": "Building a Calculator", "url": "https://johnesco.github.io/experiments/calculator/", "blurb": "A step-by-step walkthrough", "group": "Learning", "status": "listed" },
 
 
-    { "name": "Dynamic Resume", "url": "https://johnesco.github.io/resume/index.html", "blurb": "A JSON-driven resume with role profiles", "group": "Tools", "status": "listed" },
-    { "name": "JobFinder", "url": "https://johnesco.github.io/tools/jobfinder/index.html", "blurb": "Search many job boards at once", "group": "Tools", "status": "listed" },
-    { "name": "Proofreader", "url": "https://johnesco.github.io/tools/proofread/index.html", "blurb": "A sentence-level grammar tool", "group": "Tools", "status": "listed" },
-    { "name": "Decode", "url": "https://johnesco.github.io/decode/", "blurb": "A decoder ring", "group": "Tools", "status": "listed" },
+    { "name": "All tools", "url": "https://johnesco.github.io/tools/", "blurb": "Nine free tools you can use right on the page", "group": "Tools", "status": "listed" },
+    { "name": "JobFinder", "url": "https://johnesco.github.io/tools/jobfinder/", "blurb": "Search ten job boards at once", "group": "Tools", "status": "listed" },
+    { "name": "Blackout Poetry", "url": "https://johnesco.github.io/games/blackout/v5/", "blurb": "Compose found poems from a page of text", "group": "Tools", "status": "listed" },
+    { "name": "Braille Translator", "url": "https://johnesco.github.io/edu/braille/", "blurb": "Type text, copy it as braille", "group": "Tools", "status": "listed" },
+    { "name": "One Sentence at a Time", "url": "https://johnesco.github.io/tools/proofread/", "blurb": "Proofread a draft sentence by sentence", "group": "Tools", "status": "listed" },
     { "name": "ifPlayer", "url": "https://johnesco.github.io/ifplayer/", "blurb": "A test runner for Inform 7 games", "group": "Tools", "status": "listed" },
 
     { "name": "All experiments", "url": "https://johnesco.github.io/experiments/", "blurb": "Everything in the sandbox", "group": "Experiments", "status": "listed" },
