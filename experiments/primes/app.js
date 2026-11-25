@@ -13,7 +13,7 @@ let freqArr = new Uint32Array(wasmModule.memory.buffer, engine.freq_ptr(), GRID_
 let discAtArr = new Int32Array(wasmModule.memory.buffer, engine.disc_at_ptr(), GRID_CELLS);
 let lastSeenArr = new Int32Array(wasmModule.memory.buffer, engine.last_seen_ptr(), GRID_CELLS);
 let discoveryHistory = new Uint32Array(wasmModule.memory.buffer, engine.discovery_history_ptr(), engine.discovery_history_len());
-let ghKeys = new Uint32Array(wasmModule.memory.buffer, engine.gh_keys_ptr(), engine.gh_keys_len());
+let ghKeys = new Uint16Array(wasmModule.memory.buffer, engine.gh_keys_ptr(), engine.gh_keys_len());
 let ghIdxs = new Uint32Array(wasmModule.memory.buffer, engine.gh_idxs_ptr(), engine.gh_idxs_len());
 let primes = new Uint32Array(wasmModule.memory.buffer, engine.primes_ptr(), engine.primes_len());
 
@@ -27,7 +27,7 @@ function refreshViews() {
   discAtArr = new Int32Array(buf, engine.disc_at_ptr(), GRID_CELLS);
   lastSeenArr = new Int32Array(buf, engine.last_seen_ptr(), GRID_CELLS);
   discoveryHistory = new Uint32Array(buf, engine.discovery_history_ptr(), engine.discovery_history_len());
-  ghKeys = new Uint32Array(buf, engine.gh_keys_ptr(), engine.gh_keys_len());
+  ghKeys = new Uint16Array(buf, engine.gh_keys_ptr(), engine.gh_keys_len());
   ghIdxs = new Uint32Array(buf, engine.gh_idxs_ptr(), engine.gh_idxs_len());
   primes = new Uint32Array(buf, engine.primes_ptr(), engine.primes_len());
   currentIndex = engine.current_index();
@@ -208,7 +208,7 @@ function advanceReplay() {
   const ghLen = engine.gh_keys_len();
   const end = Math.min(replayPos + REPLAY_SPEED, ghLen);
   const buf = wasmModule.memory.buffer;
-  const replayGhKeys = new Uint32Array(buf, engine.gh_keys_ptr(), ghLen);
+  const replayGhKeys = new Uint16Array(buf, engine.gh_keys_ptr(), ghLen);
   const replayGhIdxs = new Uint32Array(buf, engine.gh_idxs_ptr(), ghLen);
   for (let i = replayPos; i < end; i++) {
     const key = replayGhKeys[i];
@@ -1042,6 +1042,7 @@ setInterval(saveState, 5000);
 // ─── Main Loop ───────────────────────────────────────────────
 let frameCount = 0;
 let lastShownCount = 0;
+let limitReached = false;
 
 function loop() {
   const wasReplaying = replayActive;
@@ -1053,6 +1054,7 @@ function loop() {
     // Generate gaps via WASM engine
     engine.tick(PRIMES_PER_FRAME);
     refreshViews();
+    limitReached = engine.limit_reached();
 
     // Bridge activity flash from WASM events
     const updLen = engine.updated_keys_len();
@@ -1090,7 +1092,9 @@ function loop() {
   frameCount++;
   if (frameCount % 5 === 0) {
     infoIndex.textContent = currentIndex.toLocaleString();
-    infoPrime.textContent = (currentIndex < primes.length ? primes[currentIndex].toLocaleString() : "...");
+    infoPrime.textContent = limitReached && !wasReplaying
+      ? "done (all primes < 2³²)"
+      : (currentIndex < primes.length ? primes[currentIndex].toLocaleString() : "...");
     infoPairs.textContent = uniquePairs.toLocaleString();
     infoShown.textContent = lastShownCount.toLocaleString();
     if (discoveryLog.length >= 2) {

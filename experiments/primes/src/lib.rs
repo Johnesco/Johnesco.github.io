@@ -12,7 +12,7 @@ pub struct PrimeEngine {
     disc_at: Vec<i32>,
     last_seen: Vec<i32>,
     discovery_history: Vec<u32>,
-    gh_keys: Vec<u32>,
+    gh_keys: Vec<u16>, // keys are < GRID_CELLS (3600), so u16 is enough
     gh_idxs: Vec<u32>,
     // Per-tick event buffers (read by JS after each tick)
     updated_keys: Vec<u32>,
@@ -86,6 +86,7 @@ impl PrimeEngine {
     pub fn rebuild_gap_history(&mut self) {
         self.gh_keys.clear();
         self.gh_idxs.clear();
+        self.last_seen.fill(-1);
         let ci = self.current_index as usize;
         for i in 0..ci {
             if i + 2 >= self.primes.len() {
@@ -99,9 +100,14 @@ impl PrimeEngine {
                 continue;
             }
             let key = y * GRID_SIZE + x;
-            self.gh_keys.push(key);
+            self.gh_keys.push(key as u16);
             self.gh_idxs.push(i as u32);
+            // last_seen isn't saved, so recover it from the replayed history
+            self.last_seen[key as usize] = i as i32;
         }
+        // Interval for the next discovery counts from the latest saved discovery,
+        // not from the reload point.
+        self.last_discovery_idx = self.disc_at.iter().copied().max().unwrap_or(-1).max(0) as u32;
     }
 
     // ─── State import (for localStorage restore) ────────────────
@@ -142,7 +148,7 @@ impl PrimeEngine {
         self.discovery_history.len() as u32
     }
 
-    pub fn gh_keys_ptr(&self) -> *const u32 {
+    pub fn gh_keys_ptr(&self) -> *const u16 {
         self.gh_keys.as_ptr()
     }
     pub fn gh_keys_len(&self) -> u32 {
@@ -184,6 +190,12 @@ impl PrimeEngine {
     pub fn unique_pairs(&self) -> u32 {
         self.unique_pairs
     }
+
+    /// True once every prime below 2^32 has been generated and consumed:
+    /// primes are stored as u32, so the run cannot go further.
+    pub fn limit_reached(&self) -> bool {
+        self.sieve_pos > u32::MAX as u64 && self.current_index as usize + 2 >= self.primes.len()
+    }
 }
 
 // ─── Private implementation ─────────────────────────────────────
@@ -199,7 +211,7 @@ impl PrimeEngine {
         let key = y * GRID_SIZE + x;
         let ci = self.current_index;
 
-        self.gh_keys.push(key);
+        self.gh_keys.push(key as u16);
         self.gh_idxs.push(ci);
         self.last_seen[key as usize] = ci as i32;
         self.updated_keys.push(key);
@@ -253,64 +265,41 @@ impl PrimeEngine {
         self.sieve_pos = (limit + 1) as u64;
     }
 
-    /// Extend primes list using segmented sieve until we have at least `count` primes.
+    /// Extend primes list using segmented sieve until we have at least `count` primes
+    /// (or every prime below 2^32 has been found).
     fn ensure_primes(&mut self, count: usize) {
         if self.primes.len() >= count {
             return;
         }
 
-        // Estimate upper bound for the count-th prime
+        // Upper bound for the count-th prime (Rosser: p_n < n(ln n + ln ln n) for n >= 6),
+        // capped at u32::MAX because primes are stored as u32.
         let n = count as f64;
-        let upper: u64 = if count < 6 {
-            15
-        } else {
-            let ln = n.ln();
-            (n * (ln + ln.ln() + 2.0)) as u64 + 10000
-        };
-
-        // Ensure we have small primes up to sqrt(upper) for sieve divisors
-        let sqrt_upper = ((upper as f64).sqrt() as u32) + 1;
-        if self.primes.is_empty() || *self.primes.last().unwrap() < sqrt_upper {
-            // Extend via trial division (only needed for very small ranges)
-            if self.primes.is_empty() {
-                self.simple_sieve(sqrt_upper.max(INITIAL_SIEVE_LIMIT));
-                if self.primes.len() >= count {
-                    return;
-                }
-            }
+        let ln = n.ln();
+        let upper = ((n * (ln + ln.ln() + 2.0)) as u64 + 10_000).min(u32::MAX as u64);
+        if self.sieve_pos > upper {
+            return; // already sieved everything we can
         }
 
-        // Count small primes (up to sqrt of max value we'll sieve)
-        let small_prime_count = self
-            .primes
-            .iter()
-            .position(|&p| (p as u64) > (upper as f64).sqrt() as u64 + 1)
-            .unwrap_or(self.primes.len());
+        // Divisors needed: all primes <= sqrt(upper). sqrt(u32::MAX) < 65_536, and the
+        // initial sieve covers 100_000, so the list always already holds them.
+        let sqrt_upper = (upper as f64).sqrt() as u64 + 1;
+        debug_assert!(*self.primes.last().unwrap() as u64 >= sqrt_upper);
+        let small_prime_count = self.primes.partition_point(|&p| (p as u64) <= sqrt_upper);
 
         let mut seg = vec![0u8; SEG_SIZE];
 
-        while self.primes.len() < count {
+        while self.primes.len() < count && self.sieve_pos <= upper {
             let low = self.sieve_pos;
-            let high = low + SEG_SIZE as u64 - 1;
-            let high = high.min(upper);
+            let high = (low + SEG_SIZE as u64 - 1).min(upper);
             let seg_len = (high - low + 1) as usize;
+            let seg = &mut seg[..seg_len];
+            seg.fill(0);
 
-            // Clear segment
-            for b in seg[..seg_len].iter_mut() {
-                *b = 0;
-            }
-
-            // Mark composites using small primes
+            // Mark composites: for each small prime, start at max(p*p, first multiple >= low)
             for pi in 0..small_prime_count {
                 let p = self.primes[pi] as u64;
-                if p < 2 {
-                    continue;
-                }
-                // First multiple of p >= low, but not p itself
-                let mut start = ((low + p - 1) / p) * p;
-                if start == p {
-                    start += p;
-                }
+                let start = (p * p).max(low.div_ceil(p) * p);
                 let mut j = (start - low) as usize;
                 let step = p as usize;
                 while j < seg_len {
@@ -319,21 +308,14 @@ impl PrimeEngine {
                 }
             }
 
-            // Collect primes from segment
-            for i in 0..seg_len {
-                if seg[i] == 0 {
-                    let val = low + i as u64;
-                    if val > 1 && val <= u32::MAX as u64 {
-                        self.primes.push(val as u32);
-                    }
+            // Collect primes from segment (low > INITIAL_SIEVE_LIMIT, so no 0/1 to skip)
+            for (i, &b) in seg.iter().enumerate() {
+                if b == 0 {
+                    self.primes.push((low + i as u64) as u32);
                 }
             }
 
             self.sieve_pos = high + 1;
-
-            if self.sieve_pos > upper {
-                break;
-            }
         }
     }
 }

@@ -96,6 +96,15 @@ export class PrimeEngine {
         return ret >>> 0;
     }
     /**
+     * True once every prime below 2^32 has been generated and consumed:
+     * primes are stored as u32, so the run cannot go further.
+     * @returns {boolean}
+     */
+    limit_reached() {
+        const ret = wasm.primeengine_limit_reached(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
      * @returns {number}
      */
     max_freq() {

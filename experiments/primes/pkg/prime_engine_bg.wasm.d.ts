@@ -14,6 +14,7 @@ export const primeengine_gh_keys_len: (a: number) => number;
 export const primeengine_gh_keys_ptr: (a: number) => number;
 export const primeengine_import_discovery_history: (a: number, b: number, c: number) => void;
 export const primeengine_last_seen_ptr: (a: number) => number;
+export const primeengine_limit_reached: (a: number) => number;
 export const primeengine_max_freq: (a: number) => number;
 export const primeengine_new: () => number;
 export const primeengine_new_disc_idxs_ptr: (a: number) => number;

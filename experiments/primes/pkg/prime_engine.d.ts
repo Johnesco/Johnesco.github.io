@@ -16,6 +16,11 @@ export class PrimeEngine {
     gh_keys_ptr(): number;
     import_discovery_history(keys: Uint32Array): void;
     last_seen_ptr(): number;
+    /**
+     * True once every prime below 2^32 has been generated and consumed:
+     * primes are stored as u32, so the run cannot go further.
+     */
+    limit_reached(): boolean;
     max_freq(): number;
     constructor();
     new_disc_idxs_ptr(): number;
@@ -49,6 +54,7 @@ export interface InitOutput {
     readonly primeengine_gh_keys_ptr: (a: number) => number;
     readonly primeengine_import_discovery_history: (a: number, b: number, c: number) => void;
     readonly primeengine_last_seen_ptr: (a: number) => number;
+    readonly primeengine_limit_reached: (a: number) => number;
     readonly primeengine_max_freq: (a: number) => number;
     readonly primeengine_new: () => number;
     readonly primeengine_new_disc_idxs_ptr: (a: number) => number;
