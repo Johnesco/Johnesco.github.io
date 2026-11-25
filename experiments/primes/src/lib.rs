@@ -3,7 +3,7 @@ use wasm_bindgen::prelude::*;
 const GRID_SIZE: u32 = 60;
 const GRID_CELLS: usize = (GRID_SIZE * GRID_SIZE) as usize;
 const INITIAL_SIEVE_LIMIT: u32 = 100_000;
-const SEG_SIZE: usize = 1 << 20; // 1M per segment
+const SEG_SIZE: usize = 1 << 20; // 1M odd numbers (a 2M range) per segment
 
 #[wasm_bindgen]
 pub struct PrimeEngine {
@@ -262,7 +262,7 @@ impl PrimeEngine {
                 self.primes.push(i);
             }
         }
-        self.sieve_pos = (limit + 1) as u64;
+        self.sieve_pos = (limit as u64 + 1) | 1; // segmented sieve works on odd numbers
     }
 
     /// Extend primes list using segmented sieve until we have at least `count` primes
@@ -287,20 +287,28 @@ impl PrimeEngine {
         debug_assert!(*self.primes.last().unwrap() as u64 >= sqrt_upper);
         let small_prime_count = self.primes.partition_point(|&p| (p as u64) <= sqrt_upper);
 
+        // Odd numbers only: seg[j] stands for low + 2j, so each segment covers
+        // 2 * SEG_SIZE numbers and even numbers are never touched.
+        // sieve_pos starts odd (INITIAL_SIEVE_LIMIT + 1) and always advances by an even amount.
+        debug_assert!(self.sieve_pos % 2 == 1);
         let mut seg = vec![0u8; SEG_SIZE];
 
         while self.primes.len() < count && self.sieve_pos <= upper {
             let low = self.sieve_pos;
-            let high = (low + SEG_SIZE as u64 - 1).min(upper);
-            let seg_len = (high - low + 1) as usize;
+            let seg_len = (((upper - low) / 2 + 1) as usize).min(SEG_SIZE);
             let seg = &mut seg[..seg_len];
             seg.fill(0);
 
-            // Mark composites: for each small prime, start at max(p*p, first multiple >= low)
-            for pi in 0..small_prime_count {
+            // Mark composites with each odd small prime (skip 2): start at the first
+            // odd multiple >= max(p*p, low); consecutive odd multiples are 2p apart,
+            // which is p slots in the odd-only segment.
+            for pi in 1..small_prime_count {
                 let p = self.primes[pi] as u64;
-                let start = (p * p).max(low.div_ceil(p) * p);
-                let mut j = (start - low) as usize;
+                let mut start = (p * p).max(low.div_ceil(p) * p);
+                if start % 2 == 0 {
+                    start += p;
+                }
+                let mut j = ((start - low) / 2) as usize;
                 let step = p as usize;
                 while j < seg_len {
                     seg[j] = 1;
@@ -309,13 +317,13 @@ impl PrimeEngine {
             }
 
             // Collect primes from segment (low > INITIAL_SIEVE_LIMIT, so no 0/1 to skip)
-            for (i, &b) in seg.iter().enumerate() {
+            for (j, &b) in seg.iter().enumerate() {
                 if b == 0 {
-                    self.primes.push((low + i as u64) as u32);
+                    self.primes.push((low + 2 * j as u64) as u32);
                 }
             }
 
-            self.sieve_pos = high + 1;
+            self.sieve_pos = low + 2 * seg_len as u64;
         }
     }
 }
