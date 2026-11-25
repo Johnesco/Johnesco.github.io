@@ -5,7 +5,7 @@ const wasmModule = await init();
 const engine = new PrimeEngine();
 
 // ─── Frequency Grid ─────────────────────────────────────────
-const GRID_SIZE = 60;
+const GRID_SIZE = engine.grid_size(); // 120: gaps up to 238
 const GRID_CELLS = GRID_SIZE * GRID_SIZE;
 
 // These get refreshed from WASM memory each frame
@@ -359,30 +359,12 @@ canvas.addEventListener("mouseleave", () => {
 // ─── LocalStorage Persistence ───────────────────────────────
 const STORAGE_KEY = "primeGapViz";
 
+// Only the position is saved: every grid statistic is rebuilt from the primes on
+// load (rebuild_gap_history), so saves stay tiny and survive grid-size changes.
+// Older saves (v1–v3) also hold per-cell data; only their currentIndex is used.
 function saveState() {
-  // Read live state from WASM views (not replay state)
-  const liveFreq = new Uint32Array(wasmModule.memory.buffer, engine.freq_ptr(), GRID_CELLS);
-  const liveDisc = new Int32Array(wasmModule.memory.buffer, engine.disc_at_ptr(), GRID_CELLS);
-  const dhLen = engine.discovery_history_len();
-  const liveDiscHistory = new Uint32Array(wasmModule.memory.buffer, engine.discovery_history_ptr(), dhLen);
-
-  const fEntries = [];
-  const dEntries = [];
-  for (let i = 0; i < GRID_CELLS; i++) {
-    if (liveFreq[i] > 0) fEntries.push([i, liveFreq[i]]);
-    if (liveDisc[i] >= 0) dEntries.push([i, liveDisc[i]]);
-  }
-  const data = {
-    v: 2,
-    currentIndex: engine.current_index(),
-    maxFreq: engine.max_freq(),
-    uniquePairs: engine.unique_pairs(),
-    freq: fEntries,
-    discoveredAt: dEntries,
-    discoveryHistory: Array.from(liveDiscHistory),
-    primesLen: engine.primes_len(),
-    unitHeight
-  };
+  if (resetting) return;
+  const data = { v: 4, currentIndex: engine.current_index(), unitHeight };
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
 }
 
@@ -391,44 +373,13 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
     const data = JSON.parse(raw);
+    const ci = data.currentIndex | 0;
+    if (ci <= 0) return false;
 
-    // Write freq and disc_at directly into WASM memory
-    const wFreq = new Uint32Array(wasmModule.memory.buffer, engine.freq_ptr(), GRID_CELLS);
-    const wDisc = new Int32Array(wasmModule.memory.buffer, engine.disc_at_ptr(), GRID_CELLS);
-    wFreq.fill(0);
-    wDisc.fill(-1);
-
-    if (data.v === 2 || data.v === 3) {
-      for (const [k, v] of data.freq) wFreq[k] = v;
-      for (const [k, v] of data.discoveredAt) wDisc[k] = v;
-      engine.import_discovery_history(new Uint32Array(data.discoveryHistory));
-    } else {
-      // Migrate old string-key format ("x,y" → y*GRID_SIZE+x)
-      for (const [k, v] of data.freq) {
-        const ci = k.indexOf(",");
-        wFreq[(+k.slice(ci + 1)) * GRID_SIZE + (+k.slice(0, ci))] = v;
-      }
-      for (const [k, v] of data.discoveredAt) {
-        const ci = k.indexOf(",");
-        wDisc[(+k.slice(ci + 1)) * GRID_SIZE + (+k.slice(0, ci))] = v;
-      }
-      const dh = [];
-      for (const k of data.discoveryHistory) {
-        const ci = k.indexOf(",");
-        dh.push((+k.slice(ci + 1)) * GRID_SIZE + (+k.slice(0, ci)));
-      }
-      engine.import_discovery_history(new Uint32Array(dh));
-    }
-
-    engine.set_state(data.currentIndex, data.maxFreq, data.uniquePairs);
-
-    // Regenerate primes via WASM sieve (fast — milliseconds)
-    const needed = data.currentIndex + PRIMES_PER_FRAME + 10;
-    engine.ensure_primes_count(needed);
-
-    // Rebuild gap history for replay (fast in WASM)
+    // Regenerate primes via the WASM sieve, then replay every gap pair into the grid
+    engine.ensure_primes_count(ci + PRIMES_PER_FRAME + 10);
+    engine.set_state(ci, 1, 0);
     engine.rebuild_gap_history();
-
     refreshViews();
 
     if (data.unitHeight != null) unitHeight = data.unitHeight;
@@ -437,14 +388,81 @@ function loadState() {
   } catch (e) { return false; }
 }
 
+let saveTimer = null;
+let resetting = false;
+
 function resetState() {
-  localStorage.removeItem(STORAGE_KEY);
+  resetting = true;           // stop any save from re-writing the run before the reload
+  clearInterval(saveTimer);
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
   location.reload();
 }
 
+// Two-click confirm on the button itself: confirm() popups are silently
+// cancelled in some embedded browsers, which made the reset do nothing.
+let resetArmTimer = 0;
 btnReset.addEventListener("click", () => {
-  if (confirm("Clear all saved data and start fresh?")) resetState();
+  if (resetArmTimer) {
+    clearTimeout(resetArmTimer);
+    resetArmTimer = 0;
+    resetState();
+    return;
+  }
+  btnReset.textContent = "Click again to reset";
+  btnReset.classList.add("active");
+  resetArmTimer = setTimeout(() => {
+    resetArmTimer = 0;
+    btnReset.textContent = "Reset data";
+    btnReset.classList.remove("active");
+  }, 3000);
 });
+
+// ─── Largest on-grid gap (for the "Largest gap" overlay) ────
+// The biggest single gap among gap pairs that fit the grid, recorded each time it
+// grows. Built from the engine's gap history, so it covers the whole run and works
+// in replay (the record shown is the latest one at or before currentIndex).
+const largestRecords = []; // { key, cell: max(x, y), idx }
+let largestScanned = 0;
+
+function updateLargestRecords() {
+  const len = engine.gh_keys_len();
+  if (len < largestScanned) { largestRecords.length = 0; largestScanned = 0; } // history rebuilt
+  if (len === largestScanned) return;
+  const buf = wasmModule.memory.buffer;
+  const keys = new Uint16Array(buf, engine.gh_keys_ptr(), len);
+  const idxs = new Uint32Array(buf, engine.gh_idxs_ptr(), len);
+  let best = largestRecords.length ? largestRecords[largestRecords.length - 1].cell : -1;
+  for (let i = largestScanned; i < len; i++) {
+    const k = keys[i];
+    const m = Math.max(k % GRID_SIZE, (k / GRID_SIZE) | 0);
+    if (m > best) { best = m; largestRecords.push({ key: k, cell: m, idx: idxs[i] }); }
+  }
+  largestScanned = len;
+}
+
+function currentLargest() {
+  for (let i = largestRecords.length - 1; i >= 0; i--) {
+    if (largestRecords[i].idx <= currentIndex) return largestRecords[i];
+  }
+  return null;
+}
+
+function largestPulse() { return 0.75 + 0.25 * Math.sin(frameCount * 0.12); }
+
+// Earlier records stay red after a bigger one replaces them, fading slowly (by how
+// many gaps ago they were replaced) down to a faint floor. The newest is brightest.
+const LARGEST_FADE = 1500000; // gaps for a replaced record to fade most of the way
+const LARGEST_FLOOR = 0.22;
+function pastLargest() {
+  const out = [];
+  for (let i = 0; i + 1 < largestRecords.length; i++) {
+    const next = largestRecords[i + 1];
+    if (next.idx > currentIndex) break;
+    const since = currentIndex - next.idx;
+    out.push({ key: largestRecords[i].key, b: LARGEST_FLOOR + (0.75 - LARGEST_FLOOR) * Math.exp(-since / LARGEST_FADE) });
+  }
+  return out;
+}
 
 // ─── Shared helpers ─────────────────────────────────────────
 function scaleCount(count) {
@@ -554,6 +572,7 @@ function drawHeatmap() {
     case "connections": shownCount = draw2dConnections(); break;
     case "rate":        shownCount = draw2dRate(); break;
     case "activity":    shownCount = draw2dActivity(); break;
+    case "largest":     shownCount = draw2dLargest(); break;
   }
   lastShownCount = shownCount;
 
@@ -741,6 +760,66 @@ function draw2dRate() {
   return n;
 }
 
+function draw2dLargest() {
+  clearPixels();
+  let n = 0;
+  for (let i = 0; i < discoveryHistory.length; i++) {
+    const key = discoveryHistory[i];
+    const count = freqArr[key];
+    if (!passesFilter(count)) continue;
+    n++;
+    const li = lutIndex(getT(count));
+    const pi = key * 4;
+    pixels[pi] = connDimLUT[li]; pixels[pi + 1] = connDimLUT[li + 1]; pixels[pi + 2] = connDimLUT[li + 2];
+  }
+  blitToMain();
+
+  const c = cachedCell;
+  // Replaced records: dimmer red, fading with time since they were beaten
+  for (const old of pastLargest()) {
+    const ox = old.key % GRID_SIZE, oy = (old.key / GRID_SIZE) | 0;
+    const ocx = cachedOx + (ox + 0.5) * c, ocy = cachedOy + (oy + 0.5) * c;
+    const orad = c * (1 + 1.2 * old.b);
+    const og = ctx.createRadialGradient(ocx, ocy, 0, ocx, ocy, orad);
+    og.addColorStop(0, `rgba(255,60,45,${(0.7 * old.b).toFixed(3)})`);
+    og.addColorStop(1, "rgba(255,0,0,0)");
+    ctx.fillStyle = og;
+    ctx.fillRect(ocx - orad, ocy - orad, 2 * orad, 2 * orad);
+    ctx.fillStyle = `rgba(255,59,47,${old.b.toFixed(3)})`;
+    ctx.fillRect(cachedOx + ox * c, cachedOy + oy * c, c, c);
+  }
+
+  const rec = currentLargest();
+  if (!rec) return n;
+  const gx = rec.key % GRID_SIZE, gy = (rec.key / GRID_SIZE) | 0;
+  const cx = cachedOx + (gx + 0.5) * c, cy = cachedOy + (gy + 0.5) * c;
+  // Glow: bigger right after the record is set, then a steady pulse
+  const age = currentIndex - rec.idx;
+  const fresh = Math.max(0, 1 - age / (HIGHLIGHT_WINDOW * 4));
+  const r = c * (2.2 + 4 * fresh) * largestPulse();
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  grad.addColorStop(0, "rgba(255,70,50,0.95)");
+  grad.addColorStop(0.35, "rgba(255,40,30,0.4)");
+  grad.addColorStop(1, "rgba(255,0,0,0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(cx - r, cy - r, 2 * r, 2 * r);
+  ctx.fillStyle = "#ff3b2f";
+  ctx.fillRect(cachedOx + gx * c, cachedOy + gy * c, c, c);
+
+  // Label: the gap pair and where it happened
+  if (rec.idx + 2 < primes.length) {
+    const g1 = primes[rec.idx + 1] - primes[rec.idx];
+    const g2 = primes[rec.idx + 2] - primes[rec.idx + 1];
+    ctx.font = "12px monospace";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#ff6a5a";
+    ctx.fillText(`largest gap on grid: ${Math.max(g1, g2)}`, cachedOx + 6, cachedOy + 16);
+    ctx.fillStyle = "#aaa";
+    ctx.fillText(`pair (${g1}, ${g2}) after prime ${primes[rec.idx].toLocaleString()}`, cachedOx + 6, cachedOy + 31);
+  }
+  return n;
+}
+
 function draw2dActivity() {
   clearPixels();
   let n = 0;
@@ -820,6 +899,15 @@ barMesh.count = 0;
 barMesh.frustumCulled = false; // bounds would need recomputing as bars grow
 scene.add(barMesh);
 const barHeights = new Float32Array(GRID_CELLS); // per cell, for the connection line
+
+// Red beam over the largest-gap bar ("Largest gap" overlay)
+const largestBeam = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.3, 0.3, 1, 16, 1, true),
+  new THREE.MeshBasicMaterial({ color: 0xff3020, transparent: true, opacity: 0.5,
+    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })
+);
+largestBeam.visible = false;
+scene.add(largestBeam);
 const _c = new THREE.Color();
 
 function getBarColor(t) {
@@ -871,6 +959,10 @@ function updateBars() {
       trailMap.set(discoveryHistory[i], i);
     }
   }
+
+  const largest = vizMode === "largest" ? currentLargest() : null;
+  const pastLarge = vizMode === "largest" ? new Map(pastLargest().map(o => [o.key, o.b])) : null;
+  largestBeam.visible = false;
 
   let slot = 0;
   for (let di = 0; di < discoveryHistory.length; di++) {
@@ -931,6 +1023,21 @@ function updateBars() {
         break;
       }
 
+      case "largest": {
+        if (largest && key === largest.key) {
+          const p = largestPulse();
+          _c.setRGB(1, 0.15, 0.1);
+          er = 0.9 * p; eg = 0.08 * p; eb = 0.05 * p;
+        } else if (pastLarge.has(key)) {
+          const b = pastLarge.get(key); // replaced record: dimmer, fading red
+          _c.setRGB(0.25 + 0.6 * b, 0.07, 0.05);
+          er = 0.6 * b; eg = 0.04 * b; eb = 0.03 * b;
+        } else {
+          getBarColor(t * 0.4);
+        }
+        break;
+      }
+
       case "activity": {
         getBarColor(t);
         const elapsed = frameCount - actStartFrame[key];
@@ -945,6 +1052,13 @@ function updateBars() {
 
     const height = Math.max(0.01, scaleCount(count) * unitHeight * 0.85);
     barHeights[key] = height;
+    if (largest && key === largest.key) {
+      // Beam from the bar's top up into the sky
+      const beamH = 25;
+      largestBeam.position.set(key % GRID_SIZE + 0.5, height + beamH / 2, ((key / GRID_SIZE) | 0) + 0.5);
+      largestBeam.scale.set(largestPulse(), beamH, largestPulse());
+      largestBeam.visible = true;
+    }
     // Column-major matrix: scale y by height, translate to the cell's center
     const m = slot * 16;
     mats[m] = 1;      mats[m + 1] = 0;          mats[m + 2] = 0;  mats[m + 3] = 0;
@@ -1054,7 +1168,7 @@ window.addEventListener("resize", () => {
 const hadSave = loadState();
 if (!hadSave) refreshViews();
 onWindowResize();
-setInterval(saveState, 5000);
+saveTimer = setInterval(saveState, 5000);
 
 // ─── Main Loop ───────────────────────────────────────────────
 let frameCount = 0;
@@ -1104,6 +1218,8 @@ function loop() {
       }
     }
   }
+
+  updateLargestRecords();
 
   // Update info every 5 frames
   frameCount++;

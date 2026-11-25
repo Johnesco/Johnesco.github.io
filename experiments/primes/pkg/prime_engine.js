@@ -81,6 +81,13 @@ export class PrimeEngine {
         return ret >>> 0;
     }
     /**
+     * @returns {number}
+     */
+    grid_size() {
+        const ret = wasm.primeengine_grid_size(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
      * @param {Uint32Array} keys
      */
     import_discovery_history(keys) {
@@ -159,6 +166,12 @@ export class PrimeEngine {
         const ret = wasm.primeengine_primes_ptr(this.__wbg_ptr);
         return ret >>> 0;
     }
+    /**
+     * Recompute every grid statistic for gaps 0..current_index from the primes:
+     * frequencies, discovery order and times, last-seen, max frequency and the gap
+     * history used by replay. The primes are deterministic, so this reproduces the
+     * saved run exactly, and stays correct if the grid size changes between versions.
+     */
     rebuild_gap_history() {
         wasm.primeengine_rebuild_gap_history(this.__wbg_ptr);
     }

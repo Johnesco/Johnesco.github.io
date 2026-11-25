@@ -14,6 +14,7 @@ export class PrimeEngine {
     gh_idxs_ptr(): number;
     gh_keys_len(): number;
     gh_keys_ptr(): number;
+    grid_size(): number;
     import_discovery_history(keys: Uint32Array): void;
     last_seen_ptr(): number;
     /**
@@ -29,6 +30,12 @@ export class PrimeEngine {
     new_disc_len(): number;
     primes_len(): number;
     primes_ptr(): number;
+    /**
+     * Recompute every grid statistic for gaps 0..current_index from the primes:
+     * frequencies, discovery order and times, last-seen, max frequency and the gap
+     * history used by replay. The primes are deterministic, so this reproduces the
+     * saved run exactly, and stays correct if the grid size changes between versions.
+     */
     rebuild_gap_history(): void;
     set_state(current_index: number, max_freq: number, unique_pairs: number): void;
     tick(n: number): number;
@@ -52,6 +59,7 @@ export interface InitOutput {
     readonly primeengine_gh_idxs_ptr: (a: number) => number;
     readonly primeengine_gh_keys_len: (a: number) => number;
     readonly primeengine_gh_keys_ptr: (a: number) => number;
+    readonly primeengine_grid_size: (a: number) => number;
     readonly primeengine_import_discovery_history: (a: number, b: number, c: number) => void;
     readonly primeengine_last_seen_ptr: (a: number) => number;
     readonly primeengine_limit_reached: (a: number) => number;

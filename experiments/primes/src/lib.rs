@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 
-const GRID_SIZE: u32 = 60;
+const GRID_SIZE: u32 = 120; // cells per side: gaps up to 2 * 120 - 2 = 238
 const GRID_CELLS: usize = (GRID_SIZE * GRID_SIZE) as usize;
 const INITIAL_SIEVE_LIMIT: u32 = 100_000;
 const SEG_SIZE: usize = 1 << 20; // 1M odd numbers (a 2M range) per segment
@@ -12,7 +12,7 @@ pub struct PrimeEngine {
     disc_at: Vec<i32>,
     last_seen: Vec<i32>,
     discovery_history: Vec<u32>,
-    gh_keys: Vec<u16>, // keys are < GRID_CELLS (3600), so u16 is enough
+    gh_keys: Vec<u16>, // keys are < GRID_CELLS (14,400), so u16 is enough
     gh_idxs: Vec<u32>,
     // Per-tick event buffers (read by JS after each tick)
     updated_keys: Vec<u32>,
@@ -82,16 +82,23 @@ impl PrimeEngine {
         self.ensure_primes(count as usize);
     }
 
-    // ─── Gap history rebuild (for replay after load) ────────────
+    // ─── Full rebuild from the primes (after load) ──────────────
+    /// Recompute every grid statistic for gaps 0..current_index from the primes:
+    /// frequencies, discovery order and times, last-seen, max frequency and the gap
+    /// history used by replay. The primes are deterministic, so this reproduces the
+    /// saved run exactly, and stays correct if the grid size changes between versions.
     pub fn rebuild_gap_history(&mut self) {
         self.gh_keys.clear();
         self.gh_idxs.clear();
+        self.freq.fill(0);
+        self.disc_at.fill(-1);
         self.last_seen.fill(-1);
-        let ci = self.current_index as usize;
+        self.discovery_history.clear();
+        self.unique_pairs = 0;
+        self.max_freq = 1;
+        self.last_discovery_idx = 0;
+        let ci = (self.current_index as usize).min(self.primes.len().saturating_sub(2));
         for i in 0..ci {
-            if i + 2 >= self.primes.len() {
-                break;
-            }
             let g1 = self.primes[i + 1] - self.primes[i];
             let g2 = self.primes[i + 2] - self.primes[i + 1];
             let x = if g1 <= 1 { g1 } else { g1 / 2 };
@@ -99,15 +106,25 @@ impl PrimeEngine {
             if x >= GRID_SIZE || y >= GRID_SIZE {
                 continue;
             }
-            let key = y * GRID_SIZE + x;
+            let key = (y * GRID_SIZE + x) as usize;
             self.gh_keys.push(key as u16);
             self.gh_idxs.push(i as u32);
-            // last_seen isn't saved, so recover it from the replayed history
-            self.last_seen[key as usize] = i as i32;
+            self.last_seen[key] = i as i32;
+            if self.freq[key] == 0 {
+                self.unique_pairs += 1;
+                self.disc_at[key] = i as i32;
+                self.discovery_history.push(key as u32);
+                self.last_discovery_idx = i as u32;
+            }
+            self.freq[key] += 1;
+            if self.freq[key] > self.max_freq {
+                self.max_freq = self.freq[key];
+            }
         }
-        // Interval for the next discovery counts from the latest saved discovery,
-        // not from the reload point.
-        self.last_discovery_idx = self.disc_at.iter().copied().max().unwrap_or(-1).max(0) as u32;
+    }
+
+    pub fn grid_size(&self) -> u32 {
+        GRID_SIZE
     }
 
     // ─── State import (for localStorage restore) ────────────────
