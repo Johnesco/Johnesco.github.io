@@ -795,8 +795,31 @@ ground.rotation.x = -Math.PI / 2;
 ground.position.set(GRID_SIZE / 2, -0.01, GRID_SIZE / 2);
 scene.add(ground);
 
+// All bars are one InstancedMesh: one draw call instead of one per bar.
+// Visible bars are packed into instance slots 0..count-1 each frame; each slot has a
+// matrix (position + height), a color, and an emissive glow. Three.js has no
+// per-instance emissive, so the material's shader is patched to add one.
 const barGeo = new THREE.BoxGeometry(0.85, 1, 0.85);
-const bars = new Map();
+const barEmissive = new THREE.InstancedBufferAttribute(new Float32Array(GRID_CELLS * 3), 3);
+barEmissive.setUsage(THREE.DynamicDrawUsage);
+barGeo.setAttribute("instanceEmissive", barEmissive);
+const barMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+barMat.onBeforeCompile = (shader) => {
+  shader.vertexShader = shader.vertexShader
+    .replace("#include <common>", "#include <common>\nattribute vec3 instanceEmissive;\nvarying vec3 vInstanceEmissive;")
+    .replace("#include <begin_vertex>", "#include <begin_vertex>\nvInstanceEmissive = instanceEmissive;");
+  shader.fragmentShader = shader.fragmentShader
+    .replace("#include <common>", "#include <common>\nvarying vec3 vInstanceEmissive;")
+    .replace("vec3 totalEmissiveRadiance = emissive;", "vec3 totalEmissiveRadiance = emissive + vInstanceEmissive;");
+};
+const barMesh = new THREE.InstancedMesh(barGeo, barMat, GRID_CELLS);
+barMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+barMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(GRID_CELLS * 3), 3);
+barMesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
+barMesh.count = 0;
+barMesh.frustumCulled = false; // bounds would need recomputing as bars grow
+scene.add(barMesh);
+const barHeights = new Float32Array(GRID_CELLS); // per cell, for the connection line
 const _c = new THREE.Color();
 
 function getBarColor(t) {
@@ -831,26 +854,13 @@ const connLine = new THREE.Line(connGeo, connMat);
 connLine.visible = false;
 scene.add(connLine);
 
-function ensureBar(key) {
-  let bar = bars.get(key);
-  if (!bar) {
-    const mat = new THREE.MeshStandardMaterial({ color: 0x222244 });
-    bar = new THREE.Mesh(barGeo, mat);
-    const gx = key % GRID_SIZE;
-    const gy = (key / GRID_SIZE) | 0;
-    bar.position.x = gx + 0.5;
-    bar.position.z = gy + 0.5;
-    scene.add(bar);
-    bars.set(key, bar);
-  }
-  return bar;
-}
-
 function updateBars() {
   cachedScaleMax = scaleCount(maxFreq);
   let shownCount = 0;
 
-  for (const bar of bars.values()) bar.visible = false;
+  const mats = barMesh.instanceMatrix.array;
+  const cols = barMesh.instanceColor.array;
+  const emis = barEmissive.array;
 
   let trailMap = null;
   let trailStart = 0;
@@ -862,46 +872,35 @@ function updateBars() {
     }
   }
 
+  let slot = 0;
   for (let di = 0; di < discoveryHistory.length; di++) {
     const key = discoveryHistory[di];
     const count = freqArr[key];
-    const bar = ensureBar(key);
-    const vis = passesFilter(count);
-    bar.visible = vis;
-    if (!vis) continue;
-    shownCount++;
-
+    if (!passesFilter(count)) continue;
     const t = getT(count);
-    const height = Math.max(0.01, scaleCount(count) * unitHeight * 0.85);
-    bar.scale.y = height;
-    bar.position.y = height / 2;
-    bar.material.emissive.setRGB(0, 0, 0);
+    let er = 0, eg = 0, eb = 0;
 
     switch (vizMode) {
       case "normal":
-        bar.material.color.copy(getBarColor(t));
+        getBarColor(t);
         break;
 
       case "flash": {
-        bar.material.color.copy(getBarColor(t));
+        getBarColor(t);
         const age = currentIndex - discAtArr[key];
         if (age < HIGHLIGHT_WINDOW) {
           const fade = 1 - age / HIGHLIGHT_WINDOW;
-          bar.material.emissive.setRGB(0.7 * fade, 0.85 * fade, fade);
+          er = 0.7 * fade; eg = 0.85 * fade; eb = fade;
         }
         break;
       }
 
       case "trail": {
         const idx = trailMap.get(key);
-        if (idx !== undefined) {
-          const recency = (idx - trailStart + 1) / TRAIL_LENGTH;
-          bar.material.color.setRGB(0.3 + 0.7 * recency, 0.4 + 0.6 * recency, 0.6 + 0.4 * recency);
-          bar.material.emissive.setRGB(0.1 * recency, 0.15 * recency, 0.2 * recency);
-        } else {
-          bar.visible = false;
-          shownCount--;
-        }
+        if (idx === undefined) continue;
+        const recency = (idx - trailStart + 1) / TRAIL_LENGTH;
+        _c.setRGB(0.3 + 0.7 * recency, 0.4 + 0.6 * recency, 0.6 + 0.4 * recency);
+        er = 0.1 * recency; eg = 0.15 * recency; eb = 0.2 * recency;
         break;
       }
 
@@ -909,16 +908,15 @@ function updateBars() {
         const born = discAtArr[key];
         const dt = currentIndex > 0 ? born / currentIndex : 0;
         _c.setHSL((300 - dt * 120) / 360, 0.8, 0.25 + dt * 0.25);
-        bar.material.color.copy(_c);
         break;
       }
 
       case "ripples":
-        bar.material.color.copy(getBarColor(t * 0.5));
+        getBarColor(t * 0.5);
         break;
 
       case "connections":
-        bar.material.color.copy(getBarColor(t * 0.4));
+        getBarColor(t * 0.4);
         break;
 
       case "rate": {
@@ -926,26 +924,46 @@ function updateBars() {
         if (age < RATE_WINDOW) {
           const recency = 1 - age / RATE_WINDOW;
           _c.setHSL((200 - recency * 80) / 360, 0.8, 0.2 + recency * 0.4);
-          bar.material.color.copy(_c);
-          bar.material.emissive.setRGB(0.1 * recency, 0.15 * recency, 0.25 * recency);
+          er = 0.1 * recency; eg = 0.15 * recency; eb = 0.25 * recency;
         } else {
-          bar.material.color.setRGB(0.07, 0.07, 0.16);
+          _c.setRGB(0.07, 0.07, 0.16);
         }
         break;
       }
 
       case "activity": {
-        bar.material.color.copy(getBarColor(t));
+        getBarColor(t);
         const elapsed = frameCount - actStartFrame[key];
         if (elapsed >= 0 && elapsed < FLASH_FRAMES) {
           const f = 1 - elapsed / FLASH_FRAMES;
           const ff = f * f;
-          bar.material.emissive.setRGB(0.9 * ff, 0.85 * ff, 0.5 * ff);
+          er = 0.9 * ff; eg = 0.85 * ff; eb = 0.5 * ff;
         }
         break;
       }
     }
+
+    const height = Math.max(0.01, scaleCount(count) * unitHeight * 0.85);
+    barHeights[key] = height;
+    // Column-major matrix: scale y by height, translate to the cell's center
+    const m = slot * 16;
+    mats[m] = 1;      mats[m + 1] = 0;          mats[m + 2] = 0;  mats[m + 3] = 0;
+    mats[m + 4] = 0;  mats[m + 5] = height;     mats[m + 6] = 0;  mats[m + 7] = 0;
+    mats[m + 8] = 0;  mats[m + 9] = 0;          mats[m + 10] = 1; mats[m + 11] = 0;
+    mats[m + 12] = key % GRID_SIZE + 0.5;
+    mats[m + 13] = height / 2;
+    mats[m + 14] = ((key / GRID_SIZE) | 0) + 0.5;
+    mats[m + 15] = 1;
+    const c3 = slot * 3;
+    cols[c3] = _c.r; cols[c3 + 1] = _c.g; cols[c3 + 2] = _c.b;
+    emis[c3] = er; emis[c3 + 1] = eg; emis[c3 + 2] = eb;
+    slot++;
   }
+  barMesh.count = slot;
+  barMesh.instanceMatrix.needsUpdate = true;
+  barMesh.instanceColor.needsUpdate = true;
+  barEmissive.needsUpdate = true;
+  shownCount = slot;
 
   // 3D ripple rings
   if (vizMode === "ripples") {
@@ -994,8 +1012,7 @@ function updateBars() {
         const key = discoveryHistory[start + i];
         const gx = key % GRID_SIZE;
         const gy = (key / GRID_SIZE) | 0;
-        const bar = bars.get(key);
-        const py = bar ? bar.position.y * 2 : 0.5;
+        const py = barHeights[key] > 0 ? barHeights[key] : 0.5;
         connPositions[i * 3] = gx + 0.5;
         connPositions[i * 3 + 1] = py;
         connPositions[i * 3 + 2] = gy + 0.5;
