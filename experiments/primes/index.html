@@ -141,14 +141,32 @@
     <div class="filter-group">
       Mode:
       <select id="main-mode">
-        <option value="gap-grid" selected>Gap Grid</option>
-        <option value="gap-staircase">Gap Staircase</option>
-        <option value="ulam-spiral">Ulam Spiral</option>
-        <option value="sacks-spiral">Sacks Spiral</option>
-        <option value="record-gaps">Record Gaps</option>
-        <option value="gap-histogram">Gap Histogram</option>
-        <option value="gap-spectrogram">Gap Spectrogram</option>
-        <option value="riemann-staircase">Riemann's Staircase</option>
+        <optgroup label="Grids & 3D">
+          <option value="gap-grid" selected>Gap Grid</option>
+          <option value="gap-staircase">Gap Staircase</option>
+          <option value="ulam-spiral">Ulam Spiral</option>
+          <option value="sacks-spiral">Sacks Spiral</option>
+        </optgroup>
+        <optgroup label="Gap sizes">
+          <option value="gap-histogram">Gap Histogram</option>
+          <option value="gap-spectrogram">Gap Spectrogram</option>
+          <option value="normalized-gaps">Normalized Gaps</option>
+          <option value="gap-change">Gap Change</option>
+        </optgroup>
+        <optgroup label="Records">
+          <option value="record-gaps">Record Gaps</option>
+          <option value="cramer-ratio">Cramér Ratio</option>
+        </optgroup>
+        <optgroup label="Patterns">
+          <option value="next-gap-odds">Next-Gap Odds</option>
+          <option value="equal-gap-runs">Equal-Gap Runs</option>
+          <option value="gap-residues">Gap Residues</option>
+          <option value="gap-shares">Gap Shares</option>
+        </optgroup>
+        <optgroup label="Theory checks">
+          <option value="prime-pairs">Prime Pairs</option>
+          <option value="riemann-staircase">Riemann's Staircase</option>
+        </optgroup>
       </select>
     </div>
     <span id="grid-controls">
@@ -210,6 +228,15 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script>window.PRIME_MODES = {};</script>
+  <script src="modes/util.js"></script>
+  <script src="modes/normalized-gaps.js"></script>
+  <script src="modes/gap-change.js"></script>
+  <script src="modes/cramer-ratio.js"></script>
+  <script src="modes/next-gap-odds.js"></script>
+  <script src="modes/equal-gap-runs.js"></script>
+  <script src="modes/gap-residues.js"></script>
+  <script src="modes/gap-shares.js"></script>
+  <script src="modes/prime-pairs.js"></script>
   <script src="modes/gap-histogram.js"></script>
   <script src="modes/record-gaps.js"></script>
   <script src="modes/ulam-spiral.js"></script>
